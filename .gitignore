@@ -16,3 +16,6 @@ tools/*/**
 
 # mac
 *.DS_Store
+
+# build output
+bin/**
