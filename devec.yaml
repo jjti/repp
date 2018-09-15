@@ -1,0 +1,13 @@
+# general settings
+max_fragment_count: 10
+
+# PCR settings
+pcr:
+  bp_cost: 0.03
+  min_length: 300
+  max_length: 5000
+
+# Synthesis settings
+synthesis:
+  bp_cost: 0.11
+  max_length: 4000
