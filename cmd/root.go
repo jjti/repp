@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"path"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -60,7 +60,7 @@ func initConfig() {
 
 		// Go two path locations upward from the binary and into config
 		// Search ./config in repo directory for a settings file (extension is irrelevant to viper)
-		viper.AddConfigPath(path.Join(ex, "..", "..", "config"))
+		viper.AddConfigPath(filepath.Join(ex, "..", "..", "config"))
 		viper.SetConfigName("settings")
 	}
 
