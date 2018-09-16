@@ -40,7 +40,7 @@ func init() {
 	rootCmd.AddCommand(makeCmd)
 
 	// Flags for specifying the paths to the input file, input fragment files, and output file
-	makeCmd.Flags().StringVarP(&targetPath, "target", "t", "", "path to a FASTA file with a target vector sequence to make")
+	makeCmd.Flags().StringVarP(&targetPath, "target", "t", "", "path to a FASTA file with the target vector")
 	makeCmd.Flags().StringVarP(&inputFastaPath, "fragment-db", "f", "", "path to a BLAST database with possible building fragments")
 
 	// Mark required flags

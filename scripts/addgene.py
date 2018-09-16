@@ -10,7 +10,7 @@ from lxml import html
 INDEX_LIMIT = 150000
 
 # output test directory for addgene
-os.chdir(os.path.join("test", "data", "addgene"))
+os.chdir(os.path.join("assets", "addgene"))
 
 # valid file characters
 valid_chars = "-_.() %s%s" % (string.ascii_letters, string.digits)
