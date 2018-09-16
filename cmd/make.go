@@ -39,11 +39,11 @@ vector it's told to. It does this by:
 func init() {
 	rootCmd.AddCommand(makeCmd)
 
-	// Here you will define your flags and configuration settings.
-
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
 	// makeCmd.PersistentFlags().String("foo", "", "A help for foo")
+
+	// Flags for specifying the paths to the input file, input fragment files, and output file
 	makeCmd.Flags().StringVarP(&targetPath, "target", "t", "", "path to a FASTA file with a target sequence to make")
 	makeCmd.Flags().StringVarP(&inputFastaPath, "db-fasta", "f", "", "path to a multi-FASTA file with building sequences")
 
