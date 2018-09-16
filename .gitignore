@@ -20,4 +20,5 @@ tools/*/**
 # build output
 bin/**
 
-# addgene raw FASTA files
+# addgene raw FASTA files, too large, ignore them
+test/data/addgene/files/**
