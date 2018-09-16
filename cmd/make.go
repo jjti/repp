@@ -22,9 +22,9 @@ way possible. It's a declaractive approach to vector design. This means that, ra
 telling make which DNA fragments go together, and in what order, make simply builds the 
 vector it's told to. It does this by:
 
-1. Screening the fragments in a database of existing fragments, "db-fasta," to find
-   fragments that might be useful for creating the vector
-2. Creating a list of possible assemblies using fragments from 1, and ranking them by
+1. Screening fragments in a BLAST database, at "db-fasta," to find those that match
+   portions of the target vector sequence
+2. Creating a list of possible assemblies using fragments from 1 and ranking them by their
    estimated assembly cost
 3. Finding the cheapest assembly-plan with the best Gibson Assembly fragments possible`,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -39,19 +39,15 @@ vector it's told to. It does this by:
 func init() {
 	rootCmd.AddCommand(makeCmd)
 
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// makeCmd.PersistentFlags().String("foo", "", "A help for foo")
-
 	// Flags for specifying the paths to the input file, input fragment files, and output file
-	makeCmd.Flags().StringVarP(&targetPath, "target", "t", "", "path to a FASTA file with a target sequence to make")
-	makeCmd.Flags().StringVarP(&inputFastaPath, "db-fasta", "f", "", "path to a multi-FASTA file with building sequences")
+	makeCmd.Flags().StringVarP(&targetPath, "target", "t", "", "path to a FASTA file with a target vector sequence to make")
+	makeCmd.Flags().StringVarP(&inputFastaPath, "fragment-db", "f", "", "path to a BLAST database with possible building fragments")
 
 	// Mark required flags
 	makeCmd.MarkFlagRequired("target")
-	makeCmd.MarkFlagRequired("db-fasta")
+	makeCmd.MarkFlagRequired("fragment-db")
 
 	// Bind the paramters to viper
 	viper.BindPFlag("target", makeCmd.Flags().Lookup("target"))
-	viper.BindPFlag("db-fasta", makeCmd.Flags().Lookup("db-fasta"))
+	viper.BindPFlag("fragment-db", makeCmd.Flags().Lookup("fragment-db"))
 }
