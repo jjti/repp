@@ -7,7 +7,7 @@ from concurrent.futures import ThreadPoolExecutor, wait
 import requests
 from lxml import html
 
-INDEX_LIMIT = 120000
+INDEX_LIMIT = 150000
 
 # output test directory for addgene
 os.chdir(os.path.join("test", "data", "addgene"))
