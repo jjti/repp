@@ -1,27 +1,18 @@
 # Building fragment settings
 fragments:
   # Maximum number of building fragments in final assembly
-  max_count: 10
+  maxcount: 10
 
   # The minimum match length between a building fragment and
   # the target sequence to be considered
-  min_match: 50
+  min-match: 50
 
 # PCR settings
 pcr:
   # Cost per bp of PCR primer
-  bp_cost: 0.03
-
-  # Minimum length of a PCR fragment
-  min_length: 300
-
-  # Maximum length of a PCR fragment
-  max_length: 5000
+  bp-cost: 0.03
 
 # Synthesis settings
 synthesis:
   # Cost per bp of synthesized DNA
-  bp_cost: 0.11
-
-  # Maximum length of a synthesized stretch of DNA
-  max_length: 4000
+  bp-cost: 0.11
