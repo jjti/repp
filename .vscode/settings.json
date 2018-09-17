@@ -2,5 +2,13 @@
   "go.useLanguageServer": true,
   "python.pythonPath": "/usr/local/bin/python",
   "python.formatting.provider": "black",
-  "git.ignoreLimitWarning": true
+  "git.ignoreLimitWarning": true,
+  "files.exclude": {
+    "**/.git": true,
+    "**/.svn": true,
+    "**/.hg": true,
+    "**/CVS": true,
+    "**/.DS_Store": true,
+    "assets/addgene/repo": true
+  }
 }
