@@ -22,3 +22,4 @@ bin/**
 
 # addgene raw FASTA files, too many, ignore them (saving only addgene/repo.zip instead)
 assets/addgene/repo/**
+assets/addgene/db/**
