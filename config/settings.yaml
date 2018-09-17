@@ -25,8 +25,3 @@ synthesis:
 
   # Maximum length of a synthesized stretch of DNA
   max_length: 4000
-
-# Database settings
-databases:
-  # path to a local BLAST DB of Addgene vectors
-  add_gene: "/assets/addgene/addgene"

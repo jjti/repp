@@ -1,9 +1,9 @@
 import os
 
-os.chdir(os.path.join("assets", "addgene"))
+os.chdir(os.path.join("assets", "addgene", "db"))
 
 # open a single FASTA for a combined db
-with open("addgene.fa", "w") as combined_fasta:
+with open("addgene", "w") as combined_fasta:
     # move into repo full of files
     os.chdir("repo")
 
