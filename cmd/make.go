@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/jjtimmons/decvec/config"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -29,7 +30,7 @@ vector it's told to. It does this by:
 3. Finding the cheapest assembly-plan with the best Gibson Assembly fragments possible`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("make called")
-		b, err := json.MarshalIndent(viper.AllSettings(), "", "  ")
+		b, err := json.MarshalIndent(config.NewConfig(), "", "  ")
 		if err == nil {
 			fmt.Print(string(b))
 		}
@@ -48,6 +49,6 @@ func init() {
 	makeCmd.MarkFlagRequired("fragment-db")
 
 	// Bind the paramters to viper
-	viper.BindPFlag("target", makeCmd.Flags().Lookup("target"))
-	viper.BindPFlag("fragment-db", makeCmd.Flags().Lookup("fragment-db"))
+	viper.BindPFlag("make.target", makeCmd.Flags().Lookup("target"))
+	viper.BindPFlag("make.fragment-db", makeCmd.Flags().Lookup("fragment-db"))
 }
