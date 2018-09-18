@@ -1,10 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
-	"fmt"
-
-	"github.com/jjtimmons/decvec/config"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -28,15 +24,10 @@ vector it's told to. It does this by:
 2. Creating a list of possible assemblies using fragments from 1 and ranking them by their
    estimated assembly cost
 3. Finding the cheapest assembly-plan with the best Gibson Assembly fragments possible`,
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("make called")
-		b, err := json.MarshalIndent(config.NewConfig(), "", "  ")
-		if err == nil {
-			fmt.Print(string(b))
-		}
-	},
+	Run: makeExec,
 }
 
+// set flags
 func init() {
 	rootCmd.AddCommand(makeCmd)
 
@@ -51,4 +42,11 @@ func init() {
 	// Bind the paramters to viper
 	viper.BindPFlag("make.target", makeCmd.Flags().Lookup("target"))
 	viper.BindPFlag("make.fragment-db", makeCmd.Flags().Lookup("fragment-db"))
+}
+
+// makeExec is the root of the make functionality
+func makeExec(cmd *cobra.Command, args []string) {
+	// _ := config.NewConfig()
+
+	println("called make")
 }
