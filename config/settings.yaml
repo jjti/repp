@@ -1,7 +1,7 @@
 # Building fragment settings
 fragments:
   # Maximum number of building fragments in final assembly
-  maxcount: 10
+  max-count: 10
 
   # The minimum match length between a building fragment and
   # the target sequence to be considered
