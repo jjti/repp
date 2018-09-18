@@ -9,7 +9,7 @@ using name scheme here: https://ncbi.github.io/cxx-toolkit/pages/ch_demo#ch_demo
 seen_names = set()
 count = 0
 
-for f in sorted(os.listdir(".")):
+for f in sorted(os.listdir("."))[:10]:
     if ".DS" in f:
         continue
 
@@ -55,11 +55,8 @@ for f in sorted(os.listdir(".")):
             ).replace("\n", "")
 
     # write it back
-    if not duplicate_entry:
-        with open(f, "w") as new_file:
-            new_file.writelines(file_lines)
+    # if not duplicate_entry:
+    # with open(f, "w") as new_file:
+    #     new_file.writelines(file_lines)
 
-    # if count < 10:
-    #     with open(f, "r") as new_file:
-    #         print new_file.read()
-    #     count += 1
+    print "".join(file_lines)
