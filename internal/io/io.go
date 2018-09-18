@@ -21,7 +21,7 @@ func ReadFASTA(path string) []frag.Fragment {
 	file := string(dat)
 
 	// split by newlines
-	lines := strings.Split(file, ">")
+	lines := strings.Split(file, "\n")
 
 	// read in the fragments
 	var headerIndices []int
@@ -32,6 +32,8 @@ func ReadFASTA(path string) []frag.Fragment {
 			ids = append(ids, line[1:])
 		}
 	}
+
+	// log.Printf("%v", ids)
 
 	// create a regex for cleaning the sequence
 	var unwantedChars = regexp.MustCompile(`(?im)[^atgc]|\W`)
