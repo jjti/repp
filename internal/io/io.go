@@ -10,9 +10,9 @@ import (
 )
 
 // ReadFASTA file to a slice of Fragments
-func ReadFASTA(path string) []frag.Fragment {
+func ReadFASTA(file string) []frag.Fragment {
 	// read a file into memory
-	dat, err := ioutil.ReadFile(path)
+	dat, err := ioutil.ReadFile(file)
 	if err != nil {
 		log.Fatalln("failed to open fasta file", err)
 	}
@@ -32,8 +32,6 @@ func ReadFASTA(path string) []frag.Fragment {
 			ids = append(ids, line[1:])
 		}
 	}
-
-	// log.Printf("%v", ids)
 
 	// create a regex for cleaning the sequence
 	var unwantedChars = regexp.MustCompile(`(?im)[^atgc]|\W`)
@@ -59,5 +57,11 @@ func ReadFASTA(path string) []frag.Fragment {
 			Seq: seqs[i],
 		})
 	}
+
+	// opened and parsed file but found nothing
+	if len(fragments) < 1 {
+		log.Fatalln("failed to parse building fragments from %s", file)
+	}
+
 	return fragments
 }
