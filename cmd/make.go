@@ -1,6 +1,9 @@
 package cmd
 
 import (
+	"github.com/jjtimmons/decvec/config"
+	"github.com/jjtimmons/decvec/internal/blast"
+	"github.com/jjtimmons/decvec/internal/io"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -46,7 +49,24 @@ func init() {
 
 // makeExec is the root of the make functionality
 func makeExec(cmd *cobra.Command, args []string) {
-	// _ := config.NewConfig()
+	c := config.NewConfig()
+
+	// read in fragments
+	fragments := io.ReadFASTA(c.Make.TargetPath)
+
+	// set target fragment
+	if len(fragments) > 1 {
+		println(
+			"warning: %d building fragments were in %s... only targeting the first: %s",
+			len(fragments),
+			c.Make.TargetPath,
+			fragments[0].ID,
+		)
+	}
+	target := fragments[0]
+
+	// BLAST the target fragment against the database
+	blast.BLAST(target)
 
 	println("called make")
 }
