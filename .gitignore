@@ -1,5 +1,5 @@
 # Tools like primer3 and BLAST
-tools/*/**
+vendor/*/**
 
 # Binaries for programs and plugins
 *.exe
