@@ -4,7 +4,6 @@ package blast
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -56,23 +55,39 @@ func init() {
 
 // BLAST the passed Fragment against a set from the command line and create
 // matches for those that are long enough
-func BLAST(f *frag.Fragment, db string) error {
-	// get current path
+func BLAST(f *frag.Fragment) error {
+	// get path to the binary
 	exPath, err := os.Executable()
 	if err != nil {
 		return fmt.Errorf("failed to get binary's path: %v", err)
 	}
 
 	// exPath is to the binary, step up one
-	exPath = path.Join(exPath, "..")
+	dirRoot := path.Join(exPath, "..", "..")
+
+	// path to the database to blast against
+	db := path.Join(dirRoot, "assets", "addgene", "db", "addgene")
+
+	// check if blastn is in their path, set otherwise
+	blast := path.Join(dirRoot, "vendor", "ncbi-blast-2.7.1+", "bin", "blastn")
 
 	// create the utility struct with paths
 	b := blastExec{
 		f:     f,
 		in:    exPath + ".input.fa",
-		out:   exPath + ".output.json",
-		blast: path.Join(exPath, "..", "vendor", "ncbi-blast-2.7.1+", "bin", "blastn"),
+		out:   exPath + ".output",
+		blast: blast,
 		db:    db,
+	}
+
+	// make sure the addgene db is there
+	if _, err = os.Stat(db); os.IsNotExist(err) {
+		return fmt.Errorf("failed to find an Addgene database at %s", db)
+	}
+
+	// make sure the blast executable is there
+	if _, err = os.Stat(blast); os.IsNotExist(err) {
+		return fmt.Errorf("failed to find a BLAST executable at %s", blast)
 	}
 
 	// create the input file
@@ -99,7 +114,7 @@ func BLAST(f *frag.Fragment, db string) error {
 // return the path to the file and an error if there was one
 func input(b blastExec) error {
 	// create the file contents, double sequence because its circular
-	fileContents := ">" + b.f.ID + "\n" + b.f.Seq + b.f.Seq
+	fileContents := ">" + b.f.ID + "\n" + b.f.Seq + b.f.Seq + "\n"
 
 	// create file
 	inputFile, err := os.Create(b.in)
@@ -119,35 +134,28 @@ func input(b blastExec) error {
 // run is for calling BLAST and returning when it finished
 // returns the local path to the output fils
 func run(b blastExec) error {
-	// error output
-	var errOut bytes.Buffer
-
 	// create the blast command
 	// https://www.ncbi.nlm.nih.gov/books/NBK279682/
-	blastCmd := &exec.Cmd{
-		Path: b.blast,
-		Args: []string{
-			"-db " + b.db,
-			"-query " + b.in,
-			"-out " + b.out,
-			"-outfmt \"7 qseqid qstart qend sseqid sstart send\" ",
-			"-ungapped ",
-			"-perc_identity 100.0",
-		},
-		Stderr: &errOut,
-	}
+	blastCmd := exec.Command(
+		b.blast,
+		"-task", "blastn",
+		"-db", b.db,
+		"-query", b.in,
+		"-out", b.out,
+		"-outfmt", "7 sseqid qstart qend sstart send",
+		"-ungapped",
+		"-perc_identity", "100",
+	)
+
+	var stderr bytes.Buffer
+	blastCmd.Stderr = &stderr
 
 	// execute BLAST and wait on it to finish
 	err := blastCmd.Run()
 	if err != nil {
+		fmt.Fprintln(os.Stderr, err, stderr.String())
 		return err
 	}
-
-	// check err results
-	if errOut.Len() > 0 {
-		return errors.New(errOut.String())
-	}
-
 	return nil
 }
 
@@ -171,16 +179,12 @@ func parse(b blastExec) ([]frag.Match, error) {
 
 		cols := strings.Split(line, " ")
 
-		if len(cols) != 6 {
-			continue
-		}
-
 		start, _ := strconv.Atoi(cols[1])
 		end, _ := strconv.Atoi(cols[2])
 
 		// create and append the new match
 		ms = append(ms, frag.Match{
-			ID:    cols[3],
+			ID:    cols[0],
 			Start: start,
 			End:   end,
 		})

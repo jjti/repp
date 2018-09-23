@@ -13,8 +13,8 @@ type MakeFlags struct {
 	// the path the local target sequence
 	TargetPath string `mapstructure:"target"`
 
-	// the path the local target sequence
-	DBPath string `mapstructure:"fragment-db"`
+	// whether to use the addgene database as a source of building fragments
+	Addgene bool `mapstructure:"addgene"`
 }
 
 // FragmentConfig settings about fragments

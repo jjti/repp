@@ -12,6 +12,11 @@ type Match struct {
 	End int
 }
 
+// Length returns the length of the match on the target fragment
+func (m *Match) Length() int {
+	return m.End - m.Start + 1 // it's inclusive
+}
+
 // Fragment is a single potential building block used to
 // assemble the target sequence vector
 type Fragment struct {
