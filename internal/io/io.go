@@ -1,3 +1,4 @@
+// Package io is for reading and writing frag.Fragments to the local file system
 package io
 
 import (

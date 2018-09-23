@@ -13,6 +13,7 @@ import (
 
 var targetPath string
 var inputFastaPath string
+var useAddgene bool
 
 // makeCmd represents the make command
 var makeCmd = &cobra.Command{
@@ -39,15 +40,15 @@ func init() {
 
 	// Flags for specifying the paths to the input file, input fragment files, and output file
 	makeCmd.Flags().StringVarP(&targetPath, "target", "t", "", "path to a FASTA file with the target vector")
-	makeCmd.Flags().StringVarP(&inputFastaPath, "fragment-db", "f", "", "path to a BLAST database with possible building fragments")
+	makeCmd.Flags().BoolVarP(&useAddgene, "addgene", "a", false, "flag signalling we should use addgene's vector db")
 
 	// Mark required flags
 	makeCmd.MarkFlagRequired("target")
-	makeCmd.MarkFlagRequired("fragment-db")
+	makeCmd.MarkFlagRequired("addgene")
 
 	// Bind the paramters to viper
 	viper.BindPFlag("make.target", makeCmd.Flags().Lookup("target"))
-	viper.BindPFlag("make.fragment-db", makeCmd.Flags().Lookup("fragment-db"))
+	viper.BindPFlag("make.addgene", makeCmd.Flags().Lookup("addgene"))
 }
 
 // print error and exit program
@@ -78,8 +79,6 @@ func makeExec(cmd *cobra.Command, args []string) {
 	target := fragments[0]
 
 	// BLAST the target fragment against the database
-	err = blast.BLAST(&target, c.Make.DBPath)
+	err = blast.BLAST(&target)
 	handle(err)
-
-	println("called make")
 }
