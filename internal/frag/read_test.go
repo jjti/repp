@@ -1,13 +1,13 @@
-package io
+package frag
 
 import "testing"
 
 // Test reading of a FASTA file
-func TestReadFASTA(t *testing.T) {
-	fragments, err := ReadFASTA("../../test/fasta.fa")
+func TestRead(t *testing.T) {
+	fragments, err := Read("../../test/fasta.fa")
 
 	if err != nil {
-		t.Errorf("failed in ReadFASTA: %s", err.Error())
+		t.Errorf("failed in Read: %s", err.Error())
 	}
 
 	if len(fragments) != 5 {

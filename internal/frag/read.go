@@ -1,5 +1,4 @@
-// Package io is for reading and writing frag.Fragments to the local file system
-package io
+package frag
 
 import (
 	"fmt"
@@ -7,12 +6,10 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-
-	"github.com/jjtimmons/decvec/internal/frag"
 )
 
-// ReadFASTA file to a slice of Fragments
-func ReadFASTA(path string) ([]frag.Fragment, error) {
+// Read a FASTA file to a slice of Fragments
+func Read(path string) ([]Fragment, error) {
 	// read a file into memory
 	var dat []byte
 	var err error
@@ -64,9 +61,9 @@ func ReadFASTA(path string) ([]frag.Fragment, error) {
 	}
 
 	// build and return the new fragments
-	var fragments []frag.Fragment
+	var fragments []Fragment
 	for i, id := range ids {
-		fragments = append(fragments, frag.Fragment{
+		fragments = append(fragments, Fragment{
 			ID:  id,
 			Seq: seqs[i],
 		})
