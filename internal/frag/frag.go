@@ -1,3 +1,5 @@
+// Package frag is for the models and io of Fragments.
+// The target and the building pieces are all Fragments
 package frag
 
 // Match is a fragment that this fragment matches against

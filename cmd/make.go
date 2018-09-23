@@ -6,14 +6,10 @@ import (
 
 	"github.com/jjtimmons/decvec/config"
 	"github.com/jjtimmons/decvec/internal/blast"
-	"github.com/jjtimmons/decvec/internal/io"
+	"github.com/jjtimmons/decvec/internal/frag"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
-
-var targetPath string
-var inputFastaPath string
-var useAddgene bool
 
 // makeCmd represents the make command
 var makeCmd = &cobra.Command{
@@ -33,6 +29,10 @@ vector it's told to. It does this by:
 3. Finding the cheapest assembly-plan with the best Gibson Assembly fragments possible`,
 	Run: makeExec,
 }
+
+var targetPath string
+var inputFastaPath string
+var useAddgene bool
 
 // set flags
 func init() {
@@ -64,7 +64,7 @@ func makeExec(cmd *cobra.Command, args []string) {
 	c := config.NewConfig()
 
 	// read in fragments
-	fragments, err := io.ReadFASTA(c.Make.TargetPath)
+	fragments, err := frag.Read(c.Make.TargetPath)
 	handle(err)
 
 	// set target fragment

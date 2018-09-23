@@ -43,14 +43,14 @@ func TestFilter(t *testing.T) {
 	filter(&f)
 
 	// make sure they're gone
-	if len(f.Matches) != 1 {
-		t.Errorf("%d matches found on test fragment, 1 expected", len(f.Matches))
+	if len(f.Matches) != 3 {
+		t.Errorf("%d matches found on test fragment, 3 expected", len(f.Matches))
 	}
 
-	// make sure m3 is the only one
+	// make sure m2 has been removed
 	for _, m := range f.Matches {
-		if m.ID != "m3" {
-			t.Errorf("%s found on test fragment, m3 expected to be only match", m.ID)
+		if m.ID == "m2" {
+			t.Error("m2 found in resulting matches, should have been removed")
 		}
 	}
 }
