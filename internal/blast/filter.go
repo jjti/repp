@@ -6,7 +6,8 @@ import (
 	"github.com/jjtimmons/decvec/internal/frag"
 )
 
-// filter is for "propertizing" the matches from BLAST
+// filter is for "propertizing" the matches from BLAST and removing
+// those that start past 2x the target sequence's length
 //
 // propertizing fragment matches means removing those that are completely
 // self-contained in other fragments: the larger of the available fragments
@@ -30,5 +31,23 @@ func filter(f *frag.Fragment) {
 		}
 	}
 
-	f.Matches = properMatches
+	// remove fragments that start end before 1x the target vector sequence's length
+	start := len(f.Seq)
+	var beforeEnd []frag.Match
+	for _, m := range properMatches {
+		if m.End > start {
+			beforeEnd = append(beforeEnd, m)
+		}
+	}
+
+	// remove fragments that start past 2x the target vector sequence's length
+	end := 2 * len(f.Seq)
+	var afterStart []frag.Match
+	for _, m := range beforeEnd {
+		if m.Start < end {
+			afterStart = append(afterStart, m)
+		}
+	}
+
+	f.Matches = afterStart
 }

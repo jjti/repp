@@ -16,3 +16,6 @@ pcr:
 synthesis:
   # Cost per bp of synthesized DNA
   bp-cost: 0.11
+
+  # Maximum length of a synthesizable region of DNA
+  max-length: 3000

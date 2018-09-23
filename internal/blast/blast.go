@@ -114,7 +114,7 @@ func BLAST(f *frag.Fragment) error {
 // return the path to the file and an error if there was one
 func input(b blastExec) error {
 	// create the file contents, double sequence because its circular
-	fileContents := ">" + b.f.ID + "\n" + b.f.Seq + b.f.Seq + "\n"
+	fileContents := ">" + b.f.ID + "\n" + b.f.Seq + b.f.Seq + b.f.Seq + "\n"
 
 	// create file
 	inputFile, err := os.Create(b.in)
