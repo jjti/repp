@@ -37,6 +37,13 @@ func TestFilter(t *testing.T) {
 				Start: 7,
 				End:   48,
 			},
+			// should be removed because it starts past 2x the
+			// target's sequence length
+			frag.Match{
+				ID:    "m5",
+				Start: 50,
+				End:   55,
+			},
 		},
 	}
 

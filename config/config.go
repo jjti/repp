@@ -35,8 +35,11 @@ type PCRConfig struct {
 
 // SynthesisConfig is for settings involving synthesis
 type SynthesisConfig struct {
-	// the cost per bp os synthesized DNA
+	// the cost per bp of synthesized DNA
 	BPCost float32 `mapstructure:"bp-cost"`
+
+	// maximum length of a synthesized piece of DNA
+	MaxLength int `mapstructure:"max-length"`
 }
 
 // Config is the root-level settings struct and is a mix
