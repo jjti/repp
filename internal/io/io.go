@@ -1,8 +1,9 @@
 package io
 
 import (
+	"fmt"
 	"io/ioutil"
-	"log"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -10,11 +11,23 @@ import (
 )
 
 // ReadFASTA file to a slice of Fragments
-func ReadFASTA(file string) []frag.Fragment {
+func ReadFASTA(path string) ([]frag.Fragment, error) {
 	// read a file into memory
-	dat, err := ioutil.ReadFile(file)
+	var dat []byte
+	var err error
+
+	if !filepath.IsAbs(path) {
+		path, err = filepath.Abs(path)
+
+		if err != nil {
+			return nil, fmt.Errorf("failed to create input FASTA path: %s", err)
+		}
+	}
+
+	dat, err = ioutil.ReadFile(path)
+
 	if err != nil {
-		log.Fatalln("failed to open fasta file", err)
+		return nil, fmt.Errorf("failed to read input FASTA path: %s", err)
 	}
 
 	// read it into a string
@@ -60,8 +73,8 @@ func ReadFASTA(file string) []frag.Fragment {
 
 	// opened and parsed file but found nothing
 	if len(fragments) < 1 {
-		log.Fatalln("failed to parse building fragments from %s", file)
+		return nil, fmt.Errorf("failed to parse building fragments from %s", file)
 	}
 
-	return fragments
+	return fragments, nil
 }

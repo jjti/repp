@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"os/exec"
 	"path"
@@ -14,7 +15,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/jjtimmons/decvec/config"
 	"github.com/jjtimmons/decvec/internal/frag"
 )
 
@@ -38,21 +38,29 @@ type blastExec struct {
 }
 
 // init ensures there's a blast subdirectory in the binary's execution enviornment
-// for the BLAST database that this is about to create
+// for the results this is about to create
 func init() {
-	blastPath := filepath.Join(".", "blast")
-	os.MkdirAll(blastPath, os.ModePerm)
+	handle := func(e error) {
+		if e != nil {
+			log.Fatalf("failed to create a BLAST: %v", e)
+		}
+	}
+
+	exPath, err := os.Executable()
+	handle(err)
+
+	blastPath := filepath.Join(exPath, "..", "blast")
+	err = os.MkdirAll(blastPath, os.ModePerm)
+	handle(err)
 }
 
 // BLAST the passed Fragment against a set from the command line and create
 // matches for those that are long enough
-func BLAST(f *frag.Fragment) error {
-	c := config.NewConfig()
-
+func BLAST(f *frag.Fragment, db string) error {
 	// get current path
 	exPath, err := os.Executable()
 	if err != nil {
-		return fmt.Errorf("failed to get binary's path: ", err)
+		return fmt.Errorf("failed to get binary's path: %v", err)
 	}
 
 	// exPath is to the binary, step up one
@@ -63,8 +71,8 @@ func BLAST(f *frag.Fragment) error {
 		f:     f,
 		in:    exPath + ".input.fa",
 		out:   exPath + ".output.json",
-		blast: path.Join(exPath, "..", "tools", "ncbi-blast-2.7.1+", "bin", "blastn"),
-		db:    c.Make.DBPath,
+		blast: path.Join(exPath, "..", "vendor", "ncbi-blast-2.7.1+", "bin", "blastn"),
+		db:    db,
 	}
 
 	// create the input file

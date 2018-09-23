@@ -1,6 +1,9 @@
 package cmd
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/jjtimmons/decvec/config"
 	"github.com/jjtimmons/decvec/internal/blast"
 	"github.com/jjtimmons/decvec/internal/io"
@@ -47,12 +50,21 @@ func init() {
 	viper.BindPFlag("make.fragment-db", makeCmd.Flags().Lookup("fragment-db"))
 }
 
+// print error and exit program
+func handle(e error) {
+	if e != nil {
+		fmt.Println(e)
+		os.Exit(1)
+	}
+}
+
 // makeExec is the root of the make functionality
 func makeExec(cmd *cobra.Command, args []string) {
 	c := config.NewConfig()
 
 	// read in fragments
-	fragments := io.ReadFASTA(c.Make.TargetPath)
+	fragments, err := io.ReadFASTA(c.Make.TargetPath)
+	handle(err)
 
 	// set target fragment
 	if len(fragments) > 1 {
@@ -66,7 +78,8 @@ func makeExec(cmd *cobra.Command, args []string) {
 	target := fragments[0]
 
 	// BLAST the target fragment against the database
-	blast.BLAST(target)
+	err = blast.BLAST(&target, c.Make.DBPath)
+	handle(err)
 
 	println("called make")
 }
