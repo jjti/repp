@@ -178,15 +178,15 @@ func parse(b blastExec) ([]frag.Match, error) {
 		}
 
 		cols := strings.Split(line, " ")
-
 		start, _ := strconv.Atoi(cols[1])
 		end, _ := strconv.Atoi(cols[2])
 
 		// create and append the new match
 		ms = append(ms, frag.Match{
-			ID:    cols[0],
-			Start: start,
-			End:   end,
+			ID: cols[0],
+			// convert 1-based numbers to 0-based
+			Start: start - 1,
+			End:   end - 1,
 		})
 	}
 	return ms, nil
