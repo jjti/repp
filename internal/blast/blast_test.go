@@ -54,6 +54,7 @@ func Test_BLAST(t *testing.T) {
 				return
 			}
 		}
+
 		t.Errorf("failed to find match %v in fragment matches", targ)
 	}
 
