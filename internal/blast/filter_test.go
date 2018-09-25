@@ -14,35 +14,36 @@ func TestFilter(t *testing.T) {
 		ID:  "testFragment",
 		Seq: "atgctagctagctagctagctagc",
 		Matches: []frag.Match{
-			// should be removed for starting at 0-index
+			// should be removed for ending before 0-index
 			frag.Match{
 				ID:    "m1",
-				Start: 0,
-				End:   5,
+				Start: 15,
+				End:   9,
 			},
 			// should be removed because it fits within m3
 			frag.Match{
 				ID:    "m2",
-				Start: 5,
-				End:   10,
+				Start: 29,
+				End:   34,
 			},
+			// shouldn't be removed
 			frag.Match{
 				ID:    "m3",
-				Start: 5,
-				End:   11,
+				Start: 29,
+				End:   35,
 			},
-			// should be removed because it ends near end
+			// shouldn't be removed
 			frag.Match{
 				ID:    "m4",
-				Start: 7,
-				End:   48,
+				Start: 31,
+				End:   72,
 			},
 			// should be removed because it starts past 2x the
 			// target's sequence length
 			frag.Match{
 				ID:    "m5",
-				Start: 50,
-				End:   55,
+				Start: 40,
+				End:   79,
 			},
 		},
 	}
@@ -51,7 +52,7 @@ func TestFilter(t *testing.T) {
 
 	// make sure they're gone
 	if len(f.Matches) != 3 {
-		t.Errorf("%d matches found on test fragment, 3 expected", len(f.Matches))
+		t.Errorf("%d matches found on test fragment, 3 expected: %v", len(f.Matches), f.Matches)
 	}
 
 	// make sure m2 has been removed

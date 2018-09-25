@@ -36,67 +36,54 @@ type blastExec struct {
 	db string
 }
 
+// path to the blast directory for putting results into
+var blastPath string
+
 // init ensures there's a blast subdirectory in the binary's execution enviornment
 // for the results this is about to create
 func init() {
-	handle := func(e error) {
-		if e != nil {
-			log.Fatalf("failed to create a BLAST: %v", e)
-		}
+	blastPath = filepath.Join("..", "..", "bin", "blast")
+	err := os.MkdirAll(blastPath, os.ModePerm)
+	if err != nil {
+		log.Fatalf("failed to create a BLAST dir: %v", err)
 	}
-
-	exPath, err := os.Executable()
-	handle(err)
-
-	blastPath := filepath.Join(exPath, "..", "blast")
-	err = os.MkdirAll(blastPath, os.ModePerm)
-	handle(err)
 }
 
 // BLAST the passed Fragment against a set from the command line and create
 // matches for those that are long enough
-func BLAST(f *frag.Fragment) error {
-	// get path to the binary
-	exPath, err := os.Executable()
-	if err != nil {
-		return fmt.Errorf("failed to get binary's path: %v", err)
-	}
-
-	// exPath is to the binary, step up one
-	dirRoot := path.Join(exPath, "..", "..")
-
-	// path to the database to blast against
-	db := path.Join(dirRoot, "assets", "addgene", "db", "addgene")
-
+//
+// Accepts the fragment to blast against the db and the path to the db on
+// the local fs
+func BLAST(f *frag.Fragment, db string) error {
 	// check if blastn is in their path, set otherwise
-	blast := path.Join(dirRoot, "vendor", "ncbi-blast-2.7.1+", "bin", "blastn")
+	blast := path.Join("..", "..", "vendor", "ncbi-blast-2.7.1+", "bin", "blastn")
 
 	// create the utility struct with paths
 	b := blastExec{
 		f:     f,
-		in:    exPath + ".input.fa",
-		out:   exPath + ".output",
+		in:    path.Join(blastPath, f.ID+".input.fa"),
+		out:   path.Join(blastPath, f.ID+".output"),
 		blast: blast,
 		db:    db,
 	}
 
 	// make sure the addgene db is there
-	if _, err = os.Stat(db); os.IsNotExist(err) {
+	if _, err := os.Stat(db); os.IsNotExist(err) {
 		return fmt.Errorf("failed to find an Addgene database at %s", db)
 	}
 
 	// make sure the blast executable is there
-	if _, err = os.Stat(blast); os.IsNotExist(err) {
+	if _, err := os.Stat(blast); os.IsNotExist(err) {
 		return fmt.Errorf("failed to find a BLAST executable at %s", blast)
 	}
 
 	// create the input file
-	if err = input(b); err != nil {
+	if err := input(b); err != nil {
 		return fmt.Errorf("failed at creating BLAST input file at %s: %v", b.in, err)
 	}
 
 	// execute BLAST on it
-	if err = run(b); err != nil {
+	if err := run(b); err != nil {
 		return fmt.Errorf("failed at executing BLAST: %v", err)
 	}
 
@@ -104,6 +91,8 @@ func BLAST(f *frag.Fragment) error {
 	matches, err := parse(b)
 	if err != nil {
 		return fmt.Errorf("failed to parse BLAST output: %v", err)
+	} else if len(matches) < 1 {
+		return fmt.Errorf("did not find any matches for %s", f.ID)
 	}
 	f.Matches = matches
 
@@ -127,7 +116,6 @@ func input(b blastExec) error {
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -177,13 +165,25 @@ func parse(b blastExec) ([]frag.Match, error) {
 			continue
 		}
 
-		cols := strings.Split(line, " ")
+		// split on white space
+		cols := strings.Fields(line)
+		if len(cols) < 5 {
+			continue
+		}
+
+		// remove the pipe symbol
+		nameSplit := strings.Split(cols[0], "|")
+		if len(nameSplit) < 1 {
+			continue
+		}
+		id := nameSplit[len(nameSplit)-1]
+
 		start, _ := strconv.Atoi(cols[1])
 		end, _ := strconv.Atoi(cols[2])
 
 		// create and append the new match
 		ms = append(ms, frag.Match{
-			ID: cols[0],
+			ID: id,
 			// convert 1-based numbers to 0-based
 			Start: start - 1,
 			End:   end - 1,
