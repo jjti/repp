@@ -29,7 +29,7 @@ func Traverse(f *frag.Fragment) [][]frag.Fragment {
 	})
 
 	// get each fragments minimum number of fragments in an assembly
-	dists := calcFragDistance(f)
+	// dists := calcFragDistance(f)
 
 	return assemblies
 }

@@ -4,7 +4,7 @@ import "testing"
 
 // Test reading of a FASTA file
 func TestRead(t *testing.T) {
-	fragments, err := Read("../../test/fasta.fa")
+	fragments, err := Read("../../test/frag/fasta.fa")
 
 	if err != nil {
 		t.Errorf("failed in Read: %s", err.Error())
