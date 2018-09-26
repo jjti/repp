@@ -1,6 +1,7 @@
 package traverse
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/jjtimmons/decvec/internal/frag"
@@ -26,7 +27,7 @@ func Test_CalcFragDistance(t *testing.T) {
 	f3 := frag.Match{
 		ID:    "3",
 		Start: 13,
-		End:   19,
+		End:   18,
 	}
 	f4 := frag.Match{
 		ID:    "4",
@@ -45,11 +46,20 @@ func Test_CalcFragDistance(t *testing.T) {
 
 	dists := calcFragDistance(&f, 3)
 
-	checkDist := func(key frag.Match, dist int) {
-		if d, _ := dists[key]; d != dist {
-			t.Errorf("failed, dist of %s is %d, not %d", key.ID, d, dist)
-		}
+	// should only be 5 keys
+	if len(dists) != 5 {
+		t.Errorf("failed, distance map has %d keys, should have 5", len(dists))
 	}
 
+	fmt.Printf("%v", dists)
+
+	// make sure the distance in the distance map is only as long as
+	// we expect it to be
+	checkDist := func(key frag.Match, dist int) {
+		if d, _ := dists[key]; d != dist {
+			t.Errorf("failed, distance map's value for %s is %d, not %d", key.ID, d, dist)
+		}
+	}
+	checkDist(f1, 3)
 	checkDist(f5, 1)
 }

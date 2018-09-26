@@ -4,18 +4,10 @@
 package traverse
 
 import (
-	"fmt"
 	"math"
 	"sort"
 
 	"github.com/jjtimmons/decvec/internal/frag"
-)
-
-type nodeType int
-
-const (
-	pcr   nodeType = 1
-	synth nodeType = 2
 )
 
 // Traverse the matches on the target fragment
@@ -51,11 +43,12 @@ func calcFragDistance(target *frag.Fragment, maxSynth int) map[frag.Match]int {
 
 	// add a "sink" to ensure there's a building fragment just past
 	// the end of the scanned range
-	matches := append(target.Matches, frag.Match{
+	sink := frag.Match{
 		ID:    "sink",
 		Start: lastBP + 1,
 		End:   lastBP + 1,
-	})
+	}
+	matches := append(target.Matches, sink)
 
 	// number of fragments distance for this fragment
 	// through to the target bp (2x the seqLength)
@@ -73,8 +66,6 @@ func calcFragDistance(target *frag.Fragment, maxSynth int) map[frag.Match]int {
 			return dist
 		}
 
-		fmt.Printf("%d %d %t", i, f.End, f.End >= lastBP)
-
 		if f.End >= lastBP {
 			dists[f] = 1
 			return 1
@@ -87,17 +78,18 @@ func calcFragDistance(target *frag.Fragment, maxSynth int) map[frag.Match]int {
 			synthsToNext := 0
 			distToNext := m.Start - f.End
 			if distToNext > 0 {
-				synthsToNext = int(math.Floor(float64(distToNext) / float64(maxSynth)))
+				synthsToNext = int(math.Ceil(float64(distToNext) / float64(maxSynth)))
 			}
 			synthCount = append(synthCount, synthsToNext)
 		}
 
 		// find the minimum distance among these options, accounting
 		// for the fact that we need to each synthesis is an additional (unseen) fragment
-		minDistNext := distFor(i+1, matches[i+1]) + synthCount[i+1]
-		for i, f := range matches[i+2:] {
-			if synthCount[i]+distFor(i, f) < minDistNext {
-				minDistNext = synthCount[i] + distFor(i, f)
+		minDistNext := 1 + synthCount[0] + distFor(i+1, matches[i+1])
+		for j, m := range matches[i+1:] {
+			distToFrag := 1 + synthCount[j] + distFor(i+j, m)
+			if distToFrag < minDistNext {
+				minDistNext = distToFrag
 			}
 		}
 
@@ -108,6 +100,9 @@ func calcFragDistance(target *frag.Fragment, maxSynth int) map[frag.Match]int {
 
 	// fill cache
 	distFor(0, matches[0])
+
+	// delete the sink fragment
+	delete(dists, sink)
 
 	return dists
 }
