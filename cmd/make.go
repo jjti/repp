@@ -62,6 +62,15 @@ func handle(e error) {
 }
 
 // makeExec is the root of the make functionality
+//
+// the goal is to find an "optimal" assembly vector with:
+// 	1. fewest number of fragments
+// 	2. cheapest assembly cost ($)
+// and, secondarily:
+//	3. no duplicate end regions between Gibson fragments
+// 	4. no inverted repeats in the junctions
+// 	5. no off-target binding sites in the parent vectors
+//	6. low primer3 penalty scores
 func makeExec(cmd *cobra.Command, args []string) {
 	c := config.NewConfig()
 

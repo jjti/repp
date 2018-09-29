@@ -24,7 +24,7 @@ func (m *Match) Length() int {
 type Fragment struct {
 	// ID is a unique identifier for this fragment
 	//
-	// IDs are set in before being sent to make in FASTA files
+	// IDs are set before being sent to make FASTA files
 	ID string
 
 	// the fragment's sequence
