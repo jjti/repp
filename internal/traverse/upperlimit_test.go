@@ -11,7 +11,7 @@ import (
 // we want to know how far each fragment is the from the "end of the vector",
 // so, looking at each fragment from the start, we can find which will be
 // included in assemblies with less than a certain number of fragments
-func Test_MinDistanceToEnd(t *testing.T) {
+func Test_distanceToEnd(t *testing.T) {
 	f1 := node{
 		start: 8,
 		end:   13,
