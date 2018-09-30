@@ -6,13 +6,13 @@ declarative vector design
 
 1.  Filter out fragments that won't be in assemblies beneath the upper-fragment count limit
 
-2.  Run a DP algo on the nodes to find each node's cost from end
+2.  Run a DP algo on the nodes to find each node's cost from the end
 
     2.1 Fill in synthetic fragments for those that don't overlap with their cheapest next node
 
 3.  Sort all "starting-nodes" by their estimated total assembly cost (low -> high)
 
-4.  Traverse the cheapest assembly and "fill in the node"
+4.  Traverse the cheapest assembly and "fill in the node":
 
     4.1 Create primers if it's going to be PCR'ed
 

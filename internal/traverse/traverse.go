@@ -4,32 +4,33 @@
 package traverse
 
 import (
+	"github.com/jjtimmons/decvec/config"
 	"github.com/jjtimmons/decvec/internal/frag"
 )
 
-// node is a single node within the DP tree for building up
-// the vector from smaller building fragments
-type node struct {
-	// id of the node's source in the database (will be used to avoid off-target primers in it)
-	id string
-
-	// start of this node on the target vector (which has been 3x'ed for BLAST)
-	start int
-
-	// end of this node on the target vector
-	end int
-}
+var (
+	conf = config.NewConfig()
+)
 
 // Traverse the matches on the target fragment
 // and build up a list of possible assemblies
 func Traverse(f *frag.Fragment) {
+	// we search from 1x-2x the vector's sequence length
+	entryBP := len(f.Seq)
+	terminalBP := 2 * len(f.Seq)
+
 	// map fragment Matches to nodes
+	// store whether they're entry or terminal nodes,
+	// based on whether they overlap the first or last bp of
+	// the search range, respectively
 	var nodes []node
 	for _, m := range f.Matches {
 		nodes = append(nodes, node{
-			id:    m.ID,
-			start: m.Start,
-			end:   m.End,
+			id:       m.ID,
+			start:    m.Start,
+			end:      m.End,
+			entry:    m.Start < entryBP,
+			terminal: m.End > terminalBP,
 		})
 	}
 
