@@ -1,7 +1,6 @@
 package traverse
 
 import (
-	"fmt"
 	"testing"
 )
 
@@ -12,9 +11,12 @@ import (
 // so, looking at each node from the start, we can find which will be
 // included in assemblies with less than a certain number of fragments
 func Test_distanceToEnd(t *testing.T) {
+	conf.Synthesis.MaxLength = 2
+
 	f1 := node{
 		start: 8,
 		end:   13,
+		entry: true,
 	}
 	f2 := node{
 		start: 12,
@@ -25,30 +27,32 @@ func Test_distanceToEnd(t *testing.T) {
 		end:   18,
 	}
 	f4 := node{
-		start: 15,
-		end:   20,
+		start:    15,
+		end:      20,
+		terminal: true,
 	}
 	f5 := node{
-		start: 17,
-		end:   21,
+		start:    17,
+		end:      21,
+		terminal: true,
 	}
 	nodes := []node{f1, f2, f3, f4, f5}
 
 	// using a target vector sequence length of 10
-	dists := distanceToEnd(nodes, 10, 3)
+	dists := distanceToEnd(nodes, 10)
 
 	// should only be 5 keys (one for each node)
 	if len(dists) != 5 {
 		t.Errorf("failed, distance map has %d keys, should have 5", len(dists))
 	}
 
-	fmt.Printf("%v", dists)
-
 	// make sure the distance in the distance map is only as long as
 	// we expect it to be
+	testIndex := 0
 	checkDist := func(key node, dist int) {
+		testIndex++
 		if d, _ := dists[key]; d != dist {
-			t.Errorf("failed, distance map's value for %v is %d, not %d", key, d, dist)
+			t.Errorf("failed, distance for test %d is %d, not %d", testIndex, d, dist)
 		}
 	}
 	checkDist(f1, 3)
@@ -56,4 +60,5 @@ func Test_distanceToEnd(t *testing.T) {
 	checkDist(f3, 2)
 	checkDist(f4, 1)
 	checkDist(f5, 1)
+	return
 }

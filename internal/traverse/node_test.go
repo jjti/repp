@@ -5,9 +5,7 @@ import "testing"
 // test ability to calculate synthetic fragment count distance
 // between two fragmennts
 func Test_synthDist(t *testing.T) {
-
 	conf.Synthesis.MaxLength = 2
-
 	n := node{
 		start: 2,
 		end:   4,
@@ -25,4 +23,5 @@ func Test_synthDist(t *testing.T) {
 	assert(n.synthDist(node{start: 5, end: 10}), 1)
 	assert(n.synthDist(node{start: 1, end: 3}), 0)
 	assert(n.synthDist(node{start: 0, end: 1}), 1)
+	return
 }

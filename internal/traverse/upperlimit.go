@@ -8,7 +8,7 @@ import (
 // from the end of the vector, only keep those that are beneath a
 // hard limit in the number of fragments in a vector
 func upperLimit(nodes []node, seqL int) []node {
-	// get each fragments minimum number of fragments in an assembly
+	// get each fragments' minimum number of fragments in an assembly
 	dists := distanceToEnd(nodes, seqL)
 
 	var shortNodes []node
@@ -54,8 +54,9 @@ func distanceToEnd(nodes []node, seqL int) map[node]int {
 	// add a "sink" to ensure there's a building node just past
 	// the end of the scanned range
 	sink := node{
-		start: lastBP + 1,
-		end:   lastBP + 1,
+		start:    lastBP + 1,
+		end:      lastBP + 1,
+		terminal: true,
 	}
 	nodes = append(nodes, sink)
 
@@ -71,27 +72,28 @@ func distanceToEnd(nodes []node, seqL int) map[node]int {
 	// 	this could reasonably be assembled with
 	var distFor func(int, node) int
 	distFor = func(i int, n node) int {
+		// we've already found distance from end of vector, return that
 		if dist, cached := dists[n]; cached {
 			return dist
 		}
 
+		// this node overlaps the end of the vector, return 1 (for it)
 		if n.terminal {
 			dists[n] = 1
 			return 1
 		}
 
 		// find the minimum distance among these options
-		minDistNext := 1 + n.synthDist(nodes[i+1]) + distFor(i+1, nodes[i+1])
+		minDist := 1000000000
 		for j, nn := range nodes[i+1:] {
-			distToFrag := 1 + n.synthDist(nn) + distFor(i+j, nn)
-			if distToFrag < minDistNext {
-				minDistNext = distToFrag
+			if distTo := 1 + n.synthDist(nn) + distFor(i+j+1, nn); distTo < minDist {
+				minDist = distTo
 			}
 		}
 
 		// store in cache in case this is referenced later
-		dists[n] = minDistNext
-		return minDistNext
+		dists[n] = minDist
+		return minDist
 	}
 
 	// fill cache
