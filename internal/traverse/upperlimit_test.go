@@ -5,11 +5,11 @@ import (
 	"testing"
 )
 
-// test the ability to calculate distances from each fragment to the end
-// of a mock fragment sequence range
+// test the ability to calculate distances from each node to the end
+// of a mock node sequence range
 //
-// we want to know how far each fragment is the from the "end of the vector",
-// so, looking at each fragment from the start, we can find which will be
+// we want to know how far each node is the from the "end of the vector",
+// so, looking at each node from the start, we can find which will be
 // included in assemblies with less than a certain number of fragments
 func Test_distanceToEnd(t *testing.T) {
 	f1 := node{
@@ -37,7 +37,7 @@ func Test_distanceToEnd(t *testing.T) {
 	// using a target vector sequence length of 10
 	dists := distanceToEnd(nodes, 10, 3)
 
-	// should only be 5 keys (one for each fragment)
+	// should only be 5 keys (one for each node)
 	if len(dists) != 5 {
 		t.Errorf("failed, distance map has %d keys, should have 5", len(dists))
 	}
