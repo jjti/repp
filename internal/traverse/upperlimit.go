@@ -38,19 +38,19 @@ func upperLimit(nodes []node, seqL int) []node {
 	return shortNodes
 }
 
-// distanceToEnd is for calculating each fragment's minimum distance to
+// distanceToEnd is for calculating each node's minimum distance to
 // a vector "endpoint". used to weed out fragments that are too far
 // away from the end of the target
 //
-// for each building fragment, find the minimum number of fragments
+// for each building node, find the minimum number of fragments
 // needed to get from it to a "last-bp" (2x the length of the target
-// fragment's sequence length)
+// node's sequence length)
 //
 // maxSynth is the maximum length of a synthesized stretch of DNA
 func distanceToEnd(nodes []node, seqL int, maxSynth int) map[node]int {
 	// last bp within range being scanned
 	lastBP := 2 * seqL
-	// map from a fragment to the minimum number of fragments
+	// map from a node to the minimum number of fragments
 	// needed in an assembly including it
 	dists := make(map[node]int)
 
@@ -59,7 +59,7 @@ func distanceToEnd(nodes []node, seqL int, maxSynth int) map[node]int {
 		return nodes[i].start < nodes[j].start
 	})
 
-	// add a "sink" to ensure there's a building fragment just past
+	// add a "sink" to ensure there's a building node just past
 	// the end of the scanned range
 	sink := node{
 		start: lastBP + 1,
@@ -67,13 +67,13 @@ func distanceToEnd(nodes []node, seqL int, maxSynth int) map[node]int {
 	}
 	nodes = append(nodes, sink)
 
-	// number of fragments distance for this fragment
+	// number of fragments distance for this node
 	// through to the target bp (2x the seqLength)
 	//
 	// if dist has been calculated already
 	// 	return that
-	// else if this fragment ends after the lastBP,
-	// 	return 1 and store 1 to the cache for this fragment
+	// else if this node ends after the lastBP,
+	// 	return 1 and store 1 to the cache for this node
 	// else
 	//	return the min-distance from this to all fragments
 	// 	this could reasonably be assembled with
@@ -89,7 +89,7 @@ func distanceToEnd(nodes []node, seqL int, maxSynth int) map[node]int {
 		}
 
 		// calculate how many synthesis fragments are necessary to get
-		// from this fragment to each fragment after it
+		// from this node to each node after it
 		var synthCount []int
 		for _, n := range nodes[i+1:] {
 			synthsToNext := 0
@@ -101,7 +101,7 @@ func distanceToEnd(nodes []node, seqL int, maxSynth int) map[node]int {
 		}
 
 		// find the minimum distance among these options, accounting
-		// for the fact that we need to each synthesis is an additional (unseen) fragment
+		// for the fact that we need to each synthesis is an additional (unseen) node
 		minDistNext := 1 + synthCount[0] + distFor(i+1, nodes[i+1])
 		for j, m := range nodes[i+1:] {
 			distToFrag := 1 + synthCount[j] + distFor(i+j, m)
@@ -118,7 +118,7 @@ func distanceToEnd(nodes []node, seqL int, maxSynth int) map[node]int {
 	// fill cache
 	distFor(0, nodes[0])
 
-	// delete the sink fragment
+	// delete the sink node
 	delete(dists, sink)
 
 	return dists
