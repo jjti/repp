@@ -1,7 +1,6 @@
 package traverse
 
 import (
-	"math"
 	"sort"
 
 	"github.com/jjtimmons/decvec/config"
@@ -18,19 +17,19 @@ func upperLimit(nodes []node, seqL int) []node {
 	dists := distanceToEnd(nodes, seqL, c.Synthesis.MaxLength)
 
 	var shortNodes []node
-	for m, dist := range dists {
+	for n, dist := range dists {
 		// if it overlaps with the start of the search range
 		// 	compare it against the max-distance from the end
 		// else
 		// 	check if it's max-distance - 1 from end and remove
 		// 	it if it's not
-		if m.start < seqL {
+		if n.entry {
 			if dist < c.Fragments.MaxCount {
-				shortNodes = append(shortNodes, m)
+				shortNodes = append(shortNodes, n)
 			}
 		} else {
 			if dist+1 < c.Fragments.MaxCount {
-				shortNodes = append(shortNodes, m)
+				shortNodes = append(shortNodes, n)
 			}
 		}
 	}
@@ -78,47 +77,34 @@ func distanceToEnd(nodes []node, seqL int, maxSynth int) map[node]int {
 	//	return the min-distance from this to all fragments
 	// 	this could reasonably be assembled with
 	var distFor func(int, node) int
-	distFor = func(i int, f node) int {
-		if dist, cached := dists[f]; cached {
+	distFor = func(i int, n node) int {
+		if dist, cached := dists[n]; cached {
 			return dist
 		}
 
-		if f.end >= lastBP {
-			dists[f] = 1
+		if n.terminal {
+			dists[n] = 1
 			return 1
 		}
 
-		// calculate how many synthesis fragments are necessary to get
-		// from this node to each node after it
-		var synthCount []int
-		for _, n := range nodes[i+1:] {
-			synthsToNext := 0
-			distToNext := n.start - f.end
-			if distToNext > 0 {
-				synthsToNext = int(math.Ceil(float64(distToNext) / float64(maxSynth)))
-			}
-			synthCount = append(synthCount, synthsToNext)
-		}
-
-		// find the minimum distance among these options, accounting
-		// for the fact that we need to each synthesis is an additional (unseen) node
-		minDistNext := 1 + synthCount[0] + distFor(i+1, nodes[i+1])
-		for j, m := range nodes[i+1:] {
-			distToFrag := 1 + synthCount[j] + distFor(i+j, m)
+		// find the minimum distance among these options
+		minDistNext := 1 + n.synthDist(nodes[i+1]) + distFor(i+1, nodes[i+1])
+		for j, nn := range nodes[i+1:] {
+			distToFrag := 1 + n.synthDist(nn) + distFor(i+j, nn)
 			if distToFrag < minDistNext {
 				minDistNext = distToFrag
 			}
 		}
 
 		// store in cache in case this is referenced later
-		dists[f] = minDistNext
+		dists[n] = minDistNext
 		return minDistNext
 	}
 
 	// fill cache
 	distFor(0, nodes[0])
 
-	// delete the sink node
+	// remove the sink node
 	delete(dists, sink)
 
 	return dists
