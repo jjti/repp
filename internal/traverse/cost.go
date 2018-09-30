@@ -2,8 +2,6 @@ package traverse
 
 import (
 	"sort"
-
-	"github.com/jjtimmons/decvec/config"
 )
 
 // cost is for building up the minimum assembly cost of each node
@@ -20,7 +18,7 @@ import (
 // it and the end of the vector
 func cost(nodes []node) []node {
 	// get the cost per bp of primer DNA
-	pCost := config.NewConfig().PCR.BPCost
+	pCost := conf.PCR.BPCost
 
 	// sort by start index
 	sort.Slice(nodes, func(i, j int) bool {
