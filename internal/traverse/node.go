@@ -26,27 +26,59 @@ type node struct {
 	// terminal signifies whether this node is a valid terminal node -- ie whether it overlaps
 	// with the last bp in the assembly
 	terminal bool
+
+	// next is the index of the next fragment after this one, that's the cheapest among
+	// the available next node options
+	next int
+}
+
+// distToNext returns the number of bps between the end of the earlier of this
+// and the other fragment and the start of the other
+func (n *node) distTo(other node) int {
+	dist := 0
+
+	// this fragment is before the other
+	if n.start < other.start {
+		dist = other.start - n.end
+	} else {
+		dist = n.start - other.end
+	}
+
+	return dist
 }
 
 // synthDist returns the number of synthesized fragments
 // that would need to be created between one node and another
 // if the two were to be joined, with no existing fragments in between, in an assembly
 func (n *node) synthDist(other node) int {
-	distToNext := 0
+	dist := n.distTo(other)
 
-	// this fragment is before the other
-	if n.start < other.start {
-		distToNext = other.start - n.end
-	} else {
-		distToNext = n.start - other.end
-	}
-
-	if distToNext > 0 {
+	if dist > 0 {
 		// split up the distance between them by the maximum synthesized
 		// fragment size
-		return int(math.Ceil(float64(distToNext) / float64(conf.Synthesis.MaxLength)))
+		return int(math.Ceil(float64(dist) / float64(conf.Synthesis.MaxLength)))
 	}
 
 	// they already overlap
 	return 0
+}
+
+// costTo calculates the $ amount needed to get from this fragment
+// to the other node passed, either by PCR or synthesis
+//
+// PCR is of course preferred if we can add homology between this and
+// the other fragment with PCR homology arms alone
+//
+// Otherwise we find the total synthesis distance between this and
+// the other fragmetn and divide that by the cost per bp of synthesized DNA
+func (n *node) costTo(other node) float32 {
+	dist := n.distTo(other)
+
+	if dist < 20 {
+		// there's already overlap between this node and the one being tested
+		// or little enough of a distance for it to be added via PCR
+		return 60 * conf.PCR.BPCost
+	}
+
+	return float32(dist) * conf.Synthesis.BPCost
 }

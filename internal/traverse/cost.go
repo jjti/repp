@@ -16,10 +16,7 @@ import (
 // But if the node is two "nodes" away from the end of the target sequence,
 // it's its own cost to prepare plus that of the other nodes in between
 // it and the end of the vector
-func cost(nodes []node) []node {
-	// get the cost per bp of primer DNA
-	pCost := conf.PCR.BPCost
-
+func cost(nodes []node) map[node]float32 {
 	// sort by start index
 	sort.Slice(nodes, func(i, j int) bool {
 		return nodes[i].start < nodes[j].start
@@ -40,18 +37,26 @@ func cost(nodes []node) []node {
 		// if this overlaps with the end of the vector, return
 		if n.terminal {
 			// guestimate a fixed cost to PCR this fragment and cache
-			nCost := pCost * 60
+			nCost := conf.PCR.BPCost * 60
 			costs[n] = nCost
 			return nCost
 		}
 
-		// find the
-
-		return 0
+		// for each node that's further along in the list of nodes,
+		// estimate the cost of getting from this to those
+		minCost := n.costTo(nodes[i+1])
+		for j, nn := range nodes[i+1:] {
+			if costTo := n.costTo(nn) + costOf(i+j+1, nn); costTo < minCost {
+				minCost = costTo
+				n.next = i + j + 1
+			}
+		}
+		costs[n] = minCost
+		return minCost
 	}
 
 	// fill costs
 	costOf(0, nodes[0])
 
-	return nodes
+	return costs
 }
