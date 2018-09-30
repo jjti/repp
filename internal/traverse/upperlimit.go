@@ -2,19 +2,14 @@ package traverse
 
 import (
 	"sort"
-
-	"github.com/jjtimmons/decvec/config"
 )
 
 // upperLimit is for removing all fragments that are greater than the target distance
 // from the end of the vector, only keep those that are beneath a
 // hard limit in the number of fragments in a vector
 func upperLimit(nodes []node, seqL int) []node {
-	// get the config to figure out the maximum length of DNA synthesis
-	c := config.NewConfig()
-
 	// get each fragments minimum number of fragments in an assembly
-	dists := distanceToEnd(nodes, seqL, c.Synthesis.MaxLength)
+	dists := distanceToEnd(nodes, seqL)
 
 	var shortNodes []node
 	for n, dist := range dists {
@@ -24,11 +19,11 @@ func upperLimit(nodes []node, seqL int) []node {
 		// 	check if it's max-distance - 1 from end and remove
 		// 	it if it's not
 		if n.entry {
-			if dist < c.Fragments.MaxCount {
+			if dist < conf.Fragments.MaxCount {
 				shortNodes = append(shortNodes, n)
 			}
 		} else {
-			if dist+1 < c.Fragments.MaxCount {
+			if dist+1 < conf.Fragments.MaxCount {
 				shortNodes = append(shortNodes, n)
 			}
 		}
@@ -44,9 +39,7 @@ func upperLimit(nodes []node, seqL int) []node {
 // for each building node, find the minimum number of fragments
 // needed to get from it to a "last-bp" (2x the length of the target
 // node's sequence length)
-//
-// maxSynth is the maximum length of a synthesized stretch of DNA
-func distanceToEnd(nodes []node, seqL int, maxSynth int) map[node]int {
+func distanceToEnd(nodes []node, seqL int) map[node]int {
 	// last bp within range being scanned
 	lastBP := 2 * seqL
 	// map from a node to the minimum number of fragments
