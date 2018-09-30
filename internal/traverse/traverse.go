@@ -10,7 +10,7 @@ import (
 // node is a single node within the DP tree for building up
 // the vector from smaller building fragments
 type node struct {
-	// node's id in the database (will be used to avoid off-target primers in it)
+	// id of the node's source in the database (will be used to avoid off-target primers in it)
 	id string
 
 	// start of this node on the target vector (which has been 3x'ed for BLAST)
@@ -33,6 +33,7 @@ func Traverse(f *frag.Fragment) {
 		})
 	}
 
-	// remove nodes that will never be in an assembly beneath the upper-limi
+	// remove nodes that will never be in an assembly
+	// beneath the upper-limit in settings and from the CLI
 	// shortNodes := upperLimit(nodes, len(f.Seq))
 }
