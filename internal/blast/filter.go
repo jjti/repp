@@ -11,20 +11,21 @@ import (
 //
 // propertizing fragment matches means removing those that are completely
 // self-contained in other fragments: the larger of the available fragments
-// will be the better one, since it covers a greater region
-func filter(f *frag.Fragment) {
+// will be the better one, since it covers a greater region and will almost
+// always be preferable to the smaller one
+func filter(matches []frag.Match, from int, to int) []frag.Match {
 	// sort matches by their start index
 	// if they're same, put the larger one first
-	sort.Slice(f.Matches, func(i, j int) bool {
-		if f.Matches[i].Start != f.Matches[j].Start {
-			return f.Matches[i].Start < f.Matches[j].Start
+	sort.Slice(matches, func(i, j int) bool {
+		if matches[i].Start != matches[j].Start {
+			return matches[i].Start < matches[j].Start
 		}
-		return f.Matches[i].Length() > f.Matches[j].Length()
+		return matches[i].Length() > matches[j].Length()
 	})
 
 	// only include those that aren't encompassed in the one before it
 	var properMatches []frag.Match
-	for _, m := range f.Matches {
+	for _, m := range matches {
 		lastMatch := len(properMatches) - 1
 		if lastMatch < 0 || m.End > properMatches[lastMatch].End {
 			properMatches = append(properMatches, m)
@@ -32,22 +33,19 @@ func filter(f *frag.Fragment) {
 	}
 
 	// remove fragments that start end before 1x the target vector sequence's length
-	start := len(f.Seq)
 	var beforeEnd []frag.Match
 	for _, m := range properMatches {
-		if m.End > start {
+		if m.End > from {
 			beforeEnd = append(beforeEnd, m)
 		}
 	}
 
 	// remove fragments that start past 2x the target vector sequence's length
-	end := 2 * len(f.Seq)
 	var afterStart []frag.Match
 	for _, m := range beforeEnd {
-		if m.Start < end {
+		if m.Start < to {
 			afterStart = append(afterStart, m)
 		}
 	}
-
-	f.Matches = afterStart
+	return afterStart
 }

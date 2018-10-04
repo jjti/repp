@@ -25,3 +25,31 @@ func Test_synthDist(t *testing.T) {
 	assert(n.synthDist(node{start: 0, end: 1}), 1)
 	return
 }
+
+// test the ability to get the cost between two fragments
+func Test_costTo(t *testing.T) {
+	n1 := node{
+		start: 10,
+		end:   14,
+	}
+	n2 := node{
+		start: 50,
+		end:   60,
+	}
+	n3 := node{
+		start: 100,
+		end:   120,
+	}
+	n4 := node{
+		start: 119,
+		end:   130,
+	}
+
+	if n1.costTo(n3) < n1.costTo(n2) {
+		t.Error()
+	}
+
+	if n3.costTo(n4) < n2.costTo(n3) {
+		t.Error("PCR should be cheaper than synthesis")
+	}
+}

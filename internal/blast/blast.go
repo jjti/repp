@@ -36,6 +36,51 @@ type blastExec struct {
 	db string
 }
 
+// BLAST the passed Fragment against a set from the command line and create
+// matches for those that are long enough
+//
+// Accepts the fragment to blast against the db and the path to the db on
+// the local fs
+func BLAST(f *frag.Fragment, db string) ([]frag.Match, error) {
+	blast := path.Join("..", "..", "vendor", "ncbi-blast-2.7.1+", "bin", "blastn")
+	b := blastExec{
+		f:     f,
+		in:    path.Join(blastPath, f.ID+".input.fa"),
+		out:   path.Join(blastPath, f.ID+".output"),
+		blast: blast,
+		db:    db,
+	}
+
+	// make sure the addgene db is there
+	if _, err := os.Stat(db); os.IsNotExist(err) {
+		return nil, fmt.Errorf("failed to find an Addgene database at %s", db)
+	}
+
+	// make sure the blast executable is there
+	if _, err := os.Stat(blast); os.IsNotExist(err) {
+		return nil, fmt.Errorf("failed to find a BLAST executable at %s", blast)
+	}
+
+	// create the input file
+	if err := b.create(); err != nil {
+		return nil, fmt.Errorf("failed at creating BLAST input file at %s: %v", b.in, err)
+	}
+
+	// execute BLAST on it
+	if err := b.run(); err != nil {
+		return nil, fmt.Errorf("failed at executing BLAST: %v", err)
+	}
+
+	// parse the BLAST output file to Matches for the Fragment
+	matches, err := b.parse()
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse BLAST output: %v", err)
+	} else if len(matches) < 1 {
+		return nil, fmt.Errorf("did not find any matches for %s", f.ID)
+	}
+	return matches, nil
+}
+
 // input is for creating an input file for BLAST
 // return the path to the file and an error if there was one
 func (b *blastExec) create() error {
@@ -140,51 +185,4 @@ func init() {
 	if err != nil {
 		log.Fatalf("failed to create a BLAST dir: %v", err)
 	}
-}
-
-// BLAST the passed Fragment against a set from the command line and create
-// matches for those that are long enough
-//
-// Accepts the fragment to blast against the db and the path to the db on
-// the local fs
-func BLAST(f *frag.Fragment, db string) error {
-	blast := path.Join("..", "..", "vendor", "ncbi-blast-2.7.1+", "bin", "blastn")
-	b := blastExec{
-		f:     f,
-		in:    path.Join(blastPath, f.ID+".input.fa"),
-		out:   path.Join(blastPath, f.ID+".output"),
-		blast: blast,
-		db:    db,
-	}
-
-	// make sure the addgene db is there
-	if _, err := os.Stat(db); os.IsNotExist(err) {
-		return fmt.Errorf("failed to find an Addgene database at %s", db)
-	}
-
-	// make sure the blast executable is there
-	if _, err := os.Stat(blast); os.IsNotExist(err) {
-		return fmt.Errorf("failed to find a BLAST executable at %s", blast)
-	}
-
-	// create the input file
-	if err := b.create(); err != nil {
-		return fmt.Errorf("failed at creating BLAST input file at %s: %v", b.in, err)
-	}
-
-	// execute BLAST on it
-	if err := b.run(); err != nil {
-		return fmt.Errorf("failed at executing BLAST: %v", err)
-	}
-
-	// parse the BLAST output file to Matches for the Fragment
-	matches, err := b.parse()
-	if err != nil {
-		return fmt.Errorf("failed to parse BLAST output: %v", err)
-	} else if len(matches) < 1 {
-		return fmt.Errorf("did not find any matches for %s", f.ID)
-	}
-	f.Matches = matches
-
-	return nil
 }

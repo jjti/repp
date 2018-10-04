@@ -48,15 +48,15 @@ func TestFilter(t *testing.T) {
 		},
 	}
 
-	filter(&f)
+	newMatches := filter(f.Matches, 24, 48)
 
 	// make sure they're gone
-	if len(f.Matches) != 3 {
-		t.Errorf("%d matches found on test fragment, 3 expected: %v", len(f.Matches), f.Matches)
+	if len(newMatches) != 3 {
+		t.Errorf("%d matches found on test fragment, 3 expected: %v", newMatches, f.Matches)
 	}
 
 	// make sure m2 has been removed
-	for _, m := range f.Matches {
+	for _, m := range newMatches {
 		if m.ID == "m2" {
 			t.Error("m2 found in resulting matches, should have been removed")
 		}
