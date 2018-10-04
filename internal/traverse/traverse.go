@@ -36,5 +36,5 @@ func Traverse(f *frag.Fragment) {
 
 	// remove nodes that will never be in an assembly
 	// beneath the upper-limit in settings and from the CLI
-	// shortNodes := upperLimit(nodes, len(f.Seq))
+	// shortNodes := limit(nodes, len(f.Seq))
 }

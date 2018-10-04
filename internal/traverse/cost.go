@@ -14,7 +14,7 @@ import (
 // the cost per bp of DNA times the summed length of both primers
 //
 // But if the node is two "nodes" away from the end of the target sequence,
-// it's its own cost to prepare plus that of the other nodes in between
+// it is its own cost to prepare plus that of the other nodes in between
 // it and the end of the vector
 func cost(nodes []node) map[node]float32 {
 	// sort by start index
@@ -24,7 +24,7 @@ func cost(nodes []node) map[node]float32 {
 
 	costs := make(map[node]float32)
 
-	// costOf is for finding the minimum cost of a single node
+	// costOf is for finding the minimum cost of a single node.
 	// its index is used to quickly figure out which fragments
 	// could potentially come after this one
 	var costOf func(int, node) float32

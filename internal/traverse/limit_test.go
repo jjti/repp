@@ -10,7 +10,7 @@ import (
 // we want to know how far each node is the from the "end of the vector",
 // so, looking at each node from the start, we can find which will be
 // included in assemblies with less than a certain number of fragments
-func Test_distanceToEnd(t *testing.T) {
+func Test_distance(t *testing.T) {
 	conf.Synthesis.MaxLength = 2
 
 	f1 := node{
@@ -39,7 +39,7 @@ func Test_distanceToEnd(t *testing.T) {
 	nodes := []node{f1, f2, f3, f4, f5}
 
 	// using a target vector sequence length of 10
-	dists := distanceToEnd(nodes, 10)
+	dists := distance(nodes, 10)
 
 	// should only be 5 keys (one for each node)
 	if len(dists) != 5 {
