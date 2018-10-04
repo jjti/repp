@@ -17,6 +17,9 @@ import (
 	"github.com/jjtimmons/decvec/internal/frag"
 )
 
+// path to the blast directory for putting results into
+var blastPath string
+
 // blastExec is a small utility function for executing BLAST
 // on a fragment
 type blastExec struct {
@@ -29,7 +32,7 @@ type blastExec struct {
 	// the path the output BLAST file
 	out string
 
-	// the path to the blast executable
+	// the path to the blastn executable
 	blast string
 
 	// path to the database to blast against
@@ -152,12 +155,15 @@ func (b *blastExec) parse() ([]frag.Match, error) {
 			continue
 		}
 
+		// the full id of the row
+		idRow := strings.Replace(cols[0], ">", "", -1)
+
 		// remove the pipe symbol
-		nameSplit := strings.Split(cols[0], "|")
-		if len(nameSplit) < 1 {
+		idSplit := strings.Split(idRow, "|")
+		if len(idSplit) < 1 {
 			continue
 		}
-		id := nameSplit[len(nameSplit)-1]
+		id := idSplit[len(idSplit)-1]
 
 		start, _ := strconv.Atoi(cols[1])
 		end, _ := strconv.Atoi(cols[2])
@@ -169,14 +175,53 @@ func (b *blastExec) parse() ([]frag.Match, error) {
 			Start: start - 1,
 			End:   end - 1,
 			// brittle, but checking for circular in entry's id
-			Circular: strings.Contains(id, "(circular)")
+			Circular: strings.Contains(id, "(circular)"),
+			// for later querying when checking for off-targets
+			Template: idRow,
 		})
 	}
 	return ms, nil
 }
 
-// path to the blast directory for putting results into
-var blastPath string
+// Query the BLAST db to get the template sequence (needed to avoid
+// off-target primers later on)
+func Query(entry string, db string) (string, error) {
+	// path to the blastcmd binary
+	blastcmd := path.Join("..", "..", "vendor", "ncbi-blast-2.7.1+", "bin", "blastcmd")
+	// path to the output sequence file
+	out := path.Join(blastPath, entry+".query")
+
+	// make a blast command
+	queryCmd := exec.Command(
+		blastcmd,
+		"-task", "blastn",
+		"-db", db,
+		"-dbtype", "nucl",
+		"-entry", entry,
+		"-out", out,
+		// %s means sequence data (without defline)
+		"-outfmt", "%s",
+	)
+
+	var stderr bytes.Buffer
+	queryCmd.Stderr = &stderr
+
+	// query the blast db
+	err := queryCmd.Run()
+	if err != nil {
+		return "", fmt.Errorf("failed to execute blastcmd for entry %s: %v: %s", entry, err, stderr.String())
+	}
+
+	// read the file into a sequence
+	file, err := ioutil.ReadFile(out)
+	if err != nil {
+		return "", fmt.Errorf("failed to read blastcmd output file for entry %s: %v", entry, err)
+	}
+	fileS := string(file)
+
+	// return the sequence associated with the fragment in the DB
+	return fileS, nil
+}
 
 // init ensures there's a blast subdirectory in the binary's execution enviornment
 // for the results this is about to create
