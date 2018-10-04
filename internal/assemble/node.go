@@ -24,8 +24,8 @@ type node struct {
 	// with the last bp in the assembly
 	terminal bool
 
-	// next is the index of the next fragment after this one, that's the cheapest among
-	// the available next node options
+	// next is the index of the next fragment after this one in the minimum-cost-assembly
+	// involving this node
 	next int
 }
 
