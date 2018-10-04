@@ -7,7 +7,7 @@ import (
 )
 
 // filter is for "propertizing" the matches from BLAST and removing
-// those that start past 2x the target sequence's length
+// those that are outside the range of overlap we're testing
 //
 // propertizing fragment matches means removing those that are completely
 // self-contained in other fragments: the larger of the available fragments

@@ -29,7 +29,7 @@ declarative vector design
 
                 4.2.2.1 Move to parent node and try the next cheapest path
 
-5)  If there's more nodes in the traversed-filled node than the upper-limit:
+5.  If there's more nodes in the traversed-filled node than the upper-limit:
 
     5.1 Try to merge fragments into synthetic vectors
 
@@ -38,3 +38,13 @@ declarative vector design
         5.1.2 If still cheapest, return the assembly
 
         5.1.3 If it's more expensive, move to next cheapest from #3 and repeat
+
+## List of things that need to be considered when creating building fragments
+
+1.  Don't create primers for a fragment if they have off-targets in the parent fragment
+
+2.  Don't create primers that have an excessive primer3 penalty
+
+3.  Don't create synthetic fragments that have high synthesis complexities
+
+4.  Don't create fragments that have off-target end-homology

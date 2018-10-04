@@ -1,11 +1,11 @@
-package traverse
+package assemble
 
 import (
 	"sort"
 )
 
-// limit is for removing all fragments that cannot reasonably be included in an
-// assembly with less than the upper limit for the number of fragments
+// limit is for removing all fragments that cannot be included in any
+// assembly with less than the upper limit on the number of fragments
 func limit(nodes []node, seqL int) []node {
 	// get each fragments' minimum number of fragments in an assembly
 	dists := distance(nodes, seqL)

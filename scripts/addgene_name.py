@@ -6,10 +6,10 @@ os.chdir(os.path.join("assets", "addgene", "repo"))
 """
 using name scheme here: https://ncbi.github.io/cxx-toolkit/pages/ch_demo#ch_demo.T5
 """
-seen_names = set()
+seen_ids = set()
 count = 0
 
-for f in sorted(os.listdir("."))[:10]:
+for f in sorted(os.listdir("."))[:100]:
     if ".DS" in f:
         continue
 
@@ -25,28 +25,32 @@ for f in sorted(os.listdir("."))[:10]:
         line = file_lines[name_line_index]
         line = line.replace(">", "")
 
-        # addgene index
-        index = f.split("_")[0]
-
-        new_line = ">gnl|addgene|" + index.replace("\n", "")
-
         # is it circular? if yes, we're going to double the sequence
         circular = "circular" in line
 
-        # add a secondary index
+        # addgene id
+        id = f.split("_")[0]
+
         if not circular:
-            new_line += "." + str(name_line_index / 2 + 1)
+            id += "." + str(name_line_index / 2 + 1)
+        else:
+            # brittle, but am storing whether it was circular in the FASTA ID
+            id += "(circular)"
 
-        new_line += "\n"
+        id = id.replace("\n", "")
 
-        if new_line in seen_names:
+        id_line = ">gnl|addgene|" + id + "\n"
+
+        print id_line
+
+        if id_line in seen_ids:
             duplicate_entry = True
             break
         else:
-            seen_names.add(new_line)
+            seen_ids.add(id_line)
 
         # update its name
-        file_lines[name_line_index] = new_line
+        file_lines[name_line_index] = id_line
 
         # double seq if circular to match sequence across zero-index
         if circular:
@@ -55,8 +59,6 @@ for f in sorted(os.listdir("."))[:10]:
             ).replace("\n", "")
 
     # write it back
-    # if not duplicate_entry:
-    # with open(f, "w") as new_file:
-    #     new_file.writelines(file_lines)
-
-    print "".join(file_lines)
+    if not duplicate_entry:
+        with open(f, "w") as new_file:
+            new_file.writelines(file_lines)
