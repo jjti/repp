@@ -1,5 +1,5 @@
 // Package frag is for the models and io of Fragments.
-// The target and the building pieces are all Fragments
+// The target and the building sequences are all Fragments
 package frag
 
 // Fragment is a single potential building block used to
