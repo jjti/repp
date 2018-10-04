@@ -19,7 +19,7 @@ var (
 
 // primer is a single primer used to ampligy a parent fragment
 type primer struct {
-	// seq of the primer (in 5' to 3' direction)
+	// seq of the primer (In 5' to 3' direction)
 	seq string
 
 	// strand of the primer; true if template, false if complement
@@ -44,7 +44,7 @@ type PCR struct {
 	// Seq of this fragment
 	Seq string
 
-	// Entry of this fragment in the DB that it came from
+	// Entry of this fragment In the DB that it came from
 	// Used to look for off-targets
 	Entry string
 
@@ -61,13 +61,13 @@ type PCR struct {
 // p3Exec is a utility struct for executing primer3 to create primers for a part
 type p3exec struct {
 	// fragment that we're trying to create primers for
-	frag *PCR
+	Frag *PCR
 
 	// input file
-	in string
+	In string
 
 	// output file
-	out string
+	Out string
 }
 
 // input is for making the primer3 input settings file
@@ -78,18 +78,19 @@ func (p *p3exec) input() error {
 		"PRIMER_NUM_RETURN":                    "1",
 		"PRIMER_TASK":                          "pick_cloning_primers",
 		"PRIMER_PICK_ANYWAY":                   "1",
-		"SEQUENCE_TEMPLATE":                    p.frag.Seq,
-		"SEQUENCE_INCLUDED_REGION":             fmt.Sprintf("0,%d", len(p.frag.Seq)),
-		"PRIMER_PRODUCT_SIZE_RANGE":            fmt.Sprintf("%d,%d", len(p.frag.Seq), len(p.frag.Seq)+1),
+		"SEQUENCE_TEMPLATE":                    p.Frag.Seq,
+		"SEQUENCE_INCLUDED_REGION":             fmt.Sprintf("0,%d", len(p.Frag.Seq)),
+		"PRIMER_PRODUCT_SIZE_RANGE":            fmt.Sprintf("%d-%d", len(p.Frag.Seq), len(p.Frag.Seq)+1),
 	}
 
 	var fileContents string
 	for key, val := range settings {
 		fileContents += fmt.Sprintf("%s=%s\n", key, val)
 	}
+	fileContents += "=" // required
 
 	// write to the fs
-	inputFile, err := os.Create(p.in)
+	inputFile, err := os.Create(p.In)
 	if err != nil {
 		return fmt.Errorf("failed to create primer3 input file %v: ", err)
 	}
@@ -105,8 +106,8 @@ func (p *p3exec) input() error {
 func (p *p3exec) run() error {
 	p3Cmd := exec.Command(
 		p3Path,
-		p.in,
-		"-output", p.out,
+		p.In,
+		"-output", p.Out,
 		"-strict_tags",
 	)
 
@@ -128,7 +129,7 @@ func (p *p3exec) parse() ([]primer, error) {
 }
 
 // SetPrimers creates primers on a PCR fragment and returns an error if
-//	1. there are off-targets in the primers
+//	1. there are off-targets In the primers
 //	2. the primers have an unacceptably high primer3 penalty score
 func (p *PCR) SetPrimers() error {
 	handle := func(err error) {
@@ -138,9 +139,9 @@ func (p *PCR) SetPrimers() error {
 	}
 
 	exec := p3exec{
-		frag: p,
-		in:   path.Join(p3Dir, p.ID+".in"),
-		out:  path.Join(p3Dir, p.ID+".out"),
+		Frag: p,
+		In:   path.Join(p3Dir, p.ID+".in"),
+		Out:  path.Join(p3Dir, p.ID+".out"),
 	}
 
 	// make input file
@@ -159,11 +160,12 @@ func (p *PCR) SetPrimers() error {
 	return nil
 }
 
-// create the primer3 path, error out if we can't find the executable or the config folder
+// create the primer3 path, error Out if we can't find the executable or the config folder
 func init() {
 	// make sure the primer3 binary and settings folder are defined
-	p3Path = filepath.Join("..", "..", "vendor", "primer3-2.4.0", "primer3_core")
-	p3Conf = filepath.Join("..", "..", "vendor", "primer3-2.4.0", "primer3_config") + "/" // TODO: fix this forward slash at the end shite
+	p3Path = filepath.Join("..", "..", "vendor", "primer3-2.4.0", "src", "primer3_core")
+	// TODO: fix this forward slash at the end using an OS-specific path separator
+	p3Conf = filepath.Join("..", "..", "vendor", "primer3-2.4.0", "src", "primer3_config") + "/"
 	_, err := os.Stat(p3Path)
 	if err != nil {
 		log.Fatalf("failed to locate primer3 executable: %v", err)
@@ -175,7 +177,7 @@ func init() {
 	}
 
 	// make a folder for primer3 io
-	p3Dir := filepath.Join("..", "..", "bin", "primer3")
+	p3Dir = filepath.Join("..", "..", "bin", "primer3")
 	err = os.MkdirAll(p3Dir, os.ModePerm)
 	if err != nil {
 		log.Fatalf("failed to create a primer3 outut dir: %v", err)

@@ -18,7 +18,7 @@ import (
 )
 
 // path to the blast directory for putting results into
-var blastPath string
+var blastDir string
 
 // blastExec is a small utility function for executing BLAST
 // on a fragment
@@ -48,8 +48,8 @@ func BLAST(f *frag.Fragment, db string) ([]frag.Match, error) {
 	blast := path.Join("..", "..", "vendor", "ncbi-blast-2.7.1+", "bin", "blastn")
 	b := blastExec{
 		f:     f,
-		in:    path.Join(blastPath, f.ID+".input.fa"),
-		out:   path.Join(blastPath, f.ID+".output"),
+		in:    path.Join(blastDir, f.ID+".input.fa"),
+		out:   path.Join(blastDir, f.ID+".output"),
 		blast: blast,
 		db:    db,
 	}
@@ -191,7 +191,7 @@ func Query(entry string, db string) (string, error) {
 	// path to the blastcmd binary
 	blastcmd := path.Join("..", "..", "vendor", "ncbi-blast-2.7.1+", "bin", "blastcmd")
 	// path to the output sequence file
-	out := path.Join(blastPath, entry+".query")
+	out := path.Join(blastDir, entry+".query")
 
 	// make a blast command
 	queryCmd := exec.Command(
@@ -228,8 +228,8 @@ func Query(entry string, db string) (string, error) {
 // init ensures there's a blast subdirectory in the binary's execution enviornment
 // for the results this is about to create
 func init() {
-	blastPath = filepath.Join("..", "..", "bin", "blast")
-	err := os.MkdirAll(blastPath, os.ModePerm)
+	blastDir = filepath.Join("..", "..", "bin", "blast")
+	err := os.MkdirAll(blastDir, os.ModePerm)
 	if err != nil {
 		log.Fatalf("failed to create a BLAST dir: %v", err)
 	}
