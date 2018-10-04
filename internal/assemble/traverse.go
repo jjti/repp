@@ -11,5 +11,10 @@ func traverse(nodes []node) {
 	costs := cost(nodes)
 
 	// find the assembly with the minimum estimated cost
+	// first set the starting node as one that begins on the first entry bp
+	// and is synthesized to the next fragment after it
+	var minCost node
+	for n, cost := range costs {
 
+	}
 }

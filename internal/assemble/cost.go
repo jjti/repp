@@ -21,7 +21,6 @@ func cost(nodes []node) map[node]float32 {
 	sort.Slice(nodes, func(i, j int) bool {
 		return nodes[i].start < nodes[j].start
 	})
-
 	costs := make(map[node]float32)
 
 	// costOf is for finding the minimum cost of a single node.
