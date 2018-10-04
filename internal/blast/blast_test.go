@@ -25,7 +25,7 @@ func Test_BLAST(t *testing.T) {
 	dbPath, _ := filepath.Abs(path.Join("..", "..", "test", "blast", "db"))
 
 	// run blast
-	err := BLAST(&f, dbPath)
+	matches, err := BLAST(&f, dbPath)
 
 	// check if it fails
 	if err != nil {
@@ -34,22 +34,22 @@ func Test_BLAST(t *testing.T) {
 	}
 
 	// make sure matches are found
-	if len(f.Matches) < 1 {
+	if len(matches) < 1 {
 		t.Error("failed to find any matches")
 		return
 	}
 
 	// make sure the vertical line has been removed
-	for _, m := range f.Matches {
+	for _, m := range matches {
 		if strings.Contains(m.ID, "|") {
 			t.Errorf("match still contains pipe symbol in ID: %s", m.ID)
 			return
 		}
 	}
 
-	fmt.Println(f.Matches)
+	fmt.Println(matches)
 	matchesContain := func(targ frag.Match) {
-		for _, m := range f.Matches {
+		for _, m := range matches {
 			if targ.ID == m.ID && targ.Start == m.Start && targ.End == m.End {
 				return
 			}
