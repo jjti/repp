@@ -81,6 +81,7 @@ func BLAST(f *frag.Fragment, db string) ([]frag.Match, error) {
 	} else if len(matches) < 1 {
 		return nil, fmt.Errorf("did not find any matches for %s", f.ID)
 	}
+
 	return matches, nil
 }
 
@@ -114,7 +115,7 @@ func (b *blastExec) run() error {
 		"-db", b.db,
 		"-query", b.in,
 		"-out", b.out,
-		"-outfmt", "7 sseqid qstart qend sstart send",
+		"-outfmt", "7 sseqid qstart qend sstart send sseq",
 		"-ungapped",
 		"-perc_identity", "100",
 	)
@@ -151,7 +152,7 @@ func (b *blastExec) parse() ([]frag.Match, error) {
 
 		// split on white space
 		cols := strings.Fields(line)
-		if len(cols) < 5 {
+		if len(cols) < 6 {
 			continue
 		}
 
@@ -170,14 +171,15 @@ func (b *blastExec) parse() ([]frag.Match, error) {
 
 		// create and append the new match
 		ms = append(ms, frag.Match{
-			ID: id,
+			ID:  id,
+			Seq: cols[5],
 			// convert 1-based numbers to 0-based
 			Start: start - 1,
 			End:   end - 1,
 			// brittle, but checking for circular in entry's id
 			Circular: strings.Contains(id, "(circular)"),
 			// for later querying when checking for off-targets
-			Template: idRow,
+			Entry: idRow,
 		})
 	}
 	return ms, nil

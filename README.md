@@ -15,13 +15,14 @@ declarative vector design
 
 4.  Traverse the cheapest assembly and "fill in the node":
 
-    4.1 Create primers if it's going to be PCR'ed
+    4.1 Create primers if it's going to be PCR'ed, create a synthetic fragment otherwise
 
     4.2 Fail out if:
 
          4.2.1 The primers have a very high primer3 penalty score OR
                The primers have off-target's in their source vector OR
-               The node has an inverted repeat in its junction
+               The node has an inverted repeat in its junction OR
+               The synthetic fragment will be dificult to synthesize
 
                4.2.1.1 Remove fragment from tree and repeat #2
 
@@ -48,3 +49,7 @@ declarative vector design
 3.  Don't create synthetic fragments that have high synthesis complexities
 
 4.  Don't create fragments that have off-target end-homology
+
+## Caveats
+
+Addgene verified sequence information doesn't include all the of the vector sequence for some of the vectors. Therefore there might be off-targets that are invisible

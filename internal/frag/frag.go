@@ -19,20 +19,28 @@ type Match struct {
 	// ID of the matched fragment
 	ID string
 
-	// Start of the match
+	// Seq of the match on the target vector
+	Seq string
+
+	// Start of the fragment (0-index)
 	Start int
 
-	// End of the match
+	// End of the fragment (0-indexed)
 	End int
 
-	// Whether it's a circular fragment
+	// Whether it's a circular fragment (vector, plasmid, etc)
 	Circular bool
 
-	// The sequence of the template/parent fragment
-	Template string
+	// The entry id of the template/parent fragment in the BLAST DB
+	Entry string
 }
 
 // Length returns the length of the match on the target fragment
 func (m *Match) Length() int {
 	return m.End - m.Start + 1 // it's inclusive
+}
+
+// Synth is a synthetic fragment. It's meant to be created complement de novo
+type Synth struct {
+	Fragment
 }

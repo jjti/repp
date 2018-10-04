@@ -16,9 +16,6 @@ type node struct {
 	// end of this node on the target vector
 	end int
 
-	// cost to prepare this node for assembly
-	cost int
-
 	// entry signifies whether this node is a valid entry node -- ie one that could be the first
 	// node in a vector assembly
 	entry bool
