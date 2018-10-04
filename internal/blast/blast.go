@@ -84,13 +84,12 @@ func BLAST(f *frag.Fragment, db string) ([]frag.Match, error) {
 // input is for creating an input file for BLAST
 // return the path to the file and an error if there was one
 func (b *blastExec) create() error {
-	// create the file contents, double sequence because its circular
+	// create the file contents, add the sequence to itself because it's circular
+	// and we want to find matches across the zero-index
 	fileContents := ">" + b.f.ID + "\n" + b.f.Seq + b.f.Seq + b.f.Seq + "\n"
 
 	// create file
 	inputFile, err := os.Create(b.in)
-
-	// close at the end of execution
 	defer inputFile.Close()
 
 	// write to it
@@ -169,6 +168,8 @@ func (b *blastExec) parse() ([]frag.Match, error) {
 			// convert 1-based numbers to 0-based
 			Start: start - 1,
 			End:   end - 1,
+			// brittle, but checking for circular in entry's id
+			Circular: strings.Contains(id, "(circular)")
 		})
 	}
 	return ms, nil

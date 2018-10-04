@@ -1,4 +1,4 @@
-package traverse
+package assemble
 
 import (
 	"testing"
