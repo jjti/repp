@@ -8,7 +8,8 @@ declarative vector design
 
 2.  Run a DP algo on the nodes to find each node's cost from the end
 
-    2.1 Fill in synthetic fragments for those that don't overlap with their cheapest next node
+    2.1 Also, based on the cost estimate of #2, set the index of the next-node using its index
+    This will be used later for determining where to create synthetic fragments
 
 3.  Sort all "starting-nodes" by their estimated total assembly cost (low -> high)
 

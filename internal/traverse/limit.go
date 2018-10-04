@@ -4,12 +4,11 @@ import (
 	"sort"
 )
 
-// upperLimit is for removing all fragments that are greater than the target distance
-// from the end of the vector, only keep those that are beneath a
-// hard limit in the number of fragments in a vector
-func upperLimit(nodes []node, seqL int) []node {
+// limit is for removing all fragments that cannot reasonably be included in an
+// assembly with less than the upper limit for the number of fragments
+func limit(nodes []node, seqL int) []node {
 	// get each fragments' minimum number of fragments in an assembly
-	dists := distanceToEnd(nodes, seqL)
+	dists := distance(nodes, seqL)
 
 	var shortNodes []node
 	for n, dist := range dists {
@@ -32,14 +31,14 @@ func upperLimit(nodes []node, seqL int) []node {
 	return shortNodes
 }
 
-// distanceToEnd is for calculating each node's minimum distance to
+// distance is for calculating each node's minimum distance to
 // a vector "endpoint". used to weed out fragments that are too far
 // away from the end of the target
 //
 // for each building node, find the minimum number of fragments
 // needed to get from it to a "last-bp" (2x the length of the target
 // node's sequence length)
-func distanceToEnd(nodes []node, seqL int) map[node]int {
+func distance(nodes []node, seqL int) map[node]int {
 	// last bp within range being scanned
 	lastBP := 2 * seqL
 	// map from a node to the minimum number of fragments

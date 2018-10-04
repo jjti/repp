@@ -18,7 +18,7 @@ func Read(path string) ([]Fragment, error) {
 		path, err = filepath.Abs(path)
 
 		if err != nil {
-			return nil, fmt.Errorf("failed to create input FASTA path: %s", err)
+			return nil, fmt.Errorf("failed to create path to FASTA file: %s", err)
 		}
 	}
 
