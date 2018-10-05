@@ -3,11 +3,14 @@ package frag
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
+	"strconv"
+	"strings"
 )
 
 // path to the primer3 executable and config folder
@@ -31,7 +34,17 @@ type primer struct {
 	// End of the fragment (0-indexed)
 	End int
 
-	// TODO: add more primer3 information here, like penalty score etc
+	// Penalty score
+	Penalty float32
+
+	// PairPenalty score from primer3
+	PairPenalty float32
+
+	// Tm of the primer
+	Tm float32
+
+	// GC % max
+	GC float32
 }
 
 // PCR is a PCR building fragment. It includes primers to create
@@ -125,7 +138,49 @@ func (p *p3exec) run() error {
 
 // parse the output into primers for the part
 func (p *p3exec) parse() ([]primer, error) {
-	return []primer{}, nil
+	file, err := ioutil.ReadFile(p.Out)
+	if err != nil {
+		return nil, err
+	}
+	fileS := string(file)
+
+	// read in results into map, they're all 1:1
+	results := map[string]string{}
+	for _, line := range strings.Split(fileS, "\n") {
+		keyVal := strings.Split(line, "=")
+		if len(keyVal) == 2 {
+			results[keyVal[0]] = results[keyVal[1]]
+		}
+	}
+
+	// read in a single primer from the output string file
+	// side is either "LEFT" or "RIGHT"
+	parsePrimer := func(side string) primer {
+		seq := results[fmt.Sprintf("PRIMER_%s_0_SEQUENCE", side)]
+
+		tm := results[fmt.Sprintf("PRIMER_%s_0_TM", side)]
+		penalty := results[fmt.Sprintf("PRIMER_%s_0_PENALTY", side)]
+		pairPenalty := results["PRIMER_PAIR_0_PENALTY"]
+
+		tmfloat, _ := strconv.ParseFloat(tm, 32)
+		penaltyfloat, _ := strconv.ParseFloat(penalty, 32)
+		pairfloat, _ := strconv.ParseFloat(pairPenalty, 32)
+
+		fmt.Println(tm, penalty)
+
+		return primer{
+			seq:         seq,
+			strand:      side == "LEFT",
+			Tm:          float32(tmfloat),
+			Penalty:     float32(penaltyfloat),
+			PairPenalty: float32(pairfloat),
+		}
+	}
+
+	return []primer{
+		parsePrimer("LEFT"),
+		parsePrimer("RIGHT"),
+	}, nil
 }
 
 // SetPrimers creates primers on a PCR fragment and returns an error if
@@ -133,6 +188,7 @@ func (p *p3exec) parse() ([]primer, error) {
 //	2. the primers have an unacceptably high primer3 penalty score
 func (p *PCR) SetPrimers() error {
 	handle := func(err error) {
+		// we should fail totally on any primer3 errors -- shouldn't happen
 		if err != nil {
 			log.Panic(err)
 		}
