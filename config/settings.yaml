@@ -10,7 +10,10 @@ fragments:
 # PCR settings
 pcr:
   # Cost per bp of PCR primer
-  bp-cost: 0.03
+  bp-cost: 0.09
+
+  # Max primer3 pair penalty score
+  primer3-penalty-max: 10.0
 
 # Synthesis settings
 synthesis:

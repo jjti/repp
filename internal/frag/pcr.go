@@ -1,5 +1,13 @@
 package frag
 
+import (
+	"fmt"
+	"log"
+	"path"
+
+	"github.com/jjtimmons/decvec/config"
+)
+
 // primer is a single primer used to ampligy a parent fragment
 type primer struct {
 	// seq of the primer (In 5' to 3' direction)
@@ -49,4 +57,50 @@ type PCR struct {
 
 	// Primers necessary to create this PCR Fragment from the template sequence
 	Primers []primer
+}
+
+// SetPrimers creates primers on a PCR fragment and returns an error if
+//	1. there are off-targets in the primers
+//	2. the primers have an unacceptably high primer3 penalty score
+func (p *PCR) SetPrimers() error {
+	maxPairP := config.NewConfig().PCR.P3MaxPenalty
+
+	handleP3 := func(err error) {
+		// we should fail totally on any primer3 errors -- shouldn't happen
+		if err != nil {
+			log.Panic(err)
+		}
+	}
+
+	exec := p3exec{
+		Frag: p,
+		In:   path.Join(p3Dir, p.ID+".in"),
+		Out:  path.Join(p3Dir, p.ID+".out"),
+	}
+
+	// make input file
+	err := exec.input()
+	handleP3(err)
+
+	// execute
+	err = exec.run()
+	handleP3(err)
+
+	// parse the results into primers for storing on the fragment
+	primers, err := exec.parse()
+	handleP3(err)
+	p.Primers = primers
+
+	// 2. check for whether the primers have too have a pair penalty score
+	if p.Primers[0].PairPenalty > maxPairP {
+		return fmt.Errorf(
+			"primers have pair primer3 penalty score of %f, should be less than %f:\n%+v\n%+v",
+			p.Primers[0].PairPenalty,
+			maxPairP,
+			p.Primers[0],
+			p.Primers[1],
+		)
+	}
+
+	return nil
 }

@@ -7,7 +7,6 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -130,39 +129,6 @@ func (p *p3exec) parse() ([]primer, error) {
 		parsePrimer("LEFT"),
 		parsePrimer("RIGHT"),
 	}, nil
-}
-
-// SetPrimers creates primers on a PCR fragment and returns an error if
-//	1. there are off-targets In the primers
-//	2. the primers have an unacceptably high primer3 penalty score
-func (p *PCR) SetPrimers() error {
-	handle := func(err error) {
-		// we should fail totally on any primer3 errors -- shouldn't happen
-		if err != nil {
-			log.Panic(err)
-		}
-	}
-
-	exec := p3exec{
-		Frag: p,
-		In:   path.Join(p3Dir, p.ID+".in"),
-		Out:  path.Join(p3Dir, p.ID+".out"),
-	}
-
-	// make input file
-	err := exec.input()
-	handle(err)
-
-	// execute
-	err = exec.run()
-	handle(err)
-
-	// parse the results into primers for storing on the fragment
-	primers, err := exec.parse()
-	handle(err)
-	p.Primers = primers
-
-	return nil
 }
 
 // create the primer3 path, error Out if we can't find the executable or the config folder
