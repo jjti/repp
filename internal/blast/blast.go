@@ -3,7 +3,6 @@
 package blast
 
 import (
-	"bytes"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -14,11 +13,20 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/jjtimmons/decvec/config"
 	"github.com/jjtimmons/decvec/internal/frag"
 )
 
-// path to the blast directory for putting results into
-var blastDir string
+var (
+	// path to the BLAST DB with building fragments
+	db = config.NewConfig().DB
+
+	// path to the blast directory for putting results into
+	blastDir string
+
+	// path to the blast executable
+	blast = path.Join("..", "..", "vendor", "ncbi-blast-2.7.1+", "bin", "blastn")
+)
 
 // blastExec is a small utility function for executing BLAST
 // on a fragment
@@ -29,14 +37,8 @@ type blastExec struct {
 	// the path to the input BLAST file
 	in string
 
-	// the path the output BLAST file
+	// the path for the BLAST output
 	out string
-
-	// the path to the blastn executable
-	blast string
-
-	// path to the database to blast against
-	db string
 }
 
 // BLAST the passed Fragment against a set from the command line and create
@@ -44,16 +46,18 @@ type blastExec struct {
 //
 // Accepts the fragment to blast against the db and the path to the db on
 // the local fs
-func BLAST(f *frag.Fragment, db string) ([]frag.Match, error) {
-	blast := path.Join("..", "..", "vendor", "ncbi-blast-2.7.1+", "bin", "blastn")
-	b := blastExec{
-		f:     f,
-		in:    path.Join(blastDir, f.ID+".input.fa"),
-		out:   path.Join(blastDir, f.ID+".output"),
-		blast: blast,
-		db:    db,
+func BLAST(f *frag.Fragment) ([]frag.Match, error) {
+	b := &blastExec{
+		f:   f,
+		in:  path.Join(blastDir, f.ID+".input.fa"),
+		out: path.Join(blastDir, f.ID+".output"),
 	}
+	return b.exec()
+}
 
+// exec is for running the create, run, and parse commands on the db and
+// returning an error (if there is one) or the matches otherwise
+func (b *blastExec) exec() (matches []frag.Match, err error) {
 	// make sure the addgene db is there
 	if _, err := os.Stat(db); os.IsNotExist(err) {
 		return nil, fmt.Errorf("failed to find an Addgene database at %s", db)
@@ -75,14 +79,13 @@ func BLAST(f *frag.Fragment, db string) ([]frag.Match, error) {
 	}
 
 	// parse the BLAST output file to Matches for the Fragment
-	matches, err := b.parse()
+	matches, err = b.parse()
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse BLAST output: %v", err)
 	} else if len(matches) < 1 {
-		return nil, fmt.Errorf("did not find any matches for %s", f.ID)
+		return nil, fmt.Errorf("did not find any matches for %s", b.f.ID)
 	}
-
-	return matches, nil
+	return matches, err
 }
 
 // input is for creating an input file for BLAST
@@ -110,23 +113,20 @@ func (b *blastExec) run() error {
 	// create the blast command
 	// https://www.ncbi.nlm.nih.gov/books/NBK279682/
 	blastCmd := exec.Command(
-		b.blast,
+		blast,
 		"-task", "blastn",
-		"-db", b.db,
+		"-db", db,
 		"-query", b.in,
 		"-out", b.out,
 		"-outfmt", "7 sseqid qstart qend sstart send sseq",
 		"-ungapped",
 		"-perc_identity", "100",
+		"-max_target_seqs", "100000",
 	)
 
-	var stderr bytes.Buffer
-	blastCmd.Stderr = &stderr
-
 	// execute BLAST and wait on it to finish
-	err := blastCmd.Run()
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err, stderr.String())
+	if output, err := blastCmd.CombinedOutput(); err != nil {
+		fmt.Fprintln(os.Stderr, err, string(output))
 		return err
 	}
 	return nil
@@ -165,14 +165,25 @@ func (b *blastExec) parse() ([]frag.Match, error) {
 			continue
 		}
 		id := idSplit[len(idSplit)-1]
+		seq := cols[5]
+
+		// don't include very small matches
+		if len(seq) < 20 {
+			continue
+		}
 
 		start, _ := strconv.Atoi(cols[1])
 		end, _ := strconv.Atoi(cols[2])
 
+		// direction not guarenteed
+		if start > end {
+			start, end = end, start
+		}
+
 		// create and append the new match
 		ms = append(ms, frag.Match{
 			ID:  id,
-			Seq: cols[5],
+			Seq: seq,
 			// convert 1-based numbers to 0-based
 			Start: start - 1,
 			End:   end - 1,
