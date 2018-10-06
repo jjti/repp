@@ -16,7 +16,8 @@ import (
 // that make up the mock BLAST db
 func Test_BLAST(t *testing.T) {
 	// make path to test db
-	dbPath, _ := filepath.Abs(path.Join("..", "..", "test", "blast", "db"))
+	db, _ = filepath.Abs(path.Join("..", "..", "test", "blast", "db"))
+
 	// create mock test fragment
 	f := frag.Fragment{
 		ID:  "test_fragment",
@@ -24,7 +25,7 @@ func Test_BLAST(t *testing.T) {
 	}
 
 	// run blast
-	matches, err := BLAST(&f, dbPath)
+	matches, err := BLAST(&f)
 
 	// check if it fails
 	if err != nil {

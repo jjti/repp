@@ -1,4 +1,4 @@
-package frag
+package pcr
 
 import (
 	"fmt"
@@ -60,8 +60,8 @@ type PCR struct {
 }
 
 // SetPrimers creates primers on a PCR fragment and returns an error if
-//	1. there are off-targets in the primers
-//	2. the primers have an unacceptably high primer3 penalty score
+//	1. the primers have an unacceptably high primer3 penalty score
+//	2. there are off-targets in the primers
 func (p *PCR) SetPrimers() error {
 	maxPairP := config.NewConfig().PCR.P3MaxPenalty
 
@@ -91,7 +91,7 @@ func (p *PCR) SetPrimers() error {
 	handleP3(err)
 	p.Primers = primers
 
-	// 2. check for whether the primers have too have a pair penalty score
+	// 1. check for whether the primers have too have a pair penalty score
 	if p.Primers[0].PairPenalty > maxPairP {
 		return fmt.Errorf(
 			"primers have pair primer3 penalty score of %f, should be less than %f:\n%+v\n%+v",
@@ -102,5 +102,7 @@ func (p *PCR) SetPrimers() error {
 		)
 	}
 
-	return nil
+	// 2. check for whether either of the primers have an off-target/mismatch
+	// in mismatch.go
+	return p.mismatch()
 }

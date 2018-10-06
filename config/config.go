@@ -4,6 +4,8 @@ package config
 
 import (
 	"log"
+	"path"
+	"path/filepath"
 
 	"github.com/spf13/viper"
 )
@@ -49,6 +51,8 @@ type SynthesisConfig struct {
 // of settings available in settings.yaml and those
 // available from the command line
 type Config struct {
+	// path to the fragment DB
+	DB string
 	// make settings passed thru CLI
 	Make MakeFlags
 	// Fragment level settings
@@ -69,6 +73,10 @@ func NewConfig() Config {
 	if err != nil {
 		log.Fatalf("unable to decode into struct, %v", err)
 	}
+
+	// make path to test db
+	db, _ := filepath.Abs(path.Join("..", "assets", "addgene", "db", "addgene"))
+	c.DB = db
 
 	return c
 }
