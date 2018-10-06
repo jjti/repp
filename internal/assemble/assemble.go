@@ -1,4 +1,4 @@
-// package assemble is for traversing the target matches and
+// Package assemble is for traversing the target matches and
 // creating a list of possible assemblies for making the target
 // sequence
 package assemble
