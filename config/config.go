@@ -31,6 +31,9 @@ type FragmentConfig struct {
 type PCRConfig struct {
 	// the cost per bp of primer DNA
 	BPCost float32 `mapstructure:"bp-cost"`
+
+	// the maximum primer3 score allowable
+	P3MaxPenalty float32 `mapstructure:"primer3-penalty-max"`
 }
 
 // SynthesisConfig is for settings involving synthesis
