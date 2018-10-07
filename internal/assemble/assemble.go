@@ -26,19 +26,19 @@ var (
 // "fill-in" the nodes. Create primers on the node if it's a PCR Fragment
 // or create a sequence to be synthesized if it's a synthetic fragment.
 // Error out and repeat the build stage if a node fails to be filled
-func Assemble(matches []frag.Match, seqL int, from int, to int) {
+func Assemble(matches []frag.Match, seqL int) {
 	// map fragment Matches to nodes
-	// store whether they're entry or terminal nodes,
-	// based on whether they overlap the first or last bp of
-	// the search range, respectively
+	// store whether they're entry or terminal nodes based on whether they
+	// overlap the first or last bp of the search range, respectively
 	var nodes []node
 	for _, m := range matches {
 		nodes = append(nodes, node{
 			id:       m.ID,
 			start:    m.Start,
 			end:      m.End,
-			entry:    m.Start <= from,
-			terminus: m.End >= to,
+			entry:    m.Start <= seqL,
+			terminus: m.End >= 2*seqL,
 		})
 	}
+
 }
