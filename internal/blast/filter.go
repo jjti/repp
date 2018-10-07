@@ -3,6 +3,7 @@ package blast
 import (
 	"sort"
 
+	"github.com/jjtimmons/decvec/config"
 	"github.com/jjtimmons/decvec/internal/frag"
 )
 
@@ -21,6 +22,8 @@ import (
 // also remove small fragments here, that are too small to be useful during
 // assembly
 func filter(matches []frag.Match, from int, to int) []frag.Match {
+	c := config.NewConfig()
+
 	// sort matches by their start index
 	// if they're same, put the larger one first
 	sort.Slice(matches, func(i, j int) bool {
@@ -58,7 +61,7 @@ func filter(matches []frag.Match, from int, to int) []frag.Match {
 	// remove fragments that are larger the minimum cut off size
 	var largeEnough []frag.Match
 	for _, m := range afterStart {
-		if m.Length() > 50 {
+		if m.Length() > c.Fragments.MinMatch {
 			largeEnough = append(largeEnough, m)
 		}
 	}
