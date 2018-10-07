@@ -40,7 +40,10 @@ func (a *assembly) add(n node) (newAssembly assembly, created bool) {
 // contains returns if the id of the node has already been seen in this assembly
 func (a *assembly) contains(n node) (isContained bool) {
 	for _, otherN := range a.nodes {
-		if otherN == n {
+		// they're the same if they have the same id and start index
+		// id isn't enough by itself because there may be multiple with the same
+		// entry id in the BLAST db
+		if otherN.id == n.id && otherN.start == n.start {
 			return true
 		}
 	}

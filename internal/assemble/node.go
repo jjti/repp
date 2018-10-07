@@ -23,21 +23,48 @@ type node struct {
 	// terminus signifies whether this node is a terminus node -- ie whether it overlaps
 	// with the last bp in the target region of the vector sequence
 	terminus bool
+
+	// assemblies that span from this node to the end of the vector
+	assemblies []assembly
 }
 
-// distToNext returns the number of bps between the end of this node and the start
-// of another
+// distTo returns the distance between the start of this node and the end of the other.
+// assumes that this node starts after the start of the other node.
+// will return a negative number if this node overlaps with the other.
+// will return a positive number if this node doesn't overlap with the other.
 func (n *node) distTo(other node) (bpDist int) {
-	dist := 0
+	return other.end - n.start
+}
 
-	// this fragment is before the other
-	if n.start < other.start {
-		dist = other.start - n.end
-	} else {
-		dist = n.start - other.end
+// reachable returns a slice of nodes that overlap with, or are the first synth_count nodes
+// away from this one within a slice of ordered nodes
+//
+// nodes are nodes sorted in descending order of start index
+// i is this nodes index in the slice of nodes
+// synthCount is the number of nodes to try to synthesize to, in addition to the
+// 	nodes that are reachable with just existing homology
+func (n *node) reach(nodes []node, i, synthCount int) (reachable []node) {
+	// accumulate the nodes that overlap with this one
+	for true {
+		i++
+
+		// we've run out of nodes
+		if i >= len(nodes) {
+			return reachable
+		}
+
+		// these nodes overlap by enough for Gibson Assembly
+		if n.distTo(nodes[i]) < -20 {
+			reachable = append(reachable, nodes[i])
+		} else if synthCount > 0 {
+			// there's not enough existing overlap, but we'll synthesize to it
+			synthCount--
+			reachable = append(reachable, nodes[i])
+		} else {
+			return reachable
+		}
 	}
-
-	return dist
+	return reachable
 }
 
 // synthDist returns the number of synthesized fragments that would need to be created
@@ -67,11 +94,12 @@ func (n *node) synthDist(other node) (synthCount int) {
 func (n *node) costTo(other node) (cost float32) {
 	dist := n.distTo(other)
 
-	if dist < 20 {
+	if dist < -20 {
 		// there's already overlap between this node and the one being tested
-		// or little enough of a distance for it to be added via PCR
+		// and enough for exiting homology to be enough
 		return 60 * conf.PCR.BPCost
 	}
 
+	// we need to create a new synthetic fragment to get from this fragment to the next
 	return float32(dist) * conf.Synthesis.BPCost
 }
