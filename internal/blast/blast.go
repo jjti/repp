@@ -39,6 +39,9 @@ type blastExec struct {
 
 	// the path for the BLAST output
 	out string
+
+	// optional path to a FASTA file with a subject FASTA sequence
+	subject string
 }
 
 // BLAST the passed Fragment against a set from the command line and create
@@ -52,12 +55,14 @@ func BLAST(f *frag.Fragment) ([]frag.Match, error) {
 		in:  path.Join(blastDir, f.ID+".input.fa"),
 		out: path.Join(blastDir, f.ID+".output"),
 	}
-	return b.exec()
+	return b.exec(false)
 }
 
 // exec is for running the create, run, and parse commands on the db and
-// returning an error (if there is one) or the matches otherwise
-func (b *blastExec) exec() (matches []frag.Match, err error) {
+// returning an error (if there is one) or the matches otherwise.
+// Subject is for whether we should be BLASTing against a subject file
+// instead of the entire database.
+func (b *blastExec) exec(subject bool) (matches []frag.Match, err error) {
 	// make sure the addgene db is there
 	if _, err := os.Stat(db); os.IsNotExist(err) {
 		return nil, fmt.Errorf("failed to find an Addgene database at %s", db)
@@ -94,21 +99,10 @@ func (b *blastExec) create() error {
 	// create the file contents, add the sequence to itself because it's circular
 	// and we want to find matches across the zero-index
 	fileContents := ">" + b.f.ID + "\n" + b.f.Seq + b.f.Seq + b.f.Seq + "\n"
-
-	// create file
-	inputFile, err := os.Create(b.in)
-	defer inputFile.Close()
-
-	// write to it
-	_, err = inputFile.WriteString(fileContents)
-	if err != nil {
-		return err
-	}
-	return nil
+	return ioutil.WriteFile(b.in, []byte(fileContents), 0666)
 }
 
-// run is for calling BLAST and returning when it finished
-// returns the local path to the output fils
+// run is for calling the external blastn binary
 func (b *blastExec) run() error {
 	// create the blast command
 	// https://www.ncbi.nlm.nih.gov/books/NBK279682/
@@ -118,10 +112,33 @@ func (b *blastExec) run() error {
 		"-db", db,
 		"-query", b.in,
 		"-out", b.out,
-		"-outfmt", "7 sseqid qstart qend sstart send sseq",
+		"-outfmt", "7 sseqid qstart qend sstart send sseq mismatch",
 		"-ungapped",
 		"-perc_identity", "100",
 		"-max_target_seqs", "100000",
+	)
+
+	// execute BLAST and wait on it to finish
+	if output, err := blastCmd.CombinedOutput(); err != nil {
+		fmt.Fprintln(os.Stderr, err, string(output))
+		return err
+	}
+	return nil
+}
+
+// runs blast on the query file against another subject file
+// (rather than the blastdb)
+func (b *blastExec) runAgainst() error {
+	// create the blast command
+	// https://www.ncbi.nlm.nih.gov/books/NBK279682/
+	blastCmd := exec.Command(
+		blast,
+		"-task", "blastn",
+		"-query", b.in,
+		"-subject", b.subject,
+		"-out", b.out,
+		"-outfmt", "7 sseqid qstart qend sstart send sseq mismatch",
+		"-ungapped",
 	)
 
 	// execute BLAST and wait on it to finish
@@ -137,10 +154,10 @@ func (b *blastExec) run() error {
 func (b *blastExec) parse() ([]frag.Match, error) {
 	// read in the results
 	file, err := ioutil.ReadFile(b.out)
-	fileS := string(file)
 	if err != nil {
 		return nil, err
 	}
+	fileS := string(file)
 
 	// read it into Matches
 	var ms []frag.Match
@@ -167,13 +184,9 @@ func (b *blastExec) parse() ([]frag.Match, error) {
 		id := idSplit[len(idSplit)-1]
 		seq := cols[5]
 
-		// don't include very small matches
-		if len(seq) < 20 {
-			continue
-		}
-
 		start, _ := strconv.Atoi(cols[1])
 		end, _ := strconv.Atoi(cols[2])
+		mismatch, _ := strconv.Atoi(cols[6])
 
 		// direction not guarenteed
 		if start > end {
@@ -190,7 +203,8 @@ func (b *blastExec) parse() ([]frag.Match, error) {
 			// brittle, but checking for circular in entry's id
 			Circular: strings.Contains(id, "(circular)"),
 			// for later querying when checking for off-targets
-			Entry: idRow,
+			Entry:    idRow,
+			Mismatch: mismatch,
 		})
 	}
 	return ms, nil
