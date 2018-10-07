@@ -96,10 +96,11 @@ func (b *blastExec) exec(subject bool) (matches []frag.Match, err error) {
 // input is for creating an input file for BLAST
 // return the path to the file and an error if there was one
 func (b *blastExec) create() error {
-	// create the file contents, add the sequence to itself because it's circular
-	// and we want to find matches across the zero-index
-	fileContents := ">" + b.f.ID + "\n" + b.f.Seq + b.f.Seq + b.f.Seq + "\n"
-	return ioutil.WriteFile(b.in, []byte(fileContents), 0666)
+	// create the query sequence file.
+	// add the sequence to itself because it's circular
+	// and we want to find matches across the zero-index.
+	file := fmt.Sprintf(">%s\n%s%s\n", b.f.ID, b.f.Seq, b.f.Seq)
+	return ioutil.WriteFile(b.in, []byte(file), 0666)
 }
 
 // run is for calling the external blastn binary
