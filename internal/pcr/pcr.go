@@ -6,6 +6,7 @@ import (
 	"path"
 
 	"github.com/jjtimmons/decvec/config"
+	"github.com/jjtimmons/decvec/internal/blast"
 )
 
 // primer is a single primer used to ampligy a parent fragment
@@ -103,6 +104,17 @@ func (p *PCR) SetPrimers() error {
 	}
 
 	// 2. check for whether either of the primers have an off-target/mismatch
-	// in mismatch.go
-	return p.mismatch()
+	for _, primer := range p.Primers {
+		mismatchExists, mismatch, err := blast.Mismatch(primer.seq, p.Entry)
+		handleP3(err) // shouldn't be erroring here either
+		if mismatchExists {
+			return fmt.Errorf(
+				"found a mismatching sequence, %s, against the primer %s",
+				mismatch.Seq,
+				primer.seq,
+			)
+		}
+	}
+
+	return nil
 }
