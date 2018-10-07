@@ -8,12 +8,12 @@ func Test_cost(t *testing.T) {
 	n1 := node{
 		start:    10,
 		end:      15,
-		terminal: false,
+		terminus: false,
 	}
 	n2 := node{
 		start:    14,
 		end:      20,
-		terminal: true,
+		terminus: true,
 	}
 	nodes := []node{n1, n2}
 

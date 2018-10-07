@@ -27,28 +27,7 @@ func Assemble(matches []frag.Match, seqL int, from int, to int) {
 			start:    m.Start,
 			end:      m.End,
 			entry:    m.Start <= from,
-			terminal: m.End >= to,
+			terminus: m.End >= to,
 		})
 	}
-
-	// remove nodes that will never be in an assembly
-	// beneath the upper-limit in settings and from the CLI
-	nodes = limit(nodes, seqL)
-
-	// add a single mock-starting node that's zero-bp long
-	// this is used to force a synthesis from this node to the
-	// rest and is used in-case there isn't already a node that's
-	// reachable from this one
-	nodes = append(nodes, node{
-		id:    "mock-entry-node",
-		start: from,
-		end:   from,
-		entry: true,
-	})
-
-	// traverse the nodes by finding their costs (minimum cost to be
-	// included in an assembly that spans the whole vector) and
-	// "filling in" each node by creating primers on it and synthesizing
-	// and synthetic fragments if need be
-	traverse(nodes)
 }

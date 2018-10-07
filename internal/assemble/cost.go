@@ -34,7 +34,7 @@ func cost(nodes []node) map[node]float32 {
 		}
 
 		// if this overlaps with the end of the vector, return
-		if n.terminal {
+		if n.terminus {
 			// guestimate a fixed cost to PCR this fragment and cache
 			nCost := conf.PCR.BPCost * 60
 			costs[n] = nCost

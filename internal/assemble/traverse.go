@@ -21,7 +21,7 @@ func traverse(nodes []node) error {
 		return err
 	}
 
-	// being to traverse the potential assembly, creating
+	// begin to traverse the potential assembly, creating
 	// synthetic fragments and primers to build it
 	return nil
 }

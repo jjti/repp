@@ -20,9 +20,9 @@ type node struct {
 	// node in a vector assembly
 	entry bool
 
-	// terminal signifies whether this node is a valid terminal node -- ie whether it overlaps
+	// terminus signifies whether this node is a valid terminus node -- ie whether it overlaps
 	// with the last bp in the assembly
-	terminal bool
+	terminus bool
 
 	// next is the index of the next fragment after this one in the minimum-cost-assembly
 	// involving this node
