@@ -33,6 +33,9 @@ type Match struct {
 
 	// The entry id of the template/parent fragment in the BLAST DB
 	Entry string
+
+	// The number of mismatching bps
+	Mismatch int
 }
 
 // Length returns the length of the match on the target fragment

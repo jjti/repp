@@ -13,6 +13,13 @@ import (
 // self-contained in other fragments: the larger of the available fragments
 // will be the better one, since it covers a greater region and will almost
 // always be preferable to the smaller one
+//
+// the search range is from 1x-2x the length of the target vector sequence
+// and it used in an effort to find fragments that overlap with large regions
+// of the target vector but do so in regions outside the central target range
+//
+// also remove small fragments here, that are too small to be useful during
+// assembly
 func filter(matches []frag.Match, from int, to int) []frag.Match {
 	// sort matches by their start index
 	// if they're same, put the larger one first
@@ -47,5 +54,14 @@ func filter(matches []frag.Match, from int, to int) []frag.Match {
 			afterStart = append(afterStart, m)
 		}
 	}
-	return afterStart
+
+	// remove fragments that are larger the minimum cut off size
+	var largeEnough []frag.Match
+	for _, m := range afterStart {
+		if m.Length() > 50 {
+			largeEnough = append(largeEnough, m)
+		}
+	}
+
+	return largeEnough
 }

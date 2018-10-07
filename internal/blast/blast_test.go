@@ -14,7 +14,7 @@ import (
 // see test/blast/README.md for a description of where the subfragments
 // in this test fragment's sequence came from (pieces from the 5 fragments)
 // that make up the mock BLAST db
-func Test_BLAST(t *testing.T) {
+func TestBLAST(t *testing.T) {
 	// make path to test db
 	db, _ = filepath.Abs(path.Join("..", "..", "test", "blast", "db"))
 
