@@ -16,13 +16,13 @@ type Fragment struct {
 
 // Match is a fragment that this fragment matches against
 type Match struct {
-	// ID of the matched fragment
+	// ID of the matched fragment in the database
 	ID string
 
 	// Seq of the match on the target vector
 	Seq string
 
-	// Start of the fragment (0-index)
+	// Start of the fragment (0-indexed)
 	Start int
 
 	// End of the fragment (0-indexed)
@@ -31,10 +31,7 @@ type Match struct {
 	// Whether it's a circular fragment (vector, plasmid, etc)
 	Circular bool
 
-	// The entry id of the template/parent fragment in the BLAST DB
-	Entry string
-
-	// The number of mismatching bps
+	// The number of mismatching bps in the match (for primer off-targets)
 	Mismatch int
 }
 

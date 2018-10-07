@@ -10,19 +10,15 @@ type node struct {
 	// id of the node's source in the database (will be used to avoid off-targets within it)
 	id string
 
+	// unique-id of a match, the  start index % seq-length + id
+	// (unique identified that catches nodes that cross the zero-index)
+	uniqueID string
+
 	// start of this node on the target vector (which has been 3x'ed for BLAST)
 	start int
 
 	// end of this node on the target vector
 	end int
-
-	// entry signifies whether this node is a valid entry node -- ie one that could be the first
-	// node in a vector assembly
-	entry bool
-
-	// terminus signifies whether this node is a terminus node -- ie whether it overlaps
-	// with the last bp in the target region of the vector sequence
-	terminus bool
 
 	// assemblies that span from this node to the end of the vector
 	assemblies []assembly

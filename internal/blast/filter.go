@@ -7,8 +7,7 @@ import (
 	"github.com/jjtimmons/decvec/internal/frag"
 )
 
-// filter is for "propertizing" the matches from BLAST and removing
-// those that are outside the range of overlap we're testing
+// filter is for "propertizing" the matches from BLAST
 //
 // propertizing fragment matches means removing those that are completely
 // self-contained in other fragments: the larger of the available fragments
@@ -21,50 +20,33 @@ import (
 //
 // also remove small fragments here, that are too small to be useful during
 // assembly
-func filter(matches []frag.Match, from int, to int) []frag.Match {
+func filter(matches []frag.Match, from int, to int) (properized []frag.Match) {
 	c := config.NewConfig()
 
-	// sort matches by their start index
-	// if they're same, put the larger one first
-	sort.Slice(matches, func(i, j int) bool {
-		if matches[i].Start != matches[j].Start {
-			return matches[i].Start < matches[j].Start
-		}
-		return matches[i].Length() > matches[j].Length()
-	})
-
-	// only include those that aren't encompassed in the one before it
-	var properMatches []frag.Match
-	for _, m := range matches {
-		lastMatch := len(properMatches) - 1
-		if lastMatch < 0 || m.End > properMatches[lastMatch].End {
-			properMatches = append(properMatches, m)
-		}
-	}
-
-	// remove fragments that start end before 1x the target vector sequence's length
-	var beforeEnd []frag.Match
-	for _, m := range properMatches {
-		if m.End > from {
-			beforeEnd = append(beforeEnd, m)
-		}
-	}
-
-	// remove fragments that start past 2x the target vector sequence's length
-	var afterStart []frag.Match
-	for _, m := range beforeEnd {
-		if m.Start < to {
-			afterStart = append(afterStart, m)
-		}
-	}
-
-	// remove fragments that are larger the minimum cut off size
+	// remove fragments that are shorter the minimum cut off size
 	var largeEnough []frag.Match
-	for _, m := range afterStart {
-		if m.Length() > c.Fragments.MinMatch {
+	for _, m := range matches {
+		if m.Length() < c.Fragments.MinMatch {
 			largeEnough = append(largeEnough, m)
 		}
 	}
 
-	return largeEnough
+	// sort largeEnough by their start index
+	// for fragments with equivelant starting indexes, put the larger one first
+	sort.Slice(largeEnough, func(i, j int) bool {
+		if largeEnough[i].Start != largeEnough[j].Start {
+			return largeEnough[i].Start < largeEnough[j].Start
+		}
+		return largeEnough[i].Length() > largeEnough[j].Length()
+	})
+
+	// only include those that aren't encompassed by the one before it
+	for _, m := range largeEnough {
+		lastMatch := len(properized) - 1
+		if lastMatch < 0 || m.End > properized[lastMatch].End {
+			properized = append(properized, m)
+		}
+	}
+
+	return properized
 }

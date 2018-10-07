@@ -34,10 +34,9 @@ func Assemble(matches []frag.Match, seqL int) {
 	for _, m := range matches {
 		nodes = append(nodes, node{
 			id:       m.ID,
+			uniqueID: string(m.Start%seqL) + m.ID,
 			start:    m.Start,
 			end:      m.End,
-			entry:    m.Start <= seqL,
-			terminus: m.End >= 2*seqL,
 		})
 	}
 
