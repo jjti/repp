@@ -7,7 +7,7 @@ import (
 // node is a single node within the DP tree for building up
 // the vector from smaller building fragments
 type node struct {
-	// id of the node's source in the database (will be used to avoid off-target primers in it)
+	// id of the node's source in the database (will be used to avoid off-targets within it)
 	id string
 
 	// start of this node on the target vector (which has been 3x'ed for BLAST)
@@ -25,9 +25,9 @@ type node struct {
 	terminus bool
 }
 
-// distToNext returns the number of bps between the end of the earlier of this
-// and the other fragment and the start of the other
-func (n *node) distTo(other node) int {
+// distToNext returns the number of bps between the end of this node and the start
+// of another
+func (n *node) distTo(other node) (bpDist int) {
 	dist := 0
 
 	// this fragment is before the other
@@ -40,10 +40,10 @@ func (n *node) distTo(other node) int {
 	return dist
 }
 
-// synthDist returns the number of synthesized fragments
-// that would need to be created between one node and another
-// if the two were to be joined, with no existing fragments in between, in an assembly
-func (n *node) synthDist(other node) int {
+// synthDist returns the number of synthesized fragments that would need to be created
+// between one node and another if the two were to be joined, with no existing
+// fragments/nodes in-between, in an assembly
+func (n *node) synthDist(other node) (synthCount int) {
 	dist := n.distTo(other)
 
 	if dist > 0 {
@@ -64,7 +64,7 @@ func (n *node) synthDist(other node) int {
 //
 // Otherwise we find the total synthesis distance between this and
 // the other fragmetn and divide that by the cost per bp of synthesized DNA
-func (n *node) costTo(other node) float32 {
+func (n *node) costTo(other node) (cost float32) {
 	dist := n.distTo(other)
 
 	if dist < 20 {

@@ -8,11 +8,6 @@ type assembly struct {
 
 	// nodes, ordered by distance from the "end" of the vector
 	nodes []node
-
-	// ids of nodes in this assembly
-	// used for determining whether this assembly holds a given
-	// node later (for avoiding BLACKLISTED_NODES)
-	ids map[string]bool
 }
 
 // add a node to the start of this assembly.
@@ -20,17 +15,34 @@ type assembly struct {
 // the new first fragment and the one after it.
 // store the node's id in the list of node ids.
 // TODO: incorporate cost estimate of the last node in an assembly
-func (a *assembly) add(n node) *assembly {
-	if len(a.nodes) > 0 {
-		a.cost += n.costTo(a.nodes[0])
+func (a *assembly) add(n node) (newAssembly assembly, created bool) {
+	// do not create a new assembly if the total number of nodes
+	// would be less than the upper limit
+	if len(a.nodes)+1 > conf.Fragments.MaxCount {
+		return newAssembly, false
 	}
-	a.ids[n.id] = true
-	a.nodes = append([]node{n}, a.nodes...)
-	return a
+
+	// add to list of nodes, update cost, and return
+	if len(a.nodes) > 0 {
+		return assembly{
+			nodes: append([]node{n}, a.nodes...),
+			cost:  n.costTo(a.nodes[0]),
+		}, true
+	}
+
+	// create the start of this assembly, no other nodes
+	return assembly{
+		nodes: []node{n},
+		cost:  0,
+	}, true
 }
 
-// has returns if the id of the node has already been seen in this assembly.
-func (a *assembly) has(n node) bool {
-	_, hasNode := a.ids[n.id]
-	return hasNode
+// contains returns if the id of the node has already been seen in this assembly
+func (a *assembly) contains(n node) (isContained bool) {
+	for _, otherN := range a.nodes {
+		if otherN == n {
+			return true
+		}
+	}
+	return false
 }

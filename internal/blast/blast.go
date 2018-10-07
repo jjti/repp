@@ -173,19 +173,12 @@ func (b *blastExec) parse() ([]frag.Match, error) {
 			continue
 		}
 
-		// the full id of the row
-		idRow := strings.Replace(cols[0], ">", "", -1)
-
-		// remove the pipe symbol
-		idSplit := strings.Split(idRow, "|")
-		if len(idSplit) < 1 {
-			continue
-		}
-		id := idSplit[len(idSplit)-1]
-		seq := cols[5]
+		// the full id of the entry in the db
+		id := strings.Replace(cols[0], ">", "", -1)
 
 		start, _ := strconv.Atoi(cols[1])
 		end, _ := strconv.Atoi(cols[2])
+		seq := cols[5]
 		mismatch, _ := strconv.Atoi(cols[6])
 
 		// direction not guarenteed
@@ -195,6 +188,7 @@ func (b *blastExec) parse() ([]frag.Match, error) {
 
 		// create and append the new match
 		ms = append(ms, frag.Match{
+			// for later querying when checking for off-targets
 			ID:  id,
 			Seq: seq,
 			// convert 1-based numbers to 0-based
@@ -202,8 +196,6 @@ func (b *blastExec) parse() ([]frag.Match, error) {
 			End:   end - 1,
 			// brittle, but checking for circular in entry's id
 			Circular: strings.Contains(id, "(circular)"),
-			// for later querying when checking for off-targets
-			Entry:    idRow,
 			Mismatch: mismatch,
 		})
 	}
