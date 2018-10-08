@@ -19,11 +19,10 @@ func Test_synthDist(t *testing.T) {
 		}
 	}
 
-	assert(n.synthDist(node{start: 3, end: 5}), 0)
+	assert(n.synthDist(node{start: 3, end: 5}), 1)
 	assert(n.synthDist(node{start: 5, end: 10}), 1)
-	assert(n.synthDist(node{start: 1, end: 3}), 0)
+	assert(n.synthDist(node{start: 1, end: 3}), 1)
 	assert(n.synthDist(node{start: 0, end: 1}), 1)
-	return
 }
 
 // test the ability to get the cost between two fragments

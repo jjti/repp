@@ -3,11 +3,8 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"path"
-	"path/filepath"
 
 	"github.com/jjtimmons/decvec/config"
-	"github.com/jjtimmons/decvec/internal/blast"
 	"github.com/jjtimmons/decvec/internal/frag"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -87,12 +84,9 @@ func makeExec(cmd *cobra.Command, args []string) {
 			fragments[0].ID,
 		)
 	}
-	target := fragments[0]
 
-	dbPath, err := filepath.Abs(path.Join("..", "..", "assets", "addgene", "db", "addgene"))
-	handle(err)
+	// target := fragments[0]
 
-	// BLAST the target fragment against the database to add matching fragments
-	err = blast.BLAST(&target, dbPath)
-	handle(err)
+	// dbPath, err := filepath.Abs(path.Join("..", "..", "assets", "addgene", "db", "addgene"))
+	// handle(err)
 }

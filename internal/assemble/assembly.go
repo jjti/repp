@@ -1,5 +1,9 @@
 package assemble
 
+import (
+	"fmt"
+)
+
 // assembly is a slice of nodes ordered by the nodes
 // distance from the end of the target vector
 type assembly struct {
@@ -34,17 +38,20 @@ func (a *assembly) add(n node) (newAssembly assembly, created, complete bool) {
 
 	// add to list of nodes, update cost, and return
 	if len(a.nodes) > 0 {
-		// calc the number of synthesis fragments needed to get to this next fragment
+		// calc the estimated dollar cost of getting to the next node
+		annealCost := a.nodes[len(a.nodes)-1].costTo(n)
+		// calc the number of synthesis fragments needed to get to this next node
 		synths := a.nodes[len(a.nodes)-1].synthDist(n)
 
 		// stay beneath upper limit
 		if a.len()+synths+1 > conf.Fragments.MaxCount {
+			fmt.Printf("%+v", conf)
 			return newAssembly, false, false
 		}
 
 		return assembly{
-			nodes:  append([]node{n}, a.nodes...),
-			cost:   n.costTo(a.nodes[0]),
+			nodes:  append(a.nodes, n),
+			cost:   a.cost + annealCost,
 			synths: a.synths + synths,
 		}, true, false
 	}
