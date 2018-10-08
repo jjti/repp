@@ -1,9 +1,5 @@
 package assemble
 
-import (
-	"fmt"
-)
-
 // assembly is a slice of nodes ordered by the nodes
 // distance from the end of the target vector
 type assembly struct {
@@ -23,41 +19,43 @@ type assembly struct {
 // Complete if a node has matched up onto itself across the zero-index.
 // TODO: incorporate cost estimate of the last node in an assembly
 func (a *assembly) add(n node) (newAssembly assembly, created, complete bool) {
-	// we've complete an assembly if the node being added is the same as the
-	// first node in this assembly
-	complete = false
-	if len(a.nodes) > 0 {
-		complete = n.uniqueID == a.nodes[0].uniqueID
-		if complete {
-			return *a, true, complete
-		}
+	// check if we could complete an assembly with this new node
+	complete = n.uniqueID == a.nodes[0].uniqueID
+	// calc the number of synthesis fragments needed to get to this next node
+	synths := a.nodes[len(a.nodes)-1].synthDist(n)
+
+	newCount := a.len() + synths
+	if !complete {
+		// only adding a new node if not annealing to starting node
+		newCount++
 	}
 
-	// TODO: check if we can return false here (no new assembly) if the new
-	// node starts one seqLength past the first
+	// stay beneath upper limit
+	if newCount > conf.Fragments.MaxCount {
+		return newAssembly, false, false
+	}
 
-	// add to list of nodes, update cost, and return
-	if len(a.nodes) > 0 {
-		// calc the estimated dollar cost of getting to the next node
-		annealCost := a.nodes[len(a.nodes)-1].costTo(n)
-		// calc the number of synthesis fragments needed to get to this next node
-		synths := a.nodes[len(a.nodes)-1].synthDist(n)
+	// calc the estimated dollar cost of getting to the next node
+	annealCost := a.nodes[len(a.nodes)-1].costTo(n)
 
-		// stay beneath upper limit
-		if a.len()+synths+1 > conf.Fragments.MaxCount {
-			fmt.Printf("%+v", conf)
-			return newAssembly, false, false
+	if complete {
+		if synths < 1 {
+			// costs nothing to anneal node to self, already been PCR'ed
+			annealCost = 0
 		}
 
 		return assembly{
-			nodes:  append(a.nodes, n),
+			nodes:  a.nodes, // don't add a new node
 			cost:   a.cost + annealCost,
 			synths: a.synths + synths,
-		}, true, false
+		}, true, true
 	}
 
-	// create the start of this assembly, no other nodes
-	return assembly{[]node{n}, n.costTo(n), 0}, true, false
+	return assembly{
+		nodes:  append(a.nodes, n),
+		cost:   a.cost + annealCost,
+		synths: a.synths + synths,
+	}, true, false
 }
 
 // contains returns if the id of the node has already been seen in this assembly

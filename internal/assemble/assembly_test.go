@@ -103,6 +103,29 @@ func Test_assembly_add(t *testing.T) {
 			true,
 		},
 		{
+			"add with completion requiring synthesis",
+			fields{
+				nodes:  []node{n1, n2, n3},
+				cost:   10.0,
+				synths: 0,
+			},
+			args{
+				// a node that's too far away for straightforward annealing
+				n: node{
+					uniqueID: n1.uniqueID,
+					start:    n3.start + conf.Synthesis.MaxLength,
+					end:      n3.end + conf.Synthesis.MaxLength,
+				},
+			},
+			assembly{
+				nodes:  []node{n1, n2, n3},
+				cost:   14.799999,
+				synths: 1,
+			},
+			true,
+			true,
+		},
+		{
 			"don't exceed fragment limit",
 			fields{
 				nodes:  []node{n1, n2, n3, n2, n3},
@@ -114,20 +137,6 @@ func Test_assembly_add(t *testing.T) {
 			},
 			assembly{},
 			false,
-			false,
-		},
-		{
-			"create new assembly",
-			fields{},
-			args{
-				n: n1,
-			},
-			assembly{
-				nodes:  []node{n1},
-				cost:   n1.costTo(n1),
-				synths: 0,
-			},
-			true,
 			false,
 		},
 	}

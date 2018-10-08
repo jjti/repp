@@ -6,9 +6,9 @@ import (
 )
 
 func Test_build(t *testing.T) {
-	// too small for a node to synth all the way back to itself
 	conf.Synthesis.MaxLength = 5
 	conf.Fragments.MinHomology = 1
+	conf.Fragments.MaxCount = 5
 
 	// input
 	n21 := node{
@@ -28,7 +28,7 @@ func Test_build(t *testing.T) {
 	}
 	n24 := node{
 		uniqueID: "1",
-		start:    19,
+		start:    20,
 		end:      30,
 	}
 	n25 := node{
@@ -60,7 +60,7 @@ func Test_build(t *testing.T) {
 		{
 			"test building of assemblies",
 			args{
-				nodes: []node{n21, n22, n23},
+				nodes: []node{n21, n22, n23, n24, n25},
 			},
 			[]assembly{a1, a2, a3},
 		},
