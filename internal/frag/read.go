@@ -9,26 +9,18 @@ import (
 )
 
 // Read a FASTA file to a slice of Fragments
-func Read(path string) ([]Fragment, error) {
-	// read a file into memory
-	var dat []byte
-	var err error
-
+func Read(path string) (fragments []Fragment, err error) {
 	if !filepath.IsAbs(path) {
 		path, err = filepath.Abs(path)
-
 		if err != nil {
 			return nil, fmt.Errorf("failed to create path to FASTA file: %s", err)
 		}
 	}
 
-	dat, err = ioutil.ReadFile(path)
-
+	dat, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read input FASTA path: %s", err)
 	}
-
-	// read it into a string
 	file := string(dat)
 
 	// split by newlines
@@ -36,7 +28,7 @@ func Read(path string) ([]Fragment, error) {
 
 	// read in the fragments
 	var headerIndices []int
-	ids := []string{}
+	var ids []string
 	for i, line := range lines {
 		if strings.HasPrefix(line, ">") {
 			headerIndices = append(headerIndices, i)
@@ -61,7 +53,6 @@ func Read(path string) ([]Fragment, error) {
 	}
 
 	// build and return the new fragments
-	var fragments []Fragment
 	for i, id := range ids {
 		fragments = append(fragments, Fragment{
 			ID:  id,
@@ -71,8 +62,8 @@ func Read(path string) ([]Fragment, error) {
 
 	// opened and parsed file but found nothing
 	if len(fragments) < 1 {
-		return nil, fmt.Errorf("failed to parse building fragments from %s", file)
+		return fragments, fmt.Errorf("failed to parse fragment(s) from %s", file)
 	}
 
-	return fragments, nil
+	return
 }

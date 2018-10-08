@@ -9,8 +9,8 @@ import (
 	"github.com/jjtimmons/decvec/internal/blast"
 )
 
-// primer is a single primer used to ampligy a parent fragment
-type primer struct {
+// Primer is a single Primer used to ampligy a parent fragment
+type Primer struct {
 	// seq of the primer (In 5' to 3' direction)
 	seq string
 
@@ -57,7 +57,7 @@ type PCR struct {
 	End int
 
 	// Primers necessary to create this PCR Fragment from the template sequence
-	Primers []primer
+	Primers []Primer
 }
 
 // SetPrimers creates primers on a PCR fragment and returns an error if

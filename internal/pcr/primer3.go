@@ -85,7 +85,7 @@ func (p *p3exec) run() error {
 }
 
 // parse the output into primers for the part
-func (p *p3exec) parse() ([]primer, error) {
+func (p *p3exec) parse() ([]Primer, error) {
 	file, err := ioutil.ReadFile(p.Out)
 	if err != nil {
 		return nil, err
@@ -103,7 +103,7 @@ func (p *p3exec) parse() ([]primer, error) {
 
 	// read in a single primer from the output string file
 	// side is either "LEFT" or "RIGHT"
-	parsePrimer := func(side string) primer {
+	parsePrimer := func(side string) Primer {
 		seq := results[fmt.Sprintf("PRIMER_%s_0_SEQUENCE", side)]
 		tm := results[fmt.Sprintf("PRIMER_%s_0_TM", side)]
 		gc := results[fmt.Sprintf("PRIMER_%s_0_GC_PERCENT", side)]
@@ -115,7 +115,7 @@ func (p *p3exec) parse() ([]primer, error) {
 		penaltyfloat, _ := strconv.ParseFloat(penalty, 32)
 		pairfloat, _ := strconv.ParseFloat(pairPenalty, 32)
 
-		return primer{
+		return Primer{
 			seq:         seq,
 			strand:      side == "LEFT",
 			Tm:          float32(tmfloat),
@@ -125,7 +125,7 @@ func (p *p3exec) parse() ([]primer, error) {
 		}
 	}
 
-	return []primer{
+	return []Primer{
 		parsePrimer("LEFT"),
 		parsePrimer("RIGHT"),
 	}, nil

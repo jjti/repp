@@ -47,22 +47,14 @@ type blastExec struct {
 // BLAST the passed Fragment against a set from the command line and create
 // matches for those that are long enough
 //
-// Accepts the fragment to blast against the db and the path to the db on
-// the local fs
-func BLAST(f *frag.Fragment) ([]frag.Match, error) {
+// Accepts a fragment to blast against
+func BLAST(f *frag.Fragment) (matches []Match, err error) {
 	b := &blastExec{
 		f:   f,
 		in:  path.Join(blastDir, f.ID+".input.fa"),
 		out: path.Join(blastDir, f.ID+".output"),
 	}
-	return b.exec(false)
-}
 
-// exec is for running the create, run, and parse commands on the db and
-// returning an error (if there is one) or the matches otherwise.
-// Subject is for whether we should be BLASTing against a subject file
-// instead of the entire database.
-func (b *blastExec) exec(subject bool) (matches []frag.Match, err error) {
 	// make sure the addgene db is there
 	if _, err := os.Stat(db); os.IsNotExist(err) {
 		return nil, fmt.Errorf("failed to find an Addgene database at %s", db)
@@ -152,16 +144,16 @@ func (b *blastExec) runAgainst() error {
 
 // parse is for reading the output file into Matches on the Fragment
 // returns a slice of Matches for the blasted fragment
-func (b *blastExec) parse() ([]frag.Match, error) {
+func (b *blastExec) parse() (matches []Match, err error) {
 	// read in the results
 	file, err := ioutil.ReadFile(b.out)
 	if err != nil {
-		return nil, err
+		return
 	}
 	fileS := string(file)
 
 	// read it into Matches
-	var ms []frag.Match
+	var ms []Match
 	for _, line := range strings.Split(fileS, "\n") {
 		// comment lines start with a #
 		if strings.HasPrefix(line, "#") {
@@ -188,7 +180,7 @@ func (b *blastExec) parse() ([]frag.Match, error) {
 		}
 
 		// create and append the new match
-		ms = append(ms, frag.Match{
+		ms = append(ms, Match{
 			// for later querying when checking for off-targets
 			ID:  id,
 			Seq: seq,

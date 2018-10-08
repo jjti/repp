@@ -6,11 +6,11 @@ Great Until Every Sequence is Synthesized
 
 FRAG_COUNT_LIMIT = maximum number of fragments to include in the assembly
 
-ASSEMBLY_LISTS = map from fragment count to the list of assemblies, as a list of nodes, that will make an assembly with that number of nodes (in the final assembly). Sorted by estimated assembly cost
+ASSEMBLY_LIST = list of assemblies that can be made circular (first node wraps around on itself across the zero-index)
 
-BLACKLISTED_NODES = list of nodes that are deemed unusable (ex: inverted repeat in a junction region or primers that have off-targets in the parent vector sequence)
+BLACKLISTED = list of nodes that are deemed unusable (ex: inverted repeat in a junction region or primers that have off-targets in the parent vector sequence)
 
-1.  Build up ASSEMBLY_LISTS
+1.  Build up ASSEMBLY_LIST
 
     1.1 Using reverse induction on a directed acyclic graph, traverse each node and build, on the node, a list of possible assemblies that could be used to get from that node to the "end of" the vector
 
@@ -20,28 +20,26 @@ BLACKLISTED_NODES = list of nodes that are deemed unusable (ex: inverted repeat 
 
         1.1.3 Also estimate cost at this step, storing the estimated cost to get from this assembly to each of the children in the list (should be the cost from this node to the first in the assembly list + the cost of the first child in the assembly list)
 
-    1.2 After building up all assembly lists on all nodes, gather all the assembly lists from the "entry nodes." (ie, nodes that are a seq-length away from the end of the target vector sequence)
-
 2.  Find all the pareto optimal solutions
 
     2.1 Rank assemblies in lists for those involving a given number of solutions. So if the FRAG_COUNT_LIMIT is 5, there will be a cheapest solution with 5 fragments, a cheapest solution with 4 fragments, 3, etc
 
     2.2 Find the pareto optimal solutions: the assemblies that have the fewest number of fragments and the cheapest estimated assembly cost. If the assembly with 3 fragments has a cheaper estimated assembly cost than the assembly with 4 fragments, the 4-fragment assembly is not pareto optimal and should not be included
 
-    2.3 Remove assemblies that include a node from BLACKLISTED_NODES
+    2.3 Remove assemblies that include a node from BLACKLISTED
 
 3.  Traverse each pareto optimal solution from #3:
 
     3.1 Create primers if it's going to be PCR'ed, create a synthetic fragment otherwise
 
-    3.2 Fail out (removing the assembly from ASSEMBLY_LISTS) and repeat #2 if:
+    3.2 Fail out (removing the assembly from ASSEMBLY_LIST) and repeat #2 if:
 
          3.2.1 The primers have a very high primer3 pair penalty score OR
                The primers have off-target's in their source vector OR
                The node has an inverted repeat in its junction OR
                The synthetic fragment will be dificult to synthesize
 
-               3.2.1.1 If its a PCR Fragment, add it to BLACKLISTED_NODES
+               3.2.1.1 If its a PCR Fragment, add it to BLACKLISTED
 
         3.2.2 The node has a duplicate end region with another fragment in the assembly
 

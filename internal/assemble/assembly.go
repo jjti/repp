@@ -14,10 +14,10 @@ type assembly struct {
 }
 
 // add a node to the start of this assembly.
+//
 // Update the cost of the assembly to include the link between the new first node and the one after it.
 // Store the node's id in the list of node ids.
-// Complete if a node has matched up onto itself across the zero-index.
-// TODO: incorporate cost estimate of the last node in an assembly
+// Complete  an assembly if a node has matched up onto itself across the zero-index.
 func (a *assembly) add(n node) (newAssembly assembly, created, complete bool) {
 	// check if we could complete an assembly with this new node
 	complete = n.uniqueID == a.nodes[0].uniqueID
@@ -59,7 +59,7 @@ func (a *assembly) add(n node) (newAssembly assembly, created, complete bool) {
 }
 
 // contains returns if the id of the node has already been seen in this assembly
-func (a *assembly) contains(n node) (isContained bool) {
+func (a *assembly) contains(n node) (hasNode bool) {
 	for _, otherN := range a.nodes {
 		// they're the same if they have the same id and start index
 		// id isn't enough by itself because there may be multiple with the same
@@ -71,7 +71,18 @@ func (a *assembly) contains(n node) (isContained bool) {
 	return false
 }
 
-// len returns len(nodes) + the synthesis fragment count
+// len returns len(assembly.nodes) + the synthesis fragment count
 func (a *assembly) len() int {
 	return len(a.nodes) + a.synths
+}
+
+// fill traverses the nodes in an assembly and converts them into
+// fragments -- either pcr fragments or synthetic fragments -- that
+// will match the sequences that come together in vitro during assembly
+//
+// it can fail out. For example, a PCR Fragment may have off-targets in
+// the parent vector. If that happens, we return the problem node
+func (a *assembly) fill() (blacklist node, err error) {
+
+	return
 }
