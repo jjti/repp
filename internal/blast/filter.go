@@ -4,7 +4,6 @@ import (
 	"sort"
 
 	"github.com/jjtimmons/decvec/config"
-	"github.com/jjtimmons/decvec/internal/frag"
 )
 
 // filter is for "propertizing" the matches from BLAST
@@ -14,17 +13,13 @@ import (
 // will be the better one, since it covers a greater region and will almost
 // always be preferable to the smaller one
 //
-// the search range is from 1x-2x the length of the target vector sequence
-// and it used in an effort to find fragments that overlap with large regions
-// of the target vector but do so in regions outside the central target range
-//
 // also remove small fragments here, that are too small to be useful during
 // assembly
-func filter(matches []frag.Match, from int, to int) (properized []frag.Match) {
+func filter(matches []Match) (properized []Match) {
 	c := config.NewConfig()
 
 	// remove fragments that are shorter the minimum cut off size
-	var largeEnough []frag.Match
+	var largeEnough []Match
 	for _, m := range matches {
 		if m.Length() < c.Fragments.MinMatch {
 			largeEnough = append(largeEnough, m)

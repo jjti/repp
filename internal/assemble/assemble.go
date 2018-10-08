@@ -14,8 +14,7 @@ var (
 	conf = config.NewConfig()
 )
 
-// Assemble the BLAST matches into assemblies that span the target
-// sequence
+// Assemble the BLAST matches into assemblies that span the target sequence
 //
 // First build up assemblies, creating all possible assemblies that are
 // beneath the upper-bound limit on the number of fragments
@@ -51,9 +50,10 @@ func assemble(nodes []node) {
 	// build up a the map from fragment to assemblies with that fragment count
 	assemblies := build(nodes)
 
-	// find pareto optimal solutions
-	paretoSet := pareto(assemblies)
+	// find the pareto optimal set (best of either cost/fragment# or both)
+	paretos := pareto(assemblies)
 
 	//
-	fmt.Println(paretoSet)
+	fmt.Println(paretos)
+
 }
