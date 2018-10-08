@@ -5,9 +5,9 @@ import (
 	"sort"
 )
 
-// build is for building up an ASSEMBLIES_LIST
+// build is for building up countMap
 //
-// ASSEMBLIES_LIST is a map from the number of fragments in an assembly to
+// countMap is a map from the number of fragments in an assembly to
 // a list of assemblies that have that number of fragments within them
 //
 // It is created by traversing a DAG in reverse order:
@@ -32,7 +32,7 @@ func build(nodes []node) (countMap map[int][]assembly) {
 
 	// sort in descending order of end index
 	sort.Slice(nodes, func(i, j int) bool {
-		return nodes[i].end > nodes[j].end
+		return nodes[i].start < nodes[j].start
 	})
 
 	// for every node in the list of reverse sorted nodes
@@ -66,5 +66,5 @@ func build(nodes []node) (countMap map[int][]assembly) {
 		}
 	}
 
-	return countMap
+	return
 }

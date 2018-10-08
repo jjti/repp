@@ -20,16 +20,22 @@ type assembly struct {
 // TODO: incorporate cost estimate of the last node in an assembly
 func (a *assembly) add(n node) (newAssembly assembly, created, complete bool) {
 	// we've complete an assembly if the node being added is the same as the
-	// first one in this assembly
-	complete = n.uniqueID == a.nodes[len(a.nodes)-1].uniqueID
-	if complete {
-		return *a, true, complete
+	// first node in this assembly
+	complete = false
+	if len(a.nodes) > 0 {
+		complete = n.uniqueID == a.nodes[0].uniqueID
+		if complete {
+			return *a, true, complete
+		}
 	}
+
+	// TODO: check if we can return false here (no new assembly) if the new
+	// node starts one seqLength past the first
 
 	// add to list of nodes, update cost, and return
 	if len(a.nodes) > 0 {
-		// calc the number of synthesis fragment to get to next fragment
-		synths := a.nodes[0].synthDist(n)
+		// calc the number of synthesis fragments needed to get to this next fragment
+		synths := a.nodes[len(a.nodes)-1].synthDist(n)
 
 		// stay beneath upper limit
 		if a.len()+synths+1 > conf.Fragments.MaxCount {
