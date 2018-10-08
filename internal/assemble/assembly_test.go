@@ -100,6 +100,34 @@ func Test_assembly_add(t *testing.T) {
 			true,
 			true,
 		},
+		{
+			"don't exceed fragment limit",
+			fields{
+				nodes:  []node{n1, n2, n3, n2, n3},
+				cost:   10.0,
+				synths: 0,
+			},
+			args{
+				n: n2,
+			},
+			assembly{},
+			false,
+			false,
+		},
+		{
+			"create new assembly",
+			fields{},
+			args{
+				n: n1,
+			},
+			assembly{
+				nodes:  []node{n1},
+				cost:   n1.costTo(n1),
+				synths: 0,
+			},
+			true,
+			false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

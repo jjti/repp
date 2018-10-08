@@ -204,6 +204,37 @@ func Test_node_costTo(t *testing.T) {
 }
 
 func Test_node_reach(t *testing.T) {
+	conf.Fragments.MinHomology = 2
+
+	n11 := node{
+		start: 0,
+		end:   10,
+	}
+	n12 := node{
+		start: 5,
+		end:   15,
+	}
+	n13 := node{
+		start: 6,
+		end:   16,
+	}
+	n14 := node{
+		start: 7,
+		end:   17,
+	}
+	n15 := node{
+		start: 15,
+		end:   20,
+	}
+	n16 := node{
+		start: 16,
+		end:   21,
+	}
+	n17 := node{
+		start: 17,
+		end:   22,
+	}
+
 	type fields struct {
 		id         string
 		uniqueID   string
@@ -222,7 +253,35 @@ func Test_node_reach(t *testing.T) {
 		args          args
 		wantReachable []node
 	}{
-		// TODO: Add test cases.
+		{
+			"gather all reachable nodes",
+			fields{
+				start: n11.start,
+				end:   n11.end,
+			},
+			args{
+				[]node{n11, n12, n13, n14, n15, n16, n17},
+				0,
+				2, // limit to 3 "synthable" nodes
+			},
+			// get all the over-lappable nodes plus two more that
+			// can be synthesized to
+			[]node{n12, n13, n14, n15, n16},
+		},
+		{
+			"return nothing at end",
+			fields{
+				start: n11.start,
+				end:   n11.end,
+			},
+			args{
+				[]node{n11, n12, n13, n14, n15, n16, n17},
+				6,
+				2, // limit to 3 "synthable" nodes
+			},
+			// get all the over-lappable nodes plus two more that can be synthesized to
+			[]node{},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
