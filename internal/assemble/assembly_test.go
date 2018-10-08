@@ -90,7 +90,9 @@ func Test_assembly_add(t *testing.T) {
 				synths: 0,
 			},
 			args{
-				n: n1,
+				n: node{
+					uniqueID: n1.uniqueID,
+				},
 			},
 			assembly{
 				nodes:  []node{n1, n2, n3},
