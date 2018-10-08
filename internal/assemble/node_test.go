@@ -262,7 +262,7 @@ func Test_node_reach(t *testing.T) {
 		name          string
 		fields        fields
 		args          args
-		wantReachable []node
+		wantReachable []int
 	}{
 		{
 			"gather all reachable nodes",
@@ -277,7 +277,7 @@ func Test_node_reach(t *testing.T) {
 			},
 			// get all the over-lappable nodes plus two more that
 			// can be synthesized to
-			[]node{n12, n13, n14, n15, n16},
+			[]int{1, 2, 3, 4, 5},
 		},
 		{
 			"return nothing at end",
@@ -290,8 +290,8 @@ func Test_node_reach(t *testing.T) {
 				6,
 				2, // limit to 3 "synthable" nodes
 			},
-			// get all the over-lappable nodes plus two more that can be synthesized to
-			[]node{},
+			// nothing is reachable
+			[]int{},
 		},
 	}
 	for _, tt := range tests {
