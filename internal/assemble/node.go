@@ -73,15 +73,15 @@ func (n *node) costTo(other node) (cost float32) {
 	return (float32(conf.Fragments.MinHomology) + float32(dist)) * conf.Synthesis.BPCost
 }
 
-// reach returns a slice of nodes that overlap with, or are the first synth_count nodes
+// reach returns a slice of node indexes that overlap with, or are the first synth_count nodes
 // away from this one within a slice of ordered nodes
 //
 // nodes are nodes sorted in ascending start index order
 // i is this node's index in the slice of nodes
 // synthCount is the number of nodes to try to synthesize to, in addition to the
 // 	nodes that are reachable with just existing homology
-func (n *node) reach(nodes []node, i, synthCount int) (reachable []node) {
-	reachable = []node{}
+func (n *node) reach(nodes []node, i, synthCount int) (reachable []int) {
+	reachable = []int{}
 
 	// accumulate the nodes that overlap with this one
 	for true {
@@ -94,11 +94,11 @@ func (n *node) reach(nodes []node, i, synthCount int) (reachable []node) {
 
 		// these nodes overlap by enough for assembly without PCR
 		if n.distTo(nodes[i]) <= -(conf.Fragments.MinHomology) {
-			reachable = append(reachable, nodes[i])
+			reachable = append(reachable, i)
 		} else if synthCount > 0 {
 			// there's not enough existing overlap, but we can synthesize to it
 			synthCount--
-			reachable = append(reachable, nodes[i])
+			reachable = append(reachable, i)
 		} else {
 			break
 		}

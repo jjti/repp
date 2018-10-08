@@ -40,11 +40,12 @@ func build(nodes []node) (assemblies []assembly) {
 	// for every node in the list of reverse sorted nodes
 	for i, n := range nodes {
 		// for every overlapping fragment + synthCount more
-		for _, r := range n.reach(nodes, i, synthCount) {
+		for _, j := range n.reach(nodes, i, synthCount) {
 			// for every assembly on the reachable fragment
-			for _, a := range r.assemblies {
+			for _, a := range nodes[i].assemblies {
 				// see if we can create a new assembly with this node included
-				if newAss, created, complete := a.add(n); created {
+				if newAss, created, complete := a.add(nodes[j]); created {
+					fmt.Printf("%s %s %t %t\n", n.id, nodes[j].id, created, complete)
 					if complete {
 						// we've completed a circlular plasmid assembly
 						// it has wrapped back onto itself
@@ -52,7 +53,7 @@ func build(nodes []node) (assemblies []assembly) {
 						// TODO: check if we can break here
 					} else {
 						// and add to this node's list of assemblies
-						n.assemblies = append(n.assemblies, newAss)
+						nodes[j].assemblies = append(nodes[j].assemblies, newAss)
 					}
 				}
 			}
