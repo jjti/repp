@@ -1,13 +1,11 @@
-// Package assemble is for traversing the target matches and
-// creating a list of possible assemblies for making the target
-// sequence
+// Package assemble is for turning blast Matches into building Fragments
+//
 package assemble
 
 import (
 	"fmt"
 
 	"github.com/jjtimmons/decvec/config"
-	"github.com/jjtimmons/decvec/internal/frag"
 )
 
 var (
@@ -27,7 +25,7 @@ var (
 // "fill-in" the nodes. Create primers on the node if it's a PCR Fragment
 // or create a sequence to be synthesized if it's a synthetic fragment.
 // Error out and repeat the build stage if a node fails to be filled
-func Assemble(matches []frag.Match, seqL int) {
+func Assemble(matches []dvec.Match, seqL int) {
 	// map fragment Matches to nodes
 	// store whether they're entry or terminal nodes based on whether they
 	// overlap the first or last bp of the search range, respectively
