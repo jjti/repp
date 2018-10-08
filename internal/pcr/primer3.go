@@ -39,9 +39,9 @@ func (p *p3exec) input() error {
 		"PRIMER_NUM_RETURN":                    "1",
 		"PRIMER_TASK":                          "pick_cloning_primers",
 		"PRIMER_PICK_ANYWAY":                   "1",
-		"SEQUENCE_TEMPLATE":                    p.Frag.Seq,
-		"SEQUENCE_INCLUDED_REGION":             fmt.Sprintf("0,%d", len(p.Frag.Seq)),
-		"PRIMER_PRODUCT_SIZE_RANGE":            fmt.Sprintf("%d-%d", len(p.Frag.Seq), len(p.Frag.Seq)+1),
+		"SEQUENCE_TEMPLATE":                    p.dvec.Seq,
+		"SEQUENCE_INCLUDED_REGION":             fmt.Sprintf("0,%d", len(p.dvec.Seq)),
+		"PRIMER_PRODUCT_SIZE_RANGE":            fmt.Sprintf("%d-%d", len(p.dvec.Seq), len(p.dvec.Seq)+1),
 	}
 
 	var fileContents string

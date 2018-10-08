@@ -4,6 +4,7 @@ import (
 	"sort"
 
 	"github.com/jjtimmons/decvec/config"
+	"github.com/jjtimmons/decvec/internal/dvec"
 )
 
 // filter is for "propertizing" the matches from BLAST
@@ -15,11 +16,11 @@ import (
 //
 // also remove small fragments here, that are too small to be useful during
 // assembly
-func filter(matches []Match) (properized []Match) {
+func filter(matches []dvec.Match) (properized []dvec.Match) {
 	c := config.NewConfig()
 
 	// remove fragments that are shorter the minimum cut off size
-	var largeEnough []Match
+	var largeEnough []dvec.Match
 	for _, m := range matches {
 		if m.Length() < c.Fragments.MinMatch {
 			largeEnough = append(largeEnough, m)

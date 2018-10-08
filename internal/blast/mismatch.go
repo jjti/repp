@@ -7,6 +7,8 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+
+	"github.com/jjtimmons/decvec/internal/dvec"
 )
 
 // isMismatch reutns whether the match constitutes a mismatch
@@ -16,7 +18,7 @@ import (
 //
 // The equation used for the melting temperature is:
 // Tm = 81.5 + 0.41(%GC) - 675/N - % mismatch, where N = total number of bases.
-func isMismatch(match Match) bool {
+func isMismatch(match dvec.Match) bool {
 	primer := strings.ToLower(match.Seq)
 	primerL := float32(len(primer))
 
@@ -34,7 +36,7 @@ func isMismatch(match Match) bool {
 //
 // The parent sequence is passed as the entry id as it exists in the
 // blast database
-func Mismatch(primer, parent string) (mismatch bool, match Match, err error) {
+func Mismatch(primer, parent string) (mismatch bool, match dvec.Match, err error) {
 	// path to the blastdbcmd binary
 	blastcmd, _ := filepath.Abs(path.Join("..", "..", "vendor", "ncbi-blast-2.7.1+", "bin", "blastdbcmd"))
 	// path to the entry batch file to hold the parent entry accession
