@@ -57,7 +57,7 @@ func (a *assembly) add(n node) (newAssembly assembly, created, complete bool) {
 	}
 
 	// create the start of this assembly, no other nodes
-	return assembly{[]node{n}, 0, 0}, true, false
+	return assembly{[]node{n}, n.costTo(n), 0}, true, false
 }
 
 // contains returns if the id of the node has already been seen in this assembly

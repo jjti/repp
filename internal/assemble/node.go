@@ -81,6 +81,8 @@ func (n *node) costTo(other node) (cost float32) {
 // synthCount is the number of nodes to try to synthesize to, in addition to the
 // 	nodes that are reachable with just existing homology
 func (n *node) reach(nodes []node, i, synthCount int) (reachable []node) {
+	reachable = []node{}
+
 	// accumulate the nodes that overlap with this one
 	for true {
 		i++
@@ -98,7 +100,7 @@ func (n *node) reach(nodes []node, i, synthCount int) (reachable []node) {
 			synthCount--
 			reachable = append(reachable, nodes[i])
 		} else {
-			return reachable
+			break
 		}
 	}
 
