@@ -1,37 +1,41 @@
 package assemble
 
 import (
+	"fmt"
 	"math"
 	"sort"
 )
 
-// build is for building up countMap
-//
-// countMap is a map from the number of fragments in an assembly to
-// a list of assemblies that have that number of fragments within them
+// build is for building up circular assemblies with less fragments than the build limit
 //
 // It is created by traversing a DAG in reverse order:
-//
-// number of additional nodes to consider for each node
-// (ie additional number of fragments to try synthing to)
-// synth_count = math.max(5, 0.05 * len(nodes))
-//
-// traverse the nodes
 // 	foreach this.node (sorted in reverse order):
 // 	  foreach that.node that this node overlaps with + synth_count:
 //	 	foreach assembly on that.node:
 //    	    add this.node to the assembly to create a new assembly, store on this.node
-//
-// create a map from the number of fragments in each assembly to a list with assemblies
-// 		containing that many assemblies
 func build(nodes []node) (assemblies []assembly) {
-	// number of nodes to try to synthesize to from each node (plus the natural overlap)
+	// number of additional nodes try synthesizing to, in addition to those that
+	// already have enough homology for overlap without any modifications for each node
+	// synth_count = math.max(5, 0.05 * len(nodes)); 5 of 5%, whichever is greater
 	synthCount := int(math.Max(5.0, 0.05*float64(len(nodes))))
+
+	fmt.Println(synthCount)
 
 	// sort with increasing start index
 	sort.Slice(nodes, func(i, j int) bool {
 		return nodes[i].start < nodes[j].start
 	})
+
+	// create a starting assembly on each node including just itself
+	for i, n := range nodes {
+		nodes[i].assemblies = []assembly{
+			assembly{
+				nodes:  []node{n},   // just self
+				cost:   n.costTo(n), // just PCR,
+				synths: 0,           // no synthetic nodes at start
+			},
+		}
+	}
 
 	// for every node in the list of reverse sorted nodes
 	for i, n := range nodes {
