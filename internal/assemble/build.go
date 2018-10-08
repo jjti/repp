@@ -17,14 +17,11 @@ import (
 // synth_count = math.max(5, 0.05 * len(nodes))
 //
 // traverse the nodes
-//
 // 	foreach this.node (sorted in reverse order):
 // 	  foreach that.node that this node overlaps with + synth_count:
 //	 	foreach assembly on that.node:
 //    	    add this.node to the assembly to create a new assembly, store on this.node
-// after the last node is traversed, add an empty node and synth to synth_count other nodes
 //
-// // store in a map
 // create a map from the number of fragments in each assembly to a list with assemblies
 // 		containing that many assemblies
 func build(nodes []node) (countMap map[int][]assembly) {
@@ -44,16 +41,16 @@ func build(nodes []node) (countMap map[int][]assembly) {
 		for _, r := range n.reach(nodes, i, synthCount) {
 			// for every assembly on the reachable fragment
 			for _, a := range r.assemblies {
-				// see if we can create a new one with this node included
-				if newa, made, complete := a.add(n); made {
+				// see if we can create a new assembly with this node included
+				if newAss, created, complete := a.add(n); created {
 					if complete {
-						// we've completed a circlular plasmid, has mapped
-						// back onto itself
-						assemblies = append(assemblies, newa)
-
+						// we've completed a circlular plasmid
+						// it's wrapped back onto itself
+						assemblies = append(assemblies, newAss)
+						// TODO: check if we can break here
 					} else {
 						// and add to this node's list of assemblies
-						n.assemblies = append(n.assemblies, newa)
+						n.assemblies = append(n.assemblies, newAss)
 					}
 				}
 			}
@@ -64,6 +61,8 @@ func build(nodes []node) (countMap map[int][]assembly) {
 	for _, a := range assemblies {
 		if as, ok := countMap[a.len()]; ok {
 			countMap[a.len()] = append(as, a)
+		} else {
+			countMap[a.len()] = []assembly{a}
 		}
 	}
 
