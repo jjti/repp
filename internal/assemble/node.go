@@ -38,7 +38,7 @@ func (n *node) distTo(other node) (bpDist int) {
 func (n *node) synthDist(other node) (synthCount int) {
 	dist := n.distTo(other)
 
-	if dist > -20 {
+	if dist > -(conf.Fragments.MinHomology) {
 		// can't be negative before the ceil
 		floatDist := math.Max(1.0, float64(dist))
 		// split up the distance between them by the max synthesized fragment size
@@ -60,14 +60,17 @@ func (n *node) synthDist(other node) (synthCount int) {
 func (n *node) costTo(other node) (cost float32) {
 	dist := n.distTo(other)
 
-	if dist < -20 {
+	if dist <= -(conf.Fragments.MinHomology) {
 		// there's already overlap between this node and the one being tested
-		// and enough for exiting homology to be enough
-		return 60 * conf.PCR.BPCost
+		// and enough for exiting homology to be enough.
+		// estimating two primers, 20bp each.
+		return 40 * conf.PCR.BPCost
 	}
 
 	// we need to create a new synthetic fragment to get from this fragment to the next
-	return float32(dist) * conf.Synthesis.BPCost
+	// account for both the bps between them as well as the additional bps we need to add
+	// for homology between the two
+	return (float32(conf.Fragments.MinHomology) + float32(dist)) * conf.Synthesis.BPCost
 }
 
 // reach returns a slice of nodes that overlap with, or are the first synth_count nodes
@@ -88,7 +91,7 @@ func (n *node) reach(nodes []node, i, synthCount int) (reachable []node) {
 		}
 
 		// these nodes overlap by enough for assembly without PCR
-		if n.distTo(nodes[i]) < -20 {
+		if n.distTo(nodes[i]) <= -(conf.Fragments.MinHomology) {
 			reachable = append(reachable, nodes[i])
 		} else if synthCount > 0 {
 			// there's not enough existing overlap, but we can synthesize to it

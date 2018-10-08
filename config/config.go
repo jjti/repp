@@ -24,6 +24,9 @@ type FragmentConfig struct {
 	// the maximum number of fragments in the final assembly
 	MaxCount int `mapstructure:"max-count"`
 
+	// the minimum homology between fragments in the Gibson assembly
+	MinHomology int `mapstructure:"min-homology"`
+
 	// the minimum length of match between a building fragment
 	// and the target fragment for it to be considered
 	MinMatch int `mapstructure:"min-match"`
