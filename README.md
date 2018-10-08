@@ -65,4 +65,6 @@ all fragments the current fragment overlaps with + number_to_consider
 
 ## Caveats
 
-Addgene verified sequence information doesn't include all the of the vector sequence for some of the vectors. Therefore there might be off-targets that are invisible
+- Addgene verified sequence information doesn't include all the of the vector sequence for some of the vectors. Therefore there might be off-targets that are invisible
+
+- Pareto optimal solutions right now are only so for cost and fragment count. If there are multiple assemblies with close the same cost/assembly-count, we might progress into creating primers as well and then comparing on primer3 pair penalty score

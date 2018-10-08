@@ -25,11 +25,11 @@ type node struct {
 }
 
 // distTo returns the distance between the start of this node and the end of the other.
-// assumes that this node starts after the start of the other node.
+// assumes that this node starts before the other
 // will return a negative number if this node overlaps with the other.
 // will return a positive number if this node doesn't overlap with the other.
 func (n *node) distTo(other node) (bpDist int) {
-	return n.start - other.end
+	return other.start - n.end
 }
 
 // synthDist returns the number of synthesized fragments that would need to be created
@@ -73,8 +73,8 @@ func (n *node) costTo(other node) (cost float32) {
 // reach returns a slice of nodes that overlap with, or are the first synth_count nodes
 // away from this one within a slice of ordered nodes
 //
-// nodes are nodes sorted in descending order of start index
-// i is this nodes index in the slice of nodes
+// nodes are nodes sorted in ascending start index order
+// i is this node's index in the slice of nodes
 // synthCount is the number of nodes to try to synthesize to, in addition to the
 // 	nodes that are reachable with just existing homology
 func (n *node) reach(nodes []node, i, synthCount int) (reachable []node) {
@@ -87,16 +87,17 @@ func (n *node) reach(nodes []node, i, synthCount int) (reachable []node) {
 			return reachable
 		}
 
-		// these nodes overlap by enough for Gibson Assembly
+		// these nodes overlap by enough for assembly without PCR
 		if n.distTo(nodes[i]) < -20 {
 			reachable = append(reachable, nodes[i])
 		} else if synthCount > 0 {
-			// there's not enough existing overlap, but we'll synthesize to it
+			// there's not enough existing overlap, but we can synthesize to it
 			synthCount--
 			reachable = append(reachable, nodes[i])
 		} else {
 			return reachable
 		}
 	}
-	return reachable
+
+	return
 }
