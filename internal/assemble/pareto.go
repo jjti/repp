@@ -13,7 +13,17 @@ import (
 // than all other 2 fragment assemblies. And, if it's cheaper than all
 // other 3 fragment assemblies, there's no 3-fragment pareto optimal
 // solution, the 2-fragment assembly sufficies
-func pareto(countMap map[int][]assembly) (paretoSet []assembly) {
+func pareto(assemblies []assembly) (paretoSet []assembly) {
+	// build up the fragment count to assemblies list map
+	countMap := make(map[int][]assembly)
+	for _, a := range assemblies {
+		if as, ok := countMap[a.len()]; ok {
+			countMap[a.len()] = append(as, a)
+		} else {
+			countMap[a.len()] = []assembly{a}
+		}
+	}
+
 	// minimum cost seen so far
 	minCostOverall := float32(math.MaxFloat32)
 
@@ -26,7 +36,7 @@ func pareto(countMap map[int][]assembly) (paretoSet []assembly) {
 
 	// now check each fragment count to see if it's cheapest overall
 	// and find the cheapest assembly within it
-	for count := range countKeys {
+	for _, count := range countKeys {
 		minAss := countMap[count][0]
 
 		// check each assembly to see if it's cheaper that local min

@@ -49,10 +49,10 @@ func Assemble(matches []frag.Match, seqL int) {
 //
 func assemble(nodes []node) {
 	// build up a the map from fragment to assemblies with that fragment count
-	assembliesMap := build(nodes)
+	assemblies := build(nodes)
 
 	// find pareto optimal solutions
-	paretoSet := pareto(assembliesMap)
+	paretoSet := pareto(assemblies)
 
 	//
 	fmt.Println(paretoSet)

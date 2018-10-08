@@ -186,6 +186,17 @@ func Test_node_costTo(t *testing.T) {
 			},
 			((float32(conf.Fragments.MinHomology) + 30.0) * conf.Synthesis.BPCost),
 		},
+		{
+			"cost to self should just be for PCR",
+			fields{
+				start: n1.start,
+				end:   n1.end,
+			},
+			args{
+				other: n1,
+			},
+			40 * conf.PCR.BPCost,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

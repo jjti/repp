@@ -24,13 +24,11 @@ import (
 //
 // create a map from the number of fragments in each assembly to a list with assemblies
 // 		containing that many assemblies
-func build(nodes []node) (countMap map[int][]assembly) {
-	// newly created and complete assemblies (circular)
-	var assemblies []assembly
+func build(nodes []node) (assemblies []assembly) {
 	// number of nodes to try to synthesize to from each node (plus the natural overlap)
 	synthCount := int(math.Max(5.0, 0.05*float64(len(nodes))))
 
-	// sort in descending order of end index
+	// sort with increasing start index
 	sort.Slice(nodes, func(i, j int) bool {
 		return nodes[i].start < nodes[j].start
 	})
@@ -44,8 +42,8 @@ func build(nodes []node) (countMap map[int][]assembly) {
 				// see if we can create a new assembly with this node included
 				if newAss, created, complete := a.add(n); created {
 					if complete {
-						// we've completed a circlular plasmid
-						// it's wrapped back onto itself
+						// we've completed a circlular plasmid assembly
+						// it has wrapped back onto itself
 						assemblies = append(assemblies, newAss)
 						// TODO: check if we can break here
 					} else {
@@ -54,15 +52,6 @@ func build(nodes []node) (countMap map[int][]assembly) {
 					}
 				}
 			}
-		}
-	}
-
-	// build up the fragment count to assemblies list map
-	for _, a := range assemblies {
-		if as, ok := countMap[a.len()]; ok {
-			countMap[a.len()] = append(as, a)
-		} else {
-			countMap[a.len()] = []assembly{a}
 		}
 	}
 
