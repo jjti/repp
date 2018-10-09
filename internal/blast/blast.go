@@ -1,5 +1,4 @@
-// Package blast is for finding building fragments that may be able to contribute
-// to the target sequence the user is trying to construct
+// Package blast finds Matches between a Fragment and the Fragment databases.
 package blast
 
 import (
@@ -29,7 +28,7 @@ var (
 )
 
 // blastExec is a small utility function for executing BLAST
-// on a fragment
+// on a fragment.
 type blastExec struct {
 	// the fragment we're BLASTing
 	f *dvec.Fragment
@@ -85,7 +84,7 @@ func BLAST(f *dvec.Fragment) (matches []dvec.Match, err error) {
 	return matches, err
 }
 
-// input is for creating an input file for BLAST
+// input creates an input file for BLAST
 // return the path to the file and an error if there was one
 func (b *blastExec) create() error {
 	// create the query sequence file.
@@ -95,7 +94,7 @@ func (b *blastExec) create() error {
 	return ioutil.WriteFile(b.in, []byte(file), 0666)
 }
 
-// run is for calling the external blastn binary
+// run calls the external blastn binary
 func (b *blastExec) run() error {
 	// create the blast command
 	// https://www.ncbi.nlm.nih.gov/books/NBK279682/
@@ -142,7 +141,7 @@ func (b *blastExec) runAgainst() error {
 	return nil
 }
 
-// parse is for reading the output file into Matches on the Fragment
+// parse reads the output file into Matches on the Fragment
 // returns a slice of Matches for the blasted fragment
 func (b *blastExec) parse() (matches []dvec.Match, err error) {
 	// read in the results

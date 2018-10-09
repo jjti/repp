@@ -1,11 +1,11 @@
-// Package assemble is for turning blast Matches into building Fragments
-//
+// Package assemble turns blast Matches into building Fragments
 package assemble
 
 import (
 	"fmt"
 
 	"github.com/jjtimmons/decvec/config"
+	"github.com/jjtimmons/decvec/internal/dvec"
 )
 
 var (

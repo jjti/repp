@@ -1,4 +1,4 @@
-package pcr
+package assemble
 
 import (
 	"bytes"
@@ -7,9 +7,14 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/jjtimmons/decvec/config"
+	"github.com/jjtimmons/decvec/internal/blast"
+	"github.com/jjtimmons/decvec/internal/dvec"
 )
 
 // path to the primer3 executable and config folder
@@ -19,19 +24,78 @@ var (
 	p3Dir  string
 )
 
+// setPrimers creates primers on a PCR fragment and returns an error if
+//	1. the primers have an unacceptably high primer3 penalty score
+//	2. there are off-targets in the primers
+func setPrimers(p *dvec.PCR) error {
+	maxPairP := config.NewConfig().PCR.P3MaxPenalty
+
+	handleP3 := func(err error) {
+		// we should fail totally on any primer3 errors -- shouldn't happen
+		if err != nil {
+			log.Panic(err)
+		}
+	}
+
+	exec := p3exec{
+		f:   p,
+		in:  path.Join(p3Dir, p.ID+".in"),
+		out: path.Join(p3Dir, p.ID+".out"),
+	}
+
+	// make input file
+	err := exec.input()
+	handleP3(err)
+
+	// execute
+	err = exec.run()
+	handleP3(err)
+
+	// parse the results into primers for storing on the fragment
+	primers, err := exec.parse()
+	handleP3(err)
+	p.Primers = primers
+
+	// 1. check for whether the primers have too have a pair penalty score
+	if p.Primers[0].PairPenalty > maxPairP {
+		return fmt.Errorf(
+			"primers have pair primer3 penalty score of %f, should be less than %f:\n%+v\n%+v",
+			p.Primers[0].PairPenalty,
+			maxPairP,
+			p.Primers[0],
+			p.Primers[1],
+		)
+	}
+
+	// 2. check for whether either of the primers have an off-target/mismatch
+	for _, primer := range p.Primers {
+		mismatchExists, mismatch, err := blast.Mismatch(primer.Seq, p.Entry)
+		handleP3(err) // shouldn't be erroring here either
+		if mismatchExists {
+			return fmt.Errorf(
+				"found a mismatching sequence, %s, against the primer %s",
+				mismatch.Seq,
+				primer.Seq,
+			)
+		}
+	}
+
+	return nil
+}
+
 // p3Exec is a utility struct for executing primer3 to create primers for a part
 type p3exec struct {
 	// fragment that we're trying to create primers for
-	Frag *PCR
+	f *dvec.PCR
 
 	// input file
-	In string
+	in string
 
 	// output file
-	Out string
+	out string
 }
 
-// input is for making the primer3 input settings file
+// input makes the primer3 input settings file
 func (p *p3exec) input() error {
 	// create primer3 settings
 	settings := map[string]string{
@@ -39,9 +103,9 @@ func (p *p3exec) input() error {
 		"PRIMER_NUM_RETURN":                    "1",
 		"PRIMER_TASK":                          "pick_cloning_primers",
 		"PRIMER_PICK_ANYWAY":                   "1",
-		"SEQUENCE_TEMPLATE":                    p.dvec.Seq,
-		"SEQUENCE_INCLUDED_REGION":             fmt.Sprintf("0,%d", len(p.dvec.Seq)),
-		"PRIMER_PRODUCT_SIZE_RANGE":            fmt.Sprintf("%d-%d", len(p.dvec.Seq), len(p.dvec.Seq)+1),
+		"SEQUENCE_TEMPLATE":                    p.f.Seq,
+		"SEQUENCE_INCLUDED_REGION":             fmt.Sprintf("0,%d", len(p.f.Seq)),
+		"PRIMER_PRODUCT_SIZE_RANGE":            fmt.Sprintf("%d-%d", len(p.f.Seq), len(p.f.Seq)+1),
 	}
 
 	var fileContents string
@@ -51,7 +115,7 @@ func (p *p3exec) input() error {
 	fileContents += "=" // required
 
 	// write to the fs
-	inputFile, err := os.Create(p.In)
+	inputFile, err := os.Create(p.in)
 	if err != nil {
 		return fmt.Errorf("failed to create primer3 input file %v: ", err)
 	}
@@ -67,8 +131,8 @@ func (p *p3exec) input() error {
 func (p *p3exec) run() error {
 	p3Cmd := exec.Command(
 		p3Path,
-		p.In,
-		"-output", p.Out,
+		p.in,
+		"-output", p.out,
 		"-strict_tags",
 	)
 
@@ -85,8 +149,8 @@ func (p *p3exec) run() error {
 }
 
 // parse the output into primers for the part
-func (p *p3exec) parse() ([]Primer, error) {
-	file, err := ioutil.ReadFile(p.Out)
+func (p *p3exec) parse() ([]dvec.Primer, error) {
+	file, err := ioutil.ReadFile(p.out)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +167,7 @@ func (p *p3exec) parse() ([]Primer, error) {
 
 	// read in a single primer from the output string file
 	// side is either "LEFT" or "RIGHT"
-	parsePrimer := func(side string) Primer {
+	parsePrimer := func(side string) dvec.Primer {
 		seq := results[fmt.Sprintf("PRIMER_%s_0_SEQUENCE", side)]
 		tm := results[fmt.Sprintf("PRIMER_%s_0_TM", side)]
 		gc := results[fmt.Sprintf("PRIMER_%s_0_GC_PERCENT", side)]
@@ -115,9 +179,9 @@ func (p *p3exec) parse() ([]Primer, error) {
 		penaltyfloat, _ := strconv.ParseFloat(penalty, 32)
 		pairfloat, _ := strconv.ParseFloat(pairPenalty, 32)
 
-		return Primer{
-			seq:         seq,
-			strand:      side == "LEFT",
+		return dvec.Primer{
+			Seq:         seq,
+			Strand:      side == "LEFT",
 			Tm:          float32(tmfloat),
 			GC:          float32(gcfloat),
 			Penalty:     float32(penaltyfloat),
@@ -125,7 +189,7 @@ func (p *p3exec) parse() ([]Primer, error) {
 		}
 	}
 
-	return []Primer{
+	return []dvec.Primer{
 		parsePrimer("LEFT"),
 		parsePrimer("RIGHT"),
 	}, nil
@@ -137,6 +201,7 @@ func init() {
 	p3Path = filepath.Join("..", "..", "vendor", "primer3-2.4.0", "src", "primer3_core")
 	// TODO: fix this forward slash at the end using an OS-specific path separator
 	p3Conf = filepath.Join("..", "..", "vendor", "primer3-2.4.0", "src", "primer3_config") + "/"
+
 	_, err := os.Stat(p3Path)
 	if err != nil {
 		log.Fatalf("failed to locate primer3 executable: %v", err)
