@@ -1,34 +1,115 @@
 package assemble
 
-import "testing"
+import (
+	"reflect"
+	"testing"
 
-// test primer creation ability
-func TestSetPrimers(t *testing.T) {
-	p := PCR{
-		ID:  "testID",
-		Seq: "TGCTGACTGTGGCGGGTGAGCTTAGGGGGCCTCCGCTCCAGCTCGACACCGGGCAGCTGCTGAAGATCGCGAAGAGAGGGGGAGTAACAGCGGTAGAGGCAGTGCACGCCTGGCGCAATGCGCTCACCGGGGCCCCCTTGAACCTGACCCCAGACCAGGTAGTCGCAATCGCGAACAATAATGGGGGAAAGCAAGCCCTGGAAACCGTGCAAAGGTTGTTGCCGGTCCTTTGTCAAGACCACGGCCTTACACCGGAGCAAGTCGTGGCCATTGCAAGCAATGGGGGTGGCAAACAGGCTCTTGAGACGGTTCAGAGACTTCTCCCAGTTCTCTGTCAAGCCCACGGGCTGACTCCCGATCAAGTTGTAGCGATTGCGTCGCATGACGGAGGGAAACAAGCATTGGAGACTGTCCAACGGCTCCTTCCCGTGTTGTGTCAAGCCCACGGTTTGACGCCTGCACAAGTGGTCGCCATCGCCAGCCATGATGGCGGTAAGCAGGCGCTGGAAACAGTACAGCGCCTGCTGCCTGTACTGTGCCAGGATCATGGACTGACCCCAGACCAGGTAGTCGCAATCGCGAACAATAATGGGGGAAAGCAAGCCCTGGAAACCGTGCAAAGGTTGTTGCCGGTCCTTTGTCAAGACCACGGCCTTACACCGGAGCAAGTCGTGGCCATTGCAAATAATAACGGTGGCAAACAGGCTCTTGAGACGGTTCAGAGACTTCTCCCAGTTCTCTGTCAAGCCCACGGGCTGACTCCCGATCAAGTTGTAGCGATTGCGTCGCATGACGGAGGGAAACAAGCATTGGAGACTGTCCAACGGCTCCTTCCCGTGTTGTGTCAAGCCCACGGTTTGACGCCTGCACAAGTGGTCGCCATCGCCAACAACAACGGCGGTAAGCAGGCGCTGGAAACAGTACAGCGCCTGCTGCCTGTACTGTGCCAGGATCATGGACTGACCCCAGACCAGGTAGTCGCAATCGCGTCGAACATTGGGGGAAAGCAAGCCCTGGAAACCG",
+	"github.com/jjtimmons/decvec/internal/dvec"
+)
+
+func Test_setPrimers(t *testing.T) {
+	type args struct {
+		p *dvec.PCR
 	}
-
-	err := p.SetPrimers()
-
-	if err != nil {
-		t.Error(err)
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		// TODO: Add test cases.
 	}
-
-	if p.Primers == nil || len(p.Primers) < 2 {
-		t.Error("failed to set primers on fragment")
-		return
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := setPrimers(tt.args.p); (err != nil) != tt.wantErr {
+				t.Errorf("setPrimers() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
 	}
+}
 
-	pr := p.Primers[0]
-
-	// check that we got a sequence for the primer from the output file
-	if pr.seq == "" {
-		t.Errorf("failed to get a primer sequence for %+v", pr)
+func Test_p3exec_input(t *testing.T) {
+	type fields struct {
+		f   *dvec.PCR
+		in  string
+		out string
 	}
+	tests := []struct {
+		name    string
+		fields  fields
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &p3exec{
+				f:   tt.fields.f,
+				in:  tt.fields.in,
+				out: tt.fields.out,
+			}
+			if err := p.input(); (err != nil) != tt.wantErr {
+				t.Errorf("p3exec.input() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
 
-	// check that penalties and pair penalties were set
-	if pr.Tm < 1 || pr.GC < 1 {
-		t.Errorf("failed to parse primer3 penalty scores into primer: %+v", pr)
+func Test_p3exec_run(t *testing.T) {
+	type fields struct {
+		f   *dvec.PCR
+		in  string
+		out string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &p3exec{
+				f:   tt.fields.f,
+				in:  tt.fields.in,
+				out: tt.fields.out,
+			}
+			if err := p.run(); (err != nil) != tt.wantErr {
+				t.Errorf("p3exec.run() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_p3exec_parse(t *testing.T) {
+	type fields struct {
+		f   *dvec.PCR
+		in  string
+		out string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		want    []dvec.Primer
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &p3exec{
+				f:   tt.fields.f,
+				in:  tt.fields.in,
+				out: tt.fields.out,
+			}
+			got, err := p.parse()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("p3exec.parse() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("p3exec.parse() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
