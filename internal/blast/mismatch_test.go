@@ -1,28 +1,81 @@
 package blast
 
 import (
-	"fmt"
 	"path"
 	"path/filepath"
+	"reflect"
 	"testing"
+
+	"github.com/jjtimmons/decvec/internal/dvec"
 )
 
-// test that a primer's off-target is caught and flagged
+func Test_isMismatch(t *testing.T) {
+	type args struct {
+		match dvec.Match
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			"catches a mismatching primer",
+			args{
+				match: dvec.Match{
+					Seq:      "atgacgacgacgcggac",
+					Mismatch: 0,
+				},
+			},
+			true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := isMismatch(tt.args.match); got != tt.want {
+				t.Errorf("isMismatch() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestMismatch(t *testing.T) {
 	db, _ = filepath.Abs(path.Join("..", "..", "test", "blast", "db"))
-	primer := "AGTATAGGATAGGTAGTCATTCTT"
-	parent := "gnl|addgene|107006"
-	mismatchFound, m, err := Mismatch(primer, parent)
 
-	if err != nil {
-		t.Error(err)
-		return
+	type args struct {
+		primer string
+		parent string
 	}
-
-	if !mismatchFound {
-		t.Error("no mismatch caught")
-		return
+	tests := []struct {
+		name         string
+		args         args
+		wantMismatch bool
+		wantMatch    dvec.Match
+		wantErr      bool
+	}{
+		{
+			"finds mismatch",
+			args{
+				"AGTATAGGATAGGTAGTCATTCTT",
+				"gnl|addgene|107006",
+			},
+			true,
+			dvec.Match{"addgene:107006", "AGTATAGGATAGGTAGTCATTCTT", 0, 23, false, 0},
+			false,
+		},
 	}
-
-	fmt.Printf("%+v", m)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotMismatch, gotMatch, err := Mismatch(tt.args.primer, tt.args.parent)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Mismatch() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if gotMismatch != tt.wantMismatch {
+				t.Errorf("Mismatch() gotMismatch = %v, want %v", gotMismatch, tt.wantMismatch)
+			}
+			if !reflect.DeepEqual(gotMatch, tt.wantMatch) {
+				t.Errorf("Mismatch() gotMatch = %v, want %v", gotMatch, tt.wantMatch)
+			}
+		})
+	}
 }

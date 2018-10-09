@@ -44,7 +44,7 @@ func TestFilter(t *testing.T) {
 		},
 	}
 
-	newMatches := filter(matches, 24, 48)
+	newMatches := filter(matches)
 
 	// make sure they're gone
 	if len(newMatches) != 3 {

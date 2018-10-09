@@ -17,11 +17,15 @@ import (
 	"github.com/jjtimmons/decvec/internal/dvec"
 )
 
-// path to the primer3 executable and config folder
 var (
-	p3Path string
-	p3Conf string
-	p3Dir  string
+	// path to primer3 executable
+	p3Path = filepath.Join("..", "..", "vendor", "primer3-2.4.0", "src", "primer3_core")
+
+	// path to primer3 config folder (with trailing separator)
+	p3Conf = filepath.Join("..", "..", "vendor", "primer3-2.4.0", "src", "primer3_config") + "/"
+
+	// path to the primer3 io output
+	p3Dir = filepath.Join("..", "..", "bin", "primer3")
 )
 
 // setPrimers creates primers on a PCR fragment and returns an error if
@@ -197,11 +201,6 @@ func (p *p3exec) parse() ([]dvec.Primer, error) {
 
 // create the primer3 path, error Out if we can't find the executable or the config folder
 func init() {
-	// make sure the primer3 binary and settings folder are defined
-	p3Path = filepath.Join("..", "..", "vendor", "primer3-2.4.0", "src", "primer3_core")
-	// TODO: fix this forward slash at the end using an OS-specific path separator
-	p3Conf = filepath.Join("..", "..", "vendor", "primer3-2.4.0", "src", "primer3_config") + "/"
-
 	_, err := os.Stat(p3Path)
 	if err != nil {
 		log.Fatalf("failed to locate primer3 executable: %v", err)
@@ -212,8 +211,6 @@ func init() {
 		log.Fatalf("failed to locate primer3 config folder: %v", err)
 	}
 
-	// make a folder for primer3 io
-	p3Dir = filepath.Join("..", "..", "bin", "primer3")
 	err = os.MkdirAll(p3Dir, os.ModePerm)
 	if err != nil {
 		log.Fatalf("failed to create a primer3 outut dir: %v", err)
