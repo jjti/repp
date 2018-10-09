@@ -8,15 +8,6 @@ import (
 	"strings"
 )
 
-// Fragment is a single building block stretch of DNA for assembly
-type Fragment struct {
-	// ID is a unique identifier for this fragment
-	ID string
-
-	// fragment's sequence (linear)
-	Seq string
-}
-
 // Read a FASTA file (by its path on local FS) to a slice of Fragments
 func Read(path string) (fragments []Fragment, err error) {
 	if !filepath.IsAbs(path) {

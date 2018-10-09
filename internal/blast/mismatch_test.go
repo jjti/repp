@@ -28,6 +28,16 @@ func Test_isMismatch(t *testing.T) {
 			},
 			true,
 		},
+		{
+			"no false positive mismatch",
+			args{
+				match: dvec.Match{
+					Seq:      "atgacgacgacgac",
+					Mismatch: 0,
+				},
+			},
+			false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -59,7 +69,14 @@ func TestMismatch(t *testing.T) {
 				"gnl|addgene|107006",
 			},
 			true,
-			dvec.Match{"addgene:107006", "AGTATAGGATAGGTAGTCATTCTT", 0, 23, false, 0},
+			dvec.Match{
+				ID:       "addgene:107006",
+				Seq:      "AGTATAGGATAGGTAGTCATTCTT",
+				Start:    0,
+				End:      23,
+				Circular: false,
+				Mismatch: 0,
+			},
 			false,
 		},
 	}

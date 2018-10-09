@@ -31,7 +31,7 @@ var (
 // setPrimers creates primers on a PCR fragment and returns an error if
 //	1. the primers have an unacceptably high primer3 penalty score
 //	2. there are off-targets in the primers
-func setPrimers(p *dvec.PCR) error {
+func setPrimers(p *dvec.Fragment) error {
 	maxPairP := config.NewConfig().PCR.P3MaxPenalty
 
 	handleP3 := func(err error) {
@@ -90,7 +90,7 @@ func setPrimers(p *dvec.PCR) error {
 // p3Exec is a utility struct for executing primer3 to create primers for a part
 type p3exec struct {
 	// fragment that we're trying to create primers for
-	f *dvec.PCR
+	f *dvec.Fragment
 
 	// input file
 	in string
