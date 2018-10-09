@@ -6,7 +6,7 @@ import (
 	"sort"
 )
 
-// build is for building up circular assemblies with less fragments than the build limit
+// build builds up circular assemblies with less fragments than the build limit
 //
 // It is created by traversing a DAG in reverse order:
 // 	foreach this.node (sorted in reverse order):

@@ -7,7 +7,7 @@ import (
 	"github.com/jjtimmons/decvec/internal/dvec"
 )
 
-// filter is for "propertizing" the matches from BLAST
+// filter "propertizes" the matches from BLAST
 //
 // propertizing fragment matches means removing those that are completely
 // self-contained in other fragments: the larger of the available fragments

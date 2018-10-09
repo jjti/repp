@@ -1,4 +1,4 @@
-package pcr
+package assemble
 
 import "testing"
 
