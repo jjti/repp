@@ -9,7 +9,7 @@ import (
 
 func Test_setPrimers(t *testing.T) {
 	type args struct {
-		p *dvec.PCR
+		p *dvec.Fragment
 	}
 	tests := []struct {
 		name    string
@@ -29,7 +29,7 @@ func Test_setPrimers(t *testing.T) {
 
 func Test_p3exec_input(t *testing.T) {
 	type fields struct {
-		f   *dvec.PCR
+		f   *dvec.Fragment
 		in  string
 		out string
 	}
@@ -56,7 +56,7 @@ func Test_p3exec_input(t *testing.T) {
 
 func Test_p3exec_run(t *testing.T) {
 	type fields struct {
-		f   *dvec.PCR
+		f   *dvec.Fragment
 		in  string
 		out string
 	}
@@ -83,7 +83,7 @@ func Test_p3exec_run(t *testing.T) {
 
 func Test_p3exec_parse(t *testing.T) {
 	type fields struct {
-		f   *dvec.PCR
+		f   *dvec.Fragment
 		in  string
 		out string
 	}
