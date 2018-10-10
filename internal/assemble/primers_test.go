@@ -1,6 +1,8 @@
 package assemble
 
 import (
+	"path"
+	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -8,20 +10,44 @@ import (
 )
 
 func Test_setPrimers(t *testing.T) {
+	db, _ := filepath.Abs(path.Join("..", "..", "test", "blast", "db"))
+
+	conf.PCR.P3MaxPenalty = 10.0
+	conf.DB = db
+
 	type args struct {
-		p *dvec.Fragment
+		p dvec.Fragment
 	}
 	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
+		name        string
+		args        args
+		wantPrimers []dvec.Primer
+		wantErr     bool
 	}{
-		// TODO: Add test cases.
+		{
+			"create primers basic",
+			args{
+				p: dvec.Fragment{
+					ID:    "gnl|addgene|39412.1",
+					Seq:   "TGCTGACTGTGGCGGGTGAGCTTAGGGGGCCTCCGCTCCAGCTCGACACCGGGCAGCTGCTGAAGATCGCGAAGAGAGGGGGAGTAACAGCGGTAGAGGCAGTGCACGCCTGGCGCAATGCGCTCACCGGGGCCCCCTTGAACCTGACCCCAGACCAGGTAGTCGCAATCGCGAACAATAATGGGGGAAAGCAAGCCCTGGAAACCGTGCAAAGGTTGTTGCCGGTCCTTTGTCAAGACCACGGCCTTACACCGGAGCAAGTCGTGGCCATTGCAAGCAATGGGGGTGGCAAACAGGCTCTTGAGACGGTTCAGAGACTTCTCCCAGTTCTCTGTCAAGCCCACGGGCTGACTCCCGATCAAGTTGTAGCGATTGCGTCGCATGACGGAGGGAAACAAGCATTGGAGACTGTCCAACGGCTCCTTCCCGTGTTGTGTCAAGCCCACGGTTTGACGCCTGCACAAGTGGTCGCCATCGCCAGCCATGATGGCGGTAAGCAGGCGCTGGAAACAGTACAGCGCCTGCTGCCTGTACTGTGCCAGGATCATGGACTGACCCCAGACCAGGTAGTCGCAATCGCGAACAATAATGGGGGAAAGCAAGCCCTGGAAACCGTGCAAAGGTTGTTGCCGGTCCTTTGTCAAGACCACGGCCTTACACCGGAGCAAGTCGTGGCCATTGCAAATAATAACGGTGGCAAACAGGCTCTTGAGACGGTTCAGAGACTTCTCCCAGTTCTCTGTCAAGCCCACGGGCTGACTCCCGATCAAGTTGTAGCGATTGCGTCGCATGACGGAGGGAAACAAGCATTGGAGACTGTCCAACGGCTCCTTCCCGTGTTGTGTCAAGCCCACGGTTTGACGCCTGCACAAGTGGTCGCCATCGCCAACAACAACGGCGGTAAGCAGGCGCTGGAAACAGTACAGCGCCTGCTGCCTGTACTGTGCCAGGATCATGGACTGACCCCAGACCAGGTAGTCGCAATCGCGTCGAACATTGGGGGAAAGCAAGCCCTGGAAACCG",
+					Entry: "gnl|addgene|39412.1",
+				},
+			},
+			[]dvec.Primer{
+				dvec.Primer{},
+				dvec.Primer{},
+			},
+			false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := setPrimers(tt.args.p); (err != nil) != tt.wantErr {
+			ps, err := primers(tt.args.p)
+			if (err != nil) != tt.wantErr {
 				t.Errorf("setPrimers() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if !reflect.DeepEqual(ps, tt.wantPrimers) {
+				t.Errorf("setPrimers() primers = %v, wantPrimers %v", ps, tt.wantPrimers)
 			}
 		})
 	}
@@ -109,6 +135,32 @@ func Test_p3exec_parse(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("p3exec.parse() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_primers(t *testing.T) {
+	type args struct {
+		p dvec.Fragment
+	}
+	tests := []struct {
+		name        string
+		args        args
+		wantPrimers []dvec.Primer
+		wantErr     bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotPrimers, err := primers(tt.args.p)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("primers() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(gotPrimers, tt.wantPrimers) {
+				t.Errorf("primers() = %v, want %v", gotPrimers, tt.wantPrimers)
 			}
 		})
 	}

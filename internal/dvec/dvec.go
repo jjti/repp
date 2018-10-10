@@ -18,8 +18,8 @@ type Fragment struct {
 
 // Match is a blast "hit" in the blastdb
 type Match struct {
-	// ID of the matched fragment in the database
-	ID string
+	// Entry of the matched fragment in the database
+	Entry string
 
 	// Seq of the match on the target vector
 	Seq string
@@ -42,7 +42,7 @@ func (m *Match) Length() int {
 	return m.End - m.Start + 1 // it's inclusive
 }
 
-// Primer is a single Primer used to ampligy a parent fragment
+// Primer is a single Primer used to create a PCR fragment
 type Primer struct {
 	// Seq of the primer (In 5' to 3' direction)
 	Seq string

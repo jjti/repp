@@ -90,12 +90,10 @@ func Test_assembly_add(t *testing.T) {
 				synths: 0,
 			},
 			args{
-				n: node{
-					uniqueID: n1.uniqueID,
-				},
+				n: n1,
 			},
 			assembly{
-				nodes:  []node{n1, n2, n3},
+				nodes:  []node{n1, n2, n3, n1},
 				cost:   10.0,
 				synths: 0,
 			},
@@ -118,7 +116,11 @@ func Test_assembly_add(t *testing.T) {
 				},
 			},
 			assembly{
-				nodes:  []node{n1, n2, n3},
+				nodes: []node{n1, n2, n3, node{
+					uniqueID: n1.uniqueID,
+					start:    n3.start + conf.Synthesis.MaxLength,
+					end:      n3.end + conf.Synthesis.MaxLength,
+				}},
 				cost:   14.799999,
 				synths: 1,
 			},

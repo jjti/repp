@@ -13,32 +13,32 @@ func TestFilter(t *testing.T) {
 	matches := []dvec.Match{
 		// should be removed for ending before 0-index
 		dvec.Match{
-			ID:    "m1",
+			Entry: "m1",
 			Start: 15,
 			End:   9,
 		},
 		// should be removed because it fits within m3
 		dvec.Match{
-			ID:    "m2",
+			Entry: "m2",
 			Start: 29,
 			End:   34,
 		},
 		// shouldn't be removed
 		dvec.Match{
-			ID:    "m3",
+			Entry: "m3",
 			Start: 29,
 			End:   35,
 		},
 		// shouldn't be removed
 		dvec.Match{
-			ID:    "m4",
+			Entry: "m4",
 			Start: 31,
 			End:   72,
 		},
 		// should be removed because it starts past 2x the
 		// target's sequence length
 		dvec.Match{
-			ID:    "m5",
+			Entry: "m5",
 			Start: 40,
 			End:   79,
 		},
@@ -53,7 +53,7 @@ func TestFilter(t *testing.T) {
 
 	// make sure m2 has been removed
 	for _, m := range newMatches {
-		if m.ID == "m2" {
+		if m.Entry == "m2" {
 			t.Error("m2 found in resulting matches, should have been removed")
 		}
 	}

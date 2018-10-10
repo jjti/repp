@@ -45,7 +45,7 @@ func (a *assembly) add(n node) (newAssembly assembly, created, complete bool) {
 		}
 
 		return assembly{
-			nodes:  a.nodes, // don't add a new node
+			nodes:  append(a.nodes, n),
 			cost:   a.cost + annealCost,
 			synths: a.synths + synths,
 		}, true, true

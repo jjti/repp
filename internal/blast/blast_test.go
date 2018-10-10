@@ -41,8 +41,8 @@ func TestBLAST(t *testing.T) {
 
 	// make sure the vertical line has been removed
 	for _, m := range matches {
-		if strings.Contains(m.ID, "|") {
-			t.Errorf("match still contains pipe symbol in ID: %s", m.ID)
+		if strings.Contains(m.Entry, "|") {
+			t.Errorf("match still contains pipe symbol in Entry: %s", m.Entry)
 			return
 		}
 	}
@@ -50,7 +50,7 @@ func TestBLAST(t *testing.T) {
 	fmt.Println(matches)
 	matchesContain := func(targ dvec.Match) {
 		for _, m := range matches {
-			if targ.ID == m.ID && targ.Start == m.Start && targ.End == m.End {
+			if targ.Entry == m.Entry && targ.Start == m.Start && targ.End == m.End {
 				return
 			}
 		}
@@ -59,7 +59,7 @@ func TestBLAST(t *testing.T) {
 	}
 
 	matchesContain(dvec.Match{
-		ID:    "107006",
+		Entry: "107006",
 		Start: 0,
 		End:   72,
 	})
