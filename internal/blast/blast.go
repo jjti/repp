@@ -181,8 +181,8 @@ func (b *blastExec) parse() (matches []dvec.Match, err error) {
 		// create and append the new match
 		ms = append(ms, dvec.Match{
 			// for later querying when checking for off-targets
-			ID:  id,
-			Seq: seq,
+			Entry: id,
+			Seq:   seq,
 			// convert 1-based numbers to 0-based
 			Start: start - 1,
 			End:   end - 1,

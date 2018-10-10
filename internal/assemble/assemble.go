@@ -32,8 +32,8 @@ func Assemble(matches []dvec.Match, seqL int) {
 	var nodes []node
 	for _, m := range matches {
 		nodes = append(nodes, node{
-			id:       m.ID,
-			uniqueID: string(m.Start%seqL) + m.ID,
+			id:       m.Entry,
+			uniqueID: string(m.Start%seqL) + m.Entry,
 			start:    m.Start,
 			end:      m.End,
 		})

@@ -12,7 +12,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/jjtimmons/decvec/config"
 	"github.com/jjtimmons/decvec/internal/blast"
 	"github.com/jjtimmons/decvec/internal/dvec"
 )
@@ -28,55 +27,54 @@ var (
 	p3Dir = filepath.Join("..", "..", "bin", "primer3")
 )
 
-// setPrimers creates primers on a PCR fragment and returns an error if
+// primers creates primers against a PCR fragment and returns an error if
 //	1. the primers have an unacceptably high primer3 penalty score
 //	2. there are off-targets in the primers
-func setPrimers(p *dvec.Fragment) error {
-	maxPairP := config.NewConfig().PCR.P3MaxPenalty
-
-	handleP3 := func(err error) {
-		// we should fail totally on any primer3 errors -- shouldn't happen
-		if err != nil {
-			log.Panic(err)
-		}
-	}
+func primers(p dvec.Fragment) (primers []dvec.Primer, err error) {
+	maxPairP := conf.PCR.P3MaxPenalty
 
 	exec := p3exec{
-		f:   p,
+		f:   &p,
 		in:  path.Join(p3Dir, p.ID+".in"),
 		out: path.Join(p3Dir, p.ID+".out"),
 	}
 
 	// make input file
-	err := exec.input()
-	handleP3(err)
+	if err = exec.input(); err != nil {
+		return nil, err
+	}
 
 	// execute
-	err = exec.run()
-	handleP3(err)
+	if err = exec.run(); err != nil {
+		return nil, err
+	}
 
 	// parse the results into primers for storing on the fragment
-	primers, err := exec.parse()
-	handleP3(err)
-	p.Primers = primers
+	if primers, err = exec.parse(); err != nil {
+		return nil, err
+	}
 
 	// 1. check for whether the primers have too have a pair penalty score
-	if p.Primers[0].PairPenalty > maxPairP {
-		return fmt.Errorf(
+	if primers[0].PairPenalty > maxPairP {
+		return nil, fmt.Errorf(
 			"primers have pair primer3 penalty score of %f, should be less than %f:\n%+v\n%+v",
-			p.Primers[0].PairPenalty,
+			primers[0].PairPenalty,
 			maxPairP,
-			p.Primers[0],
-			p.Primers[1],
+			primers[0],
+			primers[1],
 		)
 	}
 
 	// 2. check for whether either of the primers have an off-target/mismatch
-	for _, primer := range p.Primers {
+	for _, primer := range primers {
 		mismatchExists, mismatch, err := blast.Mismatch(primer.Seq, p.Entry)
-		handleP3(err) // shouldn't be erroring here either
+
+		if err != nil {
+			return nil, err
+		}
+
 		if mismatchExists {
-			return fmt.Errorf(
+			return nil, fmt.Errorf(
 				"found a mismatching sequence, %s, against the primer %s",
 				mismatch.Seq,
 				primer.Seq,
@@ -84,7 +82,7 @@ func setPrimers(p *dvec.Fragment) error {
 		}
 	}
 
-	return nil
+	return
 }
 
 // p3Exec is a utility struct for executing primer3 to create primers for a part
@@ -153,7 +151,7 @@ func (p *p3exec) run() error {
 }
 
 // parse the output into primers for the part
-func (p *p3exec) parse() ([]dvec.Primer, error) {
+func (p *p3exec) parse() (primers []dvec.Primer, err error) {
 	file, err := ioutil.ReadFile(p.out)
 	if err != nil {
 		return nil, err

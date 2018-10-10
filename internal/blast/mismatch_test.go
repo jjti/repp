@@ -70,7 +70,7 @@ func TestMismatch(t *testing.T) {
 			},
 			true,
 			dvec.Match{
-				ID:       "addgene:107006",
+				Entry:    "addgene:107006",
 				Seq:      "AGTATAGGATAGGTAGTCATTCTT",
 				Start:    0,
 				End:      23,
