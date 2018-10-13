@@ -34,17 +34,17 @@ func isMismatch(match dvec.Match) bool {
 // Mismatch finds mismatching sequences between the query sequence and
 // the parent sequence
 //
-// The parent sequence is passed as the entry id as it exists in the
-// blast database
-func Mismatch(primer, parent string) (mismatch bool, match dvec.Match, err error) {
+// The parent sequence is passed as the entry id as it exists in the blast db
+// db is passed as the path to the db we're blasting against
+func Mismatch(primer, parent, db string) (mismatch bool, match dvec.Match, err error) {
 	// path to the blastdbcmd binary
 	blastcmd, _ := filepath.Abs(path.Join(conf.Root, "vendor", "ncbi-blast-2.7.1+", "bin", "blastdbcmd"))
 	// path to the entry batch file to hold the parent entry accession
 	entry, _ := filepath.Abs(path.Join(blastDir, parent+".entry"))
-	// path to the output sequence file
-	entryOutput, _ := filepath.Abs(path.Join(blastDir, parent+".out"))
+	// path to the output sequence file  from querying the parent's sequence from the BLAST db
+	parentPath, _ := filepath.Abs(path.Join(blastDir, parent+".out"))
 	// path the query sequence input file
-	in, _ := filepath.Abs(path.Join(blastDir, primer+"-"+parent+".query"))
+	in, _ := filepath.Abs(path.Join(blastDir, parent+".primer.query"))
 	// path to the blastOutput file
 	out, _ := filepath.Abs(path.Join(blastDir, parent+".blast"))
 
@@ -52,19 +52,17 @@ func Mismatch(primer, parent string) (mismatch bool, match dvec.Match, err error
 	// this was a 2-day bug I couldn't resolve...
 	// I was using the "-entry" flag on exec.Command, but have since
 	// switched to the simpler -entry_batch command (on a file) that resolves the issue
-	err = ioutil.WriteFile(entry, []byte(parent), 0666)
-	if err != nil {
+	if err = ioutil.WriteFile(entry, []byte(parent), 0666); err != nil {
 		return false, match, fmt.Errorf("Failed to write batch entry list: %v", err)
 	}
 
-	fmt.Println(conf.DB, entry)
-	// make a blast command
+	// make a blastdbcmd command (for querying a DB, very different from blastn)
 	queryCmd := exec.Command(
 		blastcmd,
-		"-db", conf.DB,
+		"-db", db,
 		"-dbtype", "nucl",
 		"-entry_batch", entry,
-		"-out", entryOutput,
+		"-out", parentPath,
 		"-outfmt", "%f", // fasta format
 	)
 	if output, err := queryCmd.CombinedOutput(); err != nil {
@@ -73,8 +71,7 @@ func Mismatch(primer, parent string) (mismatch bool, match dvec.Match, err error
 
 	// create blast input file
 	inContent := fmt.Sprintf(">primer\n%s\n", primer)
-	err = ioutil.WriteFile(in, []byte(inContent), 0666)
-	if err != nil {
+	if err = ioutil.WriteFile(in, []byte(inContent), 0666); err != nil {
 		return false, match, fmt.Errorf("Failed to write primer sequence to query FASTA file: %v", err)
 	}
 
@@ -82,7 +79,7 @@ func Mismatch(primer, parent string) (mismatch bool, match dvec.Match, err error
 	b := blastExec{
 		in:      in,
 		out:     out,
-		subject: entryOutput,
+		subject: parentPath,
 	}
 
 	// execute blast
