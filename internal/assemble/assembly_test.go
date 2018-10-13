@@ -281,7 +281,15 @@ func Test_assembly_fill(t *testing.T) {
 		wantBlacklist node
 		wantFrags     []dvec.Fragment
 	}{
-		// TODO: Add test cases.
+		{
+			"fills in a basic assembly",
+			fields{
+				nodes: []node{},
+			},
+			args{},
+			node{},
+			nil,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
