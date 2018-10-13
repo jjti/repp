@@ -121,7 +121,7 @@ func Test_assembly_add(t *testing.T) {
 					start:    n3.start + conf.Synthesis.MaxLength,
 					end:      n3.end + conf.Synthesis.MaxLength,
 				}},
-				cost:   14.799999,
+				cost:   16.4,
 				synths: 1,
 			},
 			true,

@@ -19,8 +19,6 @@ func build(nodes []node) (assemblies []assembly) {
 	// synth_count = math.max(5, 0.05 * len(nodes)); 5 of 5%, whichever is greater
 	synthCount := int(math.Max(5.0, 0.05*float64(len(nodes))))
 
-	fmt.Println(synthCount)
-
 	// sort with increasing start index
 	sort.Slice(nodes, func(i, j int) bool {
 		return nodes[i].start < nodes[j].start

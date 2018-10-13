@@ -44,17 +44,17 @@ func Test_build(t *testing.T) {
 	// output
 	a1 := assembly{
 		// wrap w/o synthesis
-		nodes:  []node{n21, n22},
+		nodes:  []node{n21, n22, n23},
 		synths: 0,
 	}
 	a2 := assembly{
 		// wrap w/ synthesis
-		nodes:  []node{n21},
+		nodes:  []node{n21, n23},
 		synths: 1,
 	}
 	a3 := assembly{
 		// wrap w/o synthsis
-		nodes:  []node{n22, n23},
+		nodes:  []node{n22, n23, n24},
 		synths: 0,
 	}
 
