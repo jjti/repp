@@ -3,6 +3,8 @@ package assemble
 import (
 	"reflect"
 	"testing"
+
+	"github.com/jjtimmons/decvec/internal/dvec"
 )
 
 // create t
@@ -258,6 +260,42 @@ func Test_assembly_len(t *testing.T) {
 			}
 			if got := a.len(); got != tt.want {
 				t.Errorf("assembly.len() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_assembly_fill(t *testing.T) {
+	type fields struct {
+		nodes  []node
+		cost   float32
+		synths int
+	}
+	type args struct {
+		seq string
+	}
+	tests := []struct {
+		name          string
+		fields        fields
+		args          args
+		wantBlacklist node
+		wantFrags     []dvec.Fragment
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := &assembly{
+				nodes:  tt.fields.nodes,
+				cost:   tt.fields.cost,
+				synths: tt.fields.synths,
+			}
+			gotBlacklist, gotFrags := a.fill(tt.args.seq)
+			if !reflect.DeepEqual(gotBlacklist, tt.wantBlacklist) {
+				t.Errorf("assembly.fill() gotBlacklist = %v, want %v", gotBlacklist, tt.wantBlacklist)
+			}
+			if !reflect.DeepEqual(gotFrags, tt.wantFrags) {
+				t.Errorf("assembly.fill() gotFrags = %v, want %v", gotFrags, tt.wantFrags)
 			}
 		})
 	}
