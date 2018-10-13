@@ -1,7 +1,7 @@
 package assemble
 
 import (
-	"math"
+	"fmt"
 
 	"github.com/jjtimmons/decvec/internal/dvec"
 )
@@ -87,7 +87,8 @@ func (a *assembly) len() int {
 // will match the sequences that come together in vitro during assembly
 //
 // it can fail out. For example, a PCR Fragment may have off-targets in
-// the parent vector. If that happens, we return the problem node
+// the parent vector. If that happens, we return the problem node and nil
+// building fragments
 func (a *assembly) fill(seq string) (blacklist node, frags []dvec.Fragment) {
 	// convert a node back into a fragment
 	fragment := func(n node) dvec.Fragment {
@@ -100,7 +101,8 @@ func (a *assembly) fill(seq string) (blacklist node, frags []dvec.Fragment) {
 
 	for i, n := range a.nodes {
 		// last node, do nothing
-		// here only to allow for vector "circularization"
+		// here only to allow for vector "circularization" if we need to synthesize
+		// from a.nodes[len(a.nodes)-2] to a.nodes[len(a.nodes)-1]
 		if i == len(a.nodes)-1 {
 			break
 		}
@@ -111,21 +113,18 @@ func (a *assembly) fill(seq string) (blacklist node, frags []dvec.Fragment) {
 		// try and make primers for the fragment
 		fragPrimers, err := primers(frag)
 		if err != nil {
+			fmt.Printf("node %s failed: %v", n.id, err)
 			// return the node as a blackmailed node if pcr fails
-			return n, frags
+			return n, nil
 		}
 
 		// set primers and store this to the list of building fragments
 		frag.Primers = fragPrimers
 		frags = append(frags, frag)
 
-		// check whether we need to make synthetic fragments to get
-		// to the next fragment in the assembly
-		if dist := n.distTo(a.nodes[i]); dist > -(conf.Fragments.MinHomology) {
-			// number of synthetic fragments to make
-			fCount := math.Ceil(float64(dist) / float64(conf.Synthesis.MaxLength))
-
-			fLength := int(float64(dist) / fCount)
+		// add synthesized fragments between the two if they're needed
+		if synthedFrags := n.synthTo(a.nodes[i+1], seq); synthedFrags != nil {
+			frags = append(frags, synthedFrags...)
 		}
 	}
 

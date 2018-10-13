@@ -49,6 +49,9 @@ type SynthesisConfig struct {
 
 	// maximum length of a synthesized piece of DNA
 	MaxLength int `mapstructure:"max-length"`
+
+	// minimum length of a synthesized piece of DNA
+	MinLength int `mapstructure:"min-length"`
 }
 
 // Config is the root-level settings struct and is a mix
@@ -70,6 +73,8 @@ type Config struct {
 // New returns a new Config struct populated by settings from
 // settings.yaml, in the repo, or some other settings file the user
 // points to with the "--config" command
+//
+// TODO: check for and error out on nonsense config values
 func New() (c Config) {
 	viper.AddConfigPath(".")
 	viper.SetConfigFile("settings") // no yaml needed
