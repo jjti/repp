@@ -3,6 +3,7 @@
 package config
 
 import (
+	"fmt"
 	"log"
 	"path"
 	"path/filepath"
@@ -66,20 +67,31 @@ type Config struct {
 	Synthesis SynthesisConfig
 }
 
-// NewConfig returns a new Config struct populated by
-// Viper settings (either from the local settings.yaml)
-// and/or command line arguments
-func NewConfig() Config {
-	var c Config
+// New returns a new Config struct populated by settings from
+// the adjacent settings.yaml
+func New() (c Config) {
+	viper.AddConfigPath(".")
+	viper.SetConfigFile("settings") // no yaml needed
+	viper.AutomaticEnv()            // enviornment variables that match
 
+	// read it intialization files
+	if err := viper.ReadInConfig(); err == nil {
+		fmt.Println("Using config file:", viper.ConfigFileUsed())
+	} else {
+		log.Fatalf("Failed to read in config file %s: %v", viper.ConfigFileUsed(), err)
+	}
+
+	// move into the new Config struct
 	err := viper.Unmarshal(&c)
 	if err != nil {
-		log.Fatalf("unable to decode into struct, %v", err)
+		log.Fatalf("Failed to decode settings file %s: %v", viper.ConfigFileUsed(), err)
 	}
 
 	// make path to test db
-	db, _ := filepath.Abs(path.Join("..", "assets", "addgene", "db", "addgene"))
-	c.DB = db
+	if c.DB == "" {
+		db, _ := filepath.Abs(path.Join("..", "assets", "addgene", "db", "addgene"))
+		c.DB = db
+	}
 
-	return c
+	return
 }

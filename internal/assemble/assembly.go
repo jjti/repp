@@ -1,5 +1,11 @@
 package assemble
 
+import (
+	"math"
+
+	"github.com/jjtimmons/decvec/internal/dvec"
+)
+
 // assembly is a slice of nodes ordered by the nodes
 // distance from the end of the target vector
 type assembly struct {
@@ -82,7 +88,46 @@ func (a *assembly) len() int {
 //
 // it can fail out. For example, a PCR Fragment may have off-targets in
 // the parent vector. If that happens, we return the problem node
-func (a *assembly) fill() (blacklist node, err error) {
+func (a *assembly) fill(seq string) (blacklist node, frags []dvec.Fragment) {
+	// convert a node back into a fragment
+	fragment := func(n node) dvec.Fragment {
+		return dvec.Fragment{
+			ID:    n.id,
+			Seq:   n.seq,
+			Entry: n.id,
+		}
+	}
+
+	for i, n := range a.nodes {
+		// last node, do nothing
+		// here only to allow for vector "circularization"
+		if i == len(a.nodes)-1 {
+			break
+		}
+
+		// convert
+		frag := fragment(n)
+
+		// try and make primers for the fragment
+		fragPrimers, err := primers(frag)
+		if err != nil {
+			// return the node as a blackmailed node if pcr fails
+			return n, frags
+		}
+
+		// set primers and store this to the list of building fragments
+		frag.Primers = fragPrimers
+		frags = append(frags, frag)
+
+		// check whether we need to make synthetic fragments to get
+		// to the next fragment in the assembly
+		if dist := n.distTo(a.nodes[i]); dist > -(conf.Fragments.MinHomology) {
+			// number of synthetic fragments to make
+			fCount := math.Ceil(float64(dist) / float64(conf.Synthesis.MaxLength))
+
+			fLength := int(float64(dist) / fCount)
+		}
+	}
 
 	return
 }

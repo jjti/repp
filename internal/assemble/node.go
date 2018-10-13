@@ -10,6 +10,9 @@ type node struct {
 	// id of the node's source in the database (will be used to avoid off-targets within it)
 	id string
 
+	// seq of the fragment
+	seq string
+
 	// unique-id of a match, the  start index % seq-length + id
 	// (unique identified that catches nodes that cross the zero-index)
 	uniqueID string
