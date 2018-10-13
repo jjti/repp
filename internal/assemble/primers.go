@@ -119,12 +119,12 @@ func (p *p3exec) input() error {
 	// write to the fs
 	inputFile, err := os.Create(p.in)
 	if err != nil {
-		return fmt.Errorf("failed to create primer3 input file %v: ", err)
+		return fmt.Errorf("Failed to create primer3 input file %v: ", err)
 	}
 	defer inputFile.Close()
 	_, err = inputFile.WriteString(fileContents)
 	if err != nil {
-		return fmt.Errorf("failed to create primer3 input file %v: ", err)
+		return fmt.Errorf("Failed to create primer3 input file %v: ", err)
 	}
 	return nil
 }
@@ -201,16 +201,16 @@ func (p *p3exec) parse() (primers []dvec.Primer, err error) {
 func init() {
 	_, err := os.Stat(p3Path)
 	if err != nil {
-		log.Fatalf("failed to locate primer3 executable: %v", err)
+		log.Fatalf("Failed to locate primer3 executable: %v", err)
 	}
 
 	_, err = os.Stat(p3Conf)
 	if err != nil {
-		log.Fatalf("failed to locate primer3 config folder: %v", err)
+		log.Fatalf("Failed to locate primer3 config folder: %v", err)
 	}
 
 	err = os.MkdirAll(p3Dir, os.ModePerm)
 	if err != nil {
-		log.Fatalf("failed to create a primer3 outut dir: %v", err)
+		log.Fatalf("Failed to create a primer3 outut dir: %v", err)
 	}
 }

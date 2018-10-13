@@ -38,7 +38,7 @@ func isMismatch(match dvec.Match) bool {
 // blast database
 func Mismatch(primer, parent string) (mismatch bool, match dvec.Match, err error) {
 	// path to the blastdbcmd binary
-	blastcmd, _ := filepath.Abs(path.Join("..", "..", "vendor", "ncbi-blast-2.7.1+", "bin", "blastdbcmd"))
+	blastcmd, _ := filepath.Abs(path.Join(conf.Root, "vendor", "ncbi-blast-2.7.1+", "bin", "blastdbcmd"))
 	// path to the entry batch file to hold the parent entry accession
 	entry, _ := filepath.Abs(path.Join(blastDir, parent+".entry"))
 	// path to the output sequence file
@@ -54,27 +54,27 @@ func Mismatch(primer, parent string) (mismatch bool, match dvec.Match, err error
 	// switched to the far simpler -entry_batch command that fixes the issue
 	err = ioutil.WriteFile(entry, []byte(parent), 0666)
 	if err != nil {
-		return false, match, fmt.Errorf("failed to write batch entry list: %v", err)
+		return false, match, fmt.Errorf("Failed to write batch entry list: %v", err)
 	}
 
 	// make a blast command
 	queryCmd := exec.Command(
 		blastcmd,
-		"-db", db,
+		"-db", conf.DB,
 		"-dbtype", "nucl",
 		"-entry_batch", entry,
 		"-out", entryOutput,
 		"-outfmt", "%f", // fasta format
 	)
 	if output, err := queryCmd.CombinedOutput(); err != nil {
-		return false, match, fmt.Errorf("failed to run blastdbcmd %s, %v, %s", entry, err, string(output))
+		return false, match, fmt.Errorf("Failed to run blastdbcmd %s, %v, %s", entry, err, string(output))
 	}
 
 	// create blast input file
 	inContent := fmt.Sprintf(">primer\n%s\n", primer)
 	err = ioutil.WriteFile(in, []byte(inContent), 0666)
 	if err != nil {
-		return false, match, fmt.Errorf("failed to write primer sequence to query FASTA file: %v", err)
+		return false, match, fmt.Errorf("Failed to write primer sequence to query FASTA file: %v", err)
 	}
 
 	// blast the query sequence against the parent sequence
@@ -86,13 +86,13 @@ func Mismatch(primer, parent string) (mismatch bool, match dvec.Match, err error
 
 	// execute blast
 	if err = b.runAgainst(); err != nil {
-		return false, match, fmt.Errorf("failed to run blast against parent: %v", err)
+		return false, match, fmt.Errorf("Failed to run blast against parent: %v", err)
 	}
 
 	// get the BLAST matches
 	matches, err := b.parse()
 	if err != nil {
-		return false, match, fmt.Errorf("failed to parse matches from %s: %v", out, err)
+		return false, match, fmt.Errorf("Failed to parse matches from %s: %v", out, err)
 	}
 
 	// parse the results and check whether any are cause for concern (by Tm)
