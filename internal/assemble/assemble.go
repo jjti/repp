@@ -2,8 +2,6 @@
 package assemble
 
 import (
-	"fmt"
-
 	"github.com/jjtimmons/decvec/config"
 	"github.com/jjtimmons/decvec/internal/dvec"
 )
@@ -27,8 +25,6 @@ var (
 // Error out and repeat the build stage if a node fails to be filled
 func Assemble(matches []dvec.Match, seq string) {
 	// map fragment Matches to nodes
-	// store whether they're entry or terminal nodes based on whether they
-	// overlap the first or last bp of the search range, respectively
 	var nodes []node
 	for _, m := range matches {
 		nodes = append(nodes, node{
@@ -39,7 +35,8 @@ func Assemble(matches []dvec.Match, seq string) {
 		})
 	}
 
-	// build up a the map from fragment to assemblies with that fragment count
+	// build up slice of assemblies that could, within the upper-limit on
+	// fragment count, be assembled to make the target vecto
 	assemblies := build(nodes)
 
 	// assemble into a list of fragment lists (building fragments)
@@ -65,8 +62,6 @@ func assemble(assemblies []assembly, seq string, found [][]dvec.Fragment) [][]dv
 
 		// add this list of fragments to the list of such
 		found = append(found, fs)
-
-		fmt.Printf("%+v", p)
 	}
 
 	return found
