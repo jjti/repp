@@ -31,7 +31,11 @@ var (
 //	1. the primers have an unacceptably high primer3 penalty score
 //	2. there are off-targets in the primers
 func primers(p dvec.Fragment) (primers []dvec.Primer, err error) {
+	nilPrimers := []dvec.Primer{}
 	maxPairP := conf.PCR.P3MaxPenalty
+
+	// little data cleaning
+	p.Seq = strings.ToUpper(p.Seq)
 
 	exec := p3exec{
 		f:   &p,
@@ -41,23 +45,23 @@ func primers(p dvec.Fragment) (primers []dvec.Primer, err error) {
 
 	// make input file
 	if err = exec.input(); err != nil {
-		return nil, err
+		return
 	}
 
 	// execute
 	if err = exec.run(); err != nil {
-		return nil, err
+		return
 	}
 
 	// parse the results into primers for storing on the fragment
 	if primers, err = exec.parse(); err != nil {
-		return nil, err
+		return
 	}
 
 	// 1. check for whether the primers have too have a pair penalty score
 	if primers[0].PairPenalty > maxPairP {
-		return nil, fmt.Errorf(
-			"primers have pair primer3 penalty score of %f, should be less than %f:\n%+v\n%+v",
+		return nilPrimers, fmt.Errorf(
+			"Primers have pair primer3 penalty score of %f, should be less than %f:\n%+v\n%+v",
 			primers[0].PairPenalty,
 			maxPairP,
 			primers[0],
@@ -67,15 +71,15 @@ func primers(p dvec.Fragment) (primers []dvec.Primer, err error) {
 
 	// 2. check for whether either of the primers have an off-target/mismatch
 	for _, primer := range primers {
-		mismatchExists, mismatch, err := blast.Mismatch(primer.Seq, p.Entry)
+		mismatchExists, mismatch, err := blast.Mismatch(primer.Seq, p.Entry, conf.DB)
 
 		if err != nil {
-			return nil, err
+			return nilPrimers, err
 		}
 
 		if mismatchExists {
-			return nil, fmt.Errorf(
-				"found a mismatching sequence, %s, against the primer %s",
+			return nilPrimers, fmt.Errorf(
+				"Found a mismatching sequence, %s, against the primer %s",
 				mismatch.Seq,
 				primer.Seq,
 			)

@@ -33,6 +33,9 @@ type blastExec struct {
 	// the fragment we're BLASTing
 	f *dvec.Fragment
 
+	// the path to the database we're BLASTing against
+	db string
+
 	// the path to the input BLAST file
 	in string
 
