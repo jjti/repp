@@ -7,11 +7,11 @@ import (
 )
 
 // test that we can filter out overlapping regions from blast results
-// and those that are up against the enge of the fragment
+// and those that are up against the edge of the fragment
 func TestFilter(t *testing.T) {
 	// test fragment with 3 matches that should be removed
 	matches := []dvec.Match{
-		// should be removed for ending before 0-index
+		// shouldn't be removed
 		dvec.Match{
 			Entry: "m1",
 			Start: 15,
@@ -35,20 +35,13 @@ func TestFilter(t *testing.T) {
 			Start: 31,
 			End:   72,
 		},
-		// should be removed because it starts past 2x the
-		// target's sequence length
-		dvec.Match{
-			Entry: "m5",
-			Start: 40,
-			End:   79,
-		},
 	}
 
 	newMatches := filter(matches)
 
 	// make sure they're gone
 	if len(newMatches) != 3 {
-		t.Errorf("%d matches found on test fragment, 3 expected: %v", newMatches, matches)
+		t.Errorf("%d matches found on test fragment, 3 expected: %v", len(newMatches), newMatches)
 	}
 
 	// make sure m2 has been removed
