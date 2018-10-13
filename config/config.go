@@ -7,6 +7,7 @@ import (
 	"log"
 	"path"
 	"path/filepath"
+	"runtime"
 
 	"github.com/spf13/viper"
 )
@@ -75,29 +76,37 @@ type Config struct {
 // points to with the "--config" command
 //
 // TODO: check for and error out on nonsense config values
+// TODO: add back the config file path setting
 func New() (c Config) {
-	viper.AddConfigPath(".")
-	viper.SetConfigFile("settings") // no yaml needed
-	viper.AutomaticEnv()            // enviornment variables that match
-
 	// read it intialization files
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())
 	} else {
-		log.Fatalf("Failed to read in config file %s: %v", viper.ConfigFileUsed(), err)
+		log.Fatalf("Failed to read in config file: %v", err)
 	}
 
 	// move into the new Config struct
-	err := viper.Unmarshal(&c)
-	if err != nil {
+	if err := viper.Unmarshal(&c); err != nil {
 		log.Fatalf("Failed to decode settings file %s: %v", viper.ConfigFileUsed(), err)
 	}
 
-	// make path to test db
-	if c.DB == "" {
-		db, _ := filepath.Abs(path.Join("..", "assets", "addgene", "db", "addgene"))
-		c.DB = db
-	}
-
 	return
+}
+
+// init and set viper's paths to the local config file
+func init() {
+	_, filename, _, ok := runtime.Caller(0)
+	if !ok {
+		log.Panicln("No caller information")
+	}
+	// path to the root of the app
+	root, _ := filepath.Abs(path.Join(path.Dir(filename), ".."))
+
+	// addgene's database
+	addgeneDB := path.Join(root, "assets", "addgene", "db", "addgene")
+	viper.SetDefault("DB", addgeneDB)
+
+	viper.AddConfigPath(root)       // settings are in root of repo
+	viper.SetConfigName("settings") // no yaml needed
+	viper.AutomaticEnv()            // enviornment variables that match
 }
