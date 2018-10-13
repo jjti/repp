@@ -3,6 +3,8 @@ package assemble
 import (
 	"reflect"
 	"testing"
+
+	"github.com/jjtimmons/decvec/internal/dvec"
 )
 
 func Test_node_distTo(t *testing.T) {
@@ -305,6 +307,83 @@ func Test_node_reach(t *testing.T) {
 			}
 			if gotReachable := n.reach(tt.args.nodes, tt.args.i, tt.args.synthCount); !reflect.DeepEqual(gotReachable, tt.wantReachable) {
 				t.Errorf("node.reach() = %v, want %v", gotReachable, tt.wantReachable)
+			}
+		})
+	}
+}
+
+func Test_node_synthTo(t *testing.T) {
+	conf.Fragments.MinHomology = 2
+	conf.Synthesis.MinLength = 4
+	conf.Synthesis.MaxLength = 100
+
+	type fields struct {
+		id         string
+		seq        string
+		uniqueID   string
+		start      int
+		end        int
+		assemblies []assembly
+	}
+	type args struct {
+		next node
+		seq  string
+	}
+	tests := []struct {
+		name             string
+		fields           fields
+		args             args
+		wantSynthedFrags []dvec.Fragment
+	}{
+		{
+			"return nothing when there's enough overlap",
+			fields{
+				start: 10,
+				end:   16,
+			},
+			args{
+				next: node{
+					start: 13,
+					end:   20,
+				},
+			},
+			nil,
+		},
+		{
+			"return synthetic fragments when there's no overlap",
+			fields{
+				id:    "first",
+				start: 10,
+				end:   16,
+			},
+			args{
+				next: node{
+					id:    "second",
+					start: 20,
+					end:   24,
+				},
+				seq: "TGCTGACTGTGGCGGGTGAGCTTAGGGGGCCTCCGCTCCAGCTCGACACCGGGCAGCTGC",
+			},
+			[]dvec.Fragment{
+				dvec.Fragment{
+					ID:  "first-synthetic-1",
+					Seq: "GGTGAGCTTA",
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			n := &node{
+				id:         tt.fields.id,
+				seq:        tt.fields.seq,
+				uniqueID:   tt.fields.uniqueID,
+				start:      tt.fields.start,
+				end:        tt.fields.end,
+				assemblies: tt.fields.assemblies,
+			}
+			if gotSynthedFrags := n.synthTo(tt.args.next, tt.args.seq); !reflect.DeepEqual(gotSynthedFrags, tt.wantSynthedFrags) {
+				t.Errorf("node.synthTo() = %v, want %v", gotSynthedFrags, tt.wantSynthedFrags)
 			}
 		})
 	}
