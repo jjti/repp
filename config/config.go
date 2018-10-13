@@ -68,7 +68,8 @@ type Config struct {
 }
 
 // New returns a new Config struct populated by settings from
-// the adjacent settings.yaml
+// settings.yaml, in the repo, or some other settings file the user
+// points to with the "--config" command
 func New() (c Config) {
 	viper.AddConfigPath(".")
 	viper.SetConfigFile("settings") // no yaml needed
