@@ -432,3 +432,43 @@ func Test_node_fragment(t *testing.T) {
 		})
 	}
 }
+
+func Test_new(t *testing.T) {
+	type args struct {
+		m    dvec.Match
+		seqL int
+	}
+	tests := []struct {
+		name string
+		args args
+		want node
+	}{
+		{
+			"create a node from a match",
+			args{
+				m: dvec.Match{
+					Entry: "testMatch",
+					Seq:   "atgctagctagtg",
+					Start: 0,
+					End:   12,
+				},
+				seqL: 50,
+			},
+			node{
+				id:         "testMatch",
+				seq:        "ATGCTAGCTAGTG",
+				uniqueID:   "0testMatch",
+				start:      0,
+				end:        12,
+				assemblies: nil,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := new(tt.args.m, tt.args.seqL); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("new() = %+v, want %+v", got, tt.want)
+			}
+		})
+	}
+}

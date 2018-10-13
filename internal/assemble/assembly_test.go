@@ -266,6 +266,7 @@ func Test_assembly_len(t *testing.T) {
 }
 
 func Test_assembly_fill(t *testing.T) {
+
 	type fields struct {
 		nodes  []node
 		cost   float32
@@ -282,7 +283,16 @@ func Test_assembly_fill(t *testing.T) {
 		wantFrags     []dvec.Fragment
 	}{
 		{
-			"fills in a basic assembly",
+			"empty nodes, return nothing",
+			fields{
+				nodes: []node{},
+			},
+			args{},
+			node{},
+			nil,
+		},
+		{
+			"fill in a basic assembly",
 			fields{
 				nodes: []node{},
 			},

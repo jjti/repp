@@ -3,6 +3,8 @@ package assemble
 import (
 	"fmt"
 	"math"
+	"strconv"
+	"strings"
 
 	"github.com/jjtimmons/decvec/internal/dvec"
 )
@@ -28,6 +30,26 @@ type node struct {
 
 	// assemblies that span from this node to the end of the vector
 	assemblies []assembly
+}
+
+// new creates a node from a Match
+func new(m dvec.Match, seqL int) node {
+	return node{
+		id:       m.Entry,
+		seq:      strings.ToUpper(m.Seq),
+		uniqueID: strconv.Itoa(m.Start%seqL) + m.Entry,
+		start:    m.Start,
+		end:      m.End,
+	}
+}
+
+// fragment converts a node into a fragment
+func (n *node) fragment() dvec.Fragment {
+	return dvec.Fragment{
+		ID:    n.id,
+		Seq:   n.seq,
+		Entry: n.id,
+	}
 }
 
 // distTo returns the distance between the start of this node and the end of the other.
@@ -160,13 +182,4 @@ func (n *node) synthTo(next node, seq string) (synthedFrags []dvec.Fragment) {
 	}
 
 	return
-}
-
-// fragment converts a node back into a fragment
-func (n *node) fragment() dvec.Fragment {
-	return dvec.Fragment{
-		ID:    n.id,
-		Seq:   n.seq,
-		Entry: n.id,
-	}
 }

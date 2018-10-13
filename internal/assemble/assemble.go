@@ -27,12 +27,7 @@ func Assemble(matches []dvec.Match, seq string) {
 	// map fragment Matches to nodes
 	var nodes []node
 	for _, m := range matches {
-		nodes = append(nodes, node{
-			id:       m.Entry,
-			uniqueID: string(m.Start%len(seq)) + m.Entry,
-			start:    m.Start,
-			end:      m.End,
-		})
+		nodes = append(nodes, new(m, len(seq)))
 	}
 
 	// build up slice of assemblies that could, within the upper-limit on
