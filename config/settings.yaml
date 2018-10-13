@@ -23,5 +23,8 @@ synthesis:
   # Cost per bp of synthesized DNA
   bp-cost: 0.11
 
-  # Maximum length of a synthesizable region of DNA
+  # Maximum length of a synthesized building fragment
   max-length: 3000
+
+  # Minimum length of a synthesized building fragment
+  min-length: 100

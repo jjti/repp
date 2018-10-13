@@ -1,7 +1,10 @@
 package assemble
 
 import (
+	"fmt"
 	"math"
+
+	"github.com/jjtimmons/decvec/internal/dvec"
 )
 
 // node is a single node within the DP tree for building up
@@ -105,6 +108,58 @@ func (n *node) reach(nodes []node, i, synthCount int) (reachable []int) {
 		} else {
 			break
 		}
+	}
+
+	return
+}
+
+// synthTo returns synthetic fragments to get this node to next node.
+// It creates a slice of building fragments that have homology against
+// one another and are within the upper and lower synthesis bounds.
+//
+// next is the next node after this, in an assembly, that we need this node
+// to connect to.
+// seq is the vector's sequence. We need it to build up synthetic fragments
+// using the vector's sequence (we want to match against the target sequence)
+func (n *node) synthTo(next node, seq string) (synthedFrags []dvec.Fragment) {
+	// check whether we need to make synthetic fragments to get
+	// to the next fragment in the assembly
+	dist := n.distTo(next)
+	if dist <= -(conf.Fragments.MinHomology) {
+		// none needed
+		return nil
+	}
+
+	// make the slice
+	synthedFrags = []dvec.Fragment{}
+
+	// number of synthetic fragments to make
+	fragC := math.Ceil(float64(dist) / float64(conf.Synthesis.MaxLength))
+
+	// length of each synthesized fragment
+	fragL := int(float64(dist) / fragC)
+	if conf.Synthesis.MinLength > fragL {
+		// need to synthesize at least Synthesis.MinLength bps
+		fragL = conf.Synthesis.MinLength
+	}
+
+	// account for homology on either end of each synthetic fragment
+	fragL += conf.Fragments.MinHomology * 2
+	seq += seq // double to account for sequence across the zero-index
+
+	// slide along the range of sequence to create synthetic fragments for
+	// and create one at each point, each w/ MinHomology for the fragment
+	// before it and after it
+	for fragIndex := 0; fragIndex < int(fragC); fragIndex++ {
+		start := n.start - conf.Fragments.MinHomology // start w/ homology
+		start += fragIndex * fragL                    // slide along the range to cover
+		end := start + fragL + conf.Fragments.MinHomology
+
+		sFrag := dvec.Fragment{
+			ID:  fmt.Sprintf("%s-synth-%d", n.id, fragIndex),
+			Seq: seq[start:end],
+		}
+		synthedFrags = append(synthedFrags, sFrag)
 	}
 
 	return
