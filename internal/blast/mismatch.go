@@ -51,12 +51,13 @@ func Mismatch(primer, parent string) (mismatch bool, match dvec.Match, err error
 	// write entry to file
 	// this was a 2-day bug I couldn't resolve...
 	// I was using the "-entry" flag on exec.Command, but have since
-	// switched to the far simpler -entry_batch command that fixes the issue
+	// switched to the simpler -entry_batch command (on a file) that resolves the issue
 	err = ioutil.WriteFile(entry, []byte(parent), 0666)
 	if err != nil {
 		return false, match, fmt.Errorf("Failed to write batch entry list: %v", err)
 	}
 
+	fmt.Println(conf.DB, entry)
 	// make a blast command
 	queryCmd := exec.Command(
 		blastcmd,

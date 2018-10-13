@@ -135,7 +135,7 @@ func (b *blastExec) runAgainst() error {
 
 	// execute BLAST and wait on it to finish
 	if output, err := blastCmd.CombinedOutput(); err != nil {
-		fmt.Fprintln(os.Stderr, err, string(output))
+		log.Fatalf("Failed to execute BLAST: %v: %s", err, string(output))
 		return err
 	}
 	return nil
@@ -197,7 +197,6 @@ func (b *blastExec) parse() (matches []dvec.Match, err error) {
 // init ensures there's a blast subdirectory in the binary's execution enviornment
 // for the results this is about to create
 func init() {
-
 	err := os.MkdirAll(blastDir, os.ModePerm)
 	if err != nil {
 		log.Fatalf("failed to create a BLAST dir: %v", err)
