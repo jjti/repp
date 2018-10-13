@@ -12,6 +12,11 @@ import (
 	"github.com/spf13/viper"
 )
 
+var (
+	// logged holds whether we've already logged the settings file being used
+	logged = false
+)
+
 // MakeFlags are those that are passed to the make command
 type MakeFlags struct {
 	// the path the local target sequence
@@ -59,6 +64,8 @@ type SynthesisConfig struct {
 // of settings available in settings.yaml and those
 // available from the command line
 type Config struct {
+	// path to the root of the repo (hackish)
+	Root string
 	// path to the fragment DB
 	DB string
 	// make settings passed thru CLI
@@ -80,7 +87,10 @@ type Config struct {
 func New() (c Config) {
 	// read it intialization files
 	if err := viper.ReadInConfig(); err == nil {
-		fmt.Println("Using config file:", viper.ConfigFileUsed())
+		if !logged {
+			fmt.Println("Using config file:", viper.ConfigFileUsed())
+			logged = true
+		}
 	} else {
 		log.Fatalf("Failed to read in config file: %v", err)
 	}
@@ -101,6 +111,7 @@ func init() {
 	}
 	// path to the root of the app
 	root, _ := filepath.Abs(path.Join(path.Dir(filename), ".."))
+	viper.SetDefault("Root", root)
 
 	// addgene's database
 	addgeneDB := path.Join(root, "assets", "addgene", "db", "addgene")

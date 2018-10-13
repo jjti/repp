@@ -49,7 +49,8 @@ func Test_isMismatch(t *testing.T) {
 }
 
 func TestMismatch(t *testing.T) {
-	db, _ = filepath.Abs(path.Join("..", "..", "test", "blast", "db"))
+	testDB, _ := filepath.Abs(path.Join("..", "..", "test", "blast", "db"))
+	conf.DB = testDB
 
 	type args struct {
 		primer string

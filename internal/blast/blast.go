@@ -17,14 +17,14 @@ import (
 )
 
 var (
-	// path to the BLAST DB with building fragments
-	db = config.New().DB
+	// config object
+	conf = config.New()
 
 	// path to the blast directory for putting results into
-	blastDir string
+	blastDir = filepath.Join(conf.Root, "bin", "blast")
 
 	// path to the blast executable
-	blast = path.Join("..", "..", "vendor", "ncbi-blast-2.7.1+", "bin", "blastn")
+	blast = path.Join(conf.Root, "vendor", "ncbi-blast-2.7.1+", "bin", "blastn")
 )
 
 // blastExec is a small utility function for executing BLAST
@@ -55,8 +55,8 @@ func BLAST(f *dvec.Fragment) (matches []dvec.Match, err error) {
 	}
 
 	// make sure the addgene db is there
-	if _, err := os.Stat(db); os.IsNotExist(err) {
-		return nil, fmt.Errorf("failed to find an Addgene database at %s", db)
+	if _, err := os.Stat(conf.DB); os.IsNotExist(err) {
+		return nil, fmt.Errorf("failed to find an Addgene database at %s", conf.DB)
 	}
 
 	// make sure the blast executable is there
@@ -101,7 +101,7 @@ func (b *blastExec) run() error {
 	blastCmd := exec.Command(
 		blast,
 		"-task", "blastn",
-		"-db", db,
+		"-db", conf.DB,
 		"-query", b.in,
 		"-out", b.out,
 		"-outfmt", "7 sseqid qstart qend sstart send sseq mismatch",
@@ -197,7 +197,7 @@ func (b *blastExec) parse() (matches []dvec.Match, err error) {
 // init ensures there's a blast subdirectory in the binary's execution enviornment
 // for the results this is about to create
 func init() {
-	blastDir = filepath.Join("..", "..", "bin", "blast")
+
 	err := os.MkdirAll(blastDir, os.ModePerm)
 	if err != nil {
 		log.Fatalf("failed to create a BLAST dir: %v", err)

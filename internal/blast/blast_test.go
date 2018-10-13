@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"path"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/jjtimmons/decvec/internal/dvec"
@@ -14,9 +13,10 @@ import (
 // see test/blast/README.md for a description of where the subfragments
 // in this test fragment's sequence came from (pieces from the 5 fragments)
 // that make up the mock BLAST db
-func TestBLAST(t *testing.T) {
+func Test_BLAST(t *testing.T) {
 	// make path to test db
-	db, _ = filepath.Abs(path.Join("..", "..", "test", "blast", "db"))
+	testDB, _ := filepath.Abs(path.Join(conf.Root, "test", "blast", "db"))
+	conf.DB = testDB
 
 	// create mock test fragment
 	f := dvec.Fragment{
@@ -39,14 +39,6 @@ func TestBLAST(t *testing.T) {
 		return
 	}
 
-	// make sure the vertical line has been removed
-	for _, m := range matches {
-		if strings.Contains(m.Entry, "|") {
-			t.Errorf("match still contains pipe symbol in Entry: %s", m.Entry)
-			return
-		}
-	}
-
 	fmt.Println(matches)
 	matchesContain := func(targ dvec.Match) {
 		for _, m := range matches {
@@ -59,7 +51,7 @@ func TestBLAST(t *testing.T) {
 	}
 
 	matchesContain(dvec.Match{
-		Entry: "107006",
+		Entry: "gnl|addgene|107006",
 		Start: 0,
 		End:   72,
 	})
