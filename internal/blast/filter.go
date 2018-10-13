@@ -7,12 +7,14 @@ import (
 	"github.com/jjtimmons/decvec/internal/dvec"
 )
 
-// filter "propertizes" the matches from BLAST
+// filter "proper-izes" the matches from BLAST
 //
-// propertizing fragment matches means removing those that are completely
+// proper-izing fragment matches means removing those that are completely
 // self-contained in other fragments: the larger of the available fragments
 // will be the better one, since it covers a greater region and will almost
 // always be preferable to the smaller one
+//
+// Circular-arc graph: https://en.wikipedia.org/wiki/Circular-arc_graph
 //
 // also remove small fragments here, that are too small to be useful during
 // assembly
