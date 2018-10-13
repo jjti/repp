@@ -1,15 +1,14 @@
 package cmd
 
 import (
-	"fmt"
-	"os"
+	"log"
+	"path"
 	"path/filepath"
 
-	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-)
 
-var cfgFile = "settings"
+	"github.com/spf13/cobra"
+)
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -26,46 +25,16 @@ var rootCmd = &cobra.Command{
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		log.Fatalf("Failed to execute decvec: %v", err)
 	}
 }
 
 func init() {
-	cobra.OnInitialize(initConfig)
+	settings, _ := filepath.Abs(path.Join("../config/settings"))
 
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is /decvec/settings.yaml)")
-}
-
-// initConfig reads in config file and ENV variables if set.
-func initConfig() {
-	if cfgFile != "" {
-		// Use config file from the flag.
-		viper.SetConfigFile(cfgFile)
-	} else {
-		// Find path to the default settings file in config
-		// os.Executable returns path to the binary
-		ex, err := os.Executable()
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-
-		// Go two path locations upward from the binary and into config
-		// Search ./config in repo directory for a settings file (extension is irrelevant to viper)
-		viper.AddConfigPath(filepath.Join(ex, "..", "..", "config"))
-		viper.SetConfigName("settings")
-	}
-
-	viper.AutomaticEnv() // read in environment variables that match
-
-	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err == nil {
-		fmt.Println("Using config file:", viper.ConfigFileUsed())
-	} else {
-		fmt.Println(err)
-	}
+	rootCmd.Flags().StringP("config", "c", settings, "config file (default is /config/settings.yaml)")
+	viper.BindPFlag("make.target", rootCmd.Flags().Lookup("config"))
 }

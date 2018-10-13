@@ -18,7 +18,7 @@ import (
 
 var (
 	// path to the BLAST DB with building fragments
-	db = config.NewConfig().DB
+	db = config.New().DB
 
 	// path to the blast directory for putting results into
 	blastDir string

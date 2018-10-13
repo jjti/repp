@@ -1,11 +1,10 @@
 package cmd
 
 import (
-	"fmt"
-	"os"
+	"log"
 
 	"github.com/jjtimmons/decvec/config"
-	"github.com/jjtimmons/decvec/internal/frag"
+	"github.com/jjtimmons/decvec/internal/dvec"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -50,14 +49,6 @@ func init() {
 	viper.BindPFlag("make.addgene", makeCmd.Flags().Lookup("addgene"))
 }
 
-// print error and exit program
-func handle(e error) {
-	if e != nil {
-		fmt.Println(e)
-		os.Exit(1)
-	}
-}
-
 // makeExec is the root of the make functionality
 //
 // the goal is to find an "optimal" assembly vector with:
@@ -69,16 +60,23 @@ func handle(e error) {
 // 	5. no off-target binding sites in the parent vectors
 //	6. low primer3 penalty scores
 func makeExec(cmd *cobra.Command, args []string) {
-	c := config.NewConfig()
+	c := config.New()
+
+	// no path to input file
+	if c.Make.TargetPath == "" {
+		log.Fatal("Failed, no target fragment path set")
+	}
 
 	// read in fragments
-	fragments, err := frag.Read(c.Make.TargetPath)
-	handle(err)
+	fragments, err := dvec.Read(c.Make.TargetPath)
+	if err != nil {
+		log.Fatalf("Failed to read in fasta files at %s: %v", c.Make.TargetPath, err)
+	}
 
 	// set target fragment
 	if len(fragments) > 1 {
 		println(
-			"warning: %d building fragments were in %s... only targeting the first: %s",
+			"Warning: %d building fragments were in %s. Only targeting the first: %s",
 			len(fragments),
 			c.Make.TargetPath,
 			fragments[0].ID,

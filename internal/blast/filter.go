@@ -17,7 +17,7 @@ import (
 // also remove small fragments here, that are too small to be useful during
 // assembly
 func filter(matches []dvec.Match) (properized []dvec.Match) {
-	c := config.NewConfig()
+	c := config.New()
 
 	// remove fragments that are shorter the minimum cut off size
 	var largeEnough []dvec.Match
