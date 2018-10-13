@@ -161,3 +161,12 @@ func (n *node) synthTo(next node, seq string) (synthedFrags []dvec.Fragment) {
 
 	return
 }
+
+// fragment converts a node back into a fragment
+func (n *node) fragment() dvec.Fragment {
+	return dvec.Fragment{
+		ID:    n.id,
+		Seq:   n.seq,
+		Entry: n.id,
+	}
+}

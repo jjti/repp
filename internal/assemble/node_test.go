@@ -388,3 +388,47 @@ func Test_node_synthTo(t *testing.T) {
 		})
 	}
 }
+
+func Test_node_fragment(t *testing.T) {
+	type fields struct {
+		id         string
+		seq        string
+		uniqueID   string
+		start      int
+		end        int
+		assemblies []assembly
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   dvec.Fragment
+	}{
+		{
+			"convert to fragment from node",
+			fields{
+				id:  "frag1",
+				seq: "atgctgac",
+			},
+			dvec.Fragment{
+				ID:    "frag1",
+				Seq:   "atgctgac",
+				Entry: "frag1",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			n := &node{
+				id:         tt.fields.id,
+				seq:        tt.fields.seq,
+				uniqueID:   tt.fields.uniqueID,
+				start:      tt.fields.start,
+				end:        tt.fields.end,
+				assemblies: tt.fields.assemblies,
+			}
+			if got := n.fragment(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("node.fragment() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

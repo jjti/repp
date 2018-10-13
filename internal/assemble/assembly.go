@@ -90,15 +90,6 @@ func (a *assembly) len() int {
 // the parent vector. If that happens, we return the problem node and nil
 // building fragments
 func (a *assembly) fill(seq string) (blacklist node, frags []dvec.Fragment) {
-	// convert a node back into a fragment
-	fragment := func(n node) dvec.Fragment {
-		return dvec.Fragment{
-			ID:    n.id,
-			Seq:   n.seq,
-			Entry: n.id,
-		}
-	}
-
 	for i, n := range a.nodes {
 		// last node, do nothing
 		// here only to allow for vector "circularization" if we need to synthesize
@@ -108,7 +99,7 @@ func (a *assembly) fill(seq string) (blacklist node, frags []dvec.Fragment) {
 		}
 
 		// convert
-		frag := fragment(n)
+		frag := n.fragment()
 
 		// try and make primers for the fragment
 		fragPrimers, err := primers(frag)
