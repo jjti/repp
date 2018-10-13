@@ -113,14 +113,11 @@ func (n *node) reach(nodes []node, i, synthCount int) (reachable []int) {
 	return
 }
 
-// synthTo returns synthetic fragments to get this node to next node.
+// synthTo returns synthetic fragments to get this node to the next.
 // It creates a slice of building fragments that have homology against
 // one another and are within the upper and lower synthesis bounds.
-//
-// next is the next node after this, in an assembly, that we need this node
-// to connect to.
-// seq is the vector's sequence. We need it to build up synthetic fragments
-// using the vector's sequence (we want to match against the target sequence)
+// seq is the vector's sequence. We need it to build up the target
+// vector's sequence
 func (n *node) synthTo(next node, seq string) (synthedFrags []dvec.Fragment) {
 	// check whether we need to make synthetic fragments to get
 	// to the next fragment in the assembly
@@ -151,12 +148,12 @@ func (n *node) synthTo(next node, seq string) (synthedFrags []dvec.Fragment) {
 	// and create one at each point, each w/ MinHomology for the fragment
 	// before it and after it
 	for fragIndex := 0; fragIndex < int(fragC); fragIndex++ {
-		start := n.start - conf.Fragments.MinHomology // start w/ homology
-		start += fragIndex * fragL                    // slide along the range to cover
+		start := n.end - conf.Fragments.MinHomology // start w/ homology
+		start += fragIndex * fragL                  // slide along the range to cover
 		end := start + fragL + conf.Fragments.MinHomology
 
 		sFrag := dvec.Fragment{
-			ID:  fmt.Sprintf("%s-synth-%d", n.id, fragIndex),
+			ID:  fmt.Sprintf("%s-synthetic-%d", n.id, fragIndex+1),
 			Seq: seq[start:end],
 		}
 		synthedFrags = append(synthedFrags, sFrag)
