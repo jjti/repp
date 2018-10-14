@@ -111,6 +111,7 @@ func (a *assembly) fill(seq string) (blacklist node, frags []dvec.Fragment) {
 
 		// set primers and store this to the list of building fragments
 		frag.Primers = fragPrimers
+		frag.Type = dvec.PCR
 		frags = append(frags, frag)
 
 		// add synthesized fragments between the two if necessary
