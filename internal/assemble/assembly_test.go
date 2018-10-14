@@ -269,6 +269,7 @@ func Test_assembly_len(t *testing.T) {
 func Test_assembly_fill(t *testing.T) {
 	conf.Fragments.MinHomology = 5
 	conf.DB = path.Join(conf.Root, "test", "blast", "db")
+	conf.Synthesis.MaxLength = 1000
 
 	// All of these ids correspond to entires in the test BLAST db
 	f1 := node{
@@ -318,7 +319,7 @@ func Test_assembly_fill(t *testing.T) {
 		args   args
 	}{
 		{
-			"fill in an assembly, return fragments",
+			"fill in an assembly",
 			fields{
 				nodes: []node{f1, f2, f3, f4},
 			},
