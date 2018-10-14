@@ -51,7 +51,7 @@ func Test_BLAST(t *testing.T) {
 	}
 
 	matchesContain(dvec.Match{
-		Entry: "gnl|addgene|107006",
+		Entry: "gnl|addgene|107006(circular)",
 		Start: 0,
 		End:   72,
 	})

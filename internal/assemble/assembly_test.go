@@ -280,7 +280,7 @@ func Test_assembly_fill(t *testing.T) {
 	}
 
 	f2 := node{
-		id:       "gnl|addgene|85039",
+		id:       "gnl|addgene|85039.1",
 		uniqueID: "02",
 		start:    102,
 		end:      102 + 141,
