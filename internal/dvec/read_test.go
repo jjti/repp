@@ -1,13 +1,18 @@
 package dvec
 
-import "testing"
+import (
+	"path"
+	"testing"
+)
 
 // Test reading of a FASTA file
 func TestRead(t *testing.T) {
-	fragments, err := Read("../../test/frag/fasta.fa")
+	file := path.Join("..", "..", "test", "frag", "fasta.fa")
+	fragments, err := Read(file)
 
 	if err != nil {
-		t.Errorf("failed in Read: %s", err.Error())
+		t.Error(err)
+		return
 	}
 
 	if len(fragments) != 5 {
