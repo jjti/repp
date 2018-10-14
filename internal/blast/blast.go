@@ -133,7 +133,6 @@ func (b *blastExec) runAgainst() error {
 		"-subject", b.subject,
 		"-out", b.out,
 		"-outfmt", "7 sseqid qstart qend sstart send sseq mismatch",
-		"-ungapped",
 	)
 
 	// execute BLAST and wait on it to finish
@@ -185,7 +184,7 @@ func (b *blastExec) parse() (matches []dvec.Match, err error) {
 		ms = append(ms, dvec.Match{
 			// for later querying when checking for off-targets
 			Entry: id,
-			Seq:   seq,
+			Seq:   strings.Replace(seq, "-", "", -1),
 			// convert 1-based numbers to 0-based
 			Start: start - 1,
 			End:   end - 1,
