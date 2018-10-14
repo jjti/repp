@@ -46,17 +46,17 @@ func assemble(assemblies []assembly, seq string, found [][]dvec.Fragment) [][]dv
 
 	// convert and fill the fragments
 	for _, p := range paretos {
-		n, fs := p.fill(seq)
+		failedNode, filledFrags := p.fill(seq)
 
 		// if a node in the assembly fails to be prepared,
 		// remove all assemblies with the node and try again
-		if fs == nil {
-			filteredAssemblies := filterNode(n, assemblies)
+		if filledFrags == nil {
+			filteredAssemblies := filterNode(failedNode, assemblies)
 			return assemble(filteredAssemblies, seq, found)
 		}
 
 		// add this list of fragments to the list of such
-		found = append(found, fs)
+		found = append(found, filledFrags)
 	}
 
 	return found

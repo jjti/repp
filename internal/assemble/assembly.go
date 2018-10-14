@@ -113,7 +113,7 @@ func (a *assembly) fill(seq string) (blacklist node, frags []dvec.Fragment) {
 		frag.Primers = fragPrimers
 		frags = append(frags, frag)
 
-		// add synthesized fragments between the two if they're needed
+		// add synthesized fragments between the two if necessary
 		if synthedFrags := n.synthTo(a.nodes[i+1], seq); synthedFrags != nil {
 			frags = append(frags, synthedFrags...)
 		}

@@ -90,23 +90,29 @@ func Mismatch(primer, parent, db string) (mismatch bool, match dvec.Match, err e
 	// get the BLAST matches
 	matches, err := b.parse()
 	if err != nil {
-		return false, match, fmt.Errorf("Failed to parse matches from %s: %v", out, err)
+		return false, dvec.Match{}, fmt.Errorf("Failed to parse matches from %s: %v", out, err)
 	}
 
 	// parse the results and check whether any are cause for concern (by Tm)
-	primerSeen := false
-	for _, m := range matches {
-		// one of the matches will, of course, be against the primer itself
-		// and we don't want to double count it
-		if !primerSeen && m.Seq == primer {
-			primerSeen = true
-			continue
+	primerCount := 1 // times we expect to see the primer itself
+	for i, m := range matches {
+		if i == 0 && m.Circular {
+			// if the match is against a circular fragment, we might expect to see
+			// the primer's sequence twice, rather than just once
+			primerCount++
 		}
 
-		if isMismatch(m) {
+		// fmt.Printf("\n%t    %s\n", m.Seq == primer, m.Seq)
+
+		// one of the matches will, of course, be against the primer itself
+		// and we don't want to double count it
+		if primerCount > 0 && m.Seq == primer {
+			primerCount--
+			continue
+		} else if isMismatch(m) {
 			return true, m, nil
 		}
 	}
 
-	return false, match, nil
+	return false, dvec.Match{}, nil
 }
