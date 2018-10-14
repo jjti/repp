@@ -175,8 +175,9 @@ func (n *node) synthTo(next node, seq string) (synthedFrags []dvec.Fragment) {
 		end := start + fragL + conf.Fragments.MinHomology
 
 		sFrag := dvec.Fragment{
-			ID:  fmt.Sprintf("%s-synthetic-%d", n.id, fragIndex+1),
-			Seq: seq[start:end],
+			ID:   fmt.Sprintf("%s-synthetic-%d", n.id, fragIndex+1),
+			Seq:  seq[start:end],
+			Type: dvec.Synthetic,
 		}
 		synthedFrags = append(synthedFrags, sFrag)
 	}

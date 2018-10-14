@@ -1,5 +1,17 @@
 package dvec
 
+const (
+	// PCR fragments are those prepared by PCR, often a subselection of their
+	// parent vector
+	PCR Type = 0
+
+	// Synthetic fragments are those that will be fully synthesized (ex: gBlocks)
+	Synthetic Type = 1
+)
+
+// Type is the Fragment building type to be used in the assembly
+type Type int
+
 // Fragment is a single building block stretch of DNA for assembly
 type Fragment struct {
 	// ID is a unique identifier for this fragment
@@ -14,6 +26,9 @@ type Fragment struct {
 	// Entry of this fragment In the DB that it came from
 	// Used to look for off-targets
 	Entry string
+
+	// Type of this fragment
+	Type Type
 }
 
 // Match is a blast "hit" in the blastdb

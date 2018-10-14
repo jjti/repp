@@ -366,8 +366,9 @@ func Test_node_synthTo(t *testing.T) {
 			},
 			[]dvec.Fragment{
 				dvec.Fragment{
-					ID:  "first-synthetic-1",
-					Seq: "GGTGAGCTTA",
+					ID:   "first-synthetic-1",
+					Seq:  "GGTGAGCTTA",
+					Type: dvec.Synthetic,
 				},
 			},
 		},
