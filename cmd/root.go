@@ -5,9 +5,8 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/spf13/viper"
-
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -30,11 +29,11 @@ func Execute() {
 }
 
 func init() {
-	settings, _ := filepath.Abs(path.Join("../config/settings"))
+	settings, _ := filepath.Abs(path.Join("..", "config"))
 
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
-	rootCmd.Flags().StringP("config", "c", settings, "config file (default is /config/settings.yaml)")
-	viper.BindPFlag("make.target", rootCmd.Flags().Lookup("config"))
+	rootCmd.PersistentFlags().StringP("config", "c", settings, "config file (default is /config/settings.yaml)")
+	viper.BindPFlag("config", rootCmd.PersistentFlags().Lookup("config"))
 }

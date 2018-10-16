@@ -17,15 +17,6 @@ var (
 	logged = false
 )
 
-// MakeFlags are those that are passed to the make command
-type MakeFlags struct {
-	// the path the local target sequence
-	TargetPath string `mapstructure:"target"`
-
-	// whether to use the addgene database as a source of building fragments
-	Addgene bool `mapstructure:"addgene"`
-}
-
 // FragmentConfig settings about fragments
 type FragmentConfig struct {
 	// the maximum number of fragments in the final assembly
@@ -68,8 +59,6 @@ type Config struct {
 	Root string
 	// path to the fragment DB
 	DB string
-	// make settings passed thru CLI
-	Make MakeFlags
 	// Fragment level settings
 	Fragments FragmentConfig
 	// PCR settings
@@ -85,7 +74,7 @@ type Config struct {
 // TODO: check for and error out on nonsense config values
 // TODO: add back the config file path setting
 func New() (c Config) {
-	// read it intialization files
+	// read in intialization files
 	if err := viper.ReadInConfig(); err == nil {
 		if !logged {
 			fmt.Println("Using config file:", viper.ConfigFileUsed())
@@ -117,7 +106,12 @@ func init() {
 	addgeneDB := path.Join(root, "assets", "addgene", "db", "addgene")
 	viper.SetDefault("DB", addgeneDB)
 
-	viper.AddConfigPath(root)       // settings are in root of repo
+	if confFlag := viper.GetString("config"); confFlag != "" {
+		viper.AddConfigPath(confFlag) // settings are in root of repo
+	} else {
+		viper.AddConfigPath(root) // settings are in root of repo
+	}
+
 	viper.SetConfigName("settings") // no yaml needed
 	viper.AutomaticEnv()            // enviornment variables that match
 }

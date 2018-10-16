@@ -48,5 +48,5 @@ deps:
 		# make primer3
 		make -C $(VENDOR_DIR)$(PRIMER3_NAME)/src
 mock: 
-		$(BINARY_NAME) make -t ./test/target.fa --addgene
+		$(BINARY_NAME) make -t ./test/target.fa
 

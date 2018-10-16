@@ -3,16 +3,17 @@ package cmd
 import (
 	"log"
 
+	"github.com/spf13/viper"
+
 	"github.com/jjtimmons/decvec/config"
 	"github.com/jjtimmons/decvec/internal/dvec"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 // makeCmd represents the make command
 var makeCmd = &cobra.Command{
 	Use:   "make",
-	Short: "Make a vector from its target sequence and a database of building fragments",
+	Short: "Make a target vector from a database of building fragments",
 	Long: `Make a vector from its target sequence and a database of building fragments
 	
 "decvec make" is for assembling a vector, using Gibson Assembly, in the most efficient 
@@ -28,25 +29,16 @@ vector it's told to. It does this by:
 	Run: makeExec,
 }
 
-var targetPath string
-var inputFastaPath string
-var useAddgene bool
-
 // set flags
 func init() {
 	rootCmd.AddCommand(makeCmd)
 
 	// Flags for specifying the paths to the input file, input fragment files, and output file
-	makeCmd.Flags().StringVarP(&targetPath, "target", "t", "", "path to a FASTA file with the target vector")
-	makeCmd.Flags().BoolVarP(&useAddgene, "addgene", "a", false, "flag signalling we should use addgene's vector db")
+	makeCmd.PersistentFlags().StringP("target", "t", "", "Path to FASTA file with target vector sequence")
+	makeCmd.PersistentFlags().StringP("db", "d", "", "Database of building fragments")
 
-	// Mark required flags
-	makeCmd.MarkFlagRequired("target")
-	makeCmd.MarkFlagRequired("addgene")
+	viper.BindPFlag("db", makeCmd.PersistentFlags().Lookup("db"))
 
-	// Bind the paramters to viper
-	viper.BindPFlag("make.target", makeCmd.Flags().Lookup("target"))
-	viper.BindPFlag("make.addgene", makeCmd.Flags().Lookup("addgene"))
 }
 
 // makeExec is the root of the make functionality
@@ -60,17 +52,22 @@ func init() {
 // 	5. no off-target binding sites in the parent vectors
 //	6. low primer3 penalty scores
 func makeExec(cmd *cobra.Command, args []string) {
+	target, err := cmd.Flags().GetString("target")
+	if err != nil {
+		log.Fatalf("Cannot get target from arguments")
+	}
+
 	c := config.New()
 
 	// no path to input file
-	if c.Make.TargetPath == "" {
-		log.Fatal("Failed, no target fragment path set")
+	if target == "" {
+		log.Fatalf("Failed, no target fragment path set in config %+v", c)
 	}
 
 	// read in fragments
-	fragments, err := dvec.Read(c.Make.TargetPath)
+	fragments, err := dvec.Read(target)
 	if err != nil {
-		log.Fatalf("Failed to read in fasta files at %s: %v", c.Make.TargetPath, err)
+		log.Fatalf("Failed to read in fasta files at %s: %v", target, err)
 	}
 
 	// set target fragment
@@ -78,7 +75,7 @@ func makeExec(cmd *cobra.Command, args []string) {
 		println(
 			"Warning: %d building fragments were in %s. Only targeting the first: %s",
 			len(fragments),
-			c.Make.TargetPath,
+			target,
 			fragments[0].ID,
 		)
 	}
