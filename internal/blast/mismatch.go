@@ -102,8 +102,6 @@ func Mismatch(primer, parent, db string) (mismatch bool, match dvec.Match, err e
 			primerCount++
 		}
 
-		// fmt.Printf("\n%t    %s\n", m.Seq == primer, m.Seq)
-
 		// one of the matches will, of course, be against the primer itself
 		// and we don't want to double count it
 		if primerCount > 0 && m.Seq == primer {

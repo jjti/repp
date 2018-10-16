@@ -3,7 +3,6 @@ package blast
 import (
 	"sort"
 
-	"github.com/jjtimmons/decvec/config"
 	"github.com/jjtimmons/decvec/internal/dvec"
 )
 
@@ -19,12 +18,12 @@ import (
 // also remove small fragments here, that are too small to be useful during
 // assembly
 func filter(matches []dvec.Match) (properized []dvec.Match) {
-	c := config.New()
+	properized = []dvec.Match{}
 
 	// remove fragments that are shorter the minimum cut off size
 	var largeEnough []dvec.Match
 	for _, m := range matches {
-		if m.Length() < c.Fragments.MinMatch {
+		if m.Length() > conf.Fragments.MinMatch {
 			largeEnough = append(largeEnough, m)
 		}
 	}

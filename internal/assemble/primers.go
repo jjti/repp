@@ -18,13 +18,13 @@ import (
 
 var (
 	// path to primer3 executable
-	p3Path = filepath.Join("..", "..", "vendor", "primer3-2.4.0", "src", "primer3_core")
+	p3Path = filepath.Join(conf.Root, "vendor", "primer3-2.4.0", "src", "primer3_core")
 
 	// path to primer3 config folder (with trailing separator)
-	p3Conf = filepath.Join("..", "..", "vendor", "primer3-2.4.0", "src", "primer3_config") + "/"
+	p3Conf = filepath.Join(conf.Root, "vendor", "primer3-2.4.0", "src", "primer3_config") + "/"
 
 	// path to the primer3 io output
-	p3Dir = filepath.Join("..", "..", "bin", "primer3")
+	p3Dir = filepath.Join(conf.Root, "bin", "primer3")
 )
 
 // primers creates primers against a PCR fragment and returns an error if

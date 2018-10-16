@@ -81,7 +81,11 @@ func BLAST(f *dvec.Fragment) (matches []dvec.Match, err error) {
 	matches, err = b.parse()
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse BLAST output: %v", err)
-	} else if len(matches) < 1 {
+	}
+
+	// keep only "proper" arcs (non-self-contained)
+	matches = filter(matches)
+	if len(matches) < 1 {
 		return nil, fmt.Errorf("did not find any matches for %s", b.f.ID)
 	}
 	return matches, err
@@ -115,7 +119,7 @@ func (b *blastExec) run() error {
 
 	// execute BLAST and wait on it to finish
 	if output, err := blastCmd.CombinedOutput(); err != nil {
-		fmt.Fprintln(os.Stderr, err, string(output))
+		log.Fatalf("Failed to execute BLAST: %v: %s", err, string(output))
 		return err
 	}
 	return nil
@@ -201,6 +205,6 @@ func (b *blastExec) parse() (matches []dvec.Match, err error) {
 func init() {
 	err := os.MkdirAll(blastDir, os.ModePerm)
 	if err != nil {
-		log.Fatalf("failed to create a BLAST dir: %v", err)
+		log.Fatalf("Failed to create a BLAST dir: %v", err)
 	}
 }

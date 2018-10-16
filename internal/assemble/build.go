@@ -1,8 +1,6 @@
 package assemble
 
 import (
-	"fmt"
-	"math"
 	"sort"
 )
 
@@ -17,7 +15,7 @@ func build(nodes []node) (assemblies []assembly) {
 	// number of additional nodes try synthesizing to, in addition to those that
 	// already have enough homology for overlap without any modifications for each node
 	// synth_count = math.max(5, 0.05 * len(nodes)); 5 of 5%, whichever is greater
-	synthCount := int(math.Max(5.0, 0.05*float64(len(nodes))))
+	synthCount := 5
 
 	// sort with increasing start index
 	sort.Slice(nodes, func(i, j int) bool {
@@ -43,7 +41,6 @@ func build(nodes []node) (assemblies []assembly) {
 			for _, a := range nodes[i].assemblies {
 				// see if we can create a new assembly with this node included
 				if newAss, created, complete := a.add(nodes[j]); created {
-					fmt.Printf("%s %s %t %t\n", n.id, nodes[j].id, created, complete)
 					if complete {
 						// we've completed a circlular plasmid assembly
 						// it has wrapped back onto itself
