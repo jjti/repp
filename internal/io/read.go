@@ -1,4 +1,4 @@
-package dvec
+package io
 
 import (
 	"fmt"
@@ -6,10 +6,12 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/jjtimmons/decvec/internal/dvec"
 )
 
 // Read a FASTA file (by its path on local FS) to a slice of Fragments
-func Read(path string) (fragments []Fragment, err error) {
+func Read(path string) (fragments []dvec.Fragment, err error) {
 	if !filepath.IsAbs(path) {
 		path, err = filepath.Abs(path)
 		if err != nil {
@@ -54,7 +56,7 @@ func Read(path string) (fragments []Fragment, err error) {
 
 	// build and return the new fragments
 	for i, id := range ids {
-		fragments = append(fragments, Fragment{
+		fragments = append(fragments, dvec.Fragment{
 			ID:  id,
 			Seq: seqs[i],
 		})
