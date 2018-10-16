@@ -1,7 +1,11 @@
 package cmd
 
 import (
+	"fmt"
 	"log"
+
+	"github.com/jjtimmons/decvec/internal/assemble"
+	"github.com/jjtimmons/decvec/internal/blast"
 
 	"github.com/spf13/viper"
 
@@ -52,9 +56,9 @@ func init() {
 // 	5. no off-target binding sites in the parent vectors
 //	6. low primer3 penalty scores
 func makeExec(cmd *cobra.Command, args []string) {
-	target, err := cmd.Flags().GetString("target")
+	target, err := cmd.PersistentFlags().GetString("target")
 	if err != nil {
-		log.Fatalf("Cannot get target from arguments")
+		log.Fatalf("Cannot get target from arguments: %v", err)
 	}
 
 	c := config.New()
@@ -79,9 +83,14 @@ func makeExec(cmd *cobra.Command, args []string) {
 			fragments[0].ID,
 		)
 	}
+	targetFrag := fragments[0]
 
-	// target := fragments[0]
+	// get all the matches against the fragment
+	matches, err := blast.BLAST(&targetFrag)
+	if err != nil {
+		log.Fatalf("Failed to blast %s against the BLAST DB: %v", targetFrag.ID, err)
+	}
 
-	// dbPath, err := filepath.Abs(path.Join("..", "..", "assets", "addgene", "db", "addgene"))
-	// handle(err)
+	builds := assemble.Assemble(matches, targetFrag.Seq)
+	fmt.Printf("%v", builds)
 }
