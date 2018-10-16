@@ -6,11 +6,11 @@ import (
 
 	"github.com/jjtimmons/decvec/internal/assemble"
 	"github.com/jjtimmons/decvec/internal/blast"
+	"github.com/jjtimmons/decvec/internal/io"
 
 	"github.com/spf13/viper"
 
 	"github.com/jjtimmons/decvec/config"
-	"github.com/jjtimmons/decvec/internal/dvec"
 	"github.com/spf13/cobra"
 )
 
@@ -69,7 +69,7 @@ func makeExec(cmd *cobra.Command, args []string) {
 	}
 
 	// read in fragments
-	fragments, err := dvec.Read(target)
+	fragments, err := io.Read(target)
 	if err != nil {
 		log.Fatalf("Failed to read in fasta files at %s: %v", target, err)
 	}

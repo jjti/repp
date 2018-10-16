@@ -104,7 +104,7 @@ func (a *assembly) fill(seq string) (blacklist node, frags []dvec.Fragment) {
 		// try and make primers for the fragment
 		fragPrimers, err := primers(frag)
 		if err != nil {
-			fmt.Printf("Failed to fill %s: %v", n.id, err)
+			fmt.Printf("Failed to fill %s: %v\n", n.id, err)
 			// return the node as a blackmailed node if pcr fails
 			return n, nil
 		}

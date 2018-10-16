@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -103,6 +104,11 @@ func (b *blastExec) create() error {
 
 // run calls the external blastn binary
 func (b *blastExec) run() error {
+	threads := runtime.NumCPU() - 1
+	if threads < 1 {
+		threads = 1
+	}
+
 	// create the blast command
 	// https://www.ncbi.nlm.nih.gov/books/NBK279682/
 	blastCmd := exec.Command(
@@ -115,6 +121,7 @@ func (b *blastExec) run() error {
 		"-ungapped",
 		"-perc_identity", "100",
 		"-max_target_seqs", "100000",
+		"-num_threads", strconv.Itoa(threads),
 	)
 
 	// execute BLAST and wait on it to finish

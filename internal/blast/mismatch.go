@@ -66,7 +66,8 @@ func Mismatch(primer, parent, db string) (mismatch bool, match dvec.Match, err e
 		"-outfmt", "%f", // fasta format
 	)
 	if output, err := queryCmd.CombinedOutput(); err != nil {
-		return false, match, fmt.Errorf("Failed to run blastdbcmd %s, %v, %s", entry, err, string(output))
+		fmt.Println(fmt.Errorf("blastdbcmd failed %v %s", err, string(output)))
+		return false, match, nil
 	}
 
 	// create blast input file
