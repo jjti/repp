@@ -147,6 +147,8 @@ func (n *node) synthTo(next node, seq string) (synthedFrags []dvec.Fragment) {
 	if dist <= -(conf.Fragments.MinHomology) {
 		// none needed
 		return nil
+	} else if dist < 1 {
+		dist = 1
 	}
 
 	// make the slice

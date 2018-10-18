@@ -94,7 +94,7 @@ func (a *assembly) fill(seq string) (blacklist node, frags []dvec.Fragment) {
 		// last node, do nothing
 		// here only to allow for vector "circularization" if we need to synthesize
 		// from a.nodes[len(a.nodes)-2] to a.nodes[len(a.nodes)-1]
-		if i == len(a.nodes)-1 {
+		if i > 0 && n.uniqueID == a.nodes[0].uniqueID {
 			break
 		}
 
