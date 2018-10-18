@@ -16,7 +16,7 @@ type Solution struct {
 	Count int `json:"count"`
 
 	// cost estimated from the primer and sequence lengths
-	Cost float32 `json:"costDollars"`
+	Cost int `json:"costDollars"`
 
 	// Fragments used to build this solution
 	Fragments []dvec.Fragment `json:"fragments"`
@@ -37,13 +37,13 @@ func Write(filename string, assemblies [][]dvec.Fragment) {
 
 	results := []Solution{}
 	for _, assembly := range assemblies {
-		var cost float32
+		var cost int
 		for _, frag := range assembly {
 			if frag.Type == dvec.PCR {
-				cost += c.PCR.BPCost * float32(len(frag.Primers[0].Seq))
-				cost += c.PCR.BPCost * float32(len(frag.Primers[1].Seq))
+				cost += int(c.PCR.BPCost * float32(len(frag.Primers[0].Seq)))
+				cost += int(c.PCR.BPCost * float32(len(frag.Primers[1].Seq)))
 			} else if frag.Type == dvec.Synthetic {
-				cost += c.Synthesis.BPCost * float32(len(frag.Seq))
+				cost += int(c.Synthesis.BPCost * float32(len(frag.Seq)))
 			}
 		}
 
