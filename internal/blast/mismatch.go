@@ -28,7 +28,7 @@ func isMismatch(match dvec.Match) bool {
 	tmNoMismatch := 81.5 + 0.41*gcPerc - 675/float32(len(primer))
 	tmWithMismatch := tmNoMismatch - float32(match.Mismatch)/primerL
 
-	return tmWithMismatch > 40 // TODO: move to settings
+	return tmWithMismatch > 45 // TODO: move to settings
 }
 
 // Mismatch finds mismatching sequences between the query sequence and
@@ -65,9 +65,9 @@ func Mismatch(primer, parent, db string) (mismatch bool, match dvec.Match, err e
 		"-out", parentPath,
 		"-outfmt", "%f", // fasta format
 	)
-	if output, err := queryCmd.CombinedOutput(); err != nil {
-		fmt.Println(fmt.Errorf("blastdbcmd failed %v %s", err, string(output)))
-		return false, match, nil
+	if _, err := queryCmd.CombinedOutput(); err != nil {
+		// 	// fmt.Println(fmt.Errorf("blastdbcmd failed %v %s", err, string(output)))
+		return false, match, nil // pretending there wasn't any mismatch
 	}
 
 	// create blast input file

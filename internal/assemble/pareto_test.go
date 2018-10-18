@@ -43,14 +43,18 @@ func Test_pareto(t *testing.T) {
 	tests := []struct {
 		name          string
 		args          args
-		wantParetoSet []assembly
+		wantParetoSet map[int][]assembly
 	}{
 		{
 			"gen pSet up to 3",
 			args{
 				assemblies: []assembly{a1, a2, a3, a4, a5},
 			},
-			[]assembly{a1, a4},
+			map[int][]assembly{
+				1: []assembly{a1},
+				2: []assembly{a3, a2},
+				3: []assembly{a4, a5},
+			},
 		},
 	}
 	for _, tt := range tests {

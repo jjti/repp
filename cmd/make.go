@@ -57,21 +57,21 @@ func init() {
 // 	5. no off-target binding sites in the parent vectors
 //	6. low primer3 penalty scores
 func makeExec(cmd *cobra.Command, args []string) {
+	c := config.New()
+
 	target, err := cmd.PersistentFlags().GetString("target")
 	if err != nil {
 		log.Fatalf("Cannot get target from arguments: %v", err)
 	}
 
-	output, err := cmd.PersistentFlags().GetString("out")
-	if err != nil {
-		log.Fatalf("Cannot find the output path: %v", err)
-	}
-
-	c := config.New()
-
 	// no path to input file
 	if target == "" {
 		log.Fatalf("Failed, no target fragment path set in config %+v", c)
+	}
+
+	output, err := cmd.PersistentFlags().GetString("out")
+	if err != nil {
+		log.Fatalf("Cannot find the output path: %v", err)
 	}
 
 	// read in fragments
@@ -108,4 +108,6 @@ func makeExec(cmd *cobra.Command, args []string) {
 		}
 	}
 	io.Write(output, builds)
+
+	// os.Exit(0)
 }
