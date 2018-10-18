@@ -11,9 +11,11 @@ import (
 func Test_makeExec(t *testing.T) {
 	target, _ := filepath.Abs(path.Join("..", "test", "target.fa"))
 	db, _ := filepath.Abs(path.Join("..", "assets", "addgene", "db", "addgene"))
+	output, _ := filepath.Abs(path.Join("..", "bin", "test.output.json"))
 
 	makeCmd.PersistentFlags().Set("target", target)
 	makeCmd.PersistentFlags().Set("db", db)
+	makeCmd.PersistentFlags().Set("out", output)
 
 	type args struct {
 		cmd  *cobra.Command

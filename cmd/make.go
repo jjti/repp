@@ -1,8 +1,8 @@
 package cmd
 
 import (
-	"fmt"
 	"log"
+	"path/filepath"
 
 	"github.com/jjtimmons/decvec/internal/assemble"
 	"github.com/jjtimmons/decvec/internal/blast"
@@ -38,8 +38,9 @@ func init() {
 	rootCmd.AddCommand(makeCmd)
 
 	// Flags for specifying the paths to the input file, input fragment files, and output file
-	makeCmd.PersistentFlags().StringP("target", "t", "", "Path to FASTA file with target vector sequence")
+	makeCmd.PersistentFlags().StringP("target", "t", "", "Input file name of target vector sequence <FASTA>")
 	makeCmd.PersistentFlags().StringP("db", "d", "", "Database of building fragments")
+	makeCmd.PersistentFlags().StringP("out", "o", "", "Output file name")
 
 	viper.BindPFlag("db", makeCmd.PersistentFlags().Lookup("db"))
 
@@ -59,6 +60,11 @@ func makeExec(cmd *cobra.Command, args []string) {
 	target, err := cmd.PersistentFlags().GetString("target")
 	if err != nil {
 		log.Fatalf("Cannot get target from arguments: %v", err)
+	}
+
+	output, err := cmd.PersistentFlags().GetString("out")
+	if err != nil {
+		log.Fatalf("Cannot find the output path: %v", err)
 	}
 
 	c := config.New()
@@ -91,6 +97,15 @@ func makeExec(cmd *cobra.Command, args []string) {
 		log.Fatalf("Failed to blast %s against the BLAST DB: %v", targetFrag.ID, err)
 	}
 
+	// build up the assemblies
 	builds := assemble.Assemble(matches, targetFrag.Seq)
-	fmt.Printf("%v", builds)
+
+	// try to write the JSON to the filepath
+	if !filepath.IsAbs(output) {
+		output, err = filepath.Abs(output)
+		if err != nil {
+			log.Fatalf("Failed to make output path absolute: %v", err)
+		}
+	}
+	io.Write(output, builds)
 }

@@ -15,20 +15,20 @@ type Type int
 // Fragment is a single building block stretch of DNA for assembly
 type Fragment struct {
 	// ID is a unique identifier for this fragment
-	ID string
+	ID string `json:"id,omitempty"`
 
 	// fragment's sequence (linear)
-	Seq string
+	Seq string `json:"seq,omitempty"`
 
 	// primers necessary to create this (if pcr fragment)
-	Primers []Primer
+	Primers []Primer `json:"primers,omitempty"`
 
 	// Entry of this fragment In the DB that it came from
 	// Used to look for off-targets
-	Entry string
+	Entry string `json:"-"`
 
 	// Type of this fragment
-	Type Type
+	Type Type `json:"-"`
 }
 
 // Match is a blast "hit" in the blastdb
@@ -60,26 +60,26 @@ func (m *Match) Length() int {
 // Primer is a single Primer used to create a PCR fragment
 type Primer struct {
 	// Seq of the primer (In 5' to 3' direction)
-	Seq string
+	Seq string `json:"seq"`
 
 	// Strand of the primer; true if template, false if complement
-	Strand bool
+	Strand bool `json:"strand"`
 
 	// Start of the fragment (0-index)
-	Start int
+	Start int `json:"-"`
 
 	// End of the fragment (0-indexed)
-	End int
+	End int `json:"-"`
 
 	// Penalty score
-	Penalty float32
+	Penalty float32 `json:"penalty"`
 
 	// PairPenalty score from primer3
-	PairPenalty float32
+	PairPenalty float32 `json:"pairPenalty"`
 
 	// Tm of the primer
-	Tm float32
+	Tm float32 `json:"tm"`
 
 	// GC % max
-	GC float32
+	GC float32 `json:"gc"`
 }
