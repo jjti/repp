@@ -1,6 +1,6 @@
-# GUESS
+# decvec
 
-Great Until Every Sequence is Synthesized
+declarative vector design
 
 ## Steps
 
