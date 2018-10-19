@@ -335,12 +335,7 @@ func Test_assembly_fill(t *testing.T) {
 				cost:   tt.fields.cost,
 				synths: tt.fields.synths,
 			}
-			bNode, frags := a.fill(tt.args.seq)
-
-			// should be empty
-			if bNode.uniqueID != "" {
-				t.Errorf("was not expecting a blacklisted node, got %v", bNode)
-			}
+			frags := a.fill(tt.args.seq)
 
 			pcrCount := 0
 			synthCount := 0

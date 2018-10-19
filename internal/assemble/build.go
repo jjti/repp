@@ -33,11 +33,11 @@ func build(nodes []node) (assemblies []assembly) {
 		}
 	}
 
-	// for every node in the list of reverse sorted nodes
+	// for every node in the list of increasing start index nodes
 	for i, n := range nodes {
 		// for every overlapping fragment + synthCount more
 		for _, j := range n.reach(nodes, i, synthCount) {
-			// for every assembly on the reachable fragment
+			// for every assembly on the reaching fragment
 			for _, a := range nodes[i].assemblies {
 				// see if we can create a new assembly with this node included
 				if newAss, created, complete := a.add(nodes[j]); created {
@@ -47,7 +47,7 @@ func build(nodes []node) (assemblies []assembly) {
 						assemblies = append(assemblies, newAss)
 						// TODO: check if we can break here
 					} else {
-						// and add to this node's list of assemblies
+						// add to this node's list of assemblies
 						nodes[j].assemblies = append(nodes[j].assemblies, newAss)
 					}
 				}

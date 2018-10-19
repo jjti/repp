@@ -38,8 +38,11 @@ func (a *assembly) add(n node) (newAssembly assembly, created, complete bool) {
 
 	// stay beneath upper limit
 	if newCount > conf.Fragments.MaxCount {
-		return newAssembly, false, false
+		return assembly{}, false, false
 	}
+
+	// we will create a new assembly
+	created = true
 
 	// calc the estimated dollar cost of getting to the next node
 	annealCost := a.nodes[len(a.nodes)-1].costTo(n)
@@ -54,14 +57,14 @@ func (a *assembly) add(n node) (newAssembly assembly, created, complete bool) {
 			nodes:  append(a.nodes, n),
 			cost:   a.cost + annealCost,
 			synths: a.synths + synths,
-		}, true, true
+		}, created, complete
 	}
 
 	return assembly{
 		nodes:  append(a.nodes, n),
 		cost:   a.cost + annealCost,
 		synths: a.synths + synths,
-	}, true, false
+	}, created, false
 }
 
 // contains returns if the id of the node has already been seen in this assembly
@@ -89,7 +92,7 @@ func (a *assembly) len() int {
 // it can fail out. For example, a PCR Fragment may have off-targets in
 // the parent vector. If that happens, we return the problem node and nil
 // building fragments
-func (a *assembly) fill(seq string) (blacklist node, frags []dvec.Fragment) {
+func (a *assembly) fill(seq string) (frags []dvec.Fragment) {
 	for i, n := range a.nodes {
 		// last node, do nothing
 		// here only to allow for vector "circularization" if we need to synthesize
@@ -105,8 +108,7 @@ func (a *assembly) fill(seq string) (blacklist node, frags []dvec.Fragment) {
 		fragPrimers, err := primers(frag)
 		if err != nil {
 			fmt.Printf("Failed to fill %s: %v\n", n.id, err)
-			// return the node as a blackmailed node if pcr fails
-			return n, nil
+			return nil
 		}
 
 		// set primers and store this to the list of building fragments
