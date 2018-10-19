@@ -2,6 +2,8 @@
 package assemble
 
 import (
+	"fmt"
+
 	"github.com/jjtimmons/decvec/config"
 	"github.com/jjtimmons/decvec/internal/dvec"
 )
@@ -36,14 +38,16 @@ func Assemble(matches []dvec.Match, seq string) [][]dvec.Fragment {
 
 	// build up a map from fragment count to a sorted list of assemblies with that number
 	paretos := pareto(assemblies)
+	fmt.Println(len(paretos))
 
 	// convert and fill the fragments
 	var found [][]dvec.Fragment
 	for _, assemblies := range paretos {
-		// fmt.Printf("%d assemblies with %d fragments\n", len(assemblies), assemblies[0].len()-1)
+		fmt.Printf("%d assemblies with %d fragments\n", len(assemblies), assemblies[0].len()-1)
+
 		// get the first assembly that fills properly (cheapest workable solution)
 		for _, singleAssembly := range assemblies {
-			_, filledFrags := singleAssembly.fill(seq)
+			filledFrags := singleAssembly.fill(seq)
 
 			// if a node in the assembly fails to be prepared,
 			// remove all assemblies with the node and try again

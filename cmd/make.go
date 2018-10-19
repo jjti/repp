@@ -42,8 +42,8 @@ func init() {
 	makeCmd.PersistentFlags().StringP("db", "d", "", "Database of building fragments")
 	makeCmd.PersistentFlags().StringP("out", "o", "", "Output file name")
 
+	// db path is needed globally
 	viper.BindPFlag("db", makeCmd.PersistentFlags().Lookup("db"))
-
 }
 
 // makeExec is the root of the make functionality
