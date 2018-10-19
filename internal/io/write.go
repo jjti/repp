@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"log"
+	"sort"
 	"time"
 
 	"github.com/jjtimmons/decvec/config"
@@ -35,6 +36,7 @@ type Out struct {
 func Write(filename string, assemblies [][]dvec.Fragment) {
 	c := config.New()
 
+	// calculate final cost of the assembly and fragment count
 	results := []Solution{}
 	for _, assembly := range assemblies {
 		var cost int
@@ -53,6 +55,10 @@ func Write(filename string, assemblies [][]dvec.Fragment) {
 			Fragments: assembly,
 		})
 	}
+	// sort results in increasing fragment count order
+	sort.Slice(results, func(i, j int) bool {
+		return results[i].Count < results[j].Count
+	})
 	out := Out{
 		Time:   time.Now().Unix(),
 		Result: results,

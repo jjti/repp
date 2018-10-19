@@ -66,7 +66,8 @@ func (n *node) distTo(other node) (bpDist int) {
 func (n *node) synthDist(other node) (synthCount int) {
 	dist := n.distTo(other)
 
-	if dist > -(conf.Fragments.MinHomology) {
+	// if it's > 5, we have to synthesize to get there (arbitatry, TODO: move to settings)
+	if dist > 5 {
 		// can't be negative before the ceil
 		floatDist := math.Max(1.0, float64(dist))
 		// split up the distance between them by the max synthesized fragment size
@@ -88,11 +89,15 @@ func (n *node) synthDist(other node) (synthCount int) {
 func (n *node) costTo(other node) (cost float32) {
 	dist := n.distTo(other)
 
-	if dist <= -(conf.Fragments.MinHomology) {
-		// there's already overlap between this node and the one being tested
-		// and enough for exiting homology to be enough.
-		// estimating two primers, 20bp each.
-		return 40 * conf.PCR.BPCost
+	if dist <= 5 {
+		if dist < -(conf.Fragments.MinHomology) {
+			// there's already overlap between this node and the one being tested
+			// and enough for exiting homology to be enough.
+			// estimating two primers, 20bp each.
+			return 40 * conf.PCR.BPCost
+		}
+		// we have to create some additional primer sequence to reach the next fragment
+		return 60 * conf.PCR.BPCost
 	}
 
 	// we need to create a new synthetic fragment to get from this fragment to the next
@@ -138,22 +143,17 @@ func (n *node) reach(nodes []node, i, synthCount int) (reachable []int) {
 func (n *node) synthTo(next node, seq string) (synthedFrags []dvec.Fragment) {
 	// check whether we need to make synthetic fragments to get
 	// to the next fragment in the assembly
-	dist := n.distTo(next)
-	if dist <= -(conf.Fragments.MinHomology) {
+	fragC := n.synthDist(next)
+	if fragC == 0 {
 		// none needed
 		return nil
-	} else if dist < 1 {
-		dist = 1
 	}
 
 	// make the slice
 	synthedFrags = []dvec.Fragment{}
 
-	// number of synthetic fragments to make
-	fragC := math.Ceil(float64(dist) / float64(conf.Synthesis.MaxLength))
-
 	// length of each synthesized fragment
-	fragL := int(float64(dist) / fragC)
+	fragL := n.distTo(next) / fragC
 	if conf.Synthesis.MinLength > fragL {
 		// need to synthesize at least Synthesis.MinLength bps
 		fragL = conf.Synthesis.MinLength
