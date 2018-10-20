@@ -70,6 +70,7 @@ func newP3Exec(last, this, next node, target string) p3Exec {
 		n:      &this,
 		last:   last,
 		next:   next,
+		target: strings.ToUpper(target),
 		in:     path.Join(p3Dir, this.id+".in"),
 		out:    path.Join(p3Dir, this.id+".out"),
 		p3Path: p3Path,
@@ -168,12 +169,13 @@ func (p *p3Exec) input() error {
 
 	// the node's range plus the additional bp added because of adding homology
 	start := p.n.start - addLeft
-	end := p.n.end + addRight
+	length := p.n.end - start + 1
+	length += addRight
 
 	// sizes to make the primers and target size (min, opt, and max)
 	targetSizeMin := p.n.end - p.n.start
 	targetSizeMax := targetSizeMin
-	primerMin := 18
+	primerMin := 18 // defaults
 	primerOpt := 20
 	primerMax := 23
 	if maxAdded > 0 {
@@ -192,7 +194,7 @@ func (p *p3Exec) input() error {
 		"PRIMER_TASK":                          "pick_cloning_primers",
 		"PRIMER_PICK_ANYWAY":                   "1",
 		"SEQUENCE_TEMPLATE":                    p.target,
-		"SEQUENCE_INCLUDED_REGION":             fmt.Sprintf("%d,%d", start, end),
+		"SEQUENCE_INCLUDED_REGION":             fmt.Sprintf("%d,%d", start, length),
 		"PRIMER_PRODUCT_SIZE_RANGE":            fmt.Sprintf("%d-%d", targetSizeMin, targetSizeMax),
 		"PRIMER_MIN_SIZE":                      strconv.Itoa(primerMin), // default 18
 		"PRIMER_OPT_SIZE":                      strconv.Itoa(primerOpt), // 20
@@ -243,6 +245,10 @@ func (p *p3Exec) parse() (primers []dvec.Primer, err error) {
 		if len(keyVal) > 1 {
 			results[strings.TrimSpace(keyVal[0])] = strings.TrimSpace(keyVal[1])
 		}
+	}
+
+	if p3Error := results["PRIMER_ERROR"]; p3Error != "" {
+		return nil, fmt.Errorf("Failed to execute primer3: %s", p3Error)
 	}
 
 	// read in a single primer from the output string file
