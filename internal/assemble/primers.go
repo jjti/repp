@@ -32,7 +32,6 @@ var (
 //	2. there are off-targets in the primers
 func primers(p dvec.Fragment) (primers []dvec.Primer, err error) {
 	nilPrimers := []dvec.Primer{}
-	// maxPairP := conf.PCR.P3MaxPenalty
 
 	// little data cleaning
 	p.Seq = strings.ToUpper(p.Seq)
@@ -58,16 +57,16 @@ func primers(p dvec.Fragment) (primers []dvec.Primer, err error) {
 		return
 	}
 
-	// // 1. check for whether the primers have too have a pair penalty score
-	// if primers[0].PairPenalty > maxPairP {
-	// 	return nilPrimers, fmt.Errorf(
-	// 		"Primers have pair primer3 penalty score of %f, should be less than %f:\n%+v\n%+v",
-	// 		primers[0].PairPenalty,
-	// 		maxPairP,
-	// 		primers[0],
-	// 		primers[1],
-	// 	)
-	// }
+	// 1. check for whether the primers have too have a pair penalty score
+	if primers[0].PairPenalty > conf.PCR.P3MaxPenalty {
+		return nilPrimers, fmt.Errorf(
+			"Primers have pair primer3 penalty score of %f, should be less than %f:\n%+v\n%+v",
+			primers[0].PairPenalty,
+			conf.PCR.P3MaxPenalty,
+			primers[0],
+			primers[1],
+		)
+	}
 
 	// 2. check for whether either of the primers have an off-target/mismatch
 	for _, primer := range primers {

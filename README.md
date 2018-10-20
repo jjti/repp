@@ -8,7 +8,7 @@ FRAG_COUNT_LIMIT = maximum number of fragments to include in the assembly
 
 ASSEMBLY_LIST = list of assemblies that can be made circular (first node wraps around on itself across the zero-index)
 
-BLACKLISTED = list of nodes that are deemed unusable (ex: inverted repeat in a junction region or primers that have off-targets in the parent vector sequence)
+BLACKLISTED = list of nodes that are deemed unusable (ex: inverted repeat in a junction region or primers with off-targets in the parent vector sequence)
 
 1.  Build up ASSEMBLY_LIST
 
@@ -24,13 +24,15 @@ BLACKLISTED = list of nodes that are deemed unusable (ex: inverted repeat in a j
 
     2.1 Rank assemblies in lists for those involving a given number of solutions. So if the FRAG_COUNT_LIMIT is 5, there will be a cheapest solution with 5 fragments, a cheapest solution with 4 fragments, 3, etc
 
-    2.2 Find the pareto optimal solutions: the assemblies that have the fewest number of fragments and the cheapest estimated assembly cost. If the assembly with 3 fragments has a cheaper estimated assembly cost than the assembly with 4 fragments, the 4-fragment assembly is not pareto optimal and should not be included
-
-    2.3 Remove assemblies that include a node from BLACKLISTED
+    2.2 Find the pareto optimal solutions: the assemblies with the fewest number of fragments and the cheapest estimated assembly cost. If the assembly with 3 fragments has a cheaper estimated assembly cost than the assembly with 4 fragments, the 4-fragment assembly is not pareto optimal and should not be included
 
 3.  Traverse each pareto optimal solution from #3:
 
     3.1 Create primers if it's going to be PCR'ed, create a synthetic fragment otherwise
+
+        3.1.1 Try and minimize the number of fragments with primers adding homology to adjacent fragments (they're going to be inferior primers). Could either do something where every other fragment gets homology-holding primers (spreading it out) or have adjacent fragments share in the homology (each gets half the homology)
+
+                3.1.1.1 As an example: Fragment A and Fragment B coming together. We could add 20 additonal basepairs to the end of Fragment A and put nothing at the start of Fragment B... or we could add 10 basepairs from A to match B and 10 basepairs from A to match B (spreading out the shit primers). These primers would also be small enough so that we could pass a larger range to primer3 and let it figure out the best primers (as opposed to concatenating the sequence to its ends)
 
     3.2 Fail out (removing the assembly from ASSEMBLY_LIST) and repeat #2 if:
 
@@ -39,19 +41,17 @@ BLACKLISTED = list of nodes that are deemed unusable (ex: inverted repeat in a j
                The node has an inverted repeat in its junction OR
                The synthetic fragment will be dificult to synthesize
 
-               3.2.1.1 If its a PCR Fragment, add it to BLACKLISTED
-
         3.2.2 The node has a duplicate end region with another fragment in the assembly
 
 ## List of things that need to be considered when creating building fragments
 
-1.  Don't create primers for a fragment if they have off-targets in the parent fragment
+1.  Don't create primers for a fragment with off-targets in its parent fragment
 
-2.  Don't create primers that have an excessive primer3 pair penalty
+2.  Don't create primers with an excessive primer3 pair penalty
 
-3.  Don't create synthetic fragments that have high synthesis complexities
+3.  Don't create synthetic fragments with synthesis complexities
 
-4.  Don't create fragments that have off-target end-homology
+4.  Don't create fragments with off-target end-homology
 
 ## Reachable fragments
 
@@ -65,4 +65,4 @@ all fragments the current fragment overlaps with + number_to_consider
 
 - Addgene verified sequence information doesn't include all the of the vector sequence for some of the vectors. Therefore there might be off-targets that are invisible
 
-- Pareto optimal solutions right now are only so for cost and fragment count. If there are multiple assemblies with close the same cost/assembly-count, we might progress into creating primers as well and then comparing on primer3 pair penalty score
+- Pareto optimal solutions right now are only so for cost and fragment count. If there are multiple assemblies with close the same cost/assembly-count, we might progress into creating primers as well and then compare primer3 pair penalty scores
