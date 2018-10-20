@@ -16,31 +16,65 @@ import (
 	"github.com/jjtimmons/decvec/internal/dvec"
 )
 
-var (
+// p3Exec is a utility struct for executing primer3 to create primers for a part
+type p3Exec struct {
+	// fragment that we're trying to create primers for
+	f *dvec.Fragment
+
+	// input file
+	in string
+
+	// output file
+	out string
+
 	// path to primer3 executable
-	p3Path = filepath.Join(conf.Root, "vendor", "primer3-2.4.0", "src", "primer3_core")
+	p3Path string
 
 	// path to primer3 config folder (with trailing separator)
-	p3Conf = filepath.Join(conf.Root, "vendor", "primer3-2.4.0", "src", "primer3_config") + "/"
+	p3Conf string
 
 	// path to the primer3 io output
-	p3Dir = filepath.Join(conf.Root, "bin", "primer3")
-)
+	p3Dir string
+}
+
+// newP3Exec creates a p3Exec from a fragment
+func newP3Exec(f dvec.Fragment) p3Exec {
+	p3Path := filepath.Join(conf.Root, "vendor", "primer3-2.4.0", "src", "primer3_core")
+	p3Conf := filepath.Join(conf.Root, "vendor", "primer3-2.4.0", "src", "primer3_config") + "/"
+	p3Dir := filepath.Join(conf.Root, "bin", "primer3")
+
+	_, err := os.Stat(p3Path)
+	if err != nil {
+		log.Fatalf("Failed to locate primer3 executable: %v", err)
+	}
+
+	_, err = os.Stat(p3Conf)
+	if err != nil {
+		log.Fatalf("Failed to locate primer3 config folder: %v", err)
+	}
+
+	err = os.MkdirAll(p3Dir, os.ModePerm)
+	if err != nil {
+		log.Fatalf("Failed to create a primer3 outut dir: %v", err)
+	}
+
+	return p3Exec{
+		f:      &f,
+		in:     path.Join(p3Dir, f.ID+".in"),
+		out:    path.Join(p3Dir, f.ID+".out"),
+		p3Path: p3Path,
+		p3Conf: p3Conf,
+		p3Dir:  p3Dir,
+	}
+}
 
 // primers creates primers against a PCR fragment and returns an error if
 //	1. the primers have an unacceptably high primer3 penalty score
 //	2. there are off-targets in the primers
-func primers(p dvec.Fragment) (primers []dvec.Primer, err error) {
+func primers(f dvec.Fragment) (primers []dvec.Primer, err error) {
 	nilPrimers := []dvec.Primer{}
-
-	// little data cleaning
-	p.Seq = strings.ToUpper(p.Seq)
-
-	exec := p3exec{
-		f:   &p,
-		in:  path.Join(p3Dir, p.ID+".in"),
-		out: path.Join(p3Dir, p.ID+".out"),
-	}
+	f.Seq = strings.ToUpper(f.Seq)
+	exec := newP3Exec(f)
 
 	// make input file
 	if err = exec.input(); err != nil {
@@ -70,7 +104,7 @@ func primers(p dvec.Fragment) (primers []dvec.Primer, err error) {
 
 	// 2. check for whether either of the primers have an off-target/mismatch
 	for _, primer := range primers {
-		mismatchExists, mismatch, err := blast.Mismatch(primer.Seq, p.Entry, conf.DB)
+		mismatchExists, mismatch, err := blast.Mismatch(primer.Seq, f.Entry, conf.DB)
 
 		if err != nil {
 			return nilPrimers, err
@@ -88,23 +122,11 @@ func primers(p dvec.Fragment) (primers []dvec.Primer, err error) {
 	return
 }
 
-// p3Exec is a utility struct for executing primer3 to create primers for a part
-type p3exec struct {
-	// fragment that we're trying to create primers for
-	f *dvec.Fragment
-
-	// input file
-	in string
-
-	// output file
-	out string
-}
-
 // input makes the primer3 input settings file
-func (p *p3exec) input() error {
+func (p *p3Exec) input() error {
 	// create primer3 settings
 	settings := map[string]string{
-		"PRIMER_THERMODYNAMIC_PARAMETERS_PATH": p3Conf,
+		"PRIMER_THERMODYNAMIC_PARAMETERS_PATH": p.p3Conf,
 		"PRIMER_NUM_RETURN":                    "1",
 		"PRIMER_TASK":                          "pick_cloning_primers",
 		"PRIMER_PICK_ANYWAY":                   "1",
@@ -133,9 +155,9 @@ func (p *p3exec) input() error {
 }
 
 // run the primer3 executable on the input file
-func (p *p3exec) run() error {
+func (p *p3Exec) run() error {
 	p3Cmd := exec.Command(
-		p3Path,
+		p.p3Path,
 		p.in,
 		"-output", p.out,
 		"-strict_tags",
@@ -154,7 +176,7 @@ func (p *p3exec) run() error {
 }
 
 // parse the output into primers for the part
-func (p *p3exec) parse() (primers []dvec.Primer, err error) {
+func (p *p3Exec) parse() (primers []dvec.Primer, err error) {
 	file, err := ioutil.ReadFile(p.out)
 	if err != nil {
 		return nil, err
@@ -198,22 +220,4 @@ func (p *p3exec) parse() (primers []dvec.Primer, err error) {
 		parsePrimer("LEFT"),
 		parsePrimer("RIGHT"),
 	}, nil
-}
-
-// create the primer3 path, error Out if we can't find the executable or the config folder
-func init() {
-	_, err := os.Stat(p3Path)
-	if err != nil {
-		log.Fatalf("Failed to locate primer3 executable: %v", err)
-	}
-
-	_, err = os.Stat(p3Conf)
-	if err != nil {
-		log.Fatalf("Failed to locate primer3 config folder: %v", err)
-	}
-
-	err = os.MkdirAll(p3Dir, os.ModePerm)
-	if err != nil {
-		log.Fatalf("Failed to create a primer3 outut dir: %v", err)
-	}
 }
