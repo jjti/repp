@@ -99,13 +99,13 @@ func Test_p3exec_input(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := &p3exec{
+			p := &p3Exec{
 				f:   tt.fields.f,
 				in:  tt.fields.in,
 				out: tt.fields.out,
 			}
 			if err := p.input(); (err != nil) != tt.wantErr {
-				t.Errorf("p3exec.input() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("p3Exec.input() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
@@ -126,13 +126,13 @@ func Test_p3exec_run(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := &p3exec{
+			p := &p3Exec{
 				f:   tt.fields.f,
 				in:  tt.fields.in,
 				out: tt.fields.out,
 			}
 			if err := p.run(); (err != nil) != tt.wantErr {
-				t.Errorf("p3exec.run() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("p3Exec.run() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
@@ -154,18 +154,18 @@ func Test_p3exec_parse(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := &p3exec{
+			p := &p3Exec{
 				f:   tt.fields.f,
 				in:  tt.fields.in,
 				out: tt.fields.out,
 			}
 			got, err := p.parse()
 			if (err != nil) != tt.wantErr {
-				t.Errorf("p3exec.parse() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("p3Exec.parse() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("p3exec.parse() = %v, want %v", got, tt.want)
+				t.Errorf("p3Exec.parse() = %v, want %v", got, tt.want)
 			}
 		})
 	}
