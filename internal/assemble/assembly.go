@@ -101,17 +101,37 @@ func (a *assembly) fill(seq string) (frags []dvec.Fragment) {
 			break
 		}
 
-		// convert
-		frag := n.fragment()
+		// try and make primers for the fragment (need last and next nodes)
+		var last node
+		if i > 0 {
+			last = a.nodes[i-1]
+		} else { // mock up a last fragment that's to the left of this starting node
+			final := a.nodes[len(a.nodes)-1]
+			last = node{
+				start: final.start - len(seq),
+				end:   final.end - len(seq),
+			}
+		}
 
-		// try and make primers for the fragment
-		fragPrimers, err := primers(n, seq)
+		var next node
+		if i < len(a.nodes)-1 {
+			next = a.nodes[i+1]
+		} else { // mock up a next fragment that's to the right of this terminal node
+			first := a.nodes[0]
+			next = node{
+				start: first.start + len(seq),
+				end:   first.end + len(seq),
+			}
+		}
+
+		fragPrimers, err := primers(last, n, next, seq)
 		if err != nil {
 			fmt.Printf("Failed to fill %s: %v\n", n.id, err)
 			return nil
 		}
 
-		// set primers and store this to the list of building fragments
+		// convert, set primers and store this to the list of building fragments
+		frag := n.fragment()
 		frag.Primers = fragPrimers
 		frag.Type = dvec.PCR
 		frags = append(frags, frag)
