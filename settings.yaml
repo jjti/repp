@@ -6,17 +6,16 @@ fragments:
   # Minimum homology length between fragments
   min-homology: 20
 
-  # The minimum match length between a building fragment and
-  # the target sequence to be considered
-  min-match: 50
-
 # PCR settings
 pcr:
+  # Minimum size of a PCR fragment
+  min-size: 200
+
   # Cost per bp of PCR primer
   bp-cost: 0.09
 
   # Max primer3 pair penalty score
-  primer3-penalty-max: 13.0
+  primer3-penalty-max: 20.0
 
 # Synthesis settings
 synthesis:

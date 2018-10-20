@@ -22,9 +22,6 @@ type FragmentConfig struct {
 	// the maximum number of fragments in the final assembly
 	MaxCount int `mapstructure:"max-count"`
 
-	// the minimum homology between fragments in the Gibson assembly
-	MinHomology int `mapstructure:"min-homology"`
-
 	// the minimum length of match between a building fragment
 	// and the target fragment for it to be considered
 	MinMatch int `mapstructure:"min-match"`
@@ -37,6 +34,9 @@ type PCRConfig struct {
 
 	// the maximum primer3 score allowable
 	P3MaxPenalty float32 `mapstructure:"primer3-penalty-max"`
+
+	// MinSize is the minimum size of a fragment (used to filter BLAST results)
+	MinSize int `mapstructure:"min-size"`
 }
 
 // SynthesisConfig is for settings involving synthesis

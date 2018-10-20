@@ -23,7 +23,7 @@ func filter(matches []dvec.Match) (properized []dvec.Match) {
 	// remove fragments that are shorter the minimum cut off size
 	var largeEnough []dvec.Match
 	for _, m := range matches {
-		if m.Length() > conf.Fragments.MinMatch {
+		if m.Length() > conf.PCR.MinSize {
 			largeEnough = append(largeEnough, m)
 		}
 	}
