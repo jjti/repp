@@ -16,7 +16,7 @@ pcr:
   bp-cost: 0.09
 
   # Max primer3 pair penalty score
-  primer3-penalty-max: 11.0
+  primer3-penalty-max: 13.0
 
 # Synthesis settings
 synthesis:
