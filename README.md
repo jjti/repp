@@ -66,3 +66,8 @@ all fragments the current fragment overlaps with + number_to_consider
 - Addgene verified sequence information doesn't include all the of the vector sequence for some of the vectors. Therefore there might be off-targets that are invisible
 
 - Pareto optimal solutions right now are only so for cost and fragment count. If there are multiple assemblies with close the same cost/assembly-count, we might progress into creating primers as well and then compare primer3 pair penalty scores
+
+## TODO
+
+- Allow passing paths to multiple BLAST databases at once (like other vendors)
+- Allow users to select databases, FASTA files with sequences they own (making cost zero)

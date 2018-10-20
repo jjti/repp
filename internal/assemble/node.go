@@ -54,8 +54,7 @@ func (n *node) fragment() dvec.Fragment {
 
 // distTo returns the distance between the start of this node and the end of the other.
 // assumes that this node starts before the other
-// will return a negative number if this node overlaps with the other.
-// will return a positive number if this node doesn't overlap with the other.
+// will return a negative number if this node overlaps with the other and positive otherwise
 func (n *node) distTo(other node) (bpDist int) {
 	return other.start - n.end
 }
@@ -66,22 +65,23 @@ func (n *node) distTo(other node) (bpDist int) {
 func (n *node) synthDist(other node) (synthCount int) {
 	dist := n.distTo(other)
 
-	// if it's > 5, we have to synthesize to get there (arbitatry, TODO: move to settings)
-	if dist > 5 {
-		// can't be negative before the ceil
-		floatDist := math.Max(1.0, float64(dist))
-		// split up the distance between them by the max synthesized fragment size
-		return int(math.Ceil(floatDist / float64(conf.Synthesis.MaxLength)))
+	if dist <= 5 {
+		// if the dist is <5, we can try and PCR our way there
+		return 0
 	}
 
-	// if the dist is <-20, there's enough overlap already for PCR
-	return 0
+	// if it's > 5, we have to synthesize to get there (arbitatry, TODO: move to settings)
+	// can't be negative before the ceil
+	floatDist := math.Max(1.0, float64(dist))
+
+	// split up the distance between them by the max synthesized fragment size
+	return int(math.Ceil(floatDist / float64(conf.Synthesis.MaxLength)))
 }
 
 // costTo calculates the $ amount needed to get from this fragment
 // to the other node passed, either by PCR or synthesis
 //
-// PCR is of course preferred if we can add homology between this and
+// PCR is, of course, preferred if we can add homology between this and
 // the other fragment with PCR homology arms alone
 //
 // Otherwise we find the total synthesis distance between this and
@@ -91,13 +91,14 @@ func (n *node) costTo(other node) (cost float32) {
 
 	if dist <= 5 {
 		if dist < -(conf.Fragments.MinHomology) {
-			// there's already overlap between this node and the one being tested
-			// and enough for exiting homology to be enough.
-			// estimating two primers, 20bp each.
+			// there's already enough overlap between this node and the one being tested
+			// estimating two primers, 20bp each
 			return 40 * conf.PCR.BPCost
 		}
+
 		// we have to create some additional primer sequence to reach the next fragment
-		return 60 * conf.PCR.BPCost
+		// guessing 40bp plus half MinHomology on each primer
+		return float32(40+conf.Fragments.MinHomology) * conf.PCR.BPCost
 	}
 
 	// we need to create a new synthetic fragment to get from this fragment to the next
@@ -145,7 +146,6 @@ func (n *node) synthTo(next node, seq string) (synthedFrags []dvec.Fragment) {
 	// to the next fragment in the assembly
 	fragC := n.synthDist(next)
 	if fragC == 0 {
-		// none needed
 		return nil
 	}
 

@@ -1,7 +1,6 @@
 package assemble
 
 import (
-	"bytes"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -18,8 +17,17 @@ import (
 
 // p3Exec is a utility struct for executing primer3 to create primers for a part
 type p3Exec struct {
-	// fragment that we're trying to create primers for
-	f *dvec.Fragment
+	// node that we're trying to create primers for
+	n *node
+
+	// the node before this one
+	last node
+
+	// the node after this one
+	next node
+
+	// the target sequence
+	target string
 
 	// input file
 	in string
@@ -38,7 +46,7 @@ type p3Exec struct {
 }
 
 // newP3Exec creates a p3Exec from a fragment
-func newP3Exec(f dvec.Fragment) p3Exec {
+func newP3Exec(last, this, next node, target string) p3Exec {
 	p3Path := filepath.Join(conf.Root, "vendor", "primer3-2.4.0", "src", "primer3_core")
 	p3Conf := filepath.Join(conf.Root, "vendor", "primer3-2.4.0", "src", "primer3_config") + "/"
 	p3Dir := filepath.Join(conf.Root, "bin", "primer3")
@@ -59,41 +67,40 @@ func newP3Exec(f dvec.Fragment) p3Exec {
 	}
 
 	return p3Exec{
-		f:      &f,
-		in:     path.Join(p3Dir, f.ID+".in"),
-		out:    path.Join(p3Dir, f.ID+".out"),
+		n:      &this,
+		last:   last,
+		next:   next,
+		in:     path.Join(p3Dir, this.id+".in"),
+		out:    path.Join(p3Dir, this.id+".out"),
 		p3Path: p3Path,
 		p3Conf: p3Conf,
 		p3Dir:  p3Dir,
 	}
 }
 
-// primers creates primers against a PCR fragment and returns an error if
+// primers creates primers against a node and return an error if
 //	1. the primers have an unacceptably high primer3 penalty score
-//	2. there are off-targets in the primers
-func primers(f dvec.Fragment) (primers []dvec.Primer, err error) {
-	nilPrimers := []dvec.Primer{}
-	f.Seq = strings.ToUpper(f.Seq)
-	exec := newP3Exec(f)
+//	2. the primers have off-targets in their parent source
+func primers(last, this, next node, vec string) (primers []dvec.Primer, err error) {
+	exec := newP3Exec(last, this, next, vec)
 
-	// make input file
+	// make input file, figure out how to create primers that share homology
+	// with neighboring nodes
 	if err = exec.input(); err != nil {
 		return
 	}
 
-	// execute
 	if err = exec.run(); err != nil {
 		return
 	}
 
-	// parse the results into primers for storing on the fragment
 	if primers, err = exec.parse(); err != nil {
 		return
 	}
 
 	// 1. check for whether the primers have too have a pair penalty score
 	if primers[0].PairPenalty > conf.PCR.P3MaxPenalty {
-		return nilPrimers, fmt.Errorf(
+		return nil, fmt.Errorf(
 			"Primers have pair primer3 penalty score of %f, should be less than %f:\n%+v\n%+v",
 			primers[0].PairPenalty,
 			conf.PCR.P3MaxPenalty,
@@ -104,14 +111,15 @@ func primers(f dvec.Fragment) (primers []dvec.Primer, err error) {
 
 	// 2. check for whether either of the primers have an off-target/mismatch
 	for _, primer := range primers {
-		mismatchExists, mismatch, err := blast.Mismatch(primer.Seq, f.Entry, conf.DB)
+		// the node's id is the same as the entry ID in the database
+		mismatchExists, mismatch, err := blast.Mismatch(primer.Seq, this.id, conf.DB)
 
 		if err != nil {
-			return nilPrimers, err
+			return nil, err
 		}
 
 		if mismatchExists {
-			return nilPrimers, fmt.Errorf(
+			return nil, fmt.Errorf(
 				"Found a mismatching sequence, %s, against the primer %s",
 				mismatch.Seq,
 				primer.Seq,
@@ -122,35 +130,85 @@ func primers(f dvec.Fragment) (primers []dvec.Primer, err error) {
 	return
 }
 
-// input makes the primer3 input settings file
+// input makes the primer3 input settings file and writes it to the filesystem
+//
+// the primers on this node should account for creating homology
+// against the last node and the next node if there isn't enough
+// existing homology to begin with (the two nodes should share ~50/50)
 func (p *p3Exec) input() error {
-	// create primer3 settings
+	// calc the # of bp this node shares with another
+	bpToShare := func(left, right node) (bpToAdd int) {
+		// calc the # of bp the left node is responsible with the right one
+		bpToAdd = 0
+		if synthDist := left.synthDist(right); synthDist == 0 {
+			// we're not going to synth our way here, check if there's already enough homology
+			if bpDist := left.distTo(right); bpDist > -(conf.Fragments.MinHomology) {
+				// this node will add half the homology to the last fragment
+				// ex: 5 bp distance leads to 2.5bp + ~10bp additonal
+				// ex: -10bp distance leads to ~0 bp additional:
+				//	other node is responsible for all of it
+				bpToAdd = bpDist + (conf.Fragments.MinHomology / 2)
+			}
+		}
+		// if we're going to add some bp, add a few extra
+		// (so primer3 has a range of options to look at)
+		if bpToAdd > 0 {
+			return bpToAdd + 3
+		}
+		return
+	}
+
+	// calc the bps to add on the left and right side of this node
+	addLeft := bpToShare(p.last, *p.n)
+	addRight := bpToShare(*p.n, p.next)
+	maxAdded := addLeft
+	if addRight > maxAdded {
+		maxAdded = addRight
+	}
+
+	// the node's range plus the additional bp added because of adding homology
+	start := p.n.start - addLeft
+	end := p.n.end + addRight
+
+	// sizes to make the primers and target size (min, opt, and max)
+	targetSizeMin := p.n.end - p.n.start
+	targetSizeMax := targetSizeMin
+	primerMin := 18
+	primerOpt := 20
+	primerMax := 23
+	if maxAdded > 0 {
+		targetSizeMin -= 2
+		targetSizeMax += 2
+		primerMin += maxAdded
+		primerOpt += maxAdded
+		primerMax += maxAdded
+	}
+
+	// see primer3 manual or /vendor/primer3-2.4.0/settings_files/p3_th_settings.txt
+	// TODO: check whether optimal primer sizes can be set for left and right separately
 	settings := map[string]string{
 		"PRIMER_THERMODYNAMIC_PARAMETERS_PATH": p.p3Conf,
 		"PRIMER_NUM_RETURN":                    "1",
 		"PRIMER_TASK":                          "pick_cloning_primers",
 		"PRIMER_PICK_ANYWAY":                   "1",
-		"SEQUENCE_TEMPLATE":                    p.f.Seq,
-		"SEQUENCE_INCLUDED_REGION":             fmt.Sprintf("0,%d", len(p.f.Seq)),
-		"PRIMER_PRODUCT_SIZE_RANGE":            fmt.Sprintf("%d-%d", len(p.f.Seq), len(p.f.Seq)+1),
+		"SEQUENCE_TEMPLATE":                    p.target,
+		"SEQUENCE_INCLUDED_REGION":             fmt.Sprintf("%d,%d", start, end),
+		"PRIMER_PRODUCT_SIZE_RANGE":            fmt.Sprintf("%d-%d", targetSizeMin, targetSizeMax),
+		"PRIMER_MIN_SIZE":                      strconv.Itoa(primerMin), // default 18
+		"PRIMER_OPT_SIZE":                      strconv.Itoa(primerOpt), // 20
+		"PRIMER_MAX_SIZE":                      strconv.Itoa(primerMax), // 23
 	}
 
 	var fileContents string
 	for key, val := range settings {
 		fileContents += fmt.Sprintf("%s=%s\n", key, val)
 	}
-	fileContents += "=" // required
+	fileContents += "=" // required at file's end
 
-	// write to the fs
-	inputFile, err := os.Create(p.in)
-	if err != nil {
+	if err := ioutil.WriteFile(p.in, []byte(fileContents), 0666); err != nil {
 		return fmt.Errorf("Failed to create primer3 input file %v: ", err)
 	}
-	defer inputFile.Close()
-	_, err = inputFile.WriteString(fileContents)
-	if err != nil {
-		return fmt.Errorf("Failed to create primer3 input file %v: ", err)
-	}
+
 	return nil
 }
 
@@ -163,14 +221,9 @@ func (p *p3Exec) run() error {
 		"-strict_tags",
 	)
 
-	var stderr bytes.Buffer
-	p3Cmd.Stderr = &stderr
-
 	// execute primer3 and wait on it to finish
-	err := p3Cmd.Run()
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err, stderr.String())
-		return err
+	if output, err := p3Cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("Failed to execute primer3: %s: %v", string(output), err)
 	}
 	return nil
 }

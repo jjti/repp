@@ -105,7 +105,7 @@ func (a *assembly) fill(seq string) (frags []dvec.Fragment) {
 		frag := n.fragment()
 
 		// try and make primers for the fragment
-		fragPrimers, err := primers(frag)
+		fragPrimers, err := primers(n, seq)
 		if err != nil {
 			fmt.Printf("Failed to fill %s: %v\n", n.id, err)
 			return nil
