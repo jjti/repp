@@ -13,8 +13,10 @@ import (
 func Test_primers(t *testing.T) {
 	db, _ := filepath.Abs(path.Join("..", "..", "test", "blast", "db"))
 
+	conf.Fragments.MinHomology = 20
 	conf.PCR.P3MaxPenalty = 50.0
 	conf.DB = db
+
 	type args struct {
 		last node
 		n    node
@@ -51,8 +53,6 @@ func Test_primers(t *testing.T) {
 				dvec.Primer{
 					Seq:         "CAGTCAATCTTTCACAAATTTTG",
 					Strand:      true,
-					Start:       0,
-					End:         0,
 					Penalty:     9.587276,
 					PairPenalty: 9.84032,
 					Tm:          53.413,
@@ -61,8 +61,6 @@ func Test_primers(t *testing.T) {
 				dvec.Primer{
 					Seq:         "GCCCTCCATGTACAGCTTCA",
 					Strand:      false,
-					Start:       0,
-					End:         0,
 					Penalty:     0.253044,
 					PairPenalty: 9.84032,
 					Tm:          59.747,
@@ -95,8 +93,6 @@ func Test_primers(t *testing.T) {
 				{
 					Seq:         "CGGTAAGCAGGCGCTGGAAACAGTACAGCG",
 					Strand:      true,
-					Start:       0,
-					End:         0,
 					Penalty:     14.431655,
 					PairPenalty: 27.2031,
 					Tm:          72.432,
@@ -105,8 +101,6 @@ func Test_primers(t *testing.T) {
 				{
 					Seq:         "TTGTTTCCCTCCGTCATGCGACGCAATCGCTA",
 					Strand:      false,
-					Start:       0,
-					End:         0,
 					Penalty:     12.771445,
 					PairPenalty: 27.2031,
 					Tm:          72.771,

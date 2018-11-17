@@ -187,7 +187,7 @@ func (p *p3Exec) input() error {
 		primerOpt += maxAdded
 		primerMax += maxAdded
 	}
-	fmt.Printf("%s %d %d %d %d %d\n", p.n.id, targetSizeMin, start, length, maxAdded, primerOpt)
+	// fmt.Printf("%s %d %d %d %d %d\n", p.n.id, targetSizeMin, start, length, maxAdded, primerOpt)
 
 	// see primer3 manual or /vendor/primer3-2.4.0/settings_files/p3_th_settings.txt
 	// TODO: check whether optimal primer sizes can be set for left and right separately

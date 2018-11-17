@@ -65,12 +65,6 @@ type Primer struct {
 	// Strand of the primer; true if template, false if complement
 	Strand bool `json:"strand"`
 
-	// Start of the fragment (0-index)
-	Start int `json:"-"`
-
-	// End of the fragment (0-indexed)
-	End int `json:"-"`
-
 	// Penalty score
 	Penalty float32 `json:"penalty"`
 
