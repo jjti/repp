@@ -19,11 +19,11 @@ pcr:
   ###
 
   # Max primer3 pair penalty score
-  primer3-penalty-max: 20.0
+  primer3-penalty-max: 30.0
 
 # Synthesis settings
 synthesis:
-  # Cost of synthesis (as a step-function)
+  # Cost of synthesis (step-function)
   cost:
     # up to 500 == $160 (fixed)
     500:

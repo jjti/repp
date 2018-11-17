@@ -151,11 +151,6 @@ func (p *p3Exec) input() error {
 				bpToAdd = bpDist + (conf.Fragments.MinHomology / 2)
 			}
 		}
-		// if we're going to add some bp, add a few extra
-		// (so primer3 has a range of options to look at)
-		if bpToAdd > 0 {
-			return bpToAdd + 3
-		}
 		return
 	}
 
@@ -179,12 +174,20 @@ func (p *p3Exec) input() error {
 	primerOpt := 20
 	primerMax := 23
 	if maxAdded > 0 {
-		targetSizeMin -= 2
-		targetSizeMax += 2
+		maxAdded += 2
+
+		// we can't exceed 36 here
+		if maxAdded > 36-primerMax {
+			maxAdded = 36 - primerMax
+		}
+
+		// targetSizeMin -= 2
+		// targetSizeMax += 2
 		primerMin += maxAdded
 		primerOpt += maxAdded
 		primerMax += maxAdded
 	}
+	fmt.Printf("%s %d %d %d %d %d\n", p.n.id, targetSizeMin, start, length, maxAdded, primerOpt)
 
 	// see primer3 manual or /vendor/primer3-2.4.0/settings_files/p3_th_settings.txt
 	// TODO: check whether optimal primer sizes can be set for left and right separately

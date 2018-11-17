@@ -52,7 +52,7 @@ type SynthCost struct {
 // SynthesisConfig is for settings involving synthesis
 type SynthesisConfig struct {
 	// the cost per bp of synthesized DNA (as a step function)
-	Cost map[int]SynthCost `mapstructure:"cost"`
+	Cost map[float32]SynthCost `mapstructure:"cost"`
 
 	// maximum length of a synthesized piece of DNA
 	MaxLength int `mapstructure:"max-length"`

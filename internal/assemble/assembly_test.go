@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/jjtimmons/decvec/config"
 	"github.com/jjtimmons/decvec/internal/dvec"
 )
 
@@ -30,7 +31,12 @@ var (
 func Test_assembly_add(t *testing.T) {
 	conf.Fragments.MaxCount = 5
 	conf.Synthesis.MaxLength = 100
-	conf.Synthesis.BPCost = 0.08
+	conf.Synthesis.Cost = map[float32]config.SynthCost{
+		100000.0: {
+			Fixed:   true,
+			Dollars: float32(0),
+		},
+	}
 
 	// create the nodes for testing
 	type fields struct {
@@ -107,7 +113,7 @@ func Test_assembly_add(t *testing.T) {
 			"add with completion requiring synthesis",
 			fields{
 				nodes:  []node{n1, n2, n3},
-				cost:   10.0,
+				cost:   16.4,
 				synths: 0,
 			},
 			args{

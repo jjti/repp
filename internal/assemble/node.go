@@ -2,7 +2,6 @@ package assemble
 
 import (
 	"fmt"
-	"log"
 	"math"
 	"strconv"
 	"strings"
@@ -103,13 +102,22 @@ func (n *node) costTo(other node) (cost float32) {
 	}
 
 	// we need to create a new synthetic fragment to get from this fragment to the next
-	// account for both the bps between them as well as the additional bps we need to add
+	// to account for both the bps between them as well as the additional bps we need to add
 	// for homology between the two
+	fragLength := float32(conf.Fragments.MinHomology) + float32(dist)
+	synthCostKey := float32(100000) // exorbitant high initial cost
+	for length := range conf.Synthesis.Cost {
+		if length < fragLength && length < synthCostKey {
+			synthCostKey = length
+		}
+	}
 
-	return (float32(conf.Fragments.MinHomology) + float32(dist)) * conf.Synthesis.BPCost
-
-	log.Fatalf("Failed to estimate a cost for this synthetic fragment, %v", n)
-
+	// find whether this fragment has a fixed or variable cost
+	synthCost := conf.Synthesis.Cost[synthCostKey]
+	if synthCost.Fixed {
+		return synthCost.Dollars
+	}
+	return fragLength * synthCost.Dollars
 }
 
 // reach returns a slice of node indexes that overlap with, or are the first synth_count nodes
