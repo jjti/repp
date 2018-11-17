@@ -19,12 +19,11 @@ var (
 
 // FragmentConfig settings about fragments
 type FragmentConfig struct {
+	// the minimum homology between this fragment and the net one
+	MinHomology int `mapstructure:"min-homology"`
+
 	// the maximum number of fragments in the final assembly
 	MaxCount int `mapstructure:"max-count"`
-
-	// the minimum length of match between a building fragment
-	// and the target fragment for it to be considered
-	MinMatch int `mapstructure:"min-match"`
 }
 
 // PCRConfig is settings for PCR
@@ -35,14 +34,25 @@ type PCRConfig struct {
 	// the maximum primer3 score allowable
 	P3MaxPenalty float32 `mapstructure:"primer3-penalty-max"`
 
-	// MinSize is the minimum size of a fragment (used to filter BLAST results)
-	MinSize int `mapstructure:"min-size"`
+	// MinLength is the minimum size of a fragment (used to filter BLAST results)
+	MinLength int `mapstructure:"min-length"`
+}
+
+// SynthCost is meta about the cost of synthesizing DNA up to a certain
+// size. Can be fixed (ie everything beneath that limit is the same amount)
+// or not-fixed (pay by the bp)
+type SynthCost struct {
+	// whether it's a fixed or variable cost
+	Fixed bool `mapstructure:"fixed"`
+
+	// the cost (either per bp or for the whole stretch)
+	Dollars float32 `mapstructure:"dollars"`
 }
 
 // SynthesisConfig is for settings involving synthesis
 type SynthesisConfig struct {
-	// the cost per bp of synthesized DNA
-	BPCost float32 `mapstructure:"bp-cost"`
+	// the cost per bp of synthesized DNA (as a step function)
+	Cost map[int]SynthCost `mapstructure:"cost"`
 
 	// maximum length of a synthesized piece of DNA
 	MaxLength int `mapstructure:"max-length"`
@@ -94,11 +104,11 @@ func New() (c Config) {
 
 // init and set viper's paths to the local config file
 func init() {
+	// path to the root of the app
 	_, filename, _, ok := runtime.Caller(0)
 	if !ok {
 		log.Panicln("No caller information")
 	}
-	// path to the root of the app
 	root, _ := filepath.Abs(path.Join(path.Dir(filename), ".."))
 	viper.SetDefault("Root", root)
 
@@ -112,6 +122,6 @@ func init() {
 		viper.AddConfigPath(root) // settings are in root of repo
 	}
 
-	viper.SetConfigName("settings") // no yaml needed
+	viper.SetConfigName("settings") // no yaml needed, just a config file called settings
 	viper.AutomaticEnv()            // enviornment variables that match
 }
