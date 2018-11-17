@@ -8,22 +8,57 @@ fragments:
 
 # PCR settings
 pcr:
-  # Minimum size of a PCR fragment
-  min-size: 200
-
   # Cost per bp of PCR primer
   bp-cost: 0.09
+
+  # Minimum length of a PCR fragment
+  min-length: 200
+
+  ###
+  # PCR Complexities
+  ###
 
   # Max primer3 pair penalty score
   primer3-penalty-max: 20.0
 
 # Synthesis settings
 synthesis:
-  # Cost per bp of synthesized DNA
-  bp-cost: 0.11
+  # Cost of synthesis (as a step-function)
+  cost:
+    # up to 500 == $160 (fixed)
+    500:
+      fixed: true
+      dollars: 160
+    # up to 3kbp == $0.35/bp
+    3000:
+      fixed: false
+      dollars: 0.035
+    # anything larger == $0.06/bp
+    10000000:
+      fixed: false
+      dollars: 0.6
+
+  # whether to prevent synthesis if it conflicts with a complexity
+  limit: true
+
+  ###
+  # Synthesis Complexities
+  ###
+
+  # Minimum length of a synthesized building fragment
+  min-length: 100
 
   # Maximum length of a synthesized building fragment
   max-length: 3000
 
-  # Minimum length of a synthesized building fragment
-  min-length: 100
+  # max overall gc %
+  max-gc: 65.0
+
+  # problem homo-polymeric gc stretches
+  homo-poly-gc: 10
+
+  # problem homo-polymeric at stretches
+  homo-poly-at: 30
+
+  # problem hairpin length
+  hairpin: 10
