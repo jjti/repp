@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/jjtimmons/decvec/config"
 	"github.com/jjtimmons/decvec/internal/dvec"
 )
 
@@ -142,7 +143,12 @@ func Test_node_synthDist(t *testing.T) {
 func Test_node_costTo(t *testing.T) {
 	conf.Fragments.MinHomology = 20
 	conf.PCR.BPCost = 0.03
-	conf.Synthesis.BPCost = 0.05
+	conf.Synthesis.Cost = map[float32]config.SynthCost{
+		100000.0: {
+			Fixed:   false,
+			Dollars: 0.05,
+		},
+	}
 
 	type fields struct {
 		id         string
@@ -186,7 +192,7 @@ func Test_node_costTo(t *testing.T) {
 					end:   120,
 				},
 			},
-			((float32(conf.Fragments.MinHomology) + 30.0) * conf.Synthesis.BPCost),
+			((float32(conf.Fragments.MinHomology) + 30.0) * 0.05),
 		},
 		{
 			"cost to self should just be for PCR",
@@ -359,15 +365,15 @@ func Test_node_synthTo(t *testing.T) {
 			args{
 				next: node{
 					id:    "second",
-					start: 20,
-					end:   24,
+					start: 25,
+					end:   30,
 				},
 				seq: "TGCTGACTGTGGCGGGTGAGCTTAGGGGGCCTCCGCTCCAGCTCGACACCGGGCAGCTGC",
 			},
 			[]dvec.Fragment{
 				dvec.Fragment{
 					ID:   "first-synthetic-1",
-					Seq:  "GGTGAGCTTA",
+					Seq:  "GGTGAGCTTAGGGGG",
 					Type: dvec.Synthetic,
 				},
 			},
