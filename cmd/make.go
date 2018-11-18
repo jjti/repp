@@ -4,13 +4,13 @@ import (
 	"log"
 	"path/filepath"
 
-	"github.com/jjtimmons/decvec/internal/assemble"
-	"github.com/jjtimmons/decvec/internal/blast"
-	"github.com/jjtimmons/decvec/internal/io"
+	"github.com/jjtimmons/defrag/internal/assemble"
+	"github.com/jjtimmons/defrag/internal/blast"
+	"github.com/jjtimmons/defrag/internal/io"
 
 	"github.com/spf13/viper"
 
-	"github.com/jjtimmons/decvec/config"
+	"github.com/jjtimmons/defrag/config"
 	"github.com/spf13/cobra"
 )
 
@@ -20,7 +20,7 @@ var makeCmd = &cobra.Command{
 	Short: "Make a target vector from a database of building fragments",
 	Long: `Make a vector from its target sequence and a database of building fragments
 	
-"decvec make" is for assembling a vector, using Gibson Assembly, in the most efficient 
+"defrag make" is for assembling a vector, using Gibson Assembly, in the most efficient 
 way possible. It's a declaractive approach to vector design. This means that, rather than 
 telling make which DNA fragments go together, and in what order, make simply builds the 
 vector it's told to. It does this by:
