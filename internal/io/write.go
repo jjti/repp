@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/jjtimmons/defrag/config"
-	"github.com/jjtimmons/defrag/internal/dvec"
+	"github.com/jjtimmons/defrag/internal/defrag"
 )
 
 // Solution is a single solution to build up the target vector
@@ -20,7 +20,7 @@ type Solution struct {
 	Cost int `json:"costDollars"`
 
 	// Fragments used to build this solution
-	Fragments []dvec.Fragment `json:"fragments"`
+	Fragments []defrag.Fragment `json:"fragments"`
 }
 
 // Out is the result output from this assembly
@@ -33,7 +33,7 @@ type Out struct {
 }
 
 // Write a slice of possible assemblies to the fs at the output path
-func Write(filename string, assemblies [][]dvec.Fragment) {
+func Write(filename string, assemblies [][]defrag.Fragment) {
 	c := config.New()
 
 	// calculate final cost of the assembly and fragment count
@@ -41,10 +41,10 @@ func Write(filename string, assemblies [][]dvec.Fragment) {
 	for _, assembly := range assemblies {
 		var cost int
 		for _, frag := range assembly {
-			if frag.Type == dvec.PCR {
+			if frag.Type == defrag.PCR {
 				cost += int(c.PCR.BPCost * float32(len(frag.Primers[0].Seq)))
 				cost += int(c.PCR.BPCost * float32(len(frag.Primers[1].Seq)))
-			} else if frag.Type == dvec.Synthetic {
+			} else if frag.Type == defrag.Synthetic {
 				cost += int(c.Synthesis.BPCost * float32(len(frag.Seq)))
 			}
 		}
