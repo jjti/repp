@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/jjtimmons/decvec/config"
-	"github.com/jjtimmons/decvec/internal/dvec"
+	"github.com/jjtimmons/decvec/internal/defrag"
 )
 
 var (
@@ -25,7 +25,7 @@ var (
 // "fill-in" the nodes. Create primers on the node if it's a PCR Fragment
 // or create a sequence to be synthesized if it's a synthetic fragment.
 // Error out and repeat the build stage if a node fails to be filled
-func Assemble(matches []dvec.Match, seq string) [][]dvec.Fragment {
+func Assemble(matches []defrag.Match, seq string) [][]defrag.Fragment {
 	// map fragment Matches to nodes
 	var nodes []node
 	for _, m := range matches {
@@ -41,7 +41,7 @@ func Assemble(matches []dvec.Match, seq string) [][]dvec.Fragment {
 	fmt.Println(len(paretos))
 
 	// convert and fill the fragments
-	var found [][]dvec.Fragment
+	var found [][]defrag.Fragment
 	for _, assemblies := range paretos {
 		fmt.Printf("%d assemblies with %d fragments\n", len(assemblies), assemblies[0].len()-1)
 

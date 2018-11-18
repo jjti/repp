@@ -1,4 +1,4 @@
-package dvec
+package defrag
 
 const (
 	// PCR fragments are those prepared by PCR, often a subselection of their

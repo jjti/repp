@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/jjtimmons/decvec/config"
-	"github.com/jjtimmons/decvec/internal/dvec"
+	"github.com/jjtimmons/decvec/internal/defrag"
 )
 
 func Test_node_distTo(t *testing.T) {
@@ -339,7 +339,7 @@ func Test_node_synthTo(t *testing.T) {
 		name             string
 		fields           fields
 		args             args
-		wantSynthedFrags []dvec.Fragment
+		wantSynthedFrags []defrag.Fragment
 	}{
 		{
 			"return nothing when there's enough overlap",
@@ -370,11 +370,11 @@ func Test_node_synthTo(t *testing.T) {
 				},
 				seq: "TGCTGACTGTGGCGGGTGAGCTTAGGGGGCCTCCGCTCCAGCTCGACACCGGGCAGCTGC",
 			},
-			[]dvec.Fragment{
-				dvec.Fragment{
+			[]defrag.Fragment{
+				defrag.Fragment{
 					ID:   "first-synthetic-1",
 					Seq:  "GGTGAGCTTAGGGGG",
-					Type: dvec.Synthetic,
+					Type: defrag.Synthetic,
 				},
 			},
 		},
@@ -408,7 +408,7 @@ func Test_node_fragment(t *testing.T) {
 	tests := []struct {
 		name   string
 		fields fields
-		want   dvec.Fragment
+		want   defrag.Fragment
 	}{
 		{
 			"convert to fragment from node",
@@ -416,7 +416,7 @@ func Test_node_fragment(t *testing.T) {
 				id:  "frag1",
 				seq: "atgctgac",
 			},
-			dvec.Fragment{
+			defrag.Fragment{
 				ID:    "frag1",
 				Seq:   "atgctgac",
 				Entry: "frag1",
@@ -442,7 +442,7 @@ func Test_node_fragment(t *testing.T) {
 
 func Test_new(t *testing.T) {
 	type args struct {
-		m    dvec.Match
+		m    defrag.Match
 		seqL int
 	}
 	tests := []struct {
@@ -453,7 +453,7 @@ func Test_new(t *testing.T) {
 		{
 			"create a node from a match",
 			args{
-				m: dvec.Match{
+				m: defrag.Match{
 					Entry: "testMatch",
 					Seq:   "atgctagctagtg",
 					Start: 0,
