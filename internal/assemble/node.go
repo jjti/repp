@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/jjtimmons/decvec/internal/defrag"
+	"github.com/jjtimmons/defrag/internal/defrag"
 )
 
 // node is a single node within the DP tree for building up

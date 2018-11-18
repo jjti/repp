@@ -4,8 +4,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/jjtimmons/decvec/config"
-	"github.com/jjtimmons/decvec/internal/defrag"
+	"github.com/jjtimmons/defrag/config"
+	"github.com/jjtimmons/defrag/internal/defrag"
 )
 
 func Test_node_distTo(t *testing.T) {

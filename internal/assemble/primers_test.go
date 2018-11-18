@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/jjtimmons/decvec/internal/defrag"
+	"github.com/jjtimmons/defrag/internal/defrag"
 )
 
 // this is little more than a deprecation test right now

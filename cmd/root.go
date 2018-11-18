@@ -11,7 +11,7 @@ import (
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "decvec",
+	Use:   "defrag",
 	Short: "Build vectors from their sequence and a fragment database",
 	Long:  ``,
 
@@ -24,7 +24,7 @@ var rootCmd = &cobra.Command{
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		log.Fatalf("Failed to execute decvec: %v", err)
+		log.Fatalf("Failed to execute defrag: %v", err)
 	}
 }
 
