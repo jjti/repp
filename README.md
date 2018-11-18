@@ -1,6 +1,8 @@
-# decvec
+# DEFRAG
 
-declarative vector design
+Declarative Engineering using Fragments, Repositories, and Gison
+of
+Declarative Engineering with FRAGments
 
 ## Steps
 
