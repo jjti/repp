@@ -11,8 +11,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/jjtimmons/decvec/internal/blast"
-	"github.com/jjtimmons/decvec/internal/defrag"
+	"github.com/jjtimmons/defrag/internal/blast"
+	"github.com/jjtimmons/defrag/internal/defrag"
 )
 
 // p3Exec is a utility struct for executing primer3 to create primers for a part

@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/jjtimmons/decvec/internal/dvec"
+	"github.com/jjtimmons/defrag/internal/defrag"
 )
 
 // isMismatch reutns whether the match constitutes a mismatch
@@ -18,7 +18,7 @@ import (
 //
 // The equation used for the melting temperature is:
 // Tm = 81.5 + 0.41(%GC) - 675/N - % mismatch, where N = total number of bases.
-func isMismatch(match dvec.Match) bool {
+func isMismatch(match defrag.Match) bool {
 	primer := strings.ToLower(match.Seq)
 	primerL := float32(len(primer))
 
@@ -36,7 +36,7 @@ func isMismatch(match dvec.Match) bool {
 //
 // The parent sequence is passed as the entry id as it exists in the blast db
 // db is passed as the path to the db we're blasting against
-func Mismatch(primer, parent, db string) (mismatch bool, match dvec.Match, err error) {
+func Mismatch(primer, parent, db string) (mismatch bool, match defrag.Match, err error) {
 	// path to the blastdbcmd binary
 	blastcmd, _ := filepath.Abs(path.Join(conf.Root, "vendor", "ncbi-blast-2.7.1+", "bin", "blastdbcmd"))
 	// path to the entry batch file to hold the parent entry accession
@@ -91,7 +91,7 @@ func Mismatch(primer, parent, db string) (mismatch bool, match dvec.Match, err e
 	// get the BLAST matches
 	matches, err := b.parse()
 	if err != nil {
-		return false, dvec.Match{}, fmt.Errorf("Failed to parse matches from %s: %v", out, err)
+		return false, defrag.Match{}, fmt.Errorf("Failed to parse matches from %s: %v", out, err)
 	}
 
 	// parse the results and check whether any are cause for concern (by Tm)
@@ -113,5 +113,5 @@ func Mismatch(primer, parent, db string) (mismatch bool, match dvec.Match, err e
 		}
 	}
 
-	return false, dvec.Match{}, nil
+	return false, defrag.Match{}, nil
 }

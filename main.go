@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/jjtimmons/decvec/cmd"
+	"github.com/jjtimmons/defrag/cmd"
 )
 
 func main() {

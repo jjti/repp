@@ -3,7 +3,7 @@ package blast
 import (
 	"sort"
 
-	"github.com/jjtimmons/decvec/internal/dvec"
+	"github.com/jjtimmons/defrag/internal/defrag"
 )
 
 // filter "proper-izes" the matches from BLAST
@@ -17,11 +17,11 @@ import (
 //
 // also remove small fragments here, that are too small to be useful during
 // assembly
-func filter(matches []dvec.Match) (properized []dvec.Match) {
-	properized = []dvec.Match{}
+func filter(matches []defrag.Match) (properized []defrag.Match) {
+	properized = []defrag.Match{}
 
 	// remove fragments that are shorter the minimum cut off size
-	var largeEnough []dvec.Match
+	var largeEnough []defrag.Match
 	for _, m := range matches {
 		if m.Length() > conf.PCR.MinLength {
 			largeEnough = append(largeEnough, m)

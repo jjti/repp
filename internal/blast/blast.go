@@ -13,8 +13,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/jjtimmons/decvec/config"
-	"github.com/jjtimmons/decvec/internal/dvec"
+	"github.com/jjtimmons/defrag/config"
+	"github.com/jjtimmons/defrag/internal/defrag"
 )
 
 var (
@@ -32,7 +32,7 @@ var (
 // on a fragment.
 type blastExec struct {
 	// the fragment we're BLASTing
-	f *dvec.Fragment
+	f *defrag.Fragment
 
 	// the path to the database we're BLASTing against
 	db string
@@ -51,7 +51,7 @@ type blastExec struct {
 // matches for those that are long enough
 //
 // Accepts a fragment to blast against
-func BLAST(f *dvec.Fragment) (matches []dvec.Match, err error) {
+func BLAST(f *defrag.Fragment) (matches []defrag.Match, err error) {
 	b := &blastExec{
 		f:   f,
 		in:  path.Join(blastDir, f.ID+".input.fa"),
@@ -156,7 +156,7 @@ func (b *blastExec) runAgainst() error {
 
 // parse reads the output file into Matches on the Fragment
 // returns a slice of Matches for the blasted fragment
-func (b *blastExec) parse() (matches []dvec.Match, err error) {
+func (b *blastExec) parse() (matches []defrag.Match, err error) {
 	// read in the results
 	file, err := ioutil.ReadFile(b.out)
 	if err != nil {
@@ -165,7 +165,7 @@ func (b *blastExec) parse() (matches []dvec.Match, err error) {
 	fileS := string(file)
 
 	// read it into Matches
-	var ms []dvec.Match
+	var ms []defrag.Match
 	for _, line := range strings.Split(fileS, "\n") {
 		// comment lines start with a #
 		if strings.HasPrefix(line, "#") {
@@ -192,7 +192,7 @@ func (b *blastExec) parse() (matches []dvec.Match, err error) {
 		}
 
 		// create and append the new match
-		ms = append(ms, dvec.Match{
+		ms = append(ms, defrag.Match{
 			// for later querying when checking for off-targets
 			Entry: id,
 			Seq:   strings.Replace(seq, "-", "", -1),

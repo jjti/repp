@@ -4,8 +4,8 @@ package assemble
 import (
 	"fmt"
 
-	"github.com/jjtimmons/decvec/config"
-	"github.com/jjtimmons/decvec/internal/defrag"
+	"github.com/jjtimmons/defrag/config"
+	"github.com/jjtimmons/defrag/internal/defrag"
 )
 
 var (
