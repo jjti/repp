@@ -6,12 +6,12 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/jjtimmons/decvec/internal/dvec"
+	"github.com/jjtimmons/defrag/internal/defrag"
 )
 
 func Test_isMismatch(t *testing.T) {
 	type args struct {
-		match dvec.Match
+		match defrag.Match
 	}
 	tests := []struct {
 		name string
@@ -21,7 +21,7 @@ func Test_isMismatch(t *testing.T) {
 		{
 			"catches a mismatching primer",
 			args{
-				match: dvec.Match{
+				match: defrag.Match{
 					Seq:      "atgacgacgacgcggac",
 					Mismatch: 0,
 				},
@@ -31,7 +31,7 @@ func Test_isMismatch(t *testing.T) {
 		{
 			"no false positive mistmatch",
 			args{
-				match: dvec.Match{
+				match: defrag.Match{
 					Seq:      "atgacgacgacgac",
 					Mismatch: 0,
 				},
@@ -59,7 +59,7 @@ func TestMismatch(t *testing.T) {
 		name         string
 		args         args
 		wantMismatch bool
-		wantMatch    dvec.Match
+		wantMatch    defrag.Match
 		wantErr      bool
 	}{
 		{
@@ -69,7 +69,7 @@ func TestMismatch(t *testing.T) {
 				"gnl|addgene|113726(circular)",
 			},
 			false,
-			dvec.Match{},
+			defrag.Match{},
 			false,
 		},
 		// I intentionally added another off-target seq to 107006, AGTATAGTAGGTAGTCATTCTT
@@ -80,7 +80,7 @@ func TestMismatch(t *testing.T) {
 				"gnl|addgene|107006(circular)",
 			},
 			true,
-			dvec.Match{
+			defrag.Match{
 				Entry:    "addgene:107006(circular)",
 				Seq:      "AGTATAGTAGGTAGTCATTCTT",
 				Start:    0,

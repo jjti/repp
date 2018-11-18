@@ -45,9 +45,9 @@ BLACKLISTED = list of nodes that are deemed unusable (ex: inverted repeat in a j
 
         3.2.2 The node has a duplicate end region with another fragment in the assembly
 
-## List of things that need to be considered when creating building fragments
+## List of red flags for building fragments
 
-1.  Don't create primers for a fragment with off-targets in its parent fragment
+1.  Don't create primers for a fragment with off-targets
 
 2.  Don't create primers with an excessive primer3 pair penalty
 

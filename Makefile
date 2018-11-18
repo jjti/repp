@@ -6,7 +6,7 @@ GOTEST=$(GOCMD) test
 GOGET=$(GOCMD) get
 
 # Binary name
-BINARY_NAME=./bin/decvec
+BINARY_NAME=./bin/defrag
 
 # Tool directory
 VENDOR_DIR=./vendor/

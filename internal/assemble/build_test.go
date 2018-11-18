@@ -5,7 +5,7 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/jjtimmons/decvec/config"
+	"github.com/jjtimmons/defrag/config"
 )
 
 func Test_build(t *testing.T) {

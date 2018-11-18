@@ -7,7 +7,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/jjtimmons/decvec/internal/dvec"
+	"github.com/jjtimmons/defrag/internal/dvec"
 )
 
 // Read a FASTA file (by its path on local FS) to a slice of Fragments

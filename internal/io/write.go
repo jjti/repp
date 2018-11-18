@@ -7,8 +7,8 @@ import (
 	"sort"
 	"time"
 
-	"github.com/jjtimmons/decvec/config"
-	"github.com/jjtimmons/decvec/internal/dvec"
+	"github.com/jjtimmons/defrag/config"
+	"github.com/jjtimmons/defrag/internal/dvec"
 )
 
 // Solution is a single solution to build up the target vector

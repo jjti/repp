@@ -3,7 +3,7 @@ package assemble
 import (
 	"fmt"
 
-	"github.com/jjtimmons/decvec/internal/defrag"
+	"github.com/jjtimmons/defrag/internal/defrag"
 )
 
 // assembly is a slice of nodes ordered by the nodes
