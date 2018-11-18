@@ -7,11 +7,11 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/jjtimmons/defrag/internal/dvec"
+	"github.com/jjtimmons/defrag/internal/defrag"
 )
 
 // Read a FASTA file (by its path on local FS) to a slice of Fragments
-func Read(path string) (fragments []dvec.Fragment, err error) {
+func Read(path string) (fragments []defrag.Fragment, err error) {
 	if !filepath.IsAbs(path) {
 		path, err = filepath.Abs(path)
 		if err != nil {
@@ -56,7 +56,7 @@ func Read(path string) (fragments []dvec.Fragment, err error) {
 
 	// build and return the new fragments
 	for i, id := range ids {
-		fragments = append(fragments, dvec.Fragment{
+		fragments = append(fragments, defrag.Fragment{
 			ID:  id,
 			Seq: seqs[i],
 		})
