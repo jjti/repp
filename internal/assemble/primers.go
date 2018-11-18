@@ -12,7 +12,7 @@ import (
 	"strings"
 
 	"github.com/jjtimmons/decvec/internal/blast"
-	"github.com/jjtimmons/decvec/internal/dvec"
+	"github.com/jjtimmons/decvec/internal/defrag"
 )
 
 // p3Exec is a utility struct for executing primer3 to create primers for a part
@@ -82,7 +82,7 @@ func newP3Exec(last, this, next node, target string) p3Exec {
 // primers creates primers against a node and return an error if
 //	1. the primers have an unacceptably high primer3 penalty score
 //	2. the primers have off-targets in their parent source
-func primers(last, this, next node, vec string) (primers []dvec.Primer, err error) {
+func primers(last, this, next node, vec string) (primers []defrag.Primer, err error) {
 	exec := newP3Exec(last, this, next, vec)
 
 	// make input file, figure out how to create primers that share homology
@@ -234,7 +234,7 @@ func (p *p3Exec) run() error {
 }
 
 // parse the output into primers for the part
-func (p *p3Exec) parse() (primers []dvec.Primer, err error) {
+func (p *p3Exec) parse() (primers []defrag.Primer, err error) {
 	file, err := ioutil.ReadFile(p.out)
 	if err != nil {
 		return nil, err
@@ -256,7 +256,7 @@ func (p *p3Exec) parse() (primers []dvec.Primer, err error) {
 
 	// read in a single primer from the output string file
 	// side is either "LEFT" or "RIGHT"
-	parsePrimer := func(side string) dvec.Primer {
+	parsePrimer := func(side string) defrag.Primer {
 		seq := results[fmt.Sprintf("PRIMER_%s_0_SEQUENCE", side)]
 		tm := results[fmt.Sprintf("PRIMER_%s_0_TM", side)]
 		gc := results[fmt.Sprintf("PRIMER_%s_0_GC_PERCENT", side)]
@@ -268,7 +268,7 @@ func (p *p3Exec) parse() (primers []dvec.Primer, err error) {
 		penaltyfloat, _ := strconv.ParseFloat(penalty, 32)
 		pairfloat, _ := strconv.ParseFloat(pairPenalty, 32)
 
-		return dvec.Primer{
+		return defrag.Primer{
 			Seq:         seq,
 			Strand:      side == "LEFT",
 			Tm:          float32(tmfloat),
@@ -278,7 +278,7 @@ func (p *p3Exec) parse() (primers []dvec.Primer, err error) {
 		}
 	}
 
-	return []dvec.Primer{
+	return []defrag.Primer{
 		parsePrimer("LEFT"),
 		parsePrimer("RIGHT"),
 	}, nil

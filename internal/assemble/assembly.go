@@ -3,7 +3,7 @@ package assemble
 import (
 	"fmt"
 
-	"github.com/jjtimmons/decvec/internal/dvec"
+	"github.com/jjtimmons/decvec/internal/defrag"
 )
 
 // assembly is a slice of nodes ordered by the nodes
@@ -92,7 +92,7 @@ func (a *assembly) len() int {
 // it can fail out. For example, a PCR Fragment may have off-targets in
 // the parent vector. If that happens, we return the problem node and nil
 // building fragments
-func (a *assembly) fill(seq string) (frags []dvec.Fragment) {
+func (a *assembly) fill(seq string) (frags []defrag.Fragment) {
 	for i, n := range a.nodes {
 		// last node, do nothing
 		// here only to allow for vector "circularization" if we need to synthesize
@@ -133,7 +133,7 @@ func (a *assembly) fill(seq string) (frags []dvec.Fragment) {
 		// convert, set primers and store this to the list of building fragments
 		frag := n.fragment()
 		frag.Primers = fragPrimers
-		frag.Type = dvec.PCR
+		frag.Type = defrag.PCR
 		frags = append(frags, frag)
 
 		// add synthesized fragments between the two if necessary

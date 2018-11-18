@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/jjtimmons/decvec/config"
-	"github.com/jjtimmons/decvec/internal/dvec"
+	"github.com/jjtimmons/decvec/internal/defrag"
 )
 
 // create t
@@ -347,9 +347,9 @@ func Test_assembly_fill(t *testing.T) {
 			synthCount := 0
 
 			for _, f := range frags {
-				if f.Type == dvec.PCR {
+				if f.Type == defrag.PCR {
 					pcrCount++
-				} else if f.Type == dvec.Synthetic {
+				} else if f.Type == defrag.Synthetic {
 					synthCount++
 				}
 			}

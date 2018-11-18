@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/jjtimmons/decvec/internal/dvec"
+	"github.com/jjtimmons/decvec/internal/defrag"
 )
 
 // node is a single node within the DP tree for building up
@@ -33,7 +33,7 @@ type node struct {
 }
 
 // new creates a node from a Match
-func new(m dvec.Match, seqL int) node {
+func new(m defrag.Match, seqL int) node {
 	return node{
 		id:       m.Entry,
 		seq:      strings.ToUpper(m.Seq),
@@ -44,8 +44,8 @@ func new(m dvec.Match, seqL int) node {
 }
 
 // fragment converts a node into a fragment
-func (n *node) fragment() dvec.Fragment {
-	return dvec.Fragment{
+func (n *node) fragment() defrag.Fragment {
+	return defrag.Fragment{
 		ID:    n.id,
 		Seq:   n.seq,
 		Entry: n.id,
@@ -154,7 +154,7 @@ func (n *node) reach(nodes []node, i, synthCount int) (reachable []int) {
 // one another and are within the upper and lower synthesis bounds.
 // seq is the vector's sequence. We need it to build up the target
 // vector's sequence
-func (n *node) synthTo(next node, seq string) (synthedFrags []dvec.Fragment) {
+func (n *node) synthTo(next node, seq string) (synthedFrags []defrag.Fragment) {
 	// check whether we need to make synthetic fragments to get
 	// to the next fragment in the assembly
 	fragC := n.synthDist(next)
@@ -163,7 +163,7 @@ func (n *node) synthTo(next node, seq string) (synthedFrags []dvec.Fragment) {
 	}
 
 	// make the slice
-	synthedFrags = []dvec.Fragment{}
+	synthedFrags = []defrag.Fragment{}
 
 	// length of each synthesized fragment
 	fragL := n.distTo(next) / fragC
@@ -184,10 +184,10 @@ func (n *node) synthTo(next node, seq string) (synthedFrags []dvec.Fragment) {
 		start += fragIndex * fragL                  // slide along the range to cover
 		end := start + fragL + conf.Fragments.MinHomology
 
-		sFrag := dvec.Fragment{
+		sFrag := defrag.Fragment{
 			ID:   fmt.Sprintf("%s-synthetic-%d", n.id, fragIndex+1),
 			Seq:  seq[start:end],
-			Type: dvec.Synthetic,
+			Type: defrag.Synthetic,
 		}
 		synthedFrags = append(synthedFrags, sFrag)
 	}
