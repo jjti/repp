@@ -38,6 +38,4 @@ func Test_makeExec(t *testing.T) {
 			makeExec(tt.args.cmd, tt.args.args)
 		})
 	}
-
-	t.Fail()
 }

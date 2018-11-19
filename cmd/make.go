@@ -10,7 +10,6 @@ import (
 
 	"github.com/spf13/viper"
 
-	"github.com/jjtimmons/defrag/config"
 	"github.com/spf13/cobra"
 )
 
@@ -57,8 +56,6 @@ func init() {
 // 	5. no off-target binding sites in the parent vectors
 //	6. low primer3 penalty scores
 func makeExec(cmd *cobra.Command, args []string) {
-	c := config.New()
-
 	target, err := cmd.PersistentFlags().GetString("target")
 	if err != nil {
 		log.Fatalf("Cannot get target from arguments: %v", err)
@@ -66,7 +63,7 @@ func makeExec(cmd *cobra.Command, args []string) {
 
 	// no path to input file
 	if target == "" {
-		log.Fatalf("Failed, no target fragment path set in config %+v", c)
+		log.Fatal("Failed, no target fragment path set")
 	}
 
 	output, err := cmd.PersistentFlags().GetString("out")
@@ -74,7 +71,7 @@ func makeExec(cmd *cobra.Command, args []string) {
 		log.Fatalf("Cannot find the output path: %v", err)
 	}
 
-	// read in fragments
+	// read in fragments, the first is the target sequence
 	fragments, err := io.Read(target)
 	if err != nil {
 		log.Fatalf("Failed to read in fasta files at %s: %v", target, err)
@@ -107,7 +104,7 @@ func makeExec(cmd *cobra.Command, args []string) {
 			log.Fatalf("Failed to make output path absolute: %v", err)
 		}
 	}
-	io.Write(output, builds)
+	io.Write(output, targetFrag, builds)
 
 	// os.Exit(0)
 }

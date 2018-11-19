@@ -7,7 +7,6 @@ import (
 	"sort"
 	"time"
 
-	"github.com/jjtimmons/defrag/config"
 	"github.com/jjtimmons/defrag/internal/defrag"
 )
 
@@ -25,43 +24,37 @@ type Solution struct {
 
 // Out is the result output from this assembly
 type Out struct {
-	// unix
-	Time int64 `json:"time"`
+	// local time, ex:
+	// "2006-01-02 15:04:05.999999999 -0700 MST"
+	// https://golang.org/pkg/time/#Time.String
+	Time string `json:"time"`
 
-	// result
-	Result []Solution `json:"result"`
+	// target sequence
+	Target string `json:"target"`
+
+	// solution builds
+	Solutions []Solution `json:"solutions"`
 }
 
 // Write a slice of possible assemblies to the fs at the output path
-func Write(filename string, assemblies [][]defrag.Fragment) {
-	c := config.New()
-
+func Write(filename string, target defrag.Fragment, assemblies [][]defrag.Fragment) {
 	// calculate final cost of the assembly and fragment count
-	results := []Solution{}
+	solutions := []Solution{}
 	for _, assembly := range assemblies {
-		var cost int
-		for _, frag := range assembly {
-			if frag.Type == defrag.PCR {
-				cost += int(c.PCR.BPCost * float32(len(frag.Primers[0].Seq)))
-				cost += int(c.PCR.BPCost * float32(len(frag.Primers[1].Seq)))
-			} else if frag.Type == defrag.Synthetic {
-				cost += int(c.Synthesis.BPCost * float32(len(frag.Seq)))
-			}
-		}
-
-		results = append(results, Solution{
+		solutions = append(solutions, Solution{
 			Count:     len(assembly),
-			Cost:      cost,
+			Cost:      0.0,
 			Fragments: assembly,
 		})
 	}
-	// sort results in increasing fragment count order
-	sort.Slice(results, func(i, j int) bool {
-		return results[i].Count < results[j].Count
+	// sort solutions in increasing fragment count order
+	sort.Slice(solutions, func(i, j int) bool {
+		return solutions[i].Count < solutions[j].Count
 	})
 	out := Out{
-		Time:   time.Now().Unix(),
-		Result: results,
+		Time:      time.Now().String(),
+		Target:    target.Seq,
+		Solutions: solutions,
 	}
 
 	output, err := json.MarshalIndent(out, "", "  ")

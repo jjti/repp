@@ -66,7 +66,7 @@ func Mismatch(primer, parent, db string) (mismatch bool, match defrag.Match, err
 		"-outfmt", "%f", // fasta format
 	)
 	if _, err := queryCmd.CombinedOutput(); err != nil {
-		// 	// fmt.Println(fmt.Errorf("blastdbcmd failed %v %s", err, string(output)))
+		// fmt.Println(fmt.Errorf("blastdbcmd failed %v %s", err, string(output)))
 		return false, match, nil // pretending there wasn't any mismatch
 	}
 
