@@ -142,7 +142,7 @@ func (p *p3Exec) input() error {
 		// calc the # of bp the left node is responsible with the right one
 		bpToAdd = 0
 		if synthDist := left.synthDist(right); synthDist == 0 {
-			// we're not going to synth our way here, check if there's already enough homology
+			// we're not going to synth our way here, check that there's already enough homology
 			if bpDist := left.distTo(right); bpDist > -(conf.Fragments.MinHomology) {
 				// this node will add half the homology to the last fragment
 				// ex: 5 bp distance leads to 2.5bp + ~10bp additonal
@@ -184,6 +184,8 @@ func (p *p3Exec) input() error {
 		primerMax += maxAdded
 	}
 
+	fmt.Println(fmt.Sprintf("%d,%d %d", start, length, addLeft))
+
 	// see primer3 manual or /vendor/primer3-2.4.0/settings_files/p3_th_settings.txt
 	// TODO: check whether optimal primer sizes can be set for left and right separately
 	// fmt.Println(fmt.Sprintf("%d,%d -- %d %d", start, length, p.n.end, len(p.target)))
@@ -208,11 +210,10 @@ func (p *p3Exec) input() error {
 	if err := ioutil.WriteFile(p.in, []byte(fileContents), 0666); err != nil {
 		return fmt.Errorf("Failed to create primer3 input file %v: ", err)
 	}
-
 	return nil
 }
 
-// run the primer3 executable on the input file
+// run the primer3 executable against the input file
 func (p *p3Exec) run() error {
 	p3Cmd := exec.Command(
 		p.p3Path,
@@ -228,7 +229,7 @@ func (p *p3Exec) run() error {
 	return nil
 }
 
-// parse the output into primers for the part
+// parse the output into primers
 func (p *p3Exec) parse() (primers []defrag.Primer, err error) {
 	file, err := ioutil.ReadFile(p.out)
 	if err != nil {
