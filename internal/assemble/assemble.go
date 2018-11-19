@@ -38,7 +38,6 @@ func Assemble(matches []defrag.Match, seq string) [][]defrag.Fragment {
 
 	// build up a map from fragment count to a sorted list of assemblies with that number
 	paretos := pareto(assemblies)
-	fmt.Println(len(paretos))
 
 	// convert and fill the fragments
 	var found [][]defrag.Fragment
