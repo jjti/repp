@@ -1,8 +1,6 @@
 # DEFRAG
 
-Declarative Engineering using Fragments, Repositories, and Gison
-of
-Declarative Engineering with FRAGments
+Declarative vector Engineering with FRAGments
 
 ## Steps
 

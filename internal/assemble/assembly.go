@@ -86,10 +86,9 @@ func (a *assembly) len() int {
 }
 
 // fill traverses the nodes in an assembly and converts them into
-// fragments -- either pcr fragments or synthetic fragments -- that
-// will match the sequences that come together in vitro during assembly
+// fragments -- either pcr fragments or synthetic fragments
 //
-// it can fail out. For example, a PCR Fragment may have off-targets in
+// it can fail. For example, a PCR Fragment may have off-targets in
 // the parent vector. If that happens, we return the problem node and nil
 // building fragments
 func (a *assembly) fill(seq string) (frags []defrag.Fragment) {
