@@ -164,7 +164,7 @@ func (p *p3Exec) input() error {
 
 	// the node's range plus the additional bp added because of adding homology
 	start := p.n.start - addLeft
-	length := p.n.end - start
+	length := p.n.end - start + 1
 	length += addRight
 
 	// sizes to make the primers and target size (min, opt, and max)
@@ -184,18 +184,15 @@ func (p *p3Exec) input() error {
 		primerMax += maxAdded
 	}
 
-	fmt.Println(fmt.Sprintf("%d,%d %d", start, length, addLeft))
-
 	// see primer3 manual or /vendor/primer3-2.4.0/settings_files/p3_th_settings.txt
 	// TODO: check whether optimal primer sizes can be set for left and right separately
-	// fmt.Println(fmt.Sprintf("%d,%d -- %d %d", start, length, p.n.end, len(p.target)))
 	settings := map[string]string{
 		"PRIMER_THERMODYNAMIC_PARAMETERS_PATH": p.p3Conf,
 		"PRIMER_NUM_RETURN":                    "1",
 		"PRIMER_TASK":                          "pick_cloning_primers",
 		"PRIMER_PICK_ANYWAY":                   "1",
-		"SEQUENCE_TEMPLATE":                    p.target + p.target, // double sequence
-		"SEQUENCE_INCLUDED_REGION":             fmt.Sprintf("%d,%d", start, length),
+		"SEQUENCE_TEMPLATE":                    p.target + p.target + p.target, // triple sequence
+		"SEQUENCE_INCLUDED_REGION":             fmt.Sprintf("%d,%d", start+len(p.target), length),
 		"PRIMER_MIN_SIZE":                      strconv.Itoa(primerMin), // default 18
 		"PRIMER_OPT_SIZE":                      strconv.Itoa(primerOpt), // 20
 		"PRIMER_MAX_SIZE":                      strconv.Itoa(primerMax), // 23

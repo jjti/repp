@@ -2,8 +2,6 @@
 package assemble
 
 import (
-	"fmt"
-
 	"github.com/jjtimmons/defrag/config"
 	"github.com/jjtimmons/defrag/internal/defrag"
 )
@@ -42,8 +40,6 @@ func Assemble(matches []defrag.Match, seq string) [][]defrag.Fragment {
 	// convert and fill the fragments
 	var found [][]defrag.Fragment
 	for _, assemblies := range paretos {
-		fmt.Printf("%d assemblies with %d fragments\n", len(assemblies), assemblies[0].len()-1)
-
 		// get the first assembly that fills properly (cheapest workable solution)
 		for _, singleAssembly := range assemblies {
 			filledFrags := singleAssembly.fill(seq)
