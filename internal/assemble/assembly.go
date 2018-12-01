@@ -105,7 +105,7 @@ func (a *assembly) fill(seq string) (frags []defrag.Fragment) {
 		if i > 0 {
 			last = a.nodes[i-1]
 		} else { // mock up a last fragment that's to the left of this starting node
-			final := a.nodes[len(a.nodes)-1]
+			final := a.nodes[len(a.nodes)-2]
 			last = node{
 				start: final.start - len(seq),
 				end:   final.end - len(seq),

@@ -1,7 +1,6 @@
 package blast
 
 import (
-	"fmt"
 	"path"
 	"path/filepath"
 	"testing"
@@ -39,7 +38,6 @@ func Test_BLAST(t *testing.T) {
 		return
 	}
 
-	fmt.Println(matches)
 	matchesContain := func(targ defrag.Match) {
 		for _, m := range matches {
 			if targ.Entry == m.Entry && targ.Start == m.Start && targ.End == m.End {
