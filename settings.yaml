@@ -29,11 +29,13 @@ synthesis:
     500:
       fixed: true
       dollars: 160
+
     # up to 3kbp == $0.35/bp
     3000:
       fixed: false
       dollars: 0.035
-    # anything larger == $0.06/bp
+
+    # anything larger == $0.6/bp
     10000000:
       fixed: false
       dollars: 0.6
@@ -46,7 +48,7 @@ synthesis:
   ###
 
   # Minimum length of a synthesized building fragment
-  min-length: 100
+  min-length: 1
 
   # Maximum length of a synthesized building fragment
   max-length: 3000
