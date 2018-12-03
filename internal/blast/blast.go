@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -20,9 +19,6 @@ import (
 var (
 	// config object
 	conf = config.New()
-
-	// path to the blast directory for putting results into
-	blastDir = filepath.Join(conf.Root, "bin", "blast")
 
 	// path to the blast executable
 	blast = path.Join(conf.Root, "vendor", "ncbi-blast-2.7.1+", "bin", "blastn")
@@ -51,7 +47,7 @@ type blastExec struct {
 // matches for those that are long enough
 //
 // Accepts a fragment to blast against
-func BLAST(f *defrag.Fragment) (matches []defrag.Match, err error) {
+func BLAST(f *defrag.Fragment, blastDir string) (matches []defrag.Match, err error) {
 	b := &blastExec{
 		f:   f,
 		in:  path.Join(blastDir, f.ID+".input.fa"),
@@ -210,7 +206,7 @@ func (b *blastExec) parse() (matches []defrag.Match, err error) {
 // init ensures there's a blast subdirectory in the binary's execution enviornment
 // for the results this is about to create
 func init() {
-	err := os.MkdirAll(blastDir, os.ModePerm)
+	err := os.MkdirAll(conf.BlastDir, os.ModePerm)
 	if err != nil {
 		log.Fatalf("Failed to create a BLAST dir: %v", err)
 	}
