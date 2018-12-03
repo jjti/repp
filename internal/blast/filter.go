@@ -8,6 +8,11 @@ import (
 
 // filter "proper-izes" the matches from BLAST
 //
+// TODO: filter on multiple BLAST databases. Keep ALL fragments from non-remote repositories (ie free
+// fragments) but still properize out the remote fragments. So if a large fragment in the local repository
+// completely emcompasses a smaller fragment in Addgene, remove the fragment from the Addgene database.
+// Cannot do the same if there's a large fragment in the remote but not local db
+//
 // proper-izing fragment matches means removing those that are completely
 // self-contained in other fragments: the larger of the available fragments
 // will be the better one, since it covers a greater region and will almost

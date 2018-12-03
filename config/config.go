@@ -45,7 +45,7 @@ type PCRConfig struct {
 
 // SynthCost is meta about the cost of synthesizing DNA up to a certain
 // size. Can be fixed (ie everything beneath that limit is the same amount)
-// or not-fixed (pay by the bp)
+// or not (pay by the bp)
 type SynthCost struct {
 	// whether it's a fixed or variable cost
 	Fixed bool `mapstructure:"fixed"`
@@ -54,7 +54,7 @@ type SynthCost struct {
 	Dollars float32 `mapstructure:"dollars"`
 }
 
-// SynthesisConfig is for settings involving synthesis
+// SynthesisConfig is for synthesis settings
 type SynthesisConfig struct {
 	// the cost per bp of synthesized DNA (as a step function)
 	Cost map[int]SynthCost `mapstructure:"cost"`
@@ -73,8 +73,11 @@ type Config struct {
 	// path to the root of the repo (hackish)
 	Root string
 
-	// path to the fragment DB
-	DB string
+	// paths to the fragment DBs
+	DBs string
+
+	// whether the user wants to use Addgene as a fragment source
+	AddGene bool
 
 	// Fragment level settings
 	Fragments FragmentConfig
@@ -99,7 +102,7 @@ type Config struct {
 // TODO: check for and error out on nonsense config values
 // TODO: add back the config file path setting
 func New() Config {
-	// check if the singleton has been defined, return as is if it has
+	// check if the singleton has been defined, return as is if so
 	if singleton.filled {
 		return singleton
 	}
@@ -114,9 +117,14 @@ func New() Config {
 		log.Fatalf("Failed to read in config file: %v", err)
 	}
 
-	// move into the new Config struct
+	// move into the singleton Config struct
 	if err := viper.Unmarshal(&singleton); err != nil {
 		log.Fatalf("Failed to decode settings file %s: %v", viper.ConfigFileUsed(), err)
+	}
+
+	// add local Addgene database to the list of fragment dbs
+	if singleton.AddGene {
+		singleton.DBs += "," + path.Join(singleton.Root, "assets", "addgene", "db", "addgene")
 	}
 
 	// add on a blast dir path for storing BLAST io files
