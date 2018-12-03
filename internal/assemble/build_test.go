@@ -15,8 +15,8 @@ func Test_build(t *testing.T) {
 
 	// ignore cost for now
 	conf.PCR.BPCost = 0
-	conf.Synthesis.Cost = map[float32]config.SynthCost{
-		100000.0: {
+	conf.Synthesis.Cost = map[int]config.SynthCost{
+		100000: {
 			Fixed:   true,
 			Dollars: float32(0),
 		},

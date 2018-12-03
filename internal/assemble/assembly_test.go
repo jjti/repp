@@ -31,8 +31,8 @@ var (
 func Test_assembly_add(t *testing.T) {
 	conf.Fragments.MaxCount = 5
 	conf.Synthesis.MaxLength = 100
-	conf.Synthesis.Cost = map[float32]config.SynthCost{
-		100000.0: {
+	conf.Synthesis.Cost = map[int]config.SynthCost{
+		100000: {
 			Fixed:   true,
 			Dollars: float32(0),
 		},

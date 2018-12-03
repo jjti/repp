@@ -15,7 +15,7 @@ func TestFilter(t *testing.T) {
 		defrag.Match{
 			Entry: "m1",
 			Start: 15,
-			End:   9,
+			End:   19,
 		},
 		// should be removed because it fits within m3
 		defrag.Match{
@@ -37,11 +37,11 @@ func TestFilter(t *testing.T) {
 		},
 	}
 
-	newMatches := filter(matches)
+	newMatches := filter(matches, 3) // keep all fragments larger than 3bp (all of them)
 
 	// make sure they're gone
 	if len(newMatches) != 3 {
-		t.Errorf("%d matches found on test fragment, 3 expected: %v", len(newMatches), newMatches)
+		t.Errorf("%d filtered matches found on test fragment, 3 expected: %v", len(newMatches), newMatches)
 	}
 
 	// make sure m2 has been removed

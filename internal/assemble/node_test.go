@@ -143,8 +143,8 @@ func Test_node_synthDist(t *testing.T) {
 func Test_node_costTo(t *testing.T) {
 	conf.Fragments.MinHomology = 20
 	conf.PCR.BPCost = 0.03
-	conf.Synthesis.Cost = map[float32]config.SynthCost{
-		100000.0: {
+	conf.Synthesis.Cost = map[int]config.SynthCost{
+		100000: {
 			Fixed:   false,
 			Dollars: 0.05,
 		},

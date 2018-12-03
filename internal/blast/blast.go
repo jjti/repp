@@ -47,16 +47,17 @@ type blastExec struct {
 // matches for those that are long enough
 //
 // Accepts a fragment to blast against
-func BLAST(f *defrag.Fragment, blastDir string) (matches []defrag.Match, err error) {
+func BLAST(f *defrag.Fragment, blastDB, blastDir string) (matches []defrag.Match, err error) {
 	b := &blastExec{
 		f:   f,
+		db:  blastDB,
 		in:  path.Join(blastDir, f.ID+".input.fa"),
 		out: path.Join(blastDir, f.ID+".output"),
 	}
 
 	// make sure the addgene db is there
-	if _, err := os.Stat(conf.DB); os.IsNotExist(err) {
-		return nil, fmt.Errorf("failed to find an Addgene database at %s", conf.DB)
+	if _, err := os.Stat(blastDB); os.IsNotExist(err) {
+		return nil, fmt.Errorf("failed to find an Addgene database at %s", blastDB)
 	}
 
 	// make sure the blast executable is there
@@ -81,7 +82,7 @@ func BLAST(f *defrag.Fragment, blastDir string) (matches []defrag.Match, err err
 	}
 
 	// keep only "proper" arcs (non-self-contained)
-	matches = filter(matches)
+	matches = filter(matches, conf.PCR.MinLength)
 	if len(matches) < 1 {
 		return nil, fmt.Errorf("did not find any matches for %s", b.f.ID)
 	}
@@ -110,13 +111,11 @@ func (b *blastExec) run() error {
 	blastCmd := exec.Command(
 		blast,
 		"-task", "blastn",
-		"-db", conf.DB,
+		"-db", b.db,
 		"-query", b.in,
 		"-out", b.out,
 		"-outfmt", "7 sseqid qstart qend sstart send sseq mismatch",
-		"-ungapped",
 		"-perc_identity", "100",
-		"-max_target_seqs", "100000",
 		"-num_threads", strconv.Itoa(threads),
 	)
 
@@ -155,6 +154,7 @@ func (b *blastExec) runAgainst() error {
 func (b *blastExec) parse() (matches []defrag.Match, err error) {
 	// read in the results
 	file, err := ioutil.ReadFile(b.out)
+	fmt.Println(b.out)
 	if err != nil {
 		return
 	}
@@ -177,12 +177,14 @@ func (b *blastExec) parse() (matches []defrag.Match, err error) {
 		// the full id of the entry in the db
 		id := strings.Replace(cols[0], ">", "", -1)
 
+		fmt.Println(id)
+
 		start, _ := strconv.Atoi(cols[1])
 		end, _ := strconv.Atoi(cols[2])
 		seq := cols[5]
 		mismatch, _ := strconv.Atoi(cols[6])
 
-		// direction not guarenteed
+		// direction not gaurenteed
 		if start > end {
 			start, end = end, start
 		}

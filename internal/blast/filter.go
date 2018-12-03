@@ -15,15 +15,14 @@ import (
 //
 // Circular-arc graph: https://en.wikipedia.org/wiki/Circular-arc_graph
 //
-// also remove small fragments here, that are too small to be useful during
-// assembly
-func filter(matches []defrag.Match) (properized []defrag.Match) {
+// also remove small fragments here, that are too small to be useful during assembly
+func filter(matches []defrag.Match, minSize int) (properized []defrag.Match) {
 	properized = []defrag.Match{}
 
 	// remove fragments that are shorter the minimum cut off size
 	var largeEnough []defrag.Match
 	for _, m := range matches {
-		if m.Length() > conf.PCR.MinLength {
+		if m.Length() > minSize {
 			largeEnough = append(largeEnough, m)
 		}
 	}
