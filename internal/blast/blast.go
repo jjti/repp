@@ -12,16 +12,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/jjtimmons/defrag/config"
 	"github.com/jjtimmons/defrag/internal/defrag"
-)
-
-var (
-	// config object
-	conf = config.New()
-
-	// path to the blast executable
-	blast = path.Join(conf.Root, "vendor", "ncbi-blast-2.7.1+", "bin", "blastn")
 )
 
 // blastExec is a small utility function for executing BLAST
@@ -41,29 +32,28 @@ type blastExec struct {
 
 	// optional path to a FASTA file with a subject FASTA sequence
 	subject string
+
+	// path to the blastn executable
+	blastn string
 }
 
 // BLAST the passed Fragment against a set from the command line and create
 // matches for those that are long enough
 //
 // Accepts a fragment to BLAST against
-func BLAST(f *defrag.Fragment, dbs []string, dir string, minLength int) (matches []defrag.Match, err error) {
+func BLAST(f *defrag.Fragment, blastn string, dbs []string, dir string, minLength int) (matches []defrag.Match, err error) {
 	for _, db := range dbs {
 		b := &blastExec{
-			f:   f,
-			db:  db,
-			in:  path.Join(dir, f.ID+".input.fa"),
-			out: path.Join(dir, f.ID+".output"),
+			f:      f,
+			db:     db,
+			in:     path.Join(dir, f.ID+".input.fa"),
+			out:    path.Join(dir, f.ID+".output"),
+			blastn: blastn,
 		}
 
 		// make sure the db exists
 		if _, err := os.Stat(db); os.IsNotExist(err) {
 			return nil, fmt.Errorf("failed to find an Addgene database at %s", db)
-		}
-
-		// make sure the blast executable exists
-		if _, err := os.Stat(blast); os.IsNotExist(err) {
-			return nil, fmt.Errorf("failed to find a BLAST executable at %s", blast)
 		}
 
 		// create the input file
@@ -114,7 +104,7 @@ func (b *blastExec) run() error {
 	// create the blast command
 	// https://www.ncbi.nlm.nih.gov/books/NBK279682/
 	blastCmd := exec.Command(
-		blast,
+		b.blastn,
 		"-task", "blastn",
 		"-db", b.db,
 		"-query", b.in,
@@ -138,7 +128,7 @@ func (b *blastExec) runAgainst() error {
 	// create the blast command
 	// https://www.ncbi.nlm.nih.gov/books/NBK279682/
 	blastCmd := exec.Command(
-		blast,
+		b.blastn,
 		"-task", "blastn",
 		"-query", b.in,
 		"-subject", b.subject,
@@ -206,13 +196,4 @@ func (b *blastExec) parse() (matches []defrag.Match, err error) {
 		})
 	}
 	return ms, nil
-}
-
-// init ensures there's a blast subdirectory in the binary's execution enviornment
-// for the results this is about to create
-func init() {
-	err := os.MkdirAll(conf.BlastDir, os.ModePerm)
-	if err != nil {
-		log.Fatalf("Failed to create a BLAST dir: %v", err)
-	}
 }

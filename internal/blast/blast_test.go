@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/jjtimmons/defrag/config"
 	"github.com/jjtimmons/defrag/internal/defrag"
 )
 
@@ -13,9 +14,10 @@ import (
 // in this test fragment's sequence came from (pieces from the 5 fragments)
 // that make up the mock BLAST db
 func Test_BLAST(t *testing.T) {
+	vendorConfig := config.New().Vendors()
+
 	// make path to test db
-	testDB, _ := filepath.Abs(path.Join(conf.Root, "test", "blast", "db"))
-	blastDir, _ := filepath.Abs(path.Join("..", "..", "bin", "blast"))
+	testDB, _ := filepath.Abs(path.Join("..", "..", "test", "blast", "db"))
 
 	// create mock test fragment
 	f := defrag.Fragment{
@@ -24,7 +26,7 @@ func Test_BLAST(t *testing.T) {
 	}
 
 	// run blast
-	matches, err := BLAST(&f, []string{testDB}, blastDir, 10) // any match over 10 bp
+	matches, err := BLAST(&f, vendorConfig.Blastn, []string{testDB}, vendorConfig.Blastdir, 10) // any match over 10 bp
 
 	// check if it fails
 	if err != nil {

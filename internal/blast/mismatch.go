@@ -36,15 +36,16 @@ func isMismatch(match defrag.Match) bool {
 //
 // The parent sequence is passed as the entry id as it exists in the blast db
 // db is passed as the path to the db we're blasting against
-func Mismatch(primer, parent, db, blastDir string) (mismatch bool, match defrag.Match, err error) {
-	// path to the blastdbcmd binary
-	blastcmd, _ := filepath.Abs(path.Join(conf.Root, "vendor", "ncbi-blast-2.7.1+", "bin", "blastdbcmd"))
+func Mismatch(primer, parent, makeblastdb, db, blastDir string) (mismatch bool, match defrag.Match, err error) {
 	// path to the entry batch file to hold the parent entry accession
 	entry, _ := filepath.Abs(path.Join(blastDir, parent+".entry"))
+
 	// path to the output sequence file  from querying the parent's sequence from the BLAST db
 	parentPath, _ := filepath.Abs(path.Join(blastDir, parent+".out"))
+
 	// path the query sequence input file
 	in, _ := filepath.Abs(path.Join(blastDir, parent+".primer.query"))
+
 	// path to the blastOutput file
 	out, _ := filepath.Abs(path.Join(blastDir, parent+".blast"))
 
@@ -57,8 +58,9 @@ func Mismatch(primer, parent, db, blastDir string) (mismatch bool, match defrag.
 	}
 
 	// make a blastdbcmd command (for querying a DB, very different from blastn)
+	fmt.Println(makeblastdb)
 	queryCmd := exec.Command(
-		blastcmd,
+		makeblastdb,
 		"-db", db,
 		"-dbtype", "nucl",
 		"-entry_batch", entry,

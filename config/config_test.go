@@ -30,7 +30,6 @@ func TestNew(t *testing.T) {
 
 func TestConfig_SynthCost(t *testing.T) {
 	type fields struct {
-		Root      string
 		DBs       string
 		Fragments FragmentConfig
 		PCR       PCRConfig
@@ -42,7 +41,6 @@ func TestConfig_SynthCost(t *testing.T) {
 	}
 
 	configFields := fields{
-		Root:      "",
 		DBs:       "",
 		Fragments: FragmentConfig{},
 		PCR:       PCRConfig{},
@@ -101,7 +99,6 @@ func TestConfig_SynthCost(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := Config{
-				Root:      tt.fields.Root,
 				DBs:       tt.fields.DBs,
 				Fragments: tt.fields.Fragments,
 				PCR:       tt.fields.PCR,
