@@ -26,7 +26,7 @@ func Test_BLAST(t *testing.T) {
 	}
 
 	// run blast
-	matches, err := BLAST(&f, blastDir)
+	matches, err := BLAST(&f, testDB, blastDir)
 
 	// check if it fails
 	if err != nil {

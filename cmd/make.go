@@ -4,6 +4,7 @@ import (
 	"log"
 	"path/filepath"
 
+	"github.com/jjtimmons/defrag/config"
 	"github.com/jjtimmons/defrag/internal/assemble"
 	"github.com/jjtimmons/defrag/internal/blast"
 	"github.com/jjtimmons/defrag/internal/io"
@@ -56,6 +57,8 @@ func init() {
 // 	5. no off-target binding sites in the parent vectors
 //	6. low primer3 penalty scores
 func makeExec(cmd *cobra.Command, args []string) {
+	conf := config.New()
+
 	target, err := cmd.PersistentFlags().GetString("target")
 	if err != nil {
 		log.Fatalf("Cannot get target from arguments: %v", err)
@@ -89,7 +92,7 @@ func makeExec(cmd *cobra.Command, args []string) {
 	targetFrag := fragments[0]
 
 	// get all the matches against the fragment
-	matches, err := blast.BLAST(&targetFrag)
+	matches, err := blast.BLAST(&targetFrag, conf.DB, conf.BlastDir)
 	if err != nil {
 		log.Fatalf("Failed to blast %s against the BLAST DB: %v", targetFrag.ID, err)
 	}
