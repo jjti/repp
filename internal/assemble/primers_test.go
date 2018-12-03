@@ -12,7 +12,7 @@ func Test_primers(t *testing.T) {
 
 	conf.Fragments.MinHomology = 20
 	conf.PCR.P3MaxPenalty = 50.0
-	conf.DB = db
+	conf.DBs = db
 
 	type args struct {
 		last node

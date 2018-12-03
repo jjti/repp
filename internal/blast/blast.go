@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -46,47 +47,74 @@ type blastExec struct {
 // BLAST the passed Fragment against a set from the command line and create
 // matches for those that are long enough
 //
-// Accepts a fragment to blast against
-func BLAST(f *defrag.Fragment, blastDB, blastDir string) (matches []defrag.Match, err error) {
-	b := &blastExec{
-		f:   f,
-		db:  blastDB,
-		in:  path.Join(blastDir, f.ID+".input.fa"),
-		out: path.Join(blastDir, f.ID+".output"),
-	}
-
-	// make sure the addgene db is there
-	if _, err := os.Stat(blastDB); os.IsNotExist(err) {
-		return nil, fmt.Errorf("failed to find an Addgene database at %s", blastDB)
-	}
-
-	// make sure the blast executable is there
-	if _, err := os.Stat(blast); os.IsNotExist(err) {
-		return nil, fmt.Errorf("failed to find a BLAST executable at %s", blast)
-	}
-
-	// create the input file
-	if err := b.create(); err != nil {
-		return nil, fmt.Errorf("failed at creating BLAST input file at %s: %v", b.in, err)
-	}
-
-	// execute BLAST on it
-	if err := b.run(); err != nil {
-		return nil, fmt.Errorf("failed at executing BLAST: %v", err)
-	}
-
-	// parse the BLAST output file to Matches for the Fragment
-	matches, err = b.parse()
+// Accepts a fragment to BLAST against
+func BLAST(f *defrag.Fragment, dbs, dir string, minLength int) (matches []defrag.Match, err error) {
+	parsedDBs, err := parseDBs(dbs)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse BLAST output: %v", err)
+		return
+	}
+
+	for _, db := range parsedDBs {
+		b := &blastExec{
+			f:   f,
+			db:  db,
+			in:  path.Join(dir, f.ID+".input.fa"),
+			out: path.Join(dir, f.ID+".output"),
+		}
+
+		// make sure the db exists
+		if _, err := os.Stat(db); os.IsNotExist(err) {
+			return nil, fmt.Errorf("failed to find an Addgene database at %s", db)
+		}
+
+		// make sure the blast executable exists
+		if _, err := os.Stat(blast); os.IsNotExist(err) {
+			return nil, fmt.Errorf("failed to find a BLAST executable at %s", blast)
+		}
+
+		// create the input file
+		if err := b.create(); err != nil {
+			return nil, fmt.Errorf("failed at creating BLAST input file at %s: %v", b.in, err)
+		}
+
+		// execute BLAST
+		if err := b.run(); err != nil {
+			return nil, fmt.Errorf("failed at executing BLAST: %v", err)
+		}
+
+		// parse the output file to Matches against the Fragment
+		dbMatches, err := b.parse()
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse BLAST output: %v", err)
+		}
+
+		// add these matches against the growing list of matches
+		matches = append(matches, dbMatches...)
 	}
 
 	// keep only "proper" arcs (non-self-contained)
-	matches = filter(matches, conf.PCR.MinLength)
+	matches = filter(matches, minLength)
 	if len(matches) < 1 {
-		return nil, fmt.Errorf("did not find any matches for %s", b.f.ID)
+		return nil, fmt.Errorf("did not find any matches for %s", f.ID)
 	}
 	return matches, err
+}
+
+// parseDBs turns a single string of comma separated BLAST dbs into a
+// slice of absolute paths to the BLAST dbs on the local fs
+func parseDBs(dbList string) (paths []string, err error) {
+	noSpaceDBs := strings.Replace(dbList, " ", "", -1)
+	for _, db := range strings.Split(noSpaceDBs, ",") {
+		absPath, err := filepath.Abs(db)
+
+		if err != nil {
+			return nil, fmt.Errorf("failed to create absolute path: %v", err)
+		}
+
+		paths = append(paths, absPath)
+	}
+
+	return
 }
 
 // input creates an input file for BLAST
@@ -95,7 +123,7 @@ func (b *blastExec) create() error {
 	// create the query sequence file.
 	// add the sequence to itself because it's circular
 	// and we want to find matches across the zero-index.
-	file := fmt.Sprintf(">%s\n%s%s\n", b.f.ID, b.f.Seq, b.f.Seq)
+	file := fmt.Sprintf(">%s\n%s\n", b.f.ID, b.f.Seq+b.f.Seq)
 	return ioutil.WriteFile(b.in, []byte(file), 0666)
 }
 
@@ -154,7 +182,6 @@ func (b *blastExec) runAgainst() error {
 func (b *blastExec) parse() (matches []defrag.Match, err error) {
 	// read in the results
 	file, err := ioutil.ReadFile(b.out)
-	fmt.Println(b.out)
 	if err != nil {
 		return
 	}
@@ -177,14 +204,13 @@ func (b *blastExec) parse() (matches []defrag.Match, err error) {
 		// the full id of the entry in the db
 		id := strings.Replace(cols[0], ">", "", -1)
 
-		fmt.Println(id)
-
 		start, _ := strconv.Atoi(cols[1])
 		end, _ := strconv.Atoi(cols[2])
 		seq := cols[5]
 		mismatch, _ := strconv.Atoi(cols[6])
 
 		// direction not gaurenteed
+		// TODO: how is guarentee spelled?...
 		if start > end {
 			start, end = end, start
 		}

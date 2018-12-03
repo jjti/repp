@@ -39,8 +39,9 @@ func init() {
 
 	// Flags for specifying the paths to the input file, input fragment files, and output file
 	makeCmd.PersistentFlags().StringP("target", "t", "", "Input file name of target vector sequence <FASTA>")
-	makeCmd.PersistentFlags().StringP("db", "d", "", "Database of building fragments")
+	makeCmd.PersistentFlags().StringP("dbs", "d", "", "Comma separated list of building fragment databases (multi-fasta)")
 	makeCmd.PersistentFlags().StringP("out", "o", "", "Output file name")
+	makeCmd.PersistentFlags().BoolP("addgene", "a", false, "Use the Addgene repository as a source of building fragments")
 
 	// db path is needed globally
 	viper.BindPFlag("db", makeCmd.PersistentFlags().Lookup("db"))
@@ -92,7 +93,7 @@ func makeExec(cmd *cobra.Command, args []string) {
 	targetFrag := fragments[0]
 
 	// get all the matches against the fragment
-	matches, err := blast.BLAST(&targetFrag, conf.DB, conf.BlastDir)
+	matches, err := blast.BLAST(&targetFrag, conf.DB, conf.BlastDir, conf.PCR.MinLength)
 	if err != nil {
 		log.Fatalf("Failed to blast %s against the BLAST DB: %v", targetFrag.ID, err)
 	}

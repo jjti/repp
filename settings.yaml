@@ -12,7 +12,7 @@ pcr:
   bp-cost: 0.09
 
   # Minimum length of a PCR fragment
-  min-length: 200
+  min-length: 120
 
   ###
   # PCR Complexities
