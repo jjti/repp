@@ -8,6 +8,7 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
+	"sort"
 
 	"github.com/spf13/viper"
 )
@@ -15,6 +16,10 @@ import (
 var (
 	// logged holds whether we've already logged the settings file being used
 	logged = false
+
+	// singleton is a single settings object
+	// used so we only read/unmartial the settings file once
+	singleton Config
 )
 
 // FragmentConfig settings about fragments
@@ -52,7 +57,7 @@ type SynthCost struct {
 // SynthesisConfig is for settings involving synthesis
 type SynthesisConfig struct {
 	// the cost per bp of synthesized DNA (as a step function)
-	Cost map[float32]SynthCost `mapstructure:"cost"`
+	Cost map[int]SynthCost `mapstructure:"cost"`
 
 	// maximum length of a synthesized piece of DNA
 	MaxLength int `mapstructure:"max-length"`
@@ -75,6 +80,9 @@ type Config struct {
 	PCR PCRConfig
 	// Synthesis settings
 	Synthesis SynthesisConfig
+
+	// filled is a flag to mark whether it's actually been made yet
+	filled bool
 }
 
 // New returns a new Config struct populated by settings from
@@ -83,7 +91,12 @@ type Config struct {
 //
 // TODO: check for and error out on nonsense config values
 // TODO: add back the config file path setting
-func New() (c Config) {
+func New() Config {
+	// check if the singleton has been defined, return as is if it has
+	if singleton.filled {
+		return singleton
+	}
+
 	// read in intialization files
 	if err := viper.ReadInConfig(); err == nil {
 		if !logged {
@@ -95,11 +108,12 @@ func New() (c Config) {
 	}
 
 	// move into the new Config struct
-	if err := viper.Unmarshal(&c); err != nil {
+	if err := viper.Unmarshal(&singleton); err != nil {
 		log.Fatalf("Failed to decode settings file %s: %v", viper.ConfigFileUsed(), err)
 	}
 
-	return
+	singleton.filled = true
+	return singleton
 }
 
 // init and set viper's paths to the local config file
@@ -124,4 +138,35 @@ func init() {
 
 	viper.SetConfigName("settings") // no yaml needed, just a config file called settings
 	viper.AutomaticEnv()            // enviornment variables that match
+}
+
+// SynthCost returns the cost of synthesizing a stretch of DNA
+// of the length passed. It's a stand alone function because
+// it's highly dependent on the synth cost settings map
+//
+// find the smallest synth length greater than fragLength
+// Ex: a synthesis provider may say it's 32 cents up to 500bp and
+// 60 cents up to 2000bp. So, for a 750bp sequence, we want to use
+// the 2000bp price
+func (c Config) SynthCost(fragLength int) float32 {
+	costLengthKeys := []int{}
+	for key := range c.Synthesis.Cost {
+		costLengthKeys = append(costLengthKeys, key)
+	}
+	sort.Ints(costLengthKeys)
+
+	synthCostKey := 0
+	for _, costLength := range costLengthKeys {
+		if costLength > fragLength {
+			synthCostKey = costLength
+			break
+		}
+	}
+
+	// find whether this fragment has a fixed or variable cost
+	synthCost := c.Synthesis.Cost[synthCostKey]
+	if synthCost.Fixed {
+		return synthCost.Dollars
+	}
+	return float32(fragLength) * synthCost.Dollars
 }

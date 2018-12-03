@@ -1,8 +1,8 @@
 # defrag
 
-Declarative vector Engineering from FRAGments
+Declaratively Engineer vectors from FRAGments
 
-Finds pareto optimal solutions for vector construction using existing DNA fragments in local or remote repositories.
+Finds pareto optimal solutions for vector construction using existing DNA fragments in local and/or remote repositories.
 
 ## TODO
 
