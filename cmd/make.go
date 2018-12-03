@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"log"
+	"path"
 	"path/filepath"
 
 	"github.com/jjtimmons/defrag/config"
@@ -99,7 +100,8 @@ func makeExec(cmd *cobra.Command, args []string) {
 	}
 
 	// get all the matches against the fragment
-	matches, err := blast.BLAST(&targetFrag, dbPaths, conf.BlastDir, conf.PCR.MinLength)
+	blastn := path.Join(conf.Root, "vendor", "ncbi-blast-2.7.1+", "bin", "blastn")
+	matches, err := blast.BLAST(&targetFrag, blastn, dbPaths, conf.BlastDir, conf.PCR.MinLength)
 	if err != nil {
 		log.Fatalf("Failed to blast %s against the BLAST DB: %v", targetFrag.ID, err)
 	}

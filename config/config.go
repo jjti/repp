@@ -5,6 +5,7 @@ package config
 import (
 	"fmt"
 	"log"
+	"os"
 	"path"
 	"path/filepath"
 	"runtime"
@@ -17,6 +18,9 @@ import (
 var (
 	// logged holds whether we've already logged the settings file being used
 	logged = false
+
+	// root is the root directory of the app (set in init)
+	root = ""
 
 	// singleton is a single settings object
 	// used so we only read/unmartial the settings file once
@@ -67,13 +71,32 @@ type SynthesisConfig struct {
 	MinLength int `mapstructure:"min-length"`
 }
 
+// VendorConfig holds the paths to binaries needed for the library:
+// blastn, makeblastdb, and primer3_core
+type VendorConfig struct {
+	// blastn binary
+	Blastn string
+
+	// makeblastdb binary
+	Makeblastdb string
+
+	// blast io subdirectory
+	Blastdir string
+
+	// primer3_core binary
+	Primer3core string
+
+	// primer3 config folder, needed for thermodynamic calculations
+	Primer3config string
+
+	// primer3 io subdirectory
+	Primer3dir string
+}
+
 // Config is the root-level settings struct and is a mix
 // of settings available in settings.yaml and those
 // available from the command line
 type Config struct {
-	// path to the root of the repo (hackish)
-	Root string
-
 	// paths to the fragment DBs
 	DBs string
 
@@ -89,11 +112,27 @@ type Config struct {
 	// Synthesis settings
 	Synthesis SynthesisConfig
 
-	// Path to a dir for BLAST io files
-	BlastDir string
-
 	// filled is a flag to mark whether it's actually been made yet
 	filled bool
+}
+
+// init and set viper's paths to the local config file
+func init() {
+	_, filename, _, ok := runtime.Caller(0)
+	if !ok {
+		log.Panicln("No caller information")
+	}
+	root, _ = filepath.Abs(path.Join(path.Dir(filename), ".."))
+	fmt.Println(root)
+
+	if confFlag := viper.GetString("config"); confFlag != "" {
+		viper.AddConfigPath(confFlag) // settings are in root of repo
+	} else {
+		viper.AddConfigPath(root) // settings are in root of repo
+	}
+
+	viper.SetConfigName("settings") // no yaml needed, just a config file called settings
+	viper.AutomaticEnv()            // enviornment variables that match
 }
 
 // New returns a new Config struct populated by settings from
@@ -123,34 +162,9 @@ func New() Config {
 		log.Fatalf("Failed to decode settings file %s: %v", viper.ConfigFileUsed(), err)
 	}
 
-	// add on a blast dir path for storing BLAST io files
-	singleton.BlastDir = filepath.Join(singleton.Root, "bin", "blast")
-
 	// marked as filled to avoid repeating
 	singleton.filled = true
 	return singleton
-}
-
-// init and set viper's paths to the local config file
-func init() {
-	// path to the root of the app
-	_, filename, _, ok := runtime.Caller(0)
-	if !ok {
-		log.Panicln("No caller information")
-	}
-	root, _ := filepath.Abs(path.Join(path.Dir(filename), ".."))
-	viper.SetDefault("Root", root)
-
-	// addgene's database
-
-	if confFlag := viper.GetString("config"); confFlag != "" {
-		viper.AddConfigPath(confFlag) // settings are in root of repo
-	} else {
-		viper.AddConfigPath(root) // settings are in root of repo
-	}
-
-	viper.SetConfigName("settings") // no yaml needed, just a config file called settings
-	viper.AutomaticEnv()            // enviornment variables that match
 }
 
 // SynthCost returns the cost of synthesizing a stretch of DNA
@@ -187,10 +201,54 @@ func (c Config) SynthCost(fragLength int) float32 {
 // DBList returns a list of absolute paths to BLAST databases used during a given run
 func (c Config) DBList() (paths []string, err error) {
 	if c.AddGene {
-		addgenePath := path.Join(c.Root, "assets", "addgene", "db", "addgene")
+		addgenePath := path.Join(root, "assets", "addgene", "db", "addgene")
 		return parseDBs(c.DBs + "," + addgenePath)
 	}
 	return parseDBs(c.DBs)
+}
+
+// Vendors returns a new config for paths to library dependencies. It also creates
+// subdirectories for primer3 and blast to store their input+output files in
+// (mostly for debugging)
+func (c Config) Vendors() VendorConfig {
+	blastn := filepath.Join(root, "vendor", "ncbi-blast-2.7.1+", "bin", "blastn")
+	if _, err := os.Stat(blastn); os.IsNotExist(err) {
+		log.Fatalf("failed to find a BLAST executable at %s", blastn)
+	}
+
+	blastdir := filepath.Join(root, "bin", "blast")
+	if err := os.MkdirAll(blastdir, os.ModePerm); err != nil {
+		log.Fatalf("Failed to create a BLAST dir: %v", err)
+	}
+
+	makeblastdb := filepath.Join(root, "vendor", "ncbi-blast-2.7.1+", "bin", "blastdbcmd")
+	if _, err := os.Stat(makeblastdb); err != nil {
+		log.Fatalf("Failed to locate makeblastdb executable: %v", err)
+	}
+
+	p3core := filepath.Join(root, "vendor", "primer3-2.4.0", "src", "primer3_core")
+	if _, err := os.Stat(p3core); err != nil {
+		log.Fatalf("Failed to locate primer3 executable: %v", err)
+	}
+
+	p3conf := filepath.Join(root, "vendor", "primer3-2.4.0", "src", "primer3_config") + string(filepath.Separator)
+	if _, err := os.Stat(p3conf); err != nil {
+		log.Fatalf("Failed to locate primer3 config folder: %v", err)
+	}
+
+	p3dir := filepath.Join(root, "bin", "primer3")
+	if err := os.MkdirAll(p3dir, os.ModePerm); err != nil {
+		log.Fatalf("Failed to create a primer3 outut dir: %v", err)
+	}
+
+	return VendorConfig{
+		Blastn:        blastn,
+		Blastdir:      blastdir,
+		Makeblastdb:   makeblastdb,
+		Primer3core:   p3core,
+		Primer3config: p3conf,
+		Primer3dir:    p3dir,
+	}
 }
 
 // parseDBs turns a single string of comma separated BLAST dbs into a

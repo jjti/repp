@@ -274,7 +274,7 @@ func Test_assembly_len(t *testing.T) {
 
 func Test_assembly_fill(t *testing.T) {
 	conf.Fragments.MinHomology = 5
-	conf.DBs = path.Join(conf.Root, "test", "blast", "db")
+	conf.DBs = path.Join("..", "..", "test", "blast", "db")
 	conf.Synthesis.MaxLength = 1000
 
 	// All of these ids correspond to entires in the test BLAST db

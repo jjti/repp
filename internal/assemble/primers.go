@@ -3,11 +3,8 @@ package assemble
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
-	"os"
 	"os/exec"
 	"path"
-	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -47,35 +44,18 @@ type p3Exec struct {
 
 // newP3Exec creates a p3Exec from a fragment
 func newP3Exec(last, this, next node, target string) p3Exec {
-	p3Path := filepath.Join(conf.Root, "vendor", "primer3-2.4.0", "src", "primer3_core")
-	p3Conf := filepath.Join(conf.Root, "vendor", "primer3-2.4.0", "src", "primer3_config") + "/"
-	p3Dir := filepath.Join(conf.Root, "bin", "primer3")
-
-	_, err := os.Stat(p3Path)
-	if err != nil {
-		log.Fatalf("Failed to locate primer3 executable: %v", err)
-	}
-
-	_, err = os.Stat(p3Conf)
-	if err != nil {
-		log.Fatalf("Failed to locate primer3 config folder: %v", err)
-	}
-
-	err = os.MkdirAll(p3Dir, os.ModePerm)
-	if err != nil {
-		log.Fatalf("Failed to create a primer3 outut dir: %v", err)
-	}
+	vendorConf := conf.Vendors()
 
 	return p3Exec{
 		n:      &this,
 		last:   last,
 		next:   next,
 		target: strings.ToUpper(target),
-		in:     path.Join(p3Dir, this.id+".in"),
-		out:    path.Join(p3Dir, this.id+".out"),
-		p3Path: p3Path,
-		p3Conf: p3Conf,
-		p3Dir:  p3Dir,
+		in:     path.Join(vendorConf.Primer3dir, this.id+".in"),
+		out:    path.Join(vendorConf.Primer3dir, this.id+".out"),
+		p3Path: vendorConf.Primer3core,
+		p3Conf: vendorConf.Primer3config,
+		p3Dir:  vendorConf.Primer3dir,
 	}
 }
 
@@ -84,6 +64,7 @@ func newP3Exec(last, this, next node, target string) p3Exec {
 //	2. the primers have off-targets in their parent source
 func primers(last, this, next node, vec string) (primers []defrag.Primer, err error) {
 	exec := newP3Exec(last, this, next, vec)
+	vendorConfig := conf.Vendors()
 
 	// make input file, figure out how to create primers that share homology
 	// with neighboring nodes
@@ -113,7 +94,7 @@ func primers(last, this, next node, vec string) (primers []defrag.Primer, err er
 	// 2. check for whether either of the primers have an off-target/mismatch
 	for _, primer := range primers {
 		// the node's id is the same as the entry ID in the database
-		mismatchExists, mismatch, err := blast.Mismatch(primer.Seq, this.id, conf.DBs, conf.BlastDir)
+		mismatchExists, mismatch, err := blast.Mismatch(primer.Seq, this.id, vendorConfig.Makeblastdb, conf.DBs, vendorConfig.Blastn)
 
 		if err != nil {
 			return nil, err
