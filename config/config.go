@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"sort"
+	"strings"
 
 	"github.com/spf13/viper"
 )
@@ -122,11 +123,6 @@ func New() Config {
 		log.Fatalf("Failed to decode settings file %s: %v", viper.ConfigFileUsed(), err)
 	}
 
-	// add local Addgene database to the list of fragment dbs
-	if singleton.AddGene {
-		singleton.DBs += "," + path.Join(singleton.Root, "assets", "addgene", "db", "addgene")
-	}
-
 	// add on a blast dir path for storing BLAST io files
 	singleton.BlastDir = filepath.Join(singleton.Root, "bin", "blast")
 
@@ -146,8 +142,6 @@ func init() {
 	viper.SetDefault("Root", root)
 
 	// addgene's database
-	addgeneDB := path.Join(root, "assets", "addgene", "db", "addgene")
-	viper.SetDefault("DB", addgeneDB)
 
 	if confFlag := viper.GetString("config"); confFlag != "" {
 		viper.AddConfigPath(confFlag) // settings are in root of repo
@@ -188,4 +182,30 @@ func (c Config) SynthCost(fragLength int) float32 {
 		return synthCost.Dollars
 	}
 	return float32(fragLength) * synthCost.Dollars
+}
+
+// DBList returns a list of absolute paths to BLAST databases used during a given run
+func (c Config) DBList() (paths []string, err error) {
+	if c.AddGene {
+		addgenePath := path.Join(c.Root, "assets", "addgene", "db", "addgene")
+		return parseDBs(c.DBs + "," + addgenePath)
+	}
+	return parseDBs(c.DBs)
+}
+
+// parseDBs turns a single string of comma separated BLAST dbs into a
+// slice of absolute paths to the BLAST dbs on the local fs
+func parseDBs(dbList string) (paths []string, err error) {
+	noSpaceDBs := strings.Replace(dbList, " ", "", -1)
+	for _, db := range strings.Split(noSpaceDBs, ",") {
+		absPath, err := filepath.Abs(db)
+
+		if err != nil {
+			return nil, fmt.Errorf("failed to create absolute path: %v", err)
+		}
+
+		paths = append(paths, absPath)
+	}
+
+	return
 }

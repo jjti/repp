@@ -10,11 +10,11 @@ import (
 
 func Test_makeExec(t *testing.T) {
 	target, _ := filepath.Abs(path.Join("..", "test", "target.fa"))
-	// db, _ := filepath.Abs(path.Join("..", "assets", "addgene", "db", "addgene"))
+	db, _ := filepath.Abs(path.Join("..", "test", "mockDB", "mockDB"))
 	output, _ := filepath.Abs(path.Join("..", "bin", "test.output.json"))
 
 	makeCmd.PersistentFlags().Set("target", target)
-	// makeCmd.PersistentFlags().Set("dbs", db) // ignoring, just using Addgene for this
+	makeCmd.PersistentFlags().Set("dbs", db)
 	makeCmd.PersistentFlags().Set("out", output)
 	makeCmd.PersistentFlags().Set("addgene", "true")
 

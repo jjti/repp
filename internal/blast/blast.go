@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -48,13 +47,8 @@ type blastExec struct {
 // matches for those that are long enough
 //
 // Accepts a fragment to BLAST against
-func BLAST(f *defrag.Fragment, dbs, dir string, minLength int) (matches []defrag.Match, err error) {
-	parsedDBs, err := parseDBs(dbs)
-	if err != nil {
-		return
-	}
-
-	for _, db := range parsedDBs {
+func BLAST(f *defrag.Fragment, dbs []string, dir string, minLength int) (matches []defrag.Match, err error) {
+	for _, db := range dbs {
 		b := &blastExec{
 			f:   f,
 			db:  db,
@@ -98,23 +92,6 @@ func BLAST(f *defrag.Fragment, dbs, dir string, minLength int) (matches []defrag
 		return nil, fmt.Errorf("did not find any matches for %s", f.ID)
 	}
 	return matches, err
-}
-
-// parseDBs turns a single string of comma separated BLAST dbs into a
-// slice of absolute paths to the BLAST dbs on the local fs
-func parseDBs(dbList string) (paths []string, err error) {
-	noSpaceDBs := strings.Replace(dbList, " ", "", -1)
-	for _, db := range strings.Split(noSpaceDBs, ",") {
-		absPath, err := filepath.Abs(db)
-
-		if err != nil {
-			return nil, fmt.Errorf("failed to create absolute path: %v", err)
-		}
-
-		paths = append(paths, absPath)
-	}
-
-	return
 }
 
 // input creates an input file for BLAST
