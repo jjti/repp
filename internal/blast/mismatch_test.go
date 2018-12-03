@@ -19,7 +19,7 @@ func Test_isMismatch(t *testing.T) {
 		want bool
 	}{
 		{
-			"catches a mismatching primer",
+			"find a mismatching primer",
 			args{
 				match: defrag.Match{
 					Seq:      "atgacgacgacgcggac",
@@ -50,6 +50,7 @@ func Test_isMismatch(t *testing.T) {
 
 func TestMismatch(t *testing.T) {
 	testDB, _ := filepath.Abs(path.Join("..", "..", "test", "blast", "db"))
+	blastDir, _ := filepath.Abs(path.Join("..", "..", "bin", "blast"))
 
 	type args struct {
 		primer string
@@ -93,7 +94,7 @@ func TestMismatch(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotMismatch, gotMatch, err := Mismatch(tt.args.primer, tt.args.parent, testDB)
+			gotMismatch, gotMatch, err := Mismatch(tt.args.primer, tt.args.parent, testDB, blastDir)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Mismatch() error = %v, wantErr %v", err, tt.wantErr)
 				return

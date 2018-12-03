@@ -1,6 +1,7 @@
 package blast
 
 import (
+	"fmt"
 	"path"
 	"path/filepath"
 	"testing"
@@ -16,6 +17,7 @@ func Test_BLAST(t *testing.T) {
 	// make path to test db
 	testDB, _ := filepath.Abs(path.Join(conf.Root, "test", "blast", "db"))
 	conf.DB = testDB
+	blastDir, _ := filepath.Abs(path.Join("..", "..", "bin", "blast"))
 
 	// create mock test fragment
 	f := defrag.Fragment{
@@ -24,7 +26,7 @@ func Test_BLAST(t *testing.T) {
 	}
 
 	// run blast
-	matches, err := BLAST(&f)
+	matches, err := BLAST(&f, blastDir)
 
 	// check if it fails
 	if err != nil {
@@ -37,6 +39,8 @@ func Test_BLAST(t *testing.T) {
 		t.Error("failed to find any matches")
 		return
 	}
+
+	fmt.Printf("%+v", matches)
 
 	matchesContain := func(targ defrag.Match) {
 		for _, m := range matches {

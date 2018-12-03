@@ -72,14 +72,21 @@ type SynthesisConfig struct {
 type Config struct {
 	// path to the root of the repo (hackish)
 	Root string
+
 	// path to the fragment DB
 	DB string
+
 	// Fragment level settings
 	Fragments FragmentConfig
+
 	// PCR settings
 	PCR PCRConfig
+
 	// Synthesis settings
 	Synthesis SynthesisConfig
+
+	// Path to a dir for BLAST io files
+	BlastDir string
 
 	// filled is a flag to mark whether it's actually been made yet
 	filled bool
@@ -112,6 +119,10 @@ func New() Config {
 		log.Fatalf("Failed to decode settings file %s: %v", viper.ConfigFileUsed(), err)
 	}
 
+	// add on a blast dir path for storing BLAST io files
+	singleton.BlastDir = filepath.Join(singleton.Root, "bin", "blast")
+
+	// marked as filled to avoid repeating
 	singleton.filled = true
 	return singleton
 }

@@ -28,7 +28,7 @@ func isMismatch(match defrag.Match) bool {
 	tmNoMismatch := 81.5 + 0.41*gcPerc - 675/float32(len(primer))
 	tmWithMismatch := tmNoMismatch - float32(match.Mismatch)/primerL
 
-	return tmWithMismatch > 45 // TODO: move to settings
+	return tmWithMismatch > 40 // TODO: move to settings
 }
 
 // Mismatch finds mismatching sequences between the query sequence and
@@ -36,7 +36,7 @@ func isMismatch(match defrag.Match) bool {
 //
 // The parent sequence is passed as the entry id as it exists in the blast db
 // db is passed as the path to the db we're blasting against
-func Mismatch(primer, parent, db string) (mismatch bool, match defrag.Match, err error) {
+func Mismatch(primer, parent, db, blastDir string) (mismatch bool, match defrag.Match, err error) {
 	// path to the blastdbcmd binary
 	blastcmd, _ := filepath.Abs(path.Join(conf.Root, "vendor", "ncbi-blast-2.7.1+", "bin", "blastdbcmd"))
 	// path to the entry batch file to hold the parent entry accession
