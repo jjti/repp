@@ -1,4 +1,4 @@
-package blast
+package defrag
 
 import (
 	"path"
@@ -7,12 +7,11 @@ import (
 	"testing"
 
 	"github.com/jjtimmons/defrag/config"
-	"github.com/jjtimmons/defrag/internal/defrag"
 )
 
 func Test_isMismatch(t *testing.T) {
 	type args struct {
-		match defrag.Match
+		match Match
 	}
 	tests := []struct {
 		name string
@@ -22,7 +21,7 @@ func Test_isMismatch(t *testing.T) {
 		{
 			"find a mismatching primer",
 			args{
-				match: defrag.Match{
+				match: Match{
 					Seq:      "atgacgacgacgcggac",
 					Mismatch: 0,
 				},
@@ -32,7 +31,7 @@ func Test_isMismatch(t *testing.T) {
 		{
 			"no false positive mistmatch",
 			args{
-				match: defrag.Match{
+				match: Match{
 					Seq:      "atgacgacgacgac",
 					Mismatch: 0,
 				},
@@ -62,7 +61,7 @@ func TestMismatch(t *testing.T) {
 		name         string
 		args         args
 		wantMismatch bool
-		wantMatch    defrag.Match
+		wantMatch    Match
 		wantErr      bool
 	}{
 		{
@@ -72,7 +71,7 @@ func TestMismatch(t *testing.T) {
 				"gnl|addgene|113726(circular)",
 			},
 			false,
-			defrag.Match{},
+			Match{},
 			false,
 		},
 		// I intentionally added another off-target seq to 107006, AGTATAGTAGGTAGTCATTCTT
@@ -83,7 +82,7 @@ func TestMismatch(t *testing.T) {
 				"gnl|addgene|107006(circular)",
 			},
 			true,
-			defrag.Match{
+			Match{
 				Entry:    "addgene:107006(circular)",
 				Seq:      "AGTATAGTAGGTAGTCATTCTT",
 				Start:    0,

@@ -1,9 +1,7 @@
-package io
+package defrag
 
 import (
 	"testing"
-
-	"github.com/jjtimmons/defrag/internal/defrag"
 )
 
 func Test_solutionCost(t *testing.T) {
@@ -13,7 +11,7 @@ func Test_solutionCost(t *testing.T) {
 	}
 
 	type args struct {
-		frags         []defrag.Fragment
+		frags         []Fragment
 		primerBP      float32
 		synthCostFunc func(int) float32
 	}
@@ -25,15 +23,15 @@ func Test_solutionCost(t *testing.T) {
 		{
 			"pcr only",
 			args{
-				[]defrag.Fragment{
-					defrag.Fragment{
-						Type: defrag.PCR,
+				[]Fragment{
+					Fragment{
+						Type: PCR,
 						Seq:  "agtgcatgcatgcatgctagctagctagctagctacg",
-						Primers: []defrag.Primer{
-							defrag.Primer{
+						Primers: []Primer{
+							Primer{
 								Seq: "atgcatgctgac",
 							},
-							defrag.Primer{
+							Primer{
 								Seq: "gactgatcgatct",
 							},
 						},
@@ -47,9 +45,9 @@ func Test_solutionCost(t *testing.T) {
 		{
 			"synth only",
 			args{
-				[]defrag.Fragment{
-					defrag.Fragment{
-						Type: defrag.Synthetic,
+				[]Fragment{
+					Fragment{
+						Type: Synthetic,
 						Seq:  "agtgcatgcatgcatgctagctagctagctagctacg",
 					},
 				},

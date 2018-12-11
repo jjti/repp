@@ -1,36 +1,34 @@
-package blast
+package defrag
 
 import (
 	"testing"
-
-	"github.com/jjtimmons/defrag/internal/defrag"
 )
 
 // test that we can filter out overlapping regions from blast results
 // and those that are up against the edge of the fragment
 func TestFilter(t *testing.T) {
 	// test fragment with 3 matches that should be removed
-	matches := []defrag.Match{
+	matches := []Match{
 		// shouldn't be removed
-		defrag.Match{
+		Match{
 			Entry: "m1",
 			Start: 15,
 			End:   19,
 		},
 		// should be removed because it fits within m3
-		defrag.Match{
+		Match{
 			Entry: "m2",
 			Start: 29,
 			End:   34,
 		},
 		// shouldn't be removed
-		defrag.Match{
+		Match{
 			Entry: "m3",
 			Start: 29,
 			End:   35,
 		},
 		// shouldn't be removed
-		defrag.Match{
+		Match{
 			Entry: "m4",
 			Start: 31,
 			End:   72,

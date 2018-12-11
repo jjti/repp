@@ -1,9 +1,7 @@
-// Package assemble turns blast Matches into building Fragments
-package assemble
+package defrag
 
 import (
 	"github.com/jjtimmons/defrag/config"
-	"github.com/jjtimmons/defrag/internal/defrag"
 )
 
 // Assemble the BLAST matches into assemblies that span the target sequence
@@ -19,7 +17,7 @@ import (
 // "fill-in" the nodes. Create primers on the node if it's a PCR Fragment
 // or create a sequence to be synthesized if it's a synthetic fragment.
 // Error out and repeat the build stage if a node fails to be filled
-func Assemble(matches []defrag.Match, seq string, conf *config.Config) [][]defrag.Fragment {
+func Assemble(matches []Match, seq string, conf *config.Config) [][]Fragment {
 	// map fragment Matches to nodes
 	var nodes []node
 	for _, m := range matches {
@@ -34,7 +32,7 @@ func Assemble(matches []defrag.Match, seq string, conf *config.Config) [][]defra
 	paretos := pareto(assemblies)
 
 	// convert and fill the fragments
-	var found [][]defrag.Fragment
+	var found [][]Fragment
 	for _, assemblies := range paretos {
 		// get the first assembly that fills properly (cheapest workable solution)
 		for _, singleAssembly := range assemblies {
