@@ -191,15 +191,6 @@ func (c Config) SynthCost(fragLength int) float32 {
 	return float32(fragLength) * synthCost.Dollars
 }
 
-// DBList returns a list of absolute paths to BLAST databases used during a given run
-func (c Config) DBList() (paths []string, err error) {
-	if c.AddGene {
-		addgenePath := path.Join(root, "assets", "addgene", "db", "addgene")
-		return parseDBs(c.DBs + "," + addgenePath)
-	}
-	return parseDBs(c.DBs)
-}
-
 // Vendors returns a new config for paths to library dependencies. It also creates
 // subdirectories for primer3 and blast to store their input+output files in
 // (mostly for debugging)
@@ -244,6 +235,15 @@ func (c Config) Vendors() VendorConfig {
 	}
 }
 
+// DBList returns a list of absolute paths to BLAST databases used during a given run
+func (c Config) DBList() (paths []string, err error) {
+	if c.AddGene {
+		addgenePath := path.Join(root, "assets", "addgene", "db", "addgene")
+		return parseDBs(c.DBs + "," + addgenePath)
+	}
+	return parseDBs(c.DBs)
+}
+
 // parseDBs turns a single string of comma separated BLAST dbs into a
 // slice of absolute paths to the BLAST dbs on the local fs
 func parseDBs(dbList string) (paths []string, err error) {
@@ -254,7 +254,6 @@ func parseDBs(dbList string) (paths []string, err error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to create absolute path: %v", err)
 		}
-
 		paths = append(paths, absPath)
 	}
 
