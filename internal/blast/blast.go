@@ -53,23 +53,23 @@ func BLAST(f *defrag.Fragment, blastn string, dbs []string, dir string, minLengt
 
 		// make sure the db exists
 		if _, err := os.Stat(db); os.IsNotExist(err) {
-			return nil, fmt.Errorf("failed to find an Addgene database at %s", db)
+			return nil, fmt.Errorf("Failed to find an Addgene database at %s", db)
 		}
 
 		// create the input file
 		if err := b.create(); err != nil {
-			return nil, fmt.Errorf("failed at creating BLAST input file at %s: %v", b.in, err)
+			return nil, fmt.Errorf("Failed at creating BLAST input file at %s: %v", b.in, err)
 		}
 
 		// execute BLAST
 		if err := b.run(); err != nil {
-			return nil, fmt.Errorf("failed at executing BLAST: %v", err)
+			return nil, fmt.Errorf("Failed executing BLAST: %v", err)
 		}
 
 		// parse the output file to Matches against the Fragment
 		dbMatches, err := b.parse()
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse BLAST output: %v", err)
+			return nil, fmt.Errorf("Failed to parse BLAST output: %v", err)
 		}
 
 		// add these matches against the growing list of matches
@@ -138,6 +138,7 @@ func (b *blastExec) runAgainst() error {
 
 	// execute BLAST and wait on it to finish
 	if output, err := blastCmd.CombinedOutput(); err != nil {
+		log.Println("blastn path: " + b.blastn)
 		log.Fatalf("Failed to execute BLAST: %v: %s", err, string(output))
 		return err
 	}

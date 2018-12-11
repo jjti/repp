@@ -94,7 +94,7 @@ func primers(last, this, next node, vec string) (primers []defrag.Primer, err er
 	// 2. check for whether either of the primers have an off-target/mismatch
 	for _, primer := range primers {
 		// the node's id is the same as the entry ID in the database
-		mismatchExists, mismatch, err := blast.Mismatch(primer.Seq, this.id, vendorConfig.Makeblastdb, conf.DBs, vendorConfig.Blastn)
+		mismatchExists, mismatch, err := blast.Mismatch(primer.Seq, this.id, conf.DBs, vendorConfig)
 
 		if err != nil {
 			return nil, err

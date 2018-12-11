@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/jjtimmons/defrag/config"
 	"github.com/jjtimmons/defrag/internal/defrag"
 )
 
@@ -36,18 +37,18 @@ func isMismatch(match defrag.Match) bool {
 //
 // The parent sequence is passed as the entry id as it exists in the blast db
 // db is passed as the path to the db we're blasting against
-func Mismatch(primer, parent, makeblastdb, db, blastDir string) (mismatch bool, match defrag.Match, err error) {
+func Mismatch(primer, parent, db string, v config.VendorConfig) (mismatch bool, match defrag.Match, err error) {
 	// path to the entry batch file to hold the parent entry accession
-	entry, _ := filepath.Abs(path.Join(blastDir, parent+".entry"))
+	entry, _ := filepath.Abs(path.Join(v.Blastdir, parent+".entry"))
 
 	// path to the output sequence file  from querying the parent's sequence from the BLAST db
-	parentPath, _ := filepath.Abs(path.Join(blastDir, parent+".out"))
+	parentPath, _ := filepath.Abs(path.Join(v.Blastdir, parent+".out"))
 
 	// path the query sequence input file
-	in, _ := filepath.Abs(path.Join(blastDir, parent+".primer.query"))
+	in, _ := filepath.Abs(path.Join(v.Blastdir, parent+".primer.query"))
 
 	// path to the blastOutput file
-	out, _ := filepath.Abs(path.Join(blastDir, parent+".blast"))
+	out, _ := filepath.Abs(path.Join(v.Blastdir, parent+".blast"))
 
 	// write entry to file
 	// this was a 2-day bug I couldn't resolve...
@@ -58,9 +59,8 @@ func Mismatch(primer, parent, makeblastdb, db, blastDir string) (mismatch bool, 
 	}
 
 	// make a blastdbcmd command (for querying a DB, very different from blastn)
-	fmt.Println(makeblastdb)
 	queryCmd := exec.Command(
-		makeblastdb,
+		v.Makeblastdb,
 		"-db", db,
 		"-dbtype", "nucl",
 		"-entry_batch", entry,
@@ -82,6 +82,7 @@ func Mismatch(primer, parent, makeblastdb, db, blastDir string) (mismatch bool, 
 		in:      in,
 		out:     out,
 		subject: parentPath,
+		blastn:  v.Blastn,
 	}
 
 	// execute blast

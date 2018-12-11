@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/jjtimmons/defrag/config"
 	"github.com/jjtimmons/defrag/internal/defrag"
 )
 
@@ -50,8 +51,8 @@ func Test_isMismatch(t *testing.T) {
 
 func TestMismatch(t *testing.T) {
 	testDB, _ := filepath.Abs(path.Join("..", "..", "test", "blast", "db"))
-	makeblastdb, _ := filepath.Abs(path.Join("..", "vendor", "ncbi-blast-2.7.1+", "bin", "blastdbcmd"))
-	, _ := filepath.Abs(path.Join("..", "..", "bin", "blast"))
+
+	vendors := config.New().Vendors()
 
 	type args struct {
 		primer string
@@ -95,7 +96,7 @@ func TestMismatch(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotMismatch, gotMatch, err := Mismatch(tt.args.primer, tt.args.parent, makeblastdb, testDB, )
+			gotMismatch, gotMatch, err := Mismatch(tt.args.primer, tt.args.parent, testDB, vendors)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Mismatch() error = %v, wantErr %v", err, tt.wantErr)
 				return
