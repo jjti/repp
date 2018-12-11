@@ -12,7 +12,7 @@ import (
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "defrag",
-	Short: "Build vectors from their sequence and a fragment database",
+	Short: "Build vectors from their sequence backwards",
 	Long:  ``,
 
 	// Uncomment the following line if your bare application
@@ -34,6 +34,6 @@ func init() {
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
-	rootCmd.PersistentFlags().StringP("config", "c", settings, "config file (default is /config/settings.yaml)")
+	rootCmd.PersistentFlags().StringP("config", "c", settings, "config file")
 	viper.BindPFlag("config", rootCmd.PersistentFlags().Lookup("config"))
 }
