@@ -26,7 +26,7 @@ func Test_BLAST(t *testing.T) {
 	}
 
 	// run blast
-	matches, err := BLAST(&f, vendorConfig.Blastn, []string{testDB}, vendorConfig.Blastdir, 10) // any match over 10 bp
+	matches, err := BLAST(&f, []string{testDB}, 10, vendorConfig) // any match over 10 bp
 
 	// check if it fails
 	if err != nil {

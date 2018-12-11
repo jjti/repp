@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/jjtimmons/defrag/config"
 	"github.com/jjtimmons/defrag/internal/defrag"
 )
 
@@ -41,14 +42,14 @@ type blastExec struct {
 // matches for those that are long enough
 //
 // Accepts a fragment to BLAST against
-func BLAST(f *defrag.Fragment, blastn string, dbs []string, dir string, minLength int) (matches []defrag.Match, err error) {
+func BLAST(f *defrag.Fragment, dbs []string, minLength int, v config.VendorConfig) (matches []defrag.Match, err error) {
 	for _, db := range dbs {
 		b := &blastExec{
 			f:      f,
 			db:     db,
-			in:     path.Join(dir, f.ID+".input.fa"),
-			out:    path.Join(dir, f.ID+".output"),
-			blastn: blastn,
+			in:     path.Join(v.Blastdir, f.ID+".input.fa"),
+			out:    path.Join(v.Blastdir, f.ID+".output"),
+			blastn: v.Blastn,
 		}
 
 		// make sure the db exists
