@@ -16,9 +16,6 @@ import (
 )
 
 var (
-	// logged holds whether we've already logged the settings file being used
-	logged = false
-
 	// root is the root directory of the app (set in init)
 	root = ""
 
@@ -123,7 +120,6 @@ func init() {
 		log.Panicln("No caller information")
 	}
 	root, _ = filepath.Abs(path.Join(path.Dir(filename), ".."))
-	fmt.Println(root)
 
 	if confFlag := viper.GetString("config"); confFlag != "" {
 		viper.AddConfigPath(confFlag) // settings are in root of repo
@@ -149,10 +145,7 @@ func New() Config {
 
 	// read in intialization files
 	if err := viper.ReadInConfig(); err == nil {
-		if !logged {
-			fmt.Println("Using config file:", viper.ConfigFileUsed())
-			logged = true
-		}
+		fmt.Println("Using config file: ", viper.ConfigFileUsed())
 	} else {
 		log.Fatalf("Failed to read in config file: %v", err)
 	}
