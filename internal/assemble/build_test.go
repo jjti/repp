@@ -9,13 +9,15 @@ import (
 )
 
 func Test_build(t *testing.T) {
-	conf.Synthesis.MaxLength = 5
-	conf.Fragments.MinHomology = 1
-	conf.Fragments.MaxCount = 3
+	c := config.New()
+
+	c.Synthesis.MaxLength = 5
+	c.Fragments.MinHomology = 1
+	c.Fragments.MaxCount = 3
 
 	// ignore cost for now
-	conf.PCR.BPCost = 0
-	conf.Synthesis.Cost = map[int]config.SynthCost{
+	c.PCR.BPCost = 0
+	c.Synthesis.Cost = map[int]config.SynthCost{
 		100000: {
 			Fixed:   true,
 			Dollars: float32(0),
@@ -28,24 +30,28 @@ func Test_build(t *testing.T) {
 		uniqueID: "1",
 		start:    0,
 		end:      10,
+		conf:     &c,
 	}
 	n22 := node{
 		id:       "2",
 		uniqueID: "2",
 		start:    5,
 		end:      15,
+		conf:     &c,
 	}
 	n23 := node{
 		id:       "3",
 		uniqueID: "1",
 		start:    14,
 		end:      30,
+		conf:     &c,
 	}
 	n24 := node{
 		id:       "4",
 		uniqueID: "2",
 		start:    28,
 		end:      35,
+		conf:     &c,
 	}
 
 	// output
@@ -99,7 +105,7 @@ func Test_build(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assemblies := build(tt.args.nodes)
+			assemblies := build(tt.args.nodes, c.Fragments.MaxCount)
 
 			// concatenate node ids together
 			actualIds := getNodeSet(assemblies)

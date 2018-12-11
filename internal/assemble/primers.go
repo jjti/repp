@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/jjtimmons/defrag/config"
 	"github.com/jjtimmons/defrag/internal/blast"
 	"github.com/jjtimmons/defrag/internal/defrag"
 )
@@ -43,7 +44,7 @@ type p3Exec struct {
 }
 
 // newP3Exec creates a p3Exec from a fragment
-func newP3Exec(last, this, next node, target string) p3Exec {
+func newP3Exec(last, this, next node, target string, conf *config.Config) p3Exec {
 	vendorConf := conf.Vendors()
 
 	return p3Exec{
@@ -62,13 +63,13 @@ func newP3Exec(last, this, next node, target string) p3Exec {
 // primers creates primers against a node and return an error if
 //	1. the primers have an unacceptably high primer3 penalty score
 //	2. the primers have off-targets in their parent source
-func primers(last, this, next node, vec string) (primers []defrag.Primer, err error) {
-	exec := newP3Exec(last, this, next, vec)
+func primers(last, this, next node, vec string, conf *config.Config) (primers []defrag.Primer, err error) {
+	exec := newP3Exec(last, this, next, vec, conf)
 	vendorConfig := conf.Vendors()
 
 	// make input file, figure out how to create primers that share homology
 	// with neighboring nodes
-	if err = exec.input(); err != nil {
+	if err = exec.input(conf.Fragments.MinHomology); err != nil {
 		return
 	}
 
@@ -117,19 +118,19 @@ func primers(last, this, next node, vec string) (primers []defrag.Primer, err er
 // the primers on this node should account for creating homology
 // against the last node and the next node if there isn't enough
 // existing homology to begin with (the two nodes should share ~50/50)
-func (p *p3Exec) input() error {
+func (p *p3Exec) input(minHomology int) error {
 	// calc the # of bp this node shares with another
 	bpToShare := func(left, right node) (bpToAdd int) {
 		// calc the # of bp the left node is responsible with the right one
 		bpToAdd = 0
 		if synthDist := left.synthDist(right); synthDist == 0 {
 			// we're not going to synth our way here, check that there's already enough homology
-			if bpDist := left.distTo(right); bpDist > -(conf.Fragments.MinHomology) {
+			if bpDist := left.distTo(right); bpDist > -(minHomology) {
 				// this node will add half the homology to the last fragment
 				// ex: 5 bp distance leads to 2.5bp + ~10bp additonal
 				// ex: -10bp distance leads to ~0 bp additional:
 				//	other node is responsible for all of it
-				bpToAdd = bpDist + (conf.Fragments.MinHomology / 2)
+				bpToAdd = bpDist + (minHomology / 2)
 			}
 		}
 		return

@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/jjtimmons/defrag/config"
 	"github.com/jjtimmons/defrag/internal/defrag"
 )
 
@@ -30,16 +31,20 @@ type node struct {
 
 	// assemblies that span from this node to the end of the vector
 	assemblies []assembly
+
+	// assembly configuration
+	conf *config.Config
 }
 
 // new creates a node from a Match
-func new(m defrag.Match, seqL int) node {
+func new(m defrag.Match, seqL int, conf *config.Config) node {
 	return node{
 		id:       m.Entry,
 		seq:      strings.ToUpper(m.Seq),
 		uniqueID: strconv.Itoa(m.Start%seqL) + m.Entry,
 		start:    m.Start,
 		end:      m.End,
+		conf:     conf,
 	}
 }
 
@@ -75,7 +80,7 @@ func (n *node) synthDist(other node) (synthCount int) {
 	floatDist := math.Max(1.0, float64(dist))
 
 	// split up the distance between them by the max synthesized fragment size
-	return int(math.Ceil(floatDist / float64(conf.Synthesis.MaxLength)))
+	return int(math.Ceil(floatDist / float64(n.conf.Synthesis.MaxLength)))
 }
 
 // costTo calculates the $ amount needed to get from this fragment
@@ -90,23 +95,23 @@ func (n *node) costTo(other node) (cost float32) {
 	dist := n.distTo(other)
 
 	if dist <= 5 {
-		if dist < -(conf.Fragments.MinHomology) {
+		if dist < -(n.conf.Fragments.MinHomology) {
 			// there's already enough overlap between this node and the one being tested
 			// estimating two primers, 20bp each
-			return 40 * conf.PCR.BPCost
+			return 40 * n.conf.PCR.BPCost
 		}
 
 		// we have to create some additional primer sequence to reach the next fragment
 		// guessing 40bp plus half MinHomology on each primer
-		return float32(40+conf.Fragments.MinHomology) * conf.PCR.BPCost
+		return float32(40+n.conf.Fragments.MinHomology) * n.conf.PCR.BPCost
 	}
 
 	// we need to create a new synthetic fragment to get from this fragment to the next
 	// to account for both the bps between them as well as the additional bps we need to add
 	// for homology between the two
-	fragLength := conf.Fragments.MinHomology + dist
+	fragLength := n.conf.Fragments.MinHomology + dist
 
-	return conf.SynthCost(fragLength)
+	return n.conf.SynthCost(fragLength)
 }
 
 // reach returns a slice of node indexes that overlap with, or are the first synth_count nodes
@@ -124,7 +129,7 @@ func (n *node) reach(nodes []node, i, synthCount int) (reachable []int) {
 		}
 
 		// these nodes overlap by enough for assembly without PCR
-		if n.distTo(nodes[i]) <= -(conf.Fragments.MinHomology) {
+		if n.distTo(nodes[i]) <= -(n.conf.Fragments.MinHomology) {
 			reachable = append(reachable, i)
 		} else if synthCount > 0 {
 			// there's not enough existing overlap, but we can synthesize to it
@@ -156,22 +161,22 @@ func (n *node) synthTo(next node, seq string) (synthedFrags []defrag.Fragment) {
 
 	// length of each synthesized fragment
 	fragL := n.distTo(next) / fragC
-	if conf.Synthesis.MinLength > fragL {
+	if n.conf.Synthesis.MinLength > fragL {
 		// need to synthesize at least Synthesis.MinLength bps
-		fragL = conf.Synthesis.MinLength
+		fragL = n.conf.Synthesis.MinLength
 	}
 
 	// account for homology on either end of each synthetic fragment
-	fragL += conf.Fragments.MinHomology * 2
+	fragL += n.conf.Fragments.MinHomology * 2
 	seq += seq // double to account for sequence across the zero-index
 
 	// slide along the range of sequence to create synthetic fragments for
 	// and create one at each point, each w/ MinHomology for the fragment
 	// before it and after it
 	for fragIndex := 0; fragIndex < int(fragC); fragIndex++ {
-		start := n.end - conf.Fragments.MinHomology // start w/ homology
-		start += fragIndex * fragL                  // slide along the range to cover
-		end := start + fragL + conf.Fragments.MinHomology
+		start := n.end - n.conf.Fragments.MinHomology // start w/ homology
+		start += fragIndex * fragL                    // slide along the range to cover
+		end := start + fragL + n.conf.Fragments.MinHomology
 
 		sFrag := defrag.Fragment{
 			ID:   fmt.Sprintf("%s-synthetic-%d", n.id, fragIndex+1),

@@ -9,6 +9,8 @@ import (
 )
 
 func Test_node_distTo(t *testing.T) {
+	c := config.New()
+
 	type fields struct {
 		id         string
 		uniqueID   string
@@ -41,6 +43,7 @@ func Test_node_distTo(t *testing.T) {
 					start:      20,
 					end:        60,
 					assemblies: []assembly{},
+					conf:       &c,
 				},
 			},
 			-20,
@@ -68,6 +71,7 @@ func Test_node_distTo(t *testing.T) {
 				start:      tt.fields.start,
 				end:        tt.fields.end,
 				assemblies: tt.fields.assemblies,
+				conf:       &c,
 			}
 			if gotBpDist := n.distTo(tt.args.other); gotBpDist != tt.wantBpDist {
 				t.Errorf("node.distTo() = %v, want %v", gotBpDist, tt.wantBpDist)
@@ -77,7 +81,8 @@ func Test_node_distTo(t *testing.T) {
 }
 
 func Test_node_synthDist(t *testing.T) {
-	conf.Synthesis.MaxLength = 100
+	c := config.New()
+	c.Synthesis.MaxLength = 100
 
 	type fields struct {
 		id         string
@@ -105,6 +110,7 @@ func Test_node_synthDist(t *testing.T) {
 				other: node{
 					start: 20,
 					end:   60,
+					conf:  &c,
 				},
 			},
 			0,
@@ -119,6 +125,7 @@ func Test_node_synthDist(t *testing.T) {
 				other: node{
 					start: 60,
 					end:   80,
+					conf:  &c,
 				},
 			},
 			1,
@@ -132,6 +139,7 @@ func Test_node_synthDist(t *testing.T) {
 				start:      tt.fields.start,
 				end:        tt.fields.end,
 				assemblies: tt.fields.assemblies,
+				conf:       &c,
 			}
 			if gotSynthCount := n.synthDist(tt.args.other); gotSynthCount != tt.wantSynthCount {
 				t.Errorf("node.synthDist() = %v, want %v", gotSynthCount, tt.wantSynthCount)
@@ -141,9 +149,10 @@ func Test_node_synthDist(t *testing.T) {
 }
 
 func Test_node_costTo(t *testing.T) {
-	conf.Fragments.MinHomology = 20
-	conf.PCR.BPCost = 0.03
-	conf.Synthesis.Cost = map[int]config.SynthCost{
+	c := config.New()
+	c.Fragments.MinHomology = 20
+	c.PCR.BPCost = 0.03
+	c.Synthesis.Cost = map[int]config.SynthCost{
 		100000: {
 			Fixed:   false,
 			Dollars: 0.05,
@@ -176,9 +185,10 @@ func Test_node_costTo(t *testing.T) {
 				other: node{
 					start: 20,
 					end:   100,
+					conf:  &c,
 				},
 			},
-			40 * conf.PCR.BPCost,
+			1.1999999,
 		},
 		{
 			"cost of synthesis if they don't overlap",
@@ -190,9 +200,10 @@ func Test_node_costTo(t *testing.T) {
 				other: node{
 					start: 80,
 					end:   120,
+					conf:  &c,
 				},
 			},
-			((float32(conf.Fragments.MinHomology) + 30.0) * 0.05),
+			(float32(20) + 30.0) * 0.05,
 		},
 		{
 			"cost to self should just be for PCR",
@@ -203,7 +214,7 @@ func Test_node_costTo(t *testing.T) {
 			args{
 				other: n1,
 			},
-			40 * conf.PCR.BPCost,
+			1.1999999,
 		},
 	}
 	for _, tt := range tests {
@@ -214,6 +225,7 @@ func Test_node_costTo(t *testing.T) {
 				start:      tt.fields.start,
 				end:        tt.fields.end,
 				assemblies: tt.fields.assemblies,
+				conf:       &c,
 			}
 			if gotCost := n.costTo(tt.args.other); gotCost != tt.wantCost {
 				t.Errorf("node.costTo() = %v, want %v", gotCost, tt.wantCost)
@@ -223,35 +235,44 @@ func Test_node_costTo(t *testing.T) {
 }
 
 func Test_node_reach(t *testing.T) {
-	conf.Fragments.MinHomology = 2
+	c := config.New()
+
+	c.Fragments.MinHomology = 2
 
 	n11 := node{
 		start: 0,
 		end:   10,
+		conf:  &c,
 	}
 	n12 := node{
 		start: 5,
 		end:   15,
+		conf:  &c,
 	}
 	n13 := node{
 		start: 6,
 		end:   16,
+		conf:  &c,
 	}
 	n14 := node{
 		start: 7,
 		end:   17,
+		conf:  &c,
 	}
 	n15 := node{
 		start: 15,
 		end:   20,
+		conf:  &c,
 	}
 	n16 := node{
 		start: 16,
 		end:   21,
+		conf:  &c,
 	}
 	n17 := node{
 		start: 17,
 		end:   22,
+		conf:  &c,
 	}
 
 	type fields struct {
@@ -310,6 +331,7 @@ func Test_node_reach(t *testing.T) {
 				start:      tt.fields.start,
 				end:        tt.fields.end,
 				assemblies: tt.fields.assemblies,
+				conf:       &c,
 			}
 			if gotReachable := n.reach(tt.args.nodes, tt.args.i, tt.args.synthCount); !reflect.DeepEqual(gotReachable, tt.wantReachable) {
 				t.Errorf("node.reach() = %v, want %v", gotReachable, tt.wantReachable)
@@ -319,9 +341,10 @@ func Test_node_reach(t *testing.T) {
 }
 
 func Test_node_synthTo(t *testing.T) {
-	conf.Fragments.MinHomology = 2
-	conf.Synthesis.MinLength = 4
-	conf.Synthesis.MaxLength = 100
+	c := config.New()
+	c.Fragments.MinHomology = 2
+	c.Synthesis.MinLength = 4
+	c.Synthesis.MaxLength = 100
 
 	type fields struct {
 		id         string
@@ -351,6 +374,7 @@ func Test_node_synthTo(t *testing.T) {
 				next: node{
 					start: 13,
 					end:   20,
+					conf:  &c,
 				},
 			},
 			nil,
@@ -367,6 +391,7 @@ func Test_node_synthTo(t *testing.T) {
 					id:    "second",
 					start: 25,
 					end:   30,
+					conf:  &c,
 				},
 				seq: "TGCTGACTGTGGCGGGTGAGCTTAGGGGGCCTCCGCTCCAGCTCGACACCGGGCAGCTGC",
 			},
@@ -388,6 +413,7 @@ func Test_node_synthTo(t *testing.T) {
 				start:      tt.fields.start,
 				end:        tt.fields.end,
 				assemblies: tt.fields.assemblies,
+				conf:       &c,
 			}
 			if gotSynthedFrags := n.synthTo(tt.args.next, tt.args.seq); !reflect.DeepEqual(gotSynthedFrags, tt.wantSynthedFrags) {
 				t.Errorf("node.synthTo() = %v, want %v", gotSynthedFrags, tt.wantSynthedFrags)
@@ -397,6 +423,8 @@ func Test_node_synthTo(t *testing.T) {
 }
 
 func Test_node_fragment(t *testing.T) {
+	c := config.New()
+
 	type fields struct {
 		id         string
 		seq        string
@@ -432,6 +460,7 @@ func Test_node_fragment(t *testing.T) {
 				start:      tt.fields.start,
 				end:        tt.fields.end,
 				assemblies: tt.fields.assemblies,
+				conf:       &c,
 			}
 			if got := n.fragment(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("node.fragment() = %v, want %v", got, tt.want)
@@ -441,6 +470,8 @@ func Test_node_fragment(t *testing.T) {
 }
 
 func Test_new(t *testing.T) {
+	c := config.New()
+
 	type args struct {
 		m    defrag.Match
 		seqL int
@@ -468,12 +499,13 @@ func Test_new(t *testing.T) {
 				start:      0,
 				end:        12,
 				assemblies: nil,
+				conf:       &c,
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := new(tt.args.m, tt.args.seqL); !reflect.DeepEqual(got, tt.want) {
+			if got := new(tt.args.m, tt.args.seqL, &c); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("new() = %+v, want %+v", got, tt.want)
 			}
 		})

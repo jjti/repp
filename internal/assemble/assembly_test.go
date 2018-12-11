@@ -11,27 +11,32 @@ import (
 
 // create t
 var (
+	c = config.New()
+
 	n1 = node{
 		uniqueID: "1",
 		start:    0,
 		end:      50,
+		conf:     &c,
 	}
 	n2 = node{
 		uniqueID: "2",
 		start:    20,
 		end:      80,
+		conf:     &c,
 	}
 	n3 = node{
 		uniqueID: "3",
 		start:    60,
 		end:      100,
+		conf:     &c,
 	}
 )
 
 func Test_assembly_add(t *testing.T) {
-	conf.Fragments.MaxCount = 5
-	conf.Synthesis.MaxLength = 100
-	conf.Synthesis.Cost = map[int]config.SynthCost{
+	c.Fragments.MaxCount = 5
+	c.Synthesis.MaxLength = 100
+	c.Synthesis.Cost = map[int]config.SynthCost{
 		100000: {
 			Fixed:   true,
 			Dollars: float32(0),
@@ -40,9 +45,10 @@ func Test_assembly_add(t *testing.T) {
 
 	// create the nodes for testing
 	type fields struct {
-		nodes  []node
-		cost   float32
-		synths int
+		nodes    []node
+		cost     float32
+		synths   int
+		maxCount int
 	}
 	type args struct {
 		n node
@@ -120,15 +126,15 @@ func Test_assembly_add(t *testing.T) {
 				// a node that's too far away for straightforward annealing
 				n: node{
 					uniqueID: n1.uniqueID,
-					start:    n3.start + conf.Synthesis.MaxLength,
-					end:      n3.end + conf.Synthesis.MaxLength,
+					start:    n3.start + c.Synthesis.MaxLength,
+					end:      n3.end + c.Synthesis.MaxLength,
 				},
 			},
 			assembly{
 				nodes: []node{n1, n2, n3, node{
 					uniqueID: n1.uniqueID,
-					start:    n3.start + conf.Synthesis.MaxLength,
-					end:      n3.end + conf.Synthesis.MaxLength,
+					start:    n3.start + c.Synthesis.MaxLength,
+					end:      n3.end + c.Synthesis.MaxLength,
 				}},
 				cost:   16.4,
 				synths: 1,
@@ -158,7 +164,7 @@ func Test_assembly_add(t *testing.T) {
 				cost:   tt.fields.cost,
 				synths: tt.fields.synths,
 			}
-			gotNewAssembly, gotCreated, gotComplete := a.add(tt.args.n)
+			gotNewAssembly, gotCreated, gotComplete := a.add(tt.args.n, 5)
 			if !reflect.DeepEqual(gotNewAssembly, tt.wantNewAssembly) {
 				t.Errorf("assembly.add() gotNewAssembly = %v, want %v", gotNewAssembly, tt.wantNewAssembly)
 			}
@@ -174,9 +180,10 @@ func Test_assembly_add(t *testing.T) {
 
 func Test_assembly_contains(t *testing.T) {
 	type fields struct {
-		nodes  []node
-		cost   float32
-		synths int
+		nodes    []node
+		cost     float32
+		synths   int
+		maxCount int
 	}
 	type args struct {
 		n node
@@ -193,6 +200,7 @@ func Test_assembly_contains(t *testing.T) {
 				[]node{n1, n2},
 				0.0,
 				0,
+				5,
 			},
 			args{
 				node{
@@ -207,6 +215,7 @@ func Test_assembly_contains(t *testing.T) {
 				[]node{n1, n2},
 				0.0,
 				0,
+				5,
 			},
 			args{
 				node{
@@ -232,9 +241,10 @@ func Test_assembly_contains(t *testing.T) {
 
 func Test_assembly_len(t *testing.T) {
 	type fields struct {
-		nodes  []node
-		cost   float32
-		synths int
+		nodes    []node
+		cost     float32
+		synths   int
+		maxCount int
 	}
 	tests := []struct {
 		name   string
@@ -273,9 +283,10 @@ func Test_assembly_len(t *testing.T) {
 }
 
 func Test_assembly_fill(t *testing.T) {
-	conf.Fragments.MinHomology = 5
-	conf.DBs = path.Join("..", "..", "test", "blast", "db")
-	conf.Synthesis.MaxLength = 1000
+	c := config.New()
+	c.Fragments.MinHomology = 5
+	c.DBs = path.Join("..", "..", "test", "blast", "db")
+	c.Synthesis.MaxLength = 1000
 
 	// All of these ids correspond to entires in the test BLAST db
 	f1 := node{
@@ -284,6 +295,7 @@ func Test_assembly_fill(t *testing.T) {
 		start:    5,
 		end:      119 + 5,
 		seq:      "GTTGGAGTCCACGTTCTTTAATAGTGGACTCTTGTTCCAAACTGGAACAACACTCAACCCTATCTCGGTCTATTCTTTTGATTTATAAGGGATTTTGCCGATTTCGGCCTATTGGTTA",
+		conf:     &c,
 	}
 
 	f2 := node{
@@ -292,6 +304,7 @@ func Test_assembly_fill(t *testing.T) {
 		start:    102,
 		end:      102 + 141,
 		seq:      "CTCGTAGGGCTTGCCTTCGCCCTCGGATGTGCACTTGAAGTGGTGGTTGTTCACGGTGCCCTCCATGTACAGCTTCATGTGCATGTTCTCCTTGATCAGCTCGCTCATAGGTCCAGGGTTCTCCTCCACGTCTCCAGCCTG",
+		conf:     &c,
 	}
 
 	f3 := node{
@@ -300,6 +313,7 @@ func Test_assembly_fill(t *testing.T) {
 		start:    102 + 121,
 		end:      102 + 121 + 224,
 		seq:      "CACGTCTCCAGCCTGCTTCAGCAGGCTGAAGTTAGTAGCTCCGCTTCCGGATCCCCCGGGGAGCATGTCAAGGTCAAAATCGTCAAGAGCGTCAGCAGGCAGCATATCAAGGTCAAAGTCGTCAAGGGCATCGGCTGGGAgCATGTCTAAgTCAAAATCGTCAAGGGCGTCGGCCGGCCCGCCGCTTTcgcacGCCCTGGCAATCGAGATGCTGGACAGGCATC",
+		conf:     &c,
 	}
 
 	// starts 150bp past the end of f3, will require synthesis
@@ -309,12 +323,14 @@ func Test_assembly_fill(t *testing.T) {
 		start:    102 + 121 + 224 + 150,
 		end:      102 + 121 + 224,
 		seq:      "CGTCGGCCGGCCCGCCGCTTTcgcacGCCCTGGCAATCGAGATGCTGGACAGGCATC",
+		conf:     &c,
 	}
 
 	type fields struct {
-		nodes  []node
-		cost   float32
-		synths int
+		nodes    []node
+		cost     float32
+		synths   int
+		maxCount int
 	}
 	type args struct {
 		seq string
@@ -341,7 +357,7 @@ func Test_assembly_fill(t *testing.T) {
 				cost:   tt.fields.cost,
 				synths: tt.fields.synths,
 			}
-			frags := a.fill(tt.args.seq)
+			frags := a.fill(tt.args.seq, &c)
 
 			pcrCount := 0
 			synthCount := 0
