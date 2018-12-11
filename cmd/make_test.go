@@ -13,10 +13,10 @@ func Test_makeExec(t *testing.T) {
 	db, _ := filepath.Abs(path.Join("..", "test", "mockDB", "mockDB"))
 	output, _ := filepath.Abs(path.Join("..", "bin", "test.output.json"))
 
-	makeCmd.PersistentFlags().Set("target", target)
-	makeCmd.PersistentFlags().Set("dbs", db)
-	makeCmd.PersistentFlags().Set("out", output)
-	makeCmd.PersistentFlags().Set("addgene", "true")
+	MakeCmd.PersistentFlags().Set("target", target)
+	MakeCmd.PersistentFlags().Set("dbs", db)
+	MakeCmd.PersistentFlags().Set("out", output)
+	MakeCmd.PersistentFlags().Set("addgene", "true")
 
 	type args struct {
 		cmd  *cobra.Command
@@ -29,16 +29,18 @@ func Test_makeExec(t *testing.T) {
 		{
 			"end to end test",
 			args{
-				cmd:  makeCmd,
+				cmd:  MakeCmd,
 				args: []string{},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			makeExec(tt.args.cmd, tt.args.args)
+			if err := MakeCmd.Execute(); err != nil {
+				t.Fatal(err)
+			}
 		})
 	}
 
-	t.Fail()
+	// t.Fail()
 }
