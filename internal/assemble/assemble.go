@@ -6,10 +6,6 @@ import (
 	"github.com/jjtimmons/defrag/internal/defrag"
 )
 
-var (
-	conf = config.New()
-)
-
 // Assemble the BLAST matches into assemblies that span the target sequence
 //
 // First build up assemblies, creating all possible assemblies that are
@@ -23,16 +19,16 @@ var (
 // "fill-in" the nodes. Create primers on the node if it's a PCR Fragment
 // or create a sequence to be synthesized if it's a synthetic fragment.
 // Error out and repeat the build stage if a node fails to be filled
-func Assemble(matches []defrag.Match, seq string) [][]defrag.Fragment {
+func Assemble(matches []defrag.Match, seq string, conf *config.Config) [][]defrag.Fragment {
 	// map fragment Matches to nodes
 	var nodes []node
 	for _, m := range matches {
-		nodes = append(nodes, new(m, len(seq)))
+		nodes = append(nodes, new(m, len(seq), conf))
 	}
 
 	// build up slice of assemblies that could, within the upper-limit on
 	// fragment count, be assembled to make the target vecto
-	assemblies := build(nodes)
+	assemblies := build(nodes, conf.Fragments.MaxCount)
 
 	// build up a map from fragment count to a sorted list of assemblies with that number
 	paretos := pareto(assemblies)
@@ -42,7 +38,7 @@ func Assemble(matches []defrag.Match, seq string) [][]defrag.Fragment {
 	for _, assemblies := range paretos {
 		// get the first assembly that fills properly (cheapest workable solution)
 		for _, singleAssembly := range assemblies {
-			filledFrags := singleAssembly.fill(seq)
+			filledFrags := singleAssembly.fill(seq, conf)
 
 			// if a node in the assembly fails to be prepared,
 			// remove all assemblies with the node and try again

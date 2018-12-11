@@ -3,6 +3,7 @@ package assemble
 import (
 	"fmt"
 
+	"github.com/jjtimmons/defrag/config"
 	"github.com/jjtimmons/defrag/internal/defrag"
 )
 
@@ -24,7 +25,7 @@ type assembly struct {
 // Update the cost of the assembly to include the link between the new first node and the one after it.
 // Store the node's id in the list of node ids.
 // Complete  an assembly if a node has matched up onto itself across the zero-index.
-func (a *assembly) add(n node) (newAssembly assembly, created, complete bool) {
+func (a *assembly) add(n node, maxCount int) (newAssembly assembly, created, complete bool) {
 	// check if we could complete an assembly with this new node
 	complete = n.uniqueID == a.nodes[0].uniqueID
 	// calc the number of synthesis fragments needed to get to this next node
@@ -37,7 +38,7 @@ func (a *assembly) add(n node) (newAssembly assembly, created, complete bool) {
 	}
 
 	// stay beneath upper limit
-	if newCount > conf.Fragments.MaxCount {
+	if newCount > maxCount {
 		return assembly{}, false, false
 	}
 
@@ -91,7 +92,7 @@ func (a *assembly) len() int {
 // it can fail. For example, a PCR Fragment may have off-targets in
 // the parent vector. If that happens, we return the problem node and nil
 // building fragments
-func (a *assembly) fill(seq string) (frags []defrag.Fragment) {
+func (a *assembly) fill(seq string, conf *config.Config) (frags []defrag.Fragment) {
 	for i, n := range a.nodes {
 		// last node, do nothing
 		// here only to allow for vector "circularization" if we need to synthesize
@@ -109,6 +110,7 @@ func (a *assembly) fill(seq string) (frags []defrag.Fragment) {
 			last = node{
 				start: final.start - len(seq),
 				end:   final.end - len(seq),
+				conf:  conf,
 			}
 		}
 
@@ -120,10 +122,11 @@ func (a *assembly) fill(seq string) (frags []defrag.Fragment) {
 			next = node{
 				start: first.start + len(seq),
 				end:   first.end + len(seq),
+				conf:  conf,
 			}
 		}
 
-		fragPrimers, err := primers(last, n, next, seq)
+		fragPrimers, err := primers(last, n, next, seq, conf)
 		if err != nil {
 			fmt.Printf("Failed to fill %s: %v\n", n.id, err)
 			return nil

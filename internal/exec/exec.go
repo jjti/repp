@@ -69,7 +69,7 @@ func Execute(cmd *cobra.Command, args []string) {
 	}
 
 	// build up the assemblies
-	builds := assemble.Assemble(matches, targetFrag.Seq)
+	builds := assemble.Assemble(matches, targetFrag.Seq, conf)
 
 	// try to write the JSON to the filepath
 	if !filepath.IsAbs(output) {
