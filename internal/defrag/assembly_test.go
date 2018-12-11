@@ -1,4 +1,4 @@
-package assemble
+package defrag
 
 import (
 	"path"
@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/jjtimmons/defrag/config"
-	"github.com/jjtimmons/defrag/internal/defrag"
 )
 
 // create t
@@ -363,9 +362,9 @@ func Test_assembly_fill(t *testing.T) {
 			synthCount := 0
 
 			for _, f := range frags {
-				if f.Type == defrag.PCR {
+				if f.Type == PCR {
 					pcrCount++
-				} else if f.Type == defrag.Synthetic {
+				} else if f.Type == Synthetic {
 					synthCount++
 				}
 			}

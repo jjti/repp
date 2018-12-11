@@ -1,4 +1,4 @@
-package io
+package defrag
 
 import (
 	"encoding/json"
@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/jjtimmons/defrag/config"
-	"github.com/jjtimmons/defrag/internal/defrag"
 )
 
 var (
@@ -24,7 +23,7 @@ type Solution struct {
 	Cost float32 `json:"costDollars"`
 
 	// Fragments used to build this solution
-	Fragments []defrag.Fragment `json:"fragments"`
+	Fragments []Fragment `json:"fragments"`
 }
 
 // Out is the result output from this assembly
@@ -42,7 +41,7 @@ type Out struct {
 }
 
 // Write a slice of pareto optimal assemblies to the fs at the output path
-func Write(filename string, target defrag.Fragment, assemblies [][]defrag.Fragment) {
+func Write(filename string, target Fragment, assemblies [][]Fragment) {
 	// calculate final cost of the assembly and fragment count
 	solutions := []Solution{}
 	for _, assembly := range assemblies {
@@ -75,12 +74,12 @@ func Write(filename string, target defrag.Fragment, assemblies [][]defrag.Fragme
 
 // solutionCost returns an estimated cost of an assembly (a list of fragments)
 // be estimating the total cost of the primers and any synthesized basepairs
-func solutionCost(frags []defrag.Fragment, primerBP float32, synthCost func(int) float32) (cost float32) {
+func solutionCost(frags []Fragment, primerBP float32, synthCost func(int) float32) (cost float32) {
 	for _, frag := range frags {
-		if frag.Type == defrag.PCR {
+		if frag.Type == PCR {
 			cost += primerBP * float32(len(frag.Primers[0].Seq))
 			cost += primerBP * float32(len(frag.Primers[1].Seq))
-		} else if frag.Type == defrag.Synthetic {
+		} else if frag.Type == Synthetic {
 			cost += synthCost(len(frag.Seq))
 		}
 	}

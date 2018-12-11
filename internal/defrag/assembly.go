@@ -1,10 +1,9 @@
-package assemble
+package defrag
 
 import (
 	"fmt"
 
 	"github.com/jjtimmons/defrag/config"
-	"github.com/jjtimmons/defrag/internal/defrag"
 )
 
 // assembly is a slice of nodes ordered by the nodes
@@ -92,7 +91,7 @@ func (a *assembly) len() int {
 // it can fail. For example, a PCR Fragment may have off-targets in
 // the parent vector. If that happens, we return the problem node and nil
 // building fragments
-func (a *assembly) fill(seq string, conf *config.Config) (frags []defrag.Fragment) {
+func (a *assembly) fill(seq string, conf *config.Config) (frags []Fragment) {
 	for i, n := range a.nodes {
 		// last node, do nothing
 		// here only to allow for vector "circularization" if we need to synthesize
@@ -135,7 +134,7 @@ func (a *assembly) fill(seq string, conf *config.Config) (frags []defrag.Fragmen
 		// convert, set primers and store this to the list of building fragments
 		frag := n.fragment()
 		frag.Primers = fragPrimers
-		frag.Type = defrag.PCR
+		frag.Type = PCR
 		frags = append(frags, frag)
 
 		// add synthesized fragments between the two if necessary

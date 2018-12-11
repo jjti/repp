@@ -1,9 +1,7 @@
-package blast
+package defrag
 
 import (
 	"sort"
-
-	"github.com/jjtimmons/defrag/internal/defrag"
 )
 
 // filter "proper-izes" the matches from BLAST
@@ -21,11 +19,11 @@ import (
 // Circular-arc graph: https://en.wikipedia.org/wiki/Circular-arc_graph
 //
 // also remove small fragments here, that are too small to be useful during assembly
-func filter(matches []defrag.Match, minSize int) (properized []defrag.Match) {
-	properized = []defrag.Match{}
+func filter(matches []Match, minSize int) (properized []Match) {
+	properized = []Match{}
 
 	// remove fragments that are shorter the minimum cut off size
-	var largeEnough []defrag.Match
+	var largeEnough []Match
 	for _, m := range matches {
 		if m.Length() > minSize {
 			largeEnough = append(largeEnough, m)

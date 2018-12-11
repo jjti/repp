@@ -1,5 +1,4 @@
-// Package blast finds Matches between a Fragment and the Fragment databases.
-package blast
+package defrag
 
 import (
 	"fmt"
@@ -13,14 +12,13 @@ import (
 	"strings"
 
 	"github.com/jjtimmons/defrag/config"
-	"github.com/jjtimmons/defrag/internal/defrag"
 )
 
 // blastExec is a small utility function for executing BLAST
 // on a fragment.
 type blastExec struct {
 	// the fragment we're BLASTing
-	f *defrag.Fragment
+	f *Fragment
 
 	// the path to the database we're BLASTing against
 	db string
@@ -42,7 +40,7 @@ type blastExec struct {
 // matches for those that are long enough
 //
 // Accepts a fragment to BLAST against
-func BLAST(f *defrag.Fragment, dbs []string, minLength int, v config.VendorConfig) (matches []defrag.Match, err error) {
+func BLAST(f *Fragment, dbs []string, minLength int, v config.VendorConfig) (matches []Match, err error) {
 	for _, db := range dbs {
 		b := &blastExec{
 			f:      f,
@@ -148,7 +146,7 @@ func (b *blastExec) runAgainst() error {
 
 // parse reads the output file into Matches on the Fragment
 // returns a slice of Matches for the blasted fragment
-func (b *blastExec) parse() (matches []defrag.Match, err error) {
+func (b *blastExec) parse() (matches []Match, err error) {
 	// read in the results
 	file, err := ioutil.ReadFile(b.out)
 	if err != nil {
@@ -157,7 +155,7 @@ func (b *blastExec) parse() (matches []defrag.Match, err error) {
 	fileS := string(file)
 
 	// read it into Matches
-	var ms []defrag.Match
+	var ms []Match
 	for _, line := range strings.Split(fileS, "\n") {
 		// comment lines start with a #
 		if strings.HasPrefix(line, "#") {
@@ -185,7 +183,7 @@ func (b *blastExec) parse() (matches []defrag.Match, err error) {
 		}
 
 		// create and append the new match
-		ms = append(ms, defrag.Match{
+		ms = append(ms, Match{
 			// for later querying when checking for off-targets
 			Entry: id,
 			Seq:   strings.Replace(seq, "-", "", -1),

@@ -1,11 +1,10 @@
-package assemble
+package defrag
 
 import (
 	"reflect"
 	"testing"
 
 	"github.com/jjtimmons/defrag/config"
-	"github.com/jjtimmons/defrag/internal/defrag"
 )
 
 func Test_node_distTo(t *testing.T) {
@@ -362,7 +361,7 @@ func Test_node_synthTo(t *testing.T) {
 		name             string
 		fields           fields
 		args             args
-		wantSynthedFrags []defrag.Fragment
+		wantSynthedFrags []Fragment
 	}{
 		{
 			"return nothing when there's enough overlap",
@@ -395,11 +394,11 @@ func Test_node_synthTo(t *testing.T) {
 				},
 				seq: "TGCTGACTGTGGCGGGTGAGCTTAGGGGGCCTCCGCTCCAGCTCGACACCGGGCAGCTGC",
 			},
-			[]defrag.Fragment{
-				defrag.Fragment{
+			[]Fragment{
+				Fragment{
 					ID:   "first-synthetic-1",
 					Seq:  "GGTGAGCTTAGGGGG",
-					Type: defrag.Synthetic,
+					Type: Synthetic,
 				},
 			},
 		},
@@ -436,7 +435,7 @@ func Test_node_fragment(t *testing.T) {
 	tests := []struct {
 		name   string
 		fields fields
-		want   defrag.Fragment
+		want   Fragment
 	}{
 		{
 			"convert to fragment from node",
@@ -444,7 +443,7 @@ func Test_node_fragment(t *testing.T) {
 				id:  "frag1",
 				seq: "atgctgac",
 			},
-			defrag.Fragment{
+			Fragment{
 				ID:    "frag1",
 				Seq:   "atgctgac",
 				Entry: "frag1",
@@ -473,7 +472,7 @@ func Test_new(t *testing.T) {
 	c := config.New()
 
 	type args struct {
-		m    defrag.Match
+		m    Match
 		seqL int
 	}
 	tests := []struct {
@@ -484,7 +483,7 @@ func Test_new(t *testing.T) {
 		{
 			"create a node from a match",
 			args{
-				m: defrag.Match{
+				m: Match{
 					Entry: "testMatch",
 					Seq:   "atgctagctagtg",
 					Start: 0,

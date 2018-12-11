@@ -1,13 +1,10 @@
-package exec
+package defrag
 
 import (
 	"log"
 	"path/filepath"
 
 	"github.com/jjtimmons/defrag/config"
-	"github.com/jjtimmons/defrag/internal/assemble"
-	"github.com/jjtimmons/defrag/internal/blast"
-	"github.com/jjtimmons/defrag/internal/io"
 	"github.com/spf13/cobra"
 )
 
@@ -40,7 +37,7 @@ func Execute(cmd *cobra.Command, args []string) {
 	}
 
 	// read in fragments, the first is the target sequence
-	fragments, err := io.Read(target)
+	fragments, err := Read(target)
 	if err != nil {
 		log.Fatalf("Failed to read in fasta files at %s: %v", target, err)
 	}
@@ -63,13 +60,13 @@ func Execute(cmd *cobra.Command, args []string) {
 	}
 
 	// get all the matches against the fragment
-	matches, err := blast.BLAST(&targetFrag, dbPaths, conf.Fragments.MinHomology, conf.Vendors())
+	matches, err := BLAST(&targetFrag, dbPaths, conf.Fragments.MinHomology, conf.Vendors())
 	if err != nil {
 		log.Fatalf("Failed to blast %s against the BLAST DB: %v", targetFrag.ID, err)
 	}
 
 	// build up the assemblies
-	builds := assemble.Assemble(matches, targetFrag.Seq, conf)
+	builds := Assemble(matches, targetFrag.Seq, &conf)
 
 	// try to write the JSON to the filepath
 	if !filepath.IsAbs(output) {
@@ -78,5 +75,5 @@ func Execute(cmd *cobra.Command, args []string) {
 			log.Fatalf("Failed to make output path absolute: %v", err)
 		}
 	}
-	io.Write(output, targetFrag, builds)
+	Write(output, targetFrag, builds)
 }

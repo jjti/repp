@@ -1,4 +1,4 @@
-package blast
+package defrag
 
 import (
 	"fmt"
@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/jjtimmons/defrag/config"
-	"github.com/jjtimmons/defrag/internal/defrag"
 )
 
 // isMismatch reutns whether the match constitutes a mismatch
@@ -19,7 +18,7 @@ import (
 //
 // The equation used for the melting temperature is:
 // Tm = 81.5 + 0.41(%GC) - 675/N - % mismatch, where N = total number of bases.
-func isMismatch(match defrag.Match) bool {
+func isMismatch(match Match) bool {
 	primer := strings.ToLower(match.Seq)
 	primerL := float32(len(primer))
 
@@ -37,7 +36,7 @@ func isMismatch(match defrag.Match) bool {
 //
 // The parent sequence is passed as the entry id as it exists in the blast db
 // db is passed as the path to the db we're blasting against
-func Mismatch(primer, parent, db string, v config.VendorConfig) (mismatch bool, match defrag.Match, err error) {
+func Mismatch(primer, parent, db string, v config.VendorConfig) (mismatch bool, match Match, err error) {
 	// path to the entry batch file to hold the parent entry accession
 	entry, _ := filepath.Abs(path.Join(v.Blastdir, parent+".entry"))
 
@@ -93,7 +92,7 @@ func Mismatch(primer, parent, db string, v config.VendorConfig) (mismatch bool, 
 	// get the BLAST matches
 	matches, err := b.parse()
 	if err != nil {
-		return false, defrag.Match{}, fmt.Errorf("Failed to parse matches from %s: %v", out, err)
+		return false, Match{}, fmt.Errorf("Failed to parse matches from %s: %v", out, err)
 	}
 
 	// parse the results and check whether any are cause for concern (by Tm)
@@ -115,5 +114,5 @@ func Mismatch(primer, parent, db string, v config.VendorConfig) (mismatch bool, 
 		}
 	}
 
-	return false, defrag.Match{}, nil
+	return false, Match{}, nil
 }
