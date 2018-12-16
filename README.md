@@ -1,6 +1,6 @@
 # defrag
 
-> *defrag*: (of software) ~reduce the fragmentation of (a file)~ create vectors by concatenating parts stored in separate locations on a disk.
+> *defrag*: (of software) ~reduce the fragmentation of (a file)~ *create vectors* by concatenating parts stored in separate locations on a disk.
 
 Finds pareto optimal solutions for vector construction using existing DNA fragments in local and/or remote repositories.
 
