@@ -12,7 +12,7 @@ Assemble a list of fragments via Gibson Assembly. Generate primers and synthetic
 defrag fragments -in building_fragments.fa -out vector.json
 ```
 
-Find fragments to assemble a sequence. Use local and/or remote repositories. Rank assemblies by cost and number of fragments. 
+Find fragments to assemble a vector sequence. Use local and/or remote repositories. Rank assemblies by cost and number of fragments. 
 
 ```bash
 defrag seq -in seq.fa -dbs "local-repo-1.fa local-repo-2.fa" --addgene --igem -out vectors.json
