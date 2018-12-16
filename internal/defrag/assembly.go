@@ -13,7 +13,7 @@ type assembly struct {
 	nodes []node
 
 	// estimated cost of making this assembly
-	cost float32
+	cost float64
 
 	// total number of synthetic nodes that will be needed to make this
 	synths int

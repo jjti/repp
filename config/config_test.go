@@ -47,7 +47,7 @@ func TestConfig_SynthCost(t *testing.T) {
 		name   string
 		fields fields
 		args   args
-		want   float32
+		want   float64
 	}{
 		{
 			"fixed cost synthesis",

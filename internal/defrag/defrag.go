@@ -66,14 +66,14 @@ type Primer struct {
 	Strand bool `json:"strand"`
 
 	// Penalty score
-	Penalty float32 `json:"penalty"`
+	Penalty float64 `json:"penalty"`
 
 	// PairPenalty score from primer3
-	PairPenalty float32 `json:"pairPenalty"`
+	PairPenalty float64 `json:"pairPenalty"`
 
 	// Tm of the primer
-	Tm float32 `json:"tm"`
+	Tm float64 `json:"tm"`
 
 	// GC % max
-	GC float32 `json:"gc"`
+	GC float64 `json:"gc"`
 }

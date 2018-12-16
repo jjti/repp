@@ -35,10 +35,10 @@ type FragmentConfig struct {
 // PCRConfig is settings for PCR
 type PCRConfig struct {
 	// the cost per bp of primer DNA
-	BPCost float32 `mapstructure:"bp-cost"`
+	BPCost float64 `mapstructure:"bp-cost"`
 
 	// the maximum primer3 score allowable
-	P3MaxPenalty float32 `mapstructure:"primer3-penalty-max"`
+	P3MaxPenalty float64 `mapstructure:"primer3-penalty-max"`
 
 	// MinLength is the minimum size of a fragment (used to filter BLAST results)
 	MinLength int `mapstructure:"min-length"`
@@ -52,7 +52,7 @@ type SynthCost struct {
 	Fixed bool `mapstructure:"fixed"`
 
 	// the cost (either per bp or for the whole stretch)
-	Dollars float32 `mapstructure:"dollars"`
+	Dollars float64 `mapstructure:"dollars"`
 }
 
 // SynthesisConfig is for synthesis settings
@@ -167,7 +167,7 @@ func New() Config {
 // Ex: a synthesis provider may say it's 32 cents up to 500bp and
 // 60 cents up to 2000bp. So, for a 750bp sequence, we want to use
 // the 2000bp price
-func (c Config) SynthCost(fragLength int) float32 {
+func (c Config) SynthCost(fragLength int) float64 {
 	costLengthKeys := []int{}
 	for key := range c.Synthesis.Cost {
 		costLengthKeys = append(costLengthKeys, key)
@@ -187,7 +187,7 @@ func (c Config) SynthCost(fragLength int) float32 {
 	if synthCost.Fixed {
 		return synthCost.Dollars
 	}
-	return float32(fragLength) * synthCost.Dollars
+	return float64(fragLength) * synthCost.Dollars
 }
 
 // Vendors returns a new config for paths to library dependencies. It also creates

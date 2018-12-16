@@ -38,14 +38,14 @@ func Test_assembly_add(t *testing.T) {
 	c.Synthesis.Cost = map[int]config.SynthCost{
 		100000: {
 			Fixed:   true,
-			Dollars: float32(0),
+			Dollars: 0.0,
 		},
 	}
 
 	// create the nodes for testing
 	type fields struct {
 		nodes    []node
-		cost     float32
+		cost     float64
 		synths   int
 		maxCount int
 	}
@@ -180,7 +180,7 @@ func Test_assembly_add(t *testing.T) {
 func Test_assembly_contains(t *testing.T) {
 	type fields struct {
 		nodes    []node
-		cost     float32
+		cost     float64
 		synths   int
 		maxCount int
 	}
@@ -241,7 +241,7 @@ func Test_assembly_contains(t *testing.T) {
 func Test_assembly_len(t *testing.T) {
 	type fields struct {
 		nodes    []node
-		cost     float32
+		cost     float64
 		synths   int
 		maxCount int
 	}
@@ -327,7 +327,7 @@ func Test_assembly_fill(t *testing.T) {
 
 	type fields struct {
 		nodes    []node
-		cost     float32
+		cost     float64
 		synths   int
 		maxCount int
 	}

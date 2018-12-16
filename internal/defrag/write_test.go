@@ -6,19 +6,19 @@ import (
 
 func Test_solutionCost(t *testing.T) {
 
-	synthCostMock := func(length int) float32 {
-		return 0.1 * float32(length)
+	synthCostMock := func(length int) float64 {
+		return 0.1 * float64(length)
 	}
 
 	type args struct {
 		frags         []Fragment
-		primerBP      float32
-		synthCostFunc func(int) float32
+		primerBP      float64
+		synthCostFunc func(int) float64
 	}
 	tests := []struct {
 		name     string
 		args     args
-		wantCost float32
+		wantCost float64
 	}{
 		{
 			"pcr only",
