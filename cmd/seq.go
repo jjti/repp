@@ -31,8 +31,8 @@ func init() {
 	rootCmd.AddCommand(SeqCmd)
 
 	// Flags for specifying the paths to the input file, input fragment files, and output file
-	SeqCmd.PersistentFlags().StringP("in", "i", "", "Input file name of target vector sequence <FASTA>")
-	SeqCmd.PersistentFlags().StringP("out", "o", "", "Output file name for Gibson assemblies")
-	SeqCmd.PersistentFlags().StringP("dbs", "d", "", "Comma/space separated list of BLAST databases (multi-fasta)")
-	SeqCmd.PersistentFlags().BoolP("addgene", "a", false, "Use the Addgene repository as a source of building fragments")
+	SeqCmd.Flags().StringP("in", "i", "", "Input file name of target vector sequence <FASTA>")
+	SeqCmd.Flags().StringP("out", "o", "", "Output file name for Gibson assemblies")
+	SeqCmd.Flags().StringP("dbs", "d", "", "Comma/space separated list of BLAST databases (multi-fasta)")
+	SeqCmd.Flags().BoolP("addgene", "a", false, "Use the Addgene repository as a source of building fragments")
 }

@@ -115,7 +115,7 @@ func (b *blastExec) run() error {
 
 	// execute BLAST and wait on it to finish
 	if output, err := blastCmd.CombinedOutput(); err != nil {
-		log.Fatalf("Failed to execute BLAST: %v: %s", err, string(output))
+		log.Fatalf("Failed to execute blastn against db, %s: %v: %s", b.db, err, string(output))
 		return err
 	}
 	return nil
@@ -137,8 +137,7 @@ func (b *blastExec) runAgainst() error {
 
 	// execute BLAST and wait on it to finish
 	if output, err := blastCmd.CombinedOutput(); err != nil {
-		log.Println("blastn path: " + b.blastn)
-		log.Fatalf("Failed to execute BLAST: %v: %s", err, string(output))
+		log.Fatalf("Failed to execute blastn against db, %s: %v: %s", b.db, err, string(output))
 		return err
 	}
 	return nil

@@ -2,6 +2,7 @@ package defrag
 
 import (
 	"fmt"
+	"path"
 	"path/filepath"
 	"reflect"
 	"testing"
@@ -10,6 +11,17 @@ import (
 )
 
 func TestExecute(t *testing.T) {
+	in, _ := filepath.Abs(path.Join("..", "..", "test", "target.fa"))
+	out, _ := filepath.Abs(path.Join("..", "..", "bin", "test_output.json"))
+	// db, _ := filepath.Abs(path.Join("..", "..", "test", "mockDB", "mockDB"))
+
+	// https://stackoverflow.com/a/50880663
+	cmd := &cobra.Command{}
+	cmd.Flags().String("in", in, "")
+	cmd.Flags().String("out", out, "")
+	cmd.Flags().String("dbs", "", "")
+	cmd.Flags().Bool("addgene", true, "")
+
 	type args struct {
 		cmd  *cobra.Command
 		args []string
@@ -18,7 +30,12 @@ func TestExecute(t *testing.T) {
 		name string
 		args args
 	}{
-		// TODO: Add test cases.
+		{
+			"end to end design of a test vector",
+			args{
+				cmd: cmd,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -57,6 +74,14 @@ func Test_parseDBs(t *testing.T) {
 				dbList: fmt.Sprintf("%s, %s", db1, db2),
 			},
 			[]string{dbAbs1, dbAbs2},
+			nil,
+		},
+		{
+			"empty",
+			args{
+				dbList: fmt.Sprintf(", %s", db1),
+			},
+			[]string{dbAbs1},
 			nil,
 		},
 	}
