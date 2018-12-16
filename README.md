@@ -9,19 +9,19 @@ Finds pareto optimal solutions for vector construction using existing DNA fragme
 Assemble a list of fragments via Gibson Assembly. Generate primers and synthetic sequences (to avoid complexities).
 
 ```bash
-defrag fragments -in building_fragments.fa -out vector.json
+defrag fragments -i building_fragments.fa -o vector.json
 ```
 
 Find fragments to assemble a vector sequence. Use local and/or remote repositories. Rank assemblies by cost and number of fragments. 
 
 ```bash
-defrag seq -in seq.fa -dbs "local-repo-1.fa local-repo-2.fa" --addgene --igem -out vectors.json
+defrag seq -i seq.fa -o vectors.json --dbs "local-repo-1.fa local-repo-2.fa" --addgene --igem 
 ```
 
 Find fragments to assemble a vector from a list of features by name. iGEM part names or accession numbers.
 
 ```bash
-defrag features -in "pSB1C3 FJ172221" -out vector.json
+defrag features -i "pSB1C3 FJ172221" -o vector.json
 ```
 
 ## TODO
