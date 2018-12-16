@@ -15,7 +15,7 @@ defrag fragments -in building_fragments.fa -out vector.json
 Find fragments to assemble a sequence. Use local and/or remote repositories. Rank assemblies by cost and number of fragments. 
 
 ```bash
-defrag sequence -in target_seq.fa -dbs "local-repo-1.fa local-repo-2.fa" --addgene --igem -out vectors.json
+defrag sequence -in seq.fa -dbs "local-repo-1.fa local-repo-2.fa" --addgene --igem -out vectors.json
 ```
 
 Find fragments to assemble a vector from a list of features by name. iGEM part names or accession numbers.
