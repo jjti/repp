@@ -1,6 +1,6 @@
 # defrag
 
-Declaratively Engineer vectors from FRAGments
+> *defrag*: (of software) reduce the fragmentation of (a file) by concatenating parts stored in separate locations on a disk.
 
 Finds pareto optimal solutions for vector construction using existing DNA fragments in local and/or remote repositories.
 
@@ -29,8 +29,3 @@ defrag features -in "pSB1C3 FJ172221" -out vector.json
 - Allow users to select multiple databases
   - Add costs to AddGene sources plasmids
   - FASTA files with sequences/local-dbs they own (making cost zero)
-
-## Name
-
-"defragment"
-> (of software) reduce the fragmentation of (a file) by concatenating parts stored in separate locations on a disk.
