@@ -21,7 +21,7 @@ defrag sequence -in target.fa -dbs "local-repo-1.fa local-repo-2.fa" --addgene -
 Find fragments to assemble a vector with a list of features. iGEM part names or accession numbers.
 
 ```bash
-defrag features -in pSB1C3 FJ172221 -out vector.json
+defrag features -in "pSB1C3 FJ172221" -out vector.json
 ```
 
 ## TODO
