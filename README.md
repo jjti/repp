@@ -4,12 +4,25 @@ Declaratively Engineer vectors from FRAGments
 
 Finds pareto optimal solutions for vector construction using existing DNA fragments in local and/or remote repositories.
 
+## Commands
+
+Assemble a list of fragments via Gibson Assembly. Generate primers and synthetic sequences (to avoid complexities).
+
+`defrag fragments -in fragments.fa -out vector.json`
+
+Find fragments to assemble a sequence. Use local and/or remote repositories. Rank assemblies by cost and number of fragments. 
+
+`defrag sequence -in target.fa -dbs "local-repo-1.fa local-repo-2.fa" --addgene --igem -out vectors.json`
+
+Find fragments to assemble a vector with a list of features. iGEM part names or accession numbers.
+
+`defrag features -in pSB1C3 FJ172221 -out vector.json`
+
 ## TODO
 
-- Add back assembly cost estimation
 - Allow users to select multiple databases
   - Add costs to AddGene sources plasmids
-  - FASTA files with sequences they own (making cost zero)
+  - FASTA files with sequences/local-dbs they own (making cost zero)
 
 ## Name
 
