@@ -33,10 +33,18 @@ type node struct {
 
 	// assembly configuration
 	conf *config.Config
+
+	// the cost of the node. eg: fragments from Addgene cost $65
+	cost float64
 }
 
 // new creates a node from a Match
 func new(m Match, seqL int, conf *config.Config) node {
+	cost := 0.0
+	if strings.Contains(m.Entry, "addgene") {
+		cost = 65.0
+	}
+
 	return node{
 		id:       m.Entry,
 		seq:      strings.ToUpper(m.Seq),
@@ -44,6 +52,7 @@ func new(m Match, seqL int, conf *config.Config) node {
 		start:    m.Start,
 		end:      m.End,
 		conf:     conf,
+		cost:     cost,
 	}
 }
 
@@ -89,20 +98,23 @@ func (n *node) synthDist(other node) (synthCount int) {
 // the other fragment with PCR homology arms alone
 //
 // Otherwise we find the total synthesis distance between this and
-// the other fragmetn and divide that by the cost per bp of synthesized DNA
-func (n *node) costTo(other node) (cost float32) {
+// the other fragment and divide that by the cost per bp of synthesized DNA
+//
+// Account for the cost of the other node (eg if the node has to be ordered from
+// Addgene there's a cost in getting it)
+func (n *node) costTo(other node) (cost float64) {
 	dist := n.distTo(other)
 
 	if dist <= 5 {
 		if dist < -(n.conf.Fragments.MinHomology) {
 			// there's already enough overlap between this node and the one being tested
 			// estimating two primers, 20bp each
-			return 40 * n.conf.PCR.BPCost
+			return 40*n.conf.PCR.BPCost + n.cost
 		}
 
 		// we have to create some additional primer sequence to reach the next fragment
 		// guessing 40bp plus half MinHomology on each primer
-		return float32(40+n.conf.Fragments.MinHomology) * n.conf.PCR.BPCost
+		return float64(40+n.conf.Fragments.MinHomology)*n.conf.PCR.BPCost + n.cost
 	}
 
 	// we need to create a new synthetic fragment to get from this fragment to the next
@@ -110,7 +122,7 @@ func (n *node) costTo(other node) (cost float32) {
 	// for homology between the two
 	fragLength := n.conf.Fragments.MinHomology + dist
 
-	return n.conf.SynthCost(fragLength)
+	return n.conf.SynthCost(fragLength) + n.cost
 }
 
 // reach returns a slice of node indexes that overlap with, or are the first synth_count nodes

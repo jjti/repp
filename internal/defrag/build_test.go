@@ -20,7 +20,7 @@ func Test_build(t *testing.T) {
 	c.Synthesis.Cost = map[int]config.SynthCost{
 		100000: {
 			Fixed:   true,
-			Dollars: float32(0),
+			Dollars: 0.0,
 		},
 	}
 

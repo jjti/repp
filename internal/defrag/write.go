@@ -20,7 +20,7 @@ type Solution struct {
 	Count int `json:"count"`
 
 	// cost estimated from the primer and sequence lengths
-	Cost float32 `json:"costDollars"`
+	Cost float64 `json:"costDollars"`
 
 	// Fragments used to build this solution
 	Fragments []Fragment `json:"fragments"`
@@ -74,11 +74,11 @@ func Write(filename string, target Fragment, assemblies [][]Fragment) {
 
 // solutionCost returns an estimated cost of an assembly (a list of fragments)
 // be estimating the total cost of the primers and any synthesized basepairs
-func solutionCost(frags []Fragment, primerBP float32, synthCost func(int) float32) (cost float32) {
+func solutionCost(frags []Fragment, primerBP float64, synthCost func(int) float64) (cost float64) {
 	for _, frag := range frags {
 		if frag.Type == PCR {
-			cost += primerBP * float32(len(frag.Primers[0].Seq))
-			cost += primerBP * float32(len(frag.Primers[1].Seq))
+			cost += primerBP * float64(len(frag.Primers[0].Seq))
+			cost += primerBP * float64(len(frag.Primers[1].Seq))
 		} else if frag.Type == Synthetic {
 			cost += synthCost(len(frag.Seq))
 		}

@@ -20,13 +20,13 @@ import (
 // Tm = 81.5 + 0.41(%GC) - 675/N - % mismatch, where N = total number of bases.
 func isMismatch(match Match) bool {
 	primer := strings.ToLower(match.Seq)
-	primerL := float32(len(primer))
+	primerL := float64(len(primer))
 
 	noA := strings.Replace(primer, "a", "", -1)
 	noT := strings.Replace(noA, "t", "", -1)
-	gcPerc := float32(len(noT)) / primerL
-	tmNoMismatch := 81.5 + 0.41*gcPerc - 675/float32(len(primer))
-	tmWithMismatch := tmNoMismatch - float32(match.Mismatch)/primerL
+	gcPerc := float64(len(noT)) / primerL
+	tmNoMismatch := 81.5 + 0.41*gcPerc - 675/float64(len(primer))
+	tmWithMismatch := tmNoMismatch - float64(match.Mismatch)/primerL
 
 	return tmWithMismatch > 40 // TODO: move to settings
 }

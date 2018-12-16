@@ -172,7 +172,7 @@ func Test_node_costTo(t *testing.T) {
 		name     string
 		fields   fields
 		args     args
-		wantCost float32
+		wantCost float64
 	}{
 		{
 			"just cost of PCR of new node if they overlap",
@@ -187,7 +187,7 @@ func Test_node_costTo(t *testing.T) {
 					conf:  &c,
 				},
 			},
-			1.1999999,
+			1.2,
 		},
 		{
 			"cost of synthesis if they don't overlap",
@@ -202,7 +202,7 @@ func Test_node_costTo(t *testing.T) {
 					conf:  &c,
 				},
 			},
-			(float32(20) + 30.0) * 0.05,
+			(20.0 + 30.0) * 0.05,
 		},
 		{
 			"cost to self should just be for PCR",
@@ -213,7 +213,7 @@ func Test_node_costTo(t *testing.T) {
 			args{
 				other: n1,
 			},
-			1.1999999,
+			1.2,
 		},
 	}
 	for _, tt := range tests {

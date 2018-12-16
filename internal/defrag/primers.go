@@ -236,18 +236,18 @@ func (p *p3Exec) parse() (primers []Primer, err error) {
 		penalty := results[fmt.Sprintf("PRIMER_%s_0_PENALTY", side)]
 		pairPenalty := results["PRIMER_PAIR_0_PENALTY"]
 
-		tmfloat, _ := strconv.ParseFloat(tm, 32)
-		gcfloat, _ := strconv.ParseFloat(gc, 32)
-		penaltyfloat, _ := strconv.ParseFloat(penalty, 32)
-		pairfloat, _ := strconv.ParseFloat(pairPenalty, 32)
+		tmfloat, _ := strconv.ParseFloat(tm, 64)
+		gcfloat, _ := strconv.ParseFloat(gc, 64)
+		penaltyfloat, _ := strconv.ParseFloat(penalty, 64)
+		pairfloat, _ := strconv.ParseFloat(pairPenalty, 64)
 
 		return Primer{
 			Seq:         seq,
 			Strand:      side == "LEFT",
-			Tm:          float32(tmfloat),
-			GC:          float32(gcfloat),
-			Penalty:     float32(penaltyfloat),
-			PairPenalty: float32(pairfloat),
+			Tm:          tmfloat,
+			GC:          gcfloat,
+			Penalty:     penaltyfloat,
+			PairPenalty: pairfloat,
 		}
 	}
 
