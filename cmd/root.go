@@ -12,7 +12,7 @@ import (
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "defrag",
-	Short: "Build vectors from their sequence backwards",
+	Short: "Build vectors from any of their sequence, features or fragments",
 	Long:  ``,
 
 	// Uncomment the following line if your bare application
