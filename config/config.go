@@ -10,14 +10,13 @@ import (
 	"path/filepath"
 	"runtime"
 	"sort"
-	"strings"
 
 	"github.com/spf13/viper"
 )
 
 var (
-	// root is the root directory of the app (set in init)
-	root = ""
+	// Root is the Root directory of the app (set in init)
+	Root = ""
 
 	// singleton is a single settings object
 	// used so we only read/unmartial the settings file once
@@ -90,11 +89,11 @@ type VendorConfig struct {
 	Primer3dir string
 }
 
-// Config is the root-level settings struct and is a mix
+// Config is the Root-level settings struct and is a mix
 // of settings available in settings.yaml and those
 // available from the command line
 type Config struct {
-	// paths to the fragment DBs
+	// paths to the fragment databases
 	DBs string
 
 	// whether the user wants to use Addgene as a fragment source
@@ -119,12 +118,12 @@ func init() {
 	if !ok {
 		log.Panicln("No caller information")
 	}
-	root, _ = filepath.Abs(path.Join(path.Dir(filename), ".."))
+	Root, _ = filepath.Abs(path.Join(path.Dir(filename), ".."))
 
 	if confFlag := viper.GetString("config"); confFlag != "" {
-		viper.AddConfigPath(confFlag) // settings are in root of repo
+		viper.AddConfigPath(confFlag) // settings are in Root of repo
 	} else {
-		viper.AddConfigPath(root) // settings are in root of repo
+		viper.AddConfigPath(Root) // settings are in Root of repo
 	}
 
 	viper.SetConfigName("settings") // no yaml needed, just a config file called settings
@@ -195,32 +194,32 @@ func (c Config) SynthCost(fragLength int) float32 {
 // subdirectories for primer3 and blast to store their input+output files in
 // (mostly for debugging)
 func (c Config) Vendors() VendorConfig {
-	blastn := filepath.Join(root, "vendor", "ncbi-blast-2.7.1+", "bin", "blastn")
+	blastn := filepath.Join(Root, "vendor", "ncbi-blast-2.7.1+", "bin", "blastn")
 	if _, err := os.Stat(blastn); os.IsNotExist(err) {
 		log.Fatalf("failed to find a BLAST executable at %s", blastn)
 	}
 
-	blastdir := filepath.Join(root, "bin", "blast")
+	blastdir := filepath.Join(Root, "bin", "blast")
 	if err := os.MkdirAll(blastdir, os.ModePerm); err != nil {
 		log.Fatalf("Failed to create a BLAST dir: %v", err)
 	}
 
-	makeblastdb := filepath.Join(root, "vendor", "ncbi-blast-2.7.1+", "bin", "blastdbcmd")
+	makeblastdb := filepath.Join(Root, "vendor", "ncbi-blast-2.7.1+", "bin", "blastdbcmd")
 	if _, err := os.Stat(makeblastdb); err != nil {
 		log.Fatalf("Failed to locate makeblastdb executable: %v", err)
 	}
 
-	p3core := filepath.Join(root, "vendor", "primer3-2.4.0", "src", "primer3_core")
+	p3core := filepath.Join(Root, "vendor", "primer3-2.4.0", "src", "primer3_core")
 	if _, err := os.Stat(p3core); err != nil {
 		log.Fatalf("Failed to locate primer3 executable: %v", err)
 	}
 
-	p3conf := filepath.Join(root, "vendor", "primer3-2.4.0", "src", "primer3_config") + string(filepath.Separator)
+	p3conf := filepath.Join(Root, "vendor", "primer3-2.4.0", "src", "primer3_config") + string(filepath.Separator)
 	if _, err := os.Stat(p3conf); err != nil {
 		log.Fatalf("Failed to locate primer3 config folder: %v", err)
 	}
 
-	p3dir := filepath.Join(root, "bin", "primer3")
+	p3dir := filepath.Join(Root, "bin", "primer3")
 	if err := os.MkdirAll(p3dir, os.ModePerm); err != nil {
 		log.Fatalf("Failed to create a primer3 outut dir: %v", err)
 	}
@@ -233,29 +232,4 @@ func (c Config) Vendors() VendorConfig {
 		Primer3config: p3conf,
 		Primer3dir:    p3dir,
 	}
-}
-
-// DBList returns a list of absolute paths to BLAST databases used during a given run
-func (c Config) DBList() (paths []string, err error) {
-	if c.AddGene {
-		addgenePath := path.Join(root, "assets", "addgene", "db", "addgene")
-		return parseDBs(c.DBs + "," + addgenePath)
-	}
-	return parseDBs(c.DBs)
-}
-
-// parseDBs turns a single string of comma separated BLAST dbs into a
-// slice of absolute paths to the BLAST dbs on the local fs
-func parseDBs(dbList string) (paths []string, err error) {
-	noSpaceDBs := strings.Replace(dbList, " ", "", -1)
-	for _, db := range strings.Split(noSpaceDBs, ",") {
-		absPath, err := filepath.Abs(db)
-
-		if err != nil {
-			return nil, fmt.Errorf("failed to create absolute path: %v", err)
-		}
-		paths = append(paths, absPath)
-	}
-
-	return
 }

@@ -1,8 +1,11 @@
 package defrag
 
 import (
+	"fmt"
 	"log"
+	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/jjtimmons/defrag/config"
 	"github.com/spf13/cobra"
@@ -21,14 +24,9 @@ import (
 func Execute(cmd *cobra.Command, args []string) {
 	conf := config.New()
 
-	target, err := cmd.PersistentFlags().GetString("target")
+	in, err := cmd.PersistentFlags().GetString("in")
 	if err != nil {
 		log.Fatalf("Cannot get target from arguments: %v", err)
-	}
-
-	// no path to input file
-	if target == "" {
-		log.Fatal("Failed, no target fragment path set")
 	}
 
 	output, err := cmd.PersistentFlags().GetString("out")
@@ -36,10 +34,25 @@ func Execute(cmd *cobra.Command, args []string) {
 		log.Fatalf("Cannot find the output path: %v", err)
 	}
 
-	// read in fragments, the first is the target sequence
-	fragments, err := Read(target)
+	dbs, err := cmd.PersistentFlags().GetString("dbs")
 	if err != nil {
-		log.Fatalf("Failed to read in fasta files at %s: %v", target, err)
+		log.Fatal(err)
+	}
+
+	addgene, err := cmd.PersistentFlags().GetBool("addgene")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// no path to input file
+	if in == "" {
+		log.Fatal("Failed: no input file name set")
+	}
+
+	// read the target sequence (the first in the slice is used)
+	fragments, err := Read(in)
+	if err != nil {
+		log.Fatalf("Failed to read in fasta files at %s: %v", in, err)
 	}
 
 	// set target fragment
@@ -47,16 +60,16 @@ func Execute(cmd *cobra.Command, args []string) {
 		println(
 			"Warning: %d building fragments were in %s. Only targeting the first: %s",
 			len(fragments),
-			target,
+			in,
 			fragments[0].ID,
 		)
 	}
 	targetFrag := fragments[0]
 
 	// read in the BLAST DB paths from config
-	dbPaths, err := conf.DBList()
+	dbPaths, err := getDBs(dbs, config.Root, addgene)
 	if err != nil {
-		log.Fatalf("Failed to find a BLAST database: %v", err)
+		log.Fatalf("Failed to find a fragment database: %v", err)
 	}
 
 	// get all the matches against the fragment
@@ -76,4 +89,29 @@ func Execute(cmd *cobra.Command, args []string) {
 		}
 	}
 	Write(output, targetFrag, builds)
+}
+
+// getDBs returns a list of absolute paths to BLAST databases used during a given run
+func getDBs(dbsInput, root string, addgene bool) (paths []string, err error) {
+	if addgene {
+		addgenePath := path.Join(root, "assets", "addgene", "db", "addgene")
+		return parseDBs(dbsInput + "," + addgenePath)
+	}
+	return parseDBs(dbsInput)
+}
+
+// parseDBs turns a single string of comma separated BLAST dbs into a
+// slice of absolute paths to the BLAST dbs on the local fs
+func parseDBs(dbList string) (paths []string, err error) {
+	noSpaceDBs := strings.Replace(dbList, " ", "", -1)
+	for _, db := range strings.Split(noSpaceDBs, ",") {
+		absPath, err := filepath.Abs(db)
+
+		if err != nil {
+			return nil, fmt.Errorf("failed to create absolute path: %v", err)
+		}
+		paths = append(paths, absPath)
+	}
+
+	return
 }

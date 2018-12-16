@@ -1,3 +1,5 @@
+# DEFRAG Approach
+
 FRAG_COUNT_LIMIT = maximum number of fragments to include in the assembly
 
 ASSEMBLY_LIST = list of assemblies that can be made circular (first node wraps around on itself across the zero-index)
