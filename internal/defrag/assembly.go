@@ -132,9 +132,11 @@ func (a *assembly) fill(seq string, conf *config.Config) (frags []Fragment) {
 		}
 
 		// convert, set primers and store this to the list of building fragments
+		pLength := len(fragPrimers[0].Seq + fragPrimers[1].Seq)
 		frag := n.fragment()
 		frag.Primers = fragPrimers
 		frag.Type = PCR
+		frag.Cost = conf.PCR.BPCost*float64(pLength) + n.cost
 		frags = append(frags, frag)
 
 		// add synthesized fragments between the two if necessary
@@ -142,6 +144,5 @@ func (a *assembly) fill(seq string, conf *config.Config) (frags []Fragment) {
 			frags = append(frags, synthedFrags...)
 		}
 	}
-
 	return
 }

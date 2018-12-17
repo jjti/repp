@@ -29,6 +29,9 @@ type Fragment struct {
 
 	// Type of this fragment
 	Type Type `json:"-"`
+
+	// Cost to make the fragment
+	Cost float64 `json:"cost"`
 }
 
 // Match is a blast "hit" in the blastdb

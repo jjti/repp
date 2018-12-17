@@ -399,6 +399,7 @@ func Test_node_synthTo(t *testing.T) {
 					ID:   "first-synthetic-1",
 					Seq:  "GGTGAGCTTAGGGGG",
 					Type: Synthetic,
+					Cost: 160,
 				},
 			},
 		},
