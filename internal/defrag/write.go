@@ -45,9 +45,14 @@ func Write(filename string, target Fragment, assemblies [][]Fragment) {
 	// calculate final cost of the assembly and fragment count
 	solutions := []Solution{}
 	for _, assembly := range assemblies {
+		assemblyCost := 0.0
+		for _, f := range assembly {
+			assemblyCost += f.Cost
+		}
+
 		solutions = append(solutions, Solution{
 			Count:     len(assembly),
-			Cost:      solutionCost(assembly, conf.PCR.BPCost, conf.SynthCost),
+			Cost:      assemblyCost,
 			Fragments: assembly,
 		})
 	}
@@ -70,19 +75,4 @@ func Write(filename string, target Fragment, assemblies [][]Fragment) {
 	if err != nil {
 		log.Fatalf("Failed to write the results to the file system: %v", err)
 	}
-}
-
-// solutionCost returns an estimated cost of an assembly (a list of fragments)
-// be estimating the total cost of the primers and any synthesized basepairs
-func solutionCost(frags []Fragment, primerBP float64, synthCost func(int) float64) (cost float64) {
-	for _, frag := range frags {
-		if frag.Type == PCR {
-			cost += primerBP * float64(len(frag.Primers[0].Seq))
-			cost += primerBP * float64(len(frag.Primers[1].Seq))
-		} else if frag.Type == Synthetic {
-			cost += synthCost(len(frag.Seq))
-		}
-	}
-
-	return
 }

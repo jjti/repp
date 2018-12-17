@@ -99,6 +99,9 @@ type Config struct {
 	// whether the user wants to use Addgene as a fragment source
 	AddGene bool
 
+	// the cost of a single Addgene vector
+	AddGeneVectorCost float64 `mapstructure:"addgene-vector-cost"`
+
 	// Fragment level settings
 	Fragments FragmentConfig
 
@@ -110,24 +113,6 @@ type Config struct {
 
 	// filled is a flag to mark whether it's actually been made yet
 	filled bool
-}
-
-// init and set viper's paths to the local config file
-func init() {
-	_, filename, _, ok := runtime.Caller(0)
-	if !ok {
-		log.Panicln("No caller information")
-	}
-	Root, _ = filepath.Abs(path.Join(path.Dir(filename), ".."))
-
-	if confFlag := viper.GetString("config"); confFlag != "" {
-		viper.AddConfigPath(confFlag) // settings are in Root of repo
-	} else {
-		viper.AddConfigPath(Root) // settings are in Root of repo
-	}
-
-	viper.SetConfigName("settings") // no yaml needed, just a config file called settings
-	viper.AutomaticEnv()            // enviornment variables that match
 }
 
 // New returns a new Config struct populated by settings from
@@ -232,4 +217,22 @@ func (c Config) Vendors() VendorConfig {
 		Primer3config: p3conf,
 		Primer3dir:    p3dir,
 	}
+}
+
+// init and set viper's paths to the local config file
+func init() {
+	_, filename, _, ok := runtime.Caller(0)
+	if !ok {
+		log.Panicln("No caller information")
+	}
+	Root, _ = filepath.Abs(path.Join(path.Dir(filename), ".."))
+
+	if confFlag := viper.GetString("config"); confFlag != "" {
+		viper.AddConfigPath(confFlag) // settings are in Root of repo
+	} else {
+		viper.AddConfigPath(Root) // settings are in Root of repo
+	}
+
+	viper.SetConfigName("settings") // no yaml needed, just a config file called settings
+	viper.AutomaticEnv()            // enviornment variables that match
 }

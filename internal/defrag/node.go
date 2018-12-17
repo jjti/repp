@@ -42,7 +42,7 @@ type node struct {
 func new(m Match, seqL int, conf *config.Config) node {
 	cost := 0.0
 	if strings.Contains(m.Entry, "addgene") {
-		cost = 65.0
+		cost = conf.AddGeneVectorCost
 	}
 
 	return node{
@@ -62,6 +62,7 @@ func (n *node) fragment() Fragment {
 		ID:    n.id,
 		Seq:   n.seq,
 		Entry: n.id,
+		Type:  PCR,
 	}
 }
 
@@ -193,6 +194,7 @@ func (n *node) synthTo(next node, seq string) (synthedFrags []Fragment) {
 			ID:   fmt.Sprintf("%s-synthetic-%d", n.id, fragIndex+1),
 			Seq:  seq[start:end],
 			Type: Synthetic,
+			Cost: n.conf.SynthCost(len(n.seq)) + n.cost,
 		}
 		synthedFrags = append(synthedFrags, sFrag)
 	}
