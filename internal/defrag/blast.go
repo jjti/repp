@@ -71,6 +71,8 @@ func BLAST(f *Fragment, dbs []string, minLength int, v config.VendorConfig) (mat
 			return nil, fmt.Errorf("Failed to parse BLAST output: %v", err)
 		}
 
+		log.Printf("%d matches found in %s\n", len(dbMatches), db)
+
 		// add these matches against the growing list of matches
 		matches = append(matches, dbMatches...)
 	}

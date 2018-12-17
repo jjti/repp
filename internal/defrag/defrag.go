@@ -31,7 +31,7 @@ type Fragment struct {
 	Type Type `json:"-"`
 
 	// Cost to make the fragment
-	Cost float64 `json:"cost"`
+	Cost float64 `json:"costDollars"`
 }
 
 // Match is a blast "hit" in the blastdb
