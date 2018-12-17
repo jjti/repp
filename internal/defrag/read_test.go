@@ -7,7 +7,7 @@ import (
 
 // Test reading of a FASTA file
 func TestRead(t *testing.T) {
-	file := path.Join("..", "..", "test", "frag", "fasta.fa")
+	file := path.Join("..", "..", "test", "input_multi.fa")
 	fragments, err := Read(file)
 
 	if err != nil {

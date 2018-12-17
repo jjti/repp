@@ -16,7 +16,7 @@ func Test_BLAST(t *testing.T) {
 	vendorConfig := config.New().Vendors()
 
 	// make path to test db
-	testDB, _ := filepath.Abs(path.Join("..", "..", "test", "blast", "db"))
+	testDB, _ := filepath.Abs(path.Join("..", "..", "test", "db", "db"))
 
 	// create mock test fragment
 	f := Fragment{

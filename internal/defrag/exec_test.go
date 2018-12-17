@@ -11,15 +11,15 @@ import (
 )
 
 func TestExecute(t *testing.T) {
-	in, _ := filepath.Abs(path.Join("..", "..", "test", "target.fa"))
+	in, _ := filepath.Abs(path.Join("..", "..", "test", "input.fa"))
 	out, _ := filepath.Abs(path.Join("..", "..", "bin", "test_output.json"))
-	// db, _ := filepath.Abs(path.Join("..", "..", "test", "mockDB", "mockDB"))
+	dbs, _ := filepath.Abs(path.Join("..", "..", "test", "db2", "db2"))
 
 	// https://stackoverflow.com/a/50880663
 	cmd := &cobra.Command{}
 	cmd.Flags().String("in", in, "")
 	cmd.Flags().String("out", out, "")
-	cmd.Flags().String("dbs", "", "")
+	cmd.Flags().String("dbs", dbs, "")
 	cmd.Flags().Bool("addgene", true, "")
 
 	type args struct {
