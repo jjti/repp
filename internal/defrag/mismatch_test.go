@@ -49,7 +49,7 @@ func Test_isMismatch(t *testing.T) {
 }
 
 func TestMismatch(t *testing.T) {
-	testDB, _ := filepath.Abs(path.Join("..", "..", "test", "blast", "db"))
+	testDB, _ := filepath.Abs(path.Join("..", "..", "test", "db", "db"))
 
 	vendors := config.New().Vendors()
 

@@ -13,7 +13,7 @@ func Test_primers(t *testing.T) {
 
 	c.Fragments.MinHomology = 20
 	c.PCR.P3MaxPenalty = 50.0
-	c.DBs = path.Join("..", "..", "test", "blast", "db")
+	c.DBs = path.Join("..", "..", "test", "db", "db")
 
 	type args struct {
 		last node
