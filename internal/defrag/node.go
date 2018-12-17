@@ -3,6 +3,7 @@ package defrag
 import (
 	"fmt"
 	"math"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -36,13 +37,21 @@ type node struct {
 
 	// the cost of the node. eg: fragments from Addgene cost $65
 	cost float64
+
+	// url to get the node, eg: link for addgene page
+	url string
 }
 
 // new creates a node from a Match
 func new(m Match, seqL int, conf *config.Config) node {
 	cost := 0.0
+	url := ""
 	if strings.Contains(m.Entry, "addgene") {
+		re := regexp.MustCompile("^.*addgene\\|(\\d*)")
+		match := re.FindStringSubmatch(m.Entry)
+
 		cost = conf.AddGeneVectorCost
+		url = fmt.Sprintf("https://www.addgene.org/%s/", match[1])
 	}
 
 	return node{
@@ -53,6 +62,7 @@ func new(m Match, seqL int, conf *config.Config) node {
 		end:      m.End,
 		conf:     conf,
 		cost:     cost,
+		url:      url,
 	}
 }
 
@@ -63,6 +73,7 @@ func (n *node) fragment() Fragment {
 		Seq:   n.seq,
 		Entry: n.id,
 		Type:  PCR,
+		URL:   n.url,
 	}
 }
 
@@ -195,6 +206,7 @@ func (n *node) synthTo(next node, seq string) (synthedFrags []Fragment) {
 			Seq:  seq[start:end],
 			Type: Synthetic,
 			Cost: n.conf.SynthCost(len(n.seq)) + n.cost,
+			URL:  n.url,
 		}
 		synthedFrags = append(synthedFrags, sFrag)
 	}

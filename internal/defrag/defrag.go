@@ -32,6 +32,9 @@ type Fragment struct {
 
 	// Cost to make the fragment
 	Cost float64 `json:"costDollars"`
+
+	// URL, eg link to a vector's addgene page
+	URL string `json:"url,omitempty"`
 }
 
 // Match is a blast "hit" in the blastdb

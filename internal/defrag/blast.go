@@ -123,8 +123,7 @@ func (b *blastExec) run() error {
 	return nil
 }
 
-// runs blast on the query file against another subject file
-// (rather than the blastdb)
+// runs blast on the query file against another subject file (rather than the blastdb)
 func (b *blastExec) runAgainst() error {
 	// create the blast command
 	// https://www.ncbi.nlm.nih.gov/books/NBK279682/
@@ -177,8 +176,7 @@ func (b *blastExec) parse() (matches []Match, err error) {
 		seq := cols[5]
 		mismatch, _ := strconv.Atoi(cols[6])
 
-		// direction not gaurenteed
-		// TODO: how is guarentee spelled?...
+		// direction not guarenteed
 		if start > end {
 			start, end = end, start
 		}
