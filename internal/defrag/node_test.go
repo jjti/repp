@@ -446,7 +446,7 @@ func Test_node_fragment(t *testing.T) {
 			},
 			Fragment{
 				ID:    "frag1",
-				Seq:   "atgctgac",
+				Seq:   "ATGCTGAC",
 				Entry: "frag1",
 			},
 		},

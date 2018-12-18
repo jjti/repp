@@ -70,7 +70,7 @@ func new(m Match, seqL int, conf *config.Config) node {
 func (n *node) fragment() Fragment {
 	return Fragment{
 		ID:    n.id,
-		Seq:   n.seq,
+		Seq:   strings.ToUpper(n.seq),
 		Entry: n.id,
 		Type:  PCR,
 		URL:   n.url,
@@ -91,7 +91,8 @@ func (n *node) synthDist(other node) (synthCount int) {
 	dist := n.distTo(other)
 
 	if dist <= 5 {
-		// if the dist is <5, we can try and PCR our way there
+		// if the dist is <5, we can PCR our way there
+		// add the mutated bp between the nodes with PCR
 		return 0
 	}
 
@@ -203,10 +204,9 @@ func (n *node) synthTo(next node, seq string) (synthedFrags []Fragment) {
 
 		sFrag := Fragment{
 			ID:   fmt.Sprintf("%s-synthetic-%d", n.id, fragIndex+1),
-			Seq:  seq[start:end],
+			Seq:  strings.ToUpper(seq[start:end]),
 			Type: Synthetic,
 			Cost: n.conf.SynthCost(len(n.seq)) + n.cost,
-			URL:  n.url,
 		}
 		synthedFrags = append(synthedFrags, sFrag)
 	}

@@ -36,11 +36,12 @@ type blastExec struct {
 	blastn string
 }
 
-// BLAST the passed Fragment against a set from the command line and create
+// blast the passed Fragment against a set from the command line and create
 // matches for those that are long enough
 //
-// Accepts a fragment to BLAST against
-func BLAST(f *Fragment, dbs []string, minLength int, v config.VendorConfig) (matches []Match, err error) {
+// Accepts a fragment to BLAST against, a list of dbs to BLAST it against,
+// a minLength for a match, and settings around blastn location, output dir, etc
+func blast(f *Fragment, dbs []string, minLength int, v config.VendorConfig) (matches []Match, err error) {
 	for _, db := range dbs {
 		b := &blastExec{
 			f:      f,

@@ -69,27 +69,26 @@ func Execute(cmd *cobra.Command, args []string) {
 
 	// read in the BLAST DB paths from config
 	dbPaths, err := getDBs(dbs, config.Root, addgene)
-	fmt.Printf("%+v\n", dbPaths)
 	if err != nil {
 		log.Fatalf("Failed to find a fragment database: %v", err)
 	}
 
 	// get all the matches against the fragment
-	matches, err := BLAST(&targetFrag, dbPaths, conf.Fragments.MinHomology, conf.Vendors())
+	matches, err := blast(&targetFrag, dbPaths, conf.Fragments.MinHomology, conf.Vendors())
 	if err != nil {
 		log.Fatalf("Failed to blast %s against the BLAST DB: %v", targetFrag.ID, err)
 	}
 
 	// build up the assemblies
-	builds := Assemble(matches, targetFrag.Seq, &conf)
+	builds := assemble(matches, targetFrag.Seq, &conf)
 
 	// try to write the JSON to the filepath
 	if !filepath.IsAbs(output) {
-		output, err = filepath.Abs(output)
-		if err != nil {
+		if output, err = filepath.Abs(output); err != nil {
 			log.Fatalf("Failed to make output path absolute: %v", err)
 		}
 	}
+
 	Write(output, targetFrag, builds)
 }
 
