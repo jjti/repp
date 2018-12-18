@@ -9,10 +9,12 @@ import (
 func pareto(assemblies []assembly) map[int][]assembly {
 	paretos := make(map[int][]assembly)
 	for _, a := range assemblies {
-		if as, ok := paretos[a.len()]; ok {
-			paretos[a.len()] = append(as, a)
+		// the "-1"s here are because the assemblies are circular
+		// their last node is the same as the first
+		if as, ok := paretos[a.len()-1]; ok {
+			paretos[a.len()-1] = append(as, a)
 		} else {
-			paretos[a.len()] = []assembly{a}
+			paretos[a.len()-1] = []assembly{a}
 		}
 	}
 

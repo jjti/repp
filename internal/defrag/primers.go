@@ -23,7 +23,7 @@ type p3Exec struct {
 	next node
 
 	// the target sequence
-	target string
+	seq string
 
 	// input file
 	in string
@@ -42,14 +42,14 @@ type p3Exec struct {
 }
 
 // newP3Exec creates a p3Exec from a fragment
-func newP3Exec(last, this, next node, target string, conf *config.Config) p3Exec {
+func newP3Exec(last, this, next node, seq string, conf *config.Config) p3Exec {
 	vendorConf := conf.Vendors()
 
 	return p3Exec{
 		n:      &this,
 		last:   last,
 		next:   next,
-		target: strings.ToUpper(target),
+		seq:    strings.ToUpper(seq),
 		in:     path.Join(vendorConf.Primer3dir, this.id+".in"),
 		out:    path.Join(vendorConf.Primer3dir, this.id+".out"),
 		p3Path: vendorConf.Primer3core,
@@ -61,8 +61,8 @@ func newP3Exec(last, this, next node, target string, conf *config.Config) p3Exec
 // primers creates primers against a node and return an error if
 //	1. the primers have an unacceptably high primer3 penalty score
 //	2. the primers have off-targets in their parent source
-func primers(last, this, next node, vec string, conf *config.Config) (primers []Primer, err error) {
-	exec := newP3Exec(last, this, next, vec, conf)
+func primers(last, this, next node, seq string, conf *config.Config) (primers []Primer, err error) {
+	exec := newP3Exec(last, this, next, seq, conf)
 	vendorConfig := conf.Vendors()
 
 	// make input file, figure out how to create primers that share homology
@@ -148,9 +148,9 @@ func (p *p3Exec) input(minHomology int) error {
 	length += addRight
 
 	// sizes to make the primers and target size (min, opt, and max)
-	primerMin := 18 // defaults
+	primerMin := 18 // defaults to 18
 	primerOpt := 20
-	primerMax := 23
+	primerMax := 25 // defaults to 23
 	if maxAdded > 0 {
 		maxAdded += 2
 
@@ -171,11 +171,11 @@ func (p *p3Exec) input(minHomology int) error {
 		"PRIMER_NUM_RETURN":                    "1",
 		"PRIMER_TASK":                          "pick_cloning_primers",
 		"PRIMER_PICK_ANYWAY":                   "1",
-		"SEQUENCE_TEMPLATE":                    p.target + p.target + p.target, // triple sequence
-		"SEQUENCE_INCLUDED_REGION":             fmt.Sprintf("%d,%d", start+len(p.target), length),
+		"SEQUENCE_TEMPLATE":                    p.seq + p.seq + p.seq, // triple sequence
+		"SEQUENCE_INCLUDED_REGION":             fmt.Sprintf("%d,%d", start+len(p.seq), length),
 		"PRIMER_MIN_SIZE":                      strconv.Itoa(primerMin), // default 18
-		"PRIMER_OPT_SIZE":                      strconv.Itoa(primerOpt), // 20
-		"PRIMER_MAX_SIZE":                      strconv.Itoa(primerMax), // 23
+		"PRIMER_OPT_SIZE":                      strconv.Itoa(primerOpt),
+		"PRIMER_MAX_SIZE":                      strconv.Itoa(primerMax),
 	}
 
 	var fileContents string

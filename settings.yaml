@@ -40,9 +40,6 @@ synthesis:
       fixed: false
       dollars: 0.6
 
-  # whether to prevent synthesis if it conflicts with a complexity
-  limit: true
-
   ###
   # Synthesis Complexities
   ###
@@ -52,18 +49,6 @@ synthesis:
 
   # Maximum length of a synthesized building fragment
   max-length: 3000
-
-  # max overall gc %
-  max-gc: 65.0
-
-  # problem homo-polymeric gc stretches
-  homo-poly-gc: 10
-
-  # problem homo-polymeric at stretches
-  homo-poly-at: 30
-
-  # problem hairpin length
-  hairpin: 10
 
 # cost of a single addgene vector
 addgene-vector-cost: 65.0
