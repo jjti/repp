@@ -211,7 +211,7 @@ func Test_node_costTo(t *testing.T) {
 				end:   n1.end,
 			},
 			args{
-				other: n1,
+				other: *n1,
 			},
 			1.2,
 		},

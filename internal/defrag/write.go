@@ -41,10 +41,8 @@ type Out struct {
 	Solutions []Solution `json:"solutions"`
 }
 
-// Write a slice of pareto optimal assemblies to the fs at the output path
-func Write(filename string, target Fragment, assemblies [][]Fragment) {
-	target.Seq = strings.ToUpper(target.Seq)
-
+// write a slice of pareto optimal assemblies to the fs at the output path
+func write(filename string, input Fragment, assemblies [][]Fragment) {
 	// calculate final cost of the assembly and fragment count
 	solutions := []Solution{}
 	for _, assembly := range assemblies {
@@ -65,7 +63,7 @@ func Write(filename string, target Fragment, assemblies [][]Fragment) {
 	})
 	out := Out{
 		Time:      time.Now().String(),
-		Target:    target.Seq,
+		Target:    strings.ToUpper(input.Seq),
 		Solutions: solutions,
 	}
 

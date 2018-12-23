@@ -25,28 +25,28 @@ func Test_build(t *testing.T) {
 	}
 
 	// input
-	n21 := node{
+	n21 := &node{
 		id:       "1",
 		uniqueID: "1",
 		start:    0,
 		end:      10,
 		conf:     &c,
 	}
-	n22 := node{
+	n22 := &node{
 		id:       "2",
 		uniqueID: "2",
 		start:    5,
 		end:      15,
 		conf:     &c,
 	}
-	n23 := node{
+	n23 := &node{
 		id:       "3",
 		uniqueID: "1",
 		start:    14,
 		end:      30,
 		conf:     &c,
 	}
-	n24 := node{
+	n24 := &node{
 		id:       "4",
 		uniqueID: "2",
 		start:    28,
@@ -57,17 +57,17 @@ func Test_build(t *testing.T) {
 	// output
 	a1 := assembly{
 		// wrap w/o synthesis
-		nodes:  []node{n21, n22, n23},
+		nodes:  []*node{n21, n22, n23},
 		synths: 0,
 	}
 	a2 := assembly{
 		// wrap w/ synthesis
-		nodes:  []node{n21, n23},
+		nodes:  []*node{n21, n23},
 		synths: 1,
 	}
 	a3 := assembly{
 		// wrap w/o synthsis
-		nodes:  []node{n22, n23, n24},
+		nodes:  []*node{n22, n23, n24},
 		synths: 0,
 	}
 
@@ -82,7 +82,7 @@ func Test_build(t *testing.T) {
 		{
 			"test building of assemblies",
 			args{
-				nodes: []node{n21, n22, n23, n24},
+				nodes: []node{*n21, *n22, *n23, *n24},
 			},
 			[]assembly{a1, a2, a3},
 		},

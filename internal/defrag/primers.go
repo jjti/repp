@@ -11,16 +11,49 @@ import (
 	"github.com/jjtimmons/defrag/config"
 )
 
+// ranged: a stretch that a primer spans relative to the target sequence
+type ranged struct {
+	// start of the primer's range
+	start int
+
+	// end of the primer's range
+	end int
+}
+
+// Primer is a single Primer used to create a PCR fragment
+type Primer struct {
+	// Seq of the primer (In 5' to 3' direction)
+	Seq string `json:"seq"`
+
+	// Strand of the primer; true if template, false if complement
+	Strand bool `json:"strand"`
+
+	// Penalty score
+	Penalty float64 `json:"penalty"`
+
+	// PairPenalty score from primer3
+	PairPenalty float64 `json:"pairPenalty"`
+
+	// Tm of the primer
+	Tm float64 `json:"tm"`
+
+	// GC % max
+	GC float64 `json:"gc"`
+
+	// Range that the primer spans on the
+	Range ranged `json:"-"`
+}
+
 // p3Exec is a utility struct for executing primer3 to create primers for a part
 type p3Exec struct {
 	// node that we're trying to create primers for
 	n *node
 
 	// the node before this one
-	last node
+	last *node
 
 	// the node after this one
-	next node
+	next *node
 
 	// the target sequence
 	seq string
@@ -42,11 +75,11 @@ type p3Exec struct {
 }
 
 // newP3Exec creates a p3Exec from a fragment
-func newP3Exec(last, this, next node, seq string, conf *config.Config) p3Exec {
+func newP3Exec(last, this, next *node, seq string, conf *config.Config) p3Exec {
 	vendorConf := conf.Vendors()
 
 	return p3Exec{
-		n:      &this,
+		n:      this,
 		last:   last,
 		next:   next,
 		seq:    strings.ToUpper(seq),
@@ -58,11 +91,11 @@ func newP3Exec(last, this, next node, seq string, conf *config.Config) p3Exec {
 	}
 }
 
-// primers creates primers against a node and return an error if
+// setPrimers creates primers against a node and return an error if
 //	1. the primers have an unacceptably high primer3 penalty score
 //	2. the primers have off-targets in their parent source
-func primers(last, this, next node, seq string, conf *config.Config) (primers []Primer, err error) {
-	exec := newP3Exec(last, this, next, seq, conf)
+func (n *node) setPrimers(last, next *node, seq string, conf *config.Config) (err error) {
+	exec := newP3Exec(last, n, next, seq, conf)
 	vendorConfig := conf.Vendors()
 
 	// make input file, figure out how to create primers that share homology
@@ -75,38 +108,51 @@ func primers(last, this, next node, seq string, conf *config.Config) (primers []
 		return
 	}
 
-	if primers, err = exec.parse(); err != nil {
+	if err = exec.parse(seq); err != nil {
 		return
 	}
 
 	// 1. check for whether the primers have too have a pair penalty score
-	if primers[0].PairPenalty > conf.PCR.P3MaxPenalty {
-		return nil, fmt.Errorf(
+	if n.primers[0].PairPenalty > conf.PCR.P3MaxPenalty {
+		n.primers = nil
+		return fmt.Errorf(
 			"Primers have pair primer3 penalty score of %f, should be less than %f:\n%+v\n%+v",
-			primers[0].PairPenalty,
+			n.primers[0].PairPenalty,
 			conf.PCR.P3MaxPenalty,
-			primers[0],
-			primers[1],
+			n.primers[0],
+			n.primers[1],
 		)
 	}
 
 	// 2. check for whether either of the primers have an off-target/mismatch
-	for _, primer := range primers {
+	for _, primer := range n.primers {
+
 		// the node's id is the same as the entry ID in the database
-		mismatchExists, mismatch, err := Mismatch(primer.Seq, this.id, conf.DBs, vendorConfig)
+		mismatchExists, mismatch, err := Mismatch(primer.Seq, n.id, conf.DBs, vendorConfig)
 
 		if err != nil {
-			return nil, err
+			n.primers = nil
+			return err
 		}
 
 		if mismatchExists {
-			return nil, fmt.Errorf(
+			n.primers = nil
+			return fmt.Errorf(
 				"Found a mismatching sequence, %s, against the primer %s",
 				mismatch.Seq,
 				primer.Seq,
 			)
 		}
 	}
+
+	// change the node's start and end index to match those of the start and end index
+	// of the primers, since the range may have shifted to get better primers
+	n.start = n.primers[0].Range.start
+	n.end = n.primers[1].Range.end
+
+	// update the node's seq to reflect that change
+	fullSeq := seq + seq
+	n.seq = fullSeq[n.start : n.end+1]
 
 	return
 }
@@ -118,12 +164,12 @@ func primers(last, this, next node, seq string, conf *config.Config) (primers []
 // existing homology to begin with (the two nodes should share ~50/50)
 func (p *p3Exec) input(minHomology int) error {
 	// calc the # of bp this node shares with another
-	bpToShare := func(left, right node) (bpToAdd int) {
+	bpToShare := func(left, right *node) (bpToAdd int) {
 		// calc the # of bp the left node is responsible with the right one
 		bpToAdd = 0
-		if synthDist := left.synthDist(right); synthDist == 0 {
+		if synthDist := left.synthDist(*right); synthDist == 0 {
 			// we're not going to synth our way here, check that there's already enough homology
-			if bpDist := left.distTo(right); bpDist > -(minHomology) {
+			if bpDist := left.distTo(*right); bpDist > -(minHomology) {
 				// this node will add half the homology to the last fragment
 				// ex: 5 bp distance leads to 2.5bp + ~10bp additonal
 				// ex: -10bp distance leads to ~0 bp additional:
@@ -135,8 +181,8 @@ func (p *p3Exec) input(minHomology int) error {
 	}
 
 	// calc the bps to add on the left and right side of this node
-	addLeft := bpToShare(p.last, *p.n)
-	addRight := bpToShare(*p.n, p.next)
+	addLeft := bpToShare(p.last, p.n)
+	addRight := bpToShare(p.n, p.next)
 	maxAdded := addLeft
 	if addRight > maxAdded {
 		maxAdded = addRight
@@ -185,7 +231,7 @@ func (p *p3Exec) input(minHomology int) error {
 		lastDist = 0
 	}
 
-	nextDist := p.n.distTo(p.next)
+	nextDist := p.n.distTo(*p.next)
 	if 0 > nextDist {
 		nextDist = 0
 	}
@@ -253,17 +299,19 @@ func (p *p3Exec) run() error {
 }
 
 // parse the output into primers
-func (p *p3Exec) parse() (primers []Primer, err error) {
-	fmt.Println(p.out)
+//
+// input is the target sequence we're building for. We need it to modulo
+// the primer ranges
+func (p *p3Exec) parse(input string) (err error) {
 	file, err := ioutil.ReadFile(p.out)
 	if err != nil {
-		return nil, err
+		return
 	}
-	fileS := string(file)
+	fileContents := string(file)
 
 	// read in results into map, they're all 1:1
 	results := make(map[string]string)
-	for _, line := range strings.Split(fileS, "\n") {
+	for _, line := range strings.Split(fileContents, "\n") {
 		keyVal := strings.Split(line, "=")
 		if len(keyVal) > 1 {
 			results[strings.TrimSpace(keyVal[0])] = strings.TrimSpace(keyVal[1])
@@ -271,11 +319,11 @@ func (p *p3Exec) parse() (primers []Primer, err error) {
 	}
 
 	if p3Warnings := results["PRIMER_WARNING"]; p3Warnings != "" {
-		return nil, fmt.Errorf("Primer3 generated warnings: %s", p3Warnings)
+		return fmt.Errorf("Primer3 generated warnings: %s", p3Warnings)
 	}
 
 	if p3Error := results["PRIMER_ERROR"]; p3Error != "" {
-		return nil, fmt.Errorf("Failed to execute primer3: %s", p3Error)
+		return fmt.Errorf("Failed to execute primer3: %s", p3Error)
 	}
 
 	// read in a single primer from the output string file
@@ -292,6 +340,15 @@ func (p *p3Exec) parse() (primers []Primer, err error) {
 		penaltyfloat, _ := strconv.ParseFloat(penalty, 64)
 		pairfloat, _ := strconv.ParseFloat(pairPenalty, 64)
 
+		primerRange := results[fmt.Sprintf("PRIMER_%s_0", side)]
+		primerStart, _ := strconv.Atoi(strings.Split(primerRange, ",")[0])
+		primerStart = primerStart - len(input)
+		primerEnd := primerStart + len(seq)
+		if side == "RIGHT" {
+			primerStart -= len(seq)
+			primerEnd = primerStart + len(seq)
+		}
+
 		return Primer{
 			Seq:         seq,
 			Strand:      side == "LEFT",
@@ -299,11 +356,17 @@ func (p *p3Exec) parse() (primers []Primer, err error) {
 			GC:          gcfloat,
 			Penalty:     penaltyfloat,
 			PairPenalty: pairfloat,
+			Range: ranged{
+				start: primerStart,
+				end:   primerEnd,
+			},
 		}
 	}
 
-	return []Primer{
+	p.n.primers = []Primer{
 		parsePrimer("LEFT"),
 		parsePrimer("RIGHT"),
-	}, nil
+	}
+
+	return nil
 }

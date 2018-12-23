@@ -42,6 +42,9 @@ func TestExecute(t *testing.T) {
 			Execute(tt.args.cmd, tt.args.args)
 		})
 	}
+
+	t.Error()
+
 }
 
 func Test_parseDBs(t *testing.T) {
