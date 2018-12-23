@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/jjtimmons/defrag/config"
@@ -42,6 +43,8 @@ type Out struct {
 
 // Write a slice of pareto optimal assemblies to the fs at the output path
 func Write(filename string, target Fragment, assemblies [][]Fragment) {
+	target.Seq = strings.ToUpper(target.Seq)
+
 	// calculate final cost of the assembly and fragment count
 	solutions := []Solution{}
 	for _, assembly := range assemblies {
