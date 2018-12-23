@@ -24,6 +24,10 @@ Find fragments to assemble a vector from a list of features by name. iGEM part n
 defrag features -i "pSB1C3 FJ172221" -o vector.json
 ```
 
+## Checks
+
+- Primer off-targets (BLAST)
+
 ## TODO
 
 - Allow users to select multiple databases
