@@ -28,7 +28,7 @@ func build(nodes []node, maxNodes int) (assemblies []assembly) {
 	for i, n := range nodes {
 		nodes[i].assemblies = []assembly{
 			assembly{
-				nodes:  []node{n},   // just self
+				nodes:  []*node{&n}, // just self
 				cost:   n.costTo(n), // just PCR,
 				synths: 0,           // no synthetic nodes at start
 			},

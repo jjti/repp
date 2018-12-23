@@ -8,8 +8,8 @@ import (
 	"strings"
 )
 
-// Read a FASTA file (by its path on local FS) to a slice of Fragments
-func Read(path string) (fragments []Fragment, err error) {
+// read a FASTA file (by its path on local FS) to a slice of Fragments
+func read(path string) (fragments []Fragment, err error) {
 	if !filepath.IsAbs(path) {
 		path, err = filepath.Abs(path)
 		if err != nil {

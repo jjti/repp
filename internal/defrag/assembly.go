@@ -10,7 +10,7 @@ import (
 // distance from the end of the target vector
 type assembly struct {
 	// nodes, ordered by distance from the "end" of the vector
-	nodes []node
+	nodes []*node
 
 	// estimated cost of making this assembly
 	cost float64
@@ -54,14 +54,14 @@ func (a *assembly) add(n node, maxCount int) (newAssembly assembly, created, com
 		}
 
 		return assembly{
-			nodes:  append(a.nodes, n),
+			nodes:  append(a.nodes, &n),
 			cost:   a.cost + annealCost,
 			synths: a.synths + synths,
 		}, created, complete
 	}
 
 	return assembly{
-		nodes:  append(a.nodes, n),
+		nodes:  append(a.nodes, &n),
 		cost:   a.cost + annealCost,
 		synths: a.synths + synths,
 	}, created, false
@@ -91,7 +91,11 @@ func (a *assembly) len() int {
 // it can fail. For example, a PCR Fragment may have off-targets in
 // the parent vector. If that happens, we return the problem node and nil
 // building fragments
-func (a *assembly) fill(seq string, conf *config.Config) (frags []Fragment) {
+func (a *assembly) fill(seq string, conf *config.Config) (frags []Fragment, err error) {
+	// do two loops. the first is to fill in primers. let each node create primers for
+	// itself that will span it to the next or adjacent fragments. this has to be done
+	// in two loops because synthesis depends on nodes' ranges, and nodes' ranges
+	// may change during setPrimers (we let primer3_core pick from a range of primer options)
 	for i, n := range a.nodes {
 		// last node, do nothing
 		// here only to allow for vector "circularization" if we need to synthesize
@@ -101,47 +105,56 @@ func (a *assembly) fill(seq string, conf *config.Config) (frags []Fragment) {
 		}
 
 		// try and make primers for the fragment (need last and next nodes)
-		var last node
-		if i > 0 {
-			last = a.nodes[i-1]
-		} else { // mock up a last fragment that's to the left of this starting node
+		var last *node
+		if i == 0 {
+			// mock up a last fragment that's to the left of this starting node
 			final := a.nodes[len(a.nodes)-2]
-			last = node{
+			last = &node{
 				start: final.start - len(seq),
 				end:   final.end - len(seq),
 				conf:  conf,
 			}
+		} else {
+			last = a.nodes[i-1]
 		}
 
-		var next node
+		var next *node
 		if i < len(a.nodes)-1 {
 			next = a.nodes[i+1]
 		} else { // mock up a next fragment that's to the right of this terminal node
 			first := a.nodes[0]
-			next = node{
+			next = &node{
 				start: first.start + len(seq),
 				end:   first.end + len(seq),
 				conf:  conf,
 			}
 		}
 
-		fragPrimers, err := primers(last, n, next, seq, conf)
-		if err != nil {
-			fmt.Printf("Failed to fill %s: %v\n", n.id, err)
-			return nil
+		if err := n.setPrimers(last, next, seq, conf); err != nil || len(n.primers) < 2 {
+			return nil, fmt.Errorf("failed to fill %s: %v", n.id, err)
+		}
+	}
+
+	// do another loop to covert the nodes with primers to fragments and
+	// synthesize the sequence between nodes
+	for i, n := range a.nodes {
+		// last node, do nothing
+		// here only to allow for vector "circularization" if we need to synthesize
+		// from a.nodes[len(a.nodes)-2] to a.nodes[len(a.nodes)-1]
+		if i > 0 && n.uniqueID == a.nodes[0].uniqueID {
+			break
 		}
 
-		// convert, set primers and store this to the list of building fragments
-		pLength := len(fragPrimers[0].Seq + fragPrimers[1].Seq)
+		// convert to a fragment from a node, store this to the list of building fragments
+		// cost is calculated here as the summed cost of both primers (based on length)
 		frag := n.fragment()
-		frag.Primers = fragPrimers
-		frag.Cost = conf.PCR.BPCost*float64(pLength) + n.cost
 		frags = append(frags, frag)
 
-		// add synthesized fragments between the two if necessary
-		if synthedFrags := n.synthTo(a.nodes[i+1], seq); synthedFrags != nil {
+		// add synthesized fragments between this node and the next (if necessary)
+		if synthedFrags := n.synthTo(*a.nodes[i+1], seq); synthedFrags != nil {
 			frags = append(frags, synthedFrags...)
 		}
 	}
+
 	return
 }

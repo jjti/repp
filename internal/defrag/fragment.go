@@ -24,24 +24,3 @@ type Fragment struct {
 	// Type of this fragment
 	Type Type `json:"-"`
 }
-
-// Primer is a single Primer used to create a PCR fragment
-type Primer struct {
-	// Seq of the primer (In 5' to 3' direction)
-	Seq string `json:"seq"`
-
-	// Strand of the primer; true if template, false if complement
-	Strand bool `json:"strand"`
-
-	// Penalty score
-	Penalty float64 `json:"penalty"`
-
-	// PairPenalty score from primer3
-	PairPenalty float64 `json:"pairPenalty"`
-
-	// Tm of the primer
-	Tm float64 `json:"tm"`
-
-	// GC % max
-	GC float64 `json:"gc"`
-}

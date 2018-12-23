@@ -51,7 +51,7 @@ func Execute(cmd *cobra.Command, args []string) {
 	}
 
 	// read the target sequence (the first in the slice is used)
-	fragments, err := Read(in)
+	fragments, err := read(in)
 	if err != nil {
 		log.Fatalf("Failed to read in fasta files at %s: %v", in, err)
 	}
@@ -89,7 +89,7 @@ func Execute(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	Write(output, targetFrag, builds)
+	write(output, targetFrag, builds)
 }
 
 // getDBs returns a list of absolute paths to BLAST databases used during a given run

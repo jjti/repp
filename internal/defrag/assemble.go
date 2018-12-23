@@ -1,7 +1,7 @@
 package defrag
 
 import (
-	"fmt"
+	"log"
 
 	"github.com/jjtimmons/defrag/config"
 )
@@ -35,16 +35,17 @@ func assemble(matches []Match, seq string, conf *config.Config) [][]Fragment {
 
 	// "fill-in" the fragments (create synthetic fragments and primers)
 	filled := make(map[int][]Fragment)
-	for count, assemblies := range paretos {
+	for _, assemblies := range paretos {
 		// get the first assembly that fills properly (cheapest workable solution)
 		for _, singleAssembly := range assemblies {
-			filledFrags := singleAssembly.fill(seq, conf)
+			filledFrags, err := singleAssembly.fill(seq, conf)
+			if err != nil {
+				log.Fatal(err)
+			}
 
 			// if a node in the assembly fails to be prepared,
 			// remove all assemblies with the node and try again
 			if filledFrags != nil {
-				fmt.Printf("%d : %d\n", count, len(filledFrags))
-
 				// check for other assemblies of the same size,
 				// compare price and keep the cheaper of the two
 				if other, dup := filled[len(filledFrags)]; dup {

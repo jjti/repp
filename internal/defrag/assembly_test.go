@@ -12,19 +12,19 @@ import (
 var (
 	c = config.New()
 
-	n1 = node{
+	n1 = &node{
 		uniqueID: "1",
 		start:    0,
 		end:      50,
 		conf:     &c,
 	}
-	n2 = node{
+	n2 = &node{
 		uniqueID: "2",
 		start:    20,
 		end:      80,
 		conf:     &c,
 	}
-	n3 = node{
+	n3 = &node{
 		uniqueID: "3",
 		start:    60,
 		end:      100,
@@ -44,7 +44,7 @@ func Test_assembly_add(t *testing.T) {
 
 	// create the nodes for testing
 	type fields struct {
-		nodes    []node
+		nodes    []*node
 		cost     float64
 		synths   int
 		maxCount int
@@ -63,16 +63,16 @@ func Test_assembly_add(t *testing.T) {
 		{
 			"add with overlap",
 			fields{
-				nodes:  []node{n1},
+				nodes:  []*node{n1},
 				cost:   0,
 				synths: 0,
 			},
 			args{
-				n: n2,
+				n: *n2,
 			},
 			assembly{
-				nodes:  []node{n1, n2},
-				cost:   n1.costTo(n2),
+				nodes:  []*node{n1, n2},
+				cost:   n1.costTo(*n2),
 				synths: 0,
 			},
 			true,
@@ -81,16 +81,16 @@ func Test_assembly_add(t *testing.T) {
 		{
 			"add with synthesis",
 			fields{
-				nodes:  []node{n1},
+				nodes:  []*node{n1},
 				cost:   10.0,
 				synths: 0,
 			},
 			args{
-				n: n3,
+				n: *n3,
 			},
 			assembly{
-				nodes:  []node{n1, n3},
-				cost:   10.0 + n1.costTo(n3),
+				nodes:  []*node{n1, n3},
+				cost:   10.0 + n1.costTo(*n3),
 				synths: 1,
 			},
 			true,
@@ -99,15 +99,15 @@ func Test_assembly_add(t *testing.T) {
 		{
 			"add with completion",
 			fields{
-				nodes:  []node{n1, n2, n3},
+				nodes:  []*node{n1, n2, n3},
 				cost:   10.0,
 				synths: 0,
 			},
 			args{
-				n: n1,
+				n: *n1,
 			},
 			assembly{
-				nodes:  []node{n1, n2, n3, n1},
+				nodes:  []*node{n1, n2, n3, n1},
 				cost:   10.0,
 				synths: 0,
 			},
@@ -117,7 +117,7 @@ func Test_assembly_add(t *testing.T) {
 		{
 			"add with completion requiring synthesis",
 			fields{
-				nodes:  []node{n1, n2, n3},
+				nodes:  []*node{n1, n2, n3},
 				cost:   16.4,
 				synths: 0,
 			},
@@ -130,7 +130,7 @@ func Test_assembly_add(t *testing.T) {
 				},
 			},
 			assembly{
-				nodes: []node{n1, n2, n3, node{
+				nodes: []*node{n1, n2, n3, &node{
 					uniqueID: n1.uniqueID,
 					start:    n3.start + c.Synthesis.MaxLength,
 					end:      n3.end + c.Synthesis.MaxLength,
@@ -144,12 +144,12 @@ func Test_assembly_add(t *testing.T) {
 		{
 			"don't exceed fragment limit",
 			fields{
-				nodes:  []node{n1, n2, n3, n2, n3},
+				nodes:  []*node{n1, n2, n3, n2, n3},
 				cost:   10.0,
 				synths: 0,
 			},
 			args{
-				n: n2,
+				n: *n2,
 			},
 			assembly{},
 			false,
@@ -179,7 +179,7 @@ func Test_assembly_add(t *testing.T) {
 
 func Test_assembly_contains(t *testing.T) {
 	type fields struct {
-		nodes    []node
+		nodes    []*node
 		cost     float64
 		synths   int
 		maxCount int
@@ -196,7 +196,7 @@ func Test_assembly_contains(t *testing.T) {
 		{
 			"contains node",
 			fields{
-				[]node{n1, n2},
+				[]*node{n1, n2},
 				0.0,
 				0,
 				5,
@@ -211,7 +211,7 @@ func Test_assembly_contains(t *testing.T) {
 		{
 			"doesn't contain node",
 			fields{
-				[]node{n1, n2},
+				[]*node{n1, n2},
 				0.0,
 				0,
 				5,
@@ -240,7 +240,7 @@ func Test_assembly_contains(t *testing.T) {
 
 func Test_assembly_len(t *testing.T) {
 	type fields struct {
-		nodes    []node
+		nodes    []*node
 		cost     float64
 		synths   int
 		maxCount int
@@ -253,7 +253,7 @@ func Test_assembly_len(t *testing.T) {
 		{
 			"length without synths",
 			fields{
-				nodes:  []node{n1, n2},
+				nodes:  []*node{n1, n2},
 				synths: 0,
 			},
 			2,
@@ -261,7 +261,7 @@ func Test_assembly_len(t *testing.T) {
 		{
 			"length with synths",
 			fields{
-				nodes:  []node{n1, n2},
+				nodes:  []*node{n1, n2},
 				synths: 2,
 			},
 			4,
@@ -288,7 +288,7 @@ func Test_assembly_fill(t *testing.T) {
 	c.Synthesis.MaxLength = 1000
 
 	// All of these ids correspond to entires in the test BLAST db
-	f1 := node{
+	f1 := &node{
 		id:       "gnl|addgene|113726(circular)",
 		uniqueID: "01",
 		start:    5,
@@ -297,7 +297,7 @@ func Test_assembly_fill(t *testing.T) {
 		conf:     &c,
 	}
 
-	f2 := node{
+	f2 := &node{
 		id:       "gnl|addgene|85039.1",
 		uniqueID: "02",
 		start:    102,
@@ -306,7 +306,7 @@ func Test_assembly_fill(t *testing.T) {
 		conf:     &c,
 	}
 
-	f3 := node{
+	f3 := &node{
 		id:       "gnl|addgene|39412.1",
 		uniqueID: "03",
 		start:    102 + 121,
@@ -316,7 +316,7 @@ func Test_assembly_fill(t *testing.T) {
 	}
 
 	// starts 150bp past the end of f3, will require synthesis
-	f4 := node{
+	f4 := &node{
 		id:       "gnl|addgene|107006(circular)",
 		uniqueID: "01",
 		start:    102 + 121 + 224 + 150,
@@ -326,7 +326,7 @@ func Test_assembly_fill(t *testing.T) {
 	}
 
 	type fields struct {
-		nodes    []node
+		nodes    []*node
 		cost     float64
 		synths   int
 		maxCount int
@@ -342,7 +342,7 @@ func Test_assembly_fill(t *testing.T) {
 		{
 			"fill in an assembly",
 			fields{
-				nodes: []node{f1, f2, f3, f4},
+				nodes: []*node{f1, f2, f3, f4},
 			},
 			args{
 				seq: "GGCCGCAATAAAATATCTTTATTTTCATTACATCTGTGTGTTGGTTTTTTGTGTGAATCGATAGTACTAACATGACCACCTTGATCTTCATGGTCTGGGTGCCCTCGTAGGGCTTGCCTTCGCCCTCGGATGTGCACTTGAAGTGGTGGTTGTTCACGGTGCCCTCCATGTACAGCTTCATGTGCATGTTCTCCTTGATCAGCTCGCTCATAGGTCCAGGGTTCTCCTCCACGTCTCCAGCCTGCTTCAGCAGGCTGAAGTTAGTAGCTCCGCTTCCGGATCCCCCGGGGAGCATGTCAAGGTCAAAATCGTCAAGAGCGTCAGCAGGCAGCATATCAAGGTCAAAGTCGTCAAGGGCATCGGCTGGGAgCATGTCTAAgTCAAAATCGTCAAGGGCGTCGGCCGGCCCGCCGCTTTcgcacGCCCTGGCAATCGAGATGCTGGACAGGCATCATACCCACTTCTGCCCCCTGGAAGGCGAGTCATGGCAAGACTTTCTGCGGAACAACGCCAAGTCATTCCGCTGTGCTCTCCTCTCACATCGCGACGGGGCTAAAGTGCATCTCGGCACCCGCCCAACAGAGAAACAGTACGAAACCCTGGAAAATCAGCTCGCGTTCCTGTGTCAGCAAGGCTTCTCCCTGGAGAACGCACTGTACGCTCTGTCCGCCGTGGGCCACTTTACACTGGGCTGCGTATTGGAGGATCAGGAGCATCAAGTAGCAAAAGAGGAAAGAGAGACACCTACCACCGATTCTATGCCTGACTGTGGCGGGTGAGCTTAGGGGGCCTCCGCTCCAGCTCGACACCGGGCAGCTGCTGAAGATCGCGAAGAGAGGGGGAGTAACAGCGGTAGAGGCAGTGCACGCCTGGCGCAATGCGCTCACCGGGGCCCCCTTGAACCTGACCCCAGACCAGGTAGTCGCAATCGCGAACAATAATGGGGGAAAGCAAGCCCTGGAAACCGTGCAAAGGTTGTTGCCGGTCCTTTGTCAAGACCACGGCCTTACACCGGAGCAAGTCGTGGCCATTGCAAGCAATGGGGGTGGCAAACAGGCTCTTGAGACGGTTCAGAGACTTCTCCCAGTTCTCTGTCAAGCCGTTGGAGTCCACGTTCTTTAATAGTGGACTCTTGTTCCAAACTGGAACAACACTCAACCCTATCTCGGTCTATTCTTTTGATTTATAAGGGATTTTGCCGATTTCGGCCTATTGGTTAAAAAATGAGCTGATTTAACAAAAATTTAACGCGAATTTTAACAAAATATTAACGCTTACAATTTAGGTGGCACTTTTCGGGGAAATGTGCGCGGAACCCCTATTTGTTTATTTTTCTAAATACATTCAAATATGTATCCGCTCATGAGACAATAACCCTGATAAATGCTTCAATAATATTGAAAAAGGAAGAGTATGAGTATTCAACATTTCCGTGTCGCCCTTATTCCCTTTTTTGCGGCATTTTGCCTTCCTGTTTTTGCTCACCCAGAAACGCTGGTGAAAGTAAAAGATGCTGAAGATCAGTTGGGTGCACGAGTGGGTTACATCGAACTGGATCTCAACAGCGGTAAGATCCTTGAGAGTTTTCGCCCCGAAGAACGTTTTCCAATGATGAGCACTTTTAAAGTTCTGCTATGTGGCGCGGTATTATCCCGTATTGACGCCGGGCAAGAGCAACTCGGTCGCCGCATACACTATTCTCAGAATGACTTGGTTGAGTACTCACCAGTCACAGAAAAGCATCTTACGGATGGCATGACAGTAAGAGAATTATGCAGTGCTGCCATAACCATGAGTGATAACACTGCGGCCAACTTACTTCTGACAACGATCGGAGGACCGAAGGAGCTAACCGCTTTTTTGCACAACATGGGGGATCATGTAACTCGCCTTGATCGTTGGGAACCGGAGCTGAATGAAGCCATACCAAACGACGAGCGTGACACCACGATGCCTGTAGCAATGGCAACAACGTTGCGCAAACTATTAACTGGCGAACTACTTACTCTAGCTTCCCGGCAACAATTAATAGACTGGATGGAGGCGGATAAAGTTGCAGGACCACTTCTGCGCTCGGCCCTTCCGGCTGGCTGGTTTATTGCTGATAAATCTGGAGCCGGTGAGCGTGGGTCTCGCGGTATCATTGCAGCACTGGGGCCAGATGGTAAGCCCTCCCGTATCGTAGTTATCTACACGACGGGGAGTCAGGCAACTATGGATGAACGAAATAGACAGATCGCTGAGATAGGTGCCTCACTGATTAAGCATTGGTAACTGTCAGACCAAGTTTACTCATATATACTTTAGATTGATTTAAAACTTCATTTTTAATTTAAAAGGATCTAGGTGAAGATCCTTTTTGATAATCTCATGACCAAAATCCCTTAACGTGAGTTTTCGTTCCACTGAGCGTCAGACCCCGTAGAA",
@@ -356,7 +356,7 @@ func Test_assembly_fill(t *testing.T) {
 				cost:   tt.fields.cost,
 				synths: tt.fields.synths,
 			}
-			frags := a.fill(tt.args.seq, &c)
+			frags, _ := a.fill(tt.args.seq, &c)
 
 			pcrCount := 0
 			synthCount := 0

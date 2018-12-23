@@ -40,6 +40,9 @@ type node struct {
 
 	// url to get the node, eg: link for addgene page
 	url string
+
+	// primers for amplifying a node, set with setPrimers
+	primers []Primer
 }
 
 // new creates a node from a Match
@@ -68,13 +71,23 @@ func new(m Match, seqL int, conf *config.Config) node {
 
 // fragment converts a node into a fragment
 func (n *node) fragment() Fragment {
-	return Fragment{
-		ID:    n.id,
-		Seq:   strings.ToUpper(n.seq),
-		Entry: n.id,
-		Type:  PCR,
-		URL:   n.url,
+	// should have primers by this point, add up their expected cost
+	cost := n.cost
+	for _, p := range n.primers {
+		cost += conf.PCR.BPCost * float64(len(p.Seq))
 	}
+
+	frag := Fragment{
+		ID:      n.id,
+		Seq:     strings.ToUpper(n.seq),
+		Entry:   n.id,
+		Type:    PCR,
+		URL:     n.url,
+		Primers: n.primers,
+		Cost:    cost,
+	}
+
+	return frag
 }
 
 // distTo returns the distance between the start of this node and the end of the other.
