@@ -165,7 +165,6 @@ func (p *p3Exec) input(minHomology int) error {
 	}
 
 	// see primer3 manual or /vendor/primer3-2.4.0/settings_files/p3_th_settings.txt
-	// TODO: check whether optimal primer sizes can be set for left and right separately
 	settings := map[string]string{
 		"PRIMER_THERMODYNAMIC_PARAMETERS_PATH": p.p3Conf,
 		"PRIMER_NUM_RETURN":                    "1",
@@ -176,6 +175,53 @@ func (p *p3Exec) input(minHomology int) error {
 		"PRIMER_MIN_SIZE":                      strconv.Itoa(primerMin), // default 18
 		"PRIMER_OPT_SIZE":                      strconv.Itoa(primerOpt),
 		"PRIMER_MAX_SIZE":                      strconv.Itoa(primerMax),
+		"PRIMER_EXPLAIN_FLAG":                  "1",
+	}
+
+	// check whether we have wiggle room on the left or right hand sides to move the
+	// primers inward (let primer3 pick better primers)
+	lastDist := p.last.distTo(*p.n)
+	if 0 > lastDist {
+		lastDist = 0
+	}
+
+	nextDist := p.n.distTo(p.next)
+	if 0 > nextDist {
+		nextDist = 0
+	}
+
+	// change 5 to the number of bp we're willing to "insert" via PCR
+	// checking here for whether we're going to synthetisize the neighboring fragments
+	//
+	// if we are, there's more room to pick better primers at the ends of the fragment
+	// (or the best combination of primers within the available space)
+	//
+	// http://primer3.sourceforge.net/primer3_manual.htm#SEQUENCE_PRIMER_PAIR_OK_REGION_LIST
+	if len(p.seq) > 300 && (lastDist > 5 || nextDist > 5) {
+		buffer := 150
+
+		leftStart := start + len(p.seq)
+		leftEnd := start + len(p.seq) + buffer
+		rightStart := start + len(p.seq) + length - buffer
+		excludeLength := rightStart - leftEnd
+
+		if excludeLength > 0 {
+			delete(settings, "PRIMER_PICK_ANYWAY")
+			settings["PRIMER_TASK"] = "pick_primer_list"
+			settings["PRIMER_PICK_LEFT_PRIMER"] = "1"
+			settings["PRIMER_PICK_INTERNAL_OLIGO"] = "0"
+			settings["PRIMER_PICK_RIGHT_PRIMER"] = "1"
+
+			// ugly undoing of the above in case only one side has buffer
+			if lastDist <= 5 {
+				settings["SEQUENCE_FORCE_LEFT_START"] = strconv.Itoa(start + len(p.seq))
+			} else if nextDist <= 5 {
+				settings["SEQUENCE_FORCE_RIGHT_START"] = strconv.Itoa(start + len(p.seq) + length)
+			}
+
+			settings["PRIMER_PRODUCT_SIZE_RANGE"] = fmt.Sprintf("%d-%d", excludeLength, length)
+			settings["SEQUENCE_PRIMER_PAIR_OK_REGION_LIST"] = fmt.Sprintf("%d,%d,%d,%d", leftStart, buffer, rightStart, buffer)
+		}
 	}
 
 	var fileContents string
@@ -208,6 +254,7 @@ func (p *p3Exec) run() error {
 
 // parse the output into primers
 func (p *p3Exec) parse() (primers []Primer, err error) {
+	fmt.Println(p.out)
 	file, err := ioutil.ReadFile(p.out)
 	if err != nil {
 		return nil, err
@@ -221,6 +268,10 @@ func (p *p3Exec) parse() (primers []Primer, err error) {
 		if len(keyVal) > 1 {
 			results[strings.TrimSpace(keyVal[0])] = strings.TrimSpace(keyVal[1])
 		}
+	}
+
+	if p3Warnings := results["PRIMER_WARNING"]; p3Warnings != "" {
+		return nil, fmt.Errorf("Primer3 generated warnings: %s", p3Warnings)
 	}
 
 	if p3Error := results["PRIMER_ERROR"]; p3Error != "" {

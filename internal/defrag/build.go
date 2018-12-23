@@ -18,7 +18,6 @@ func build(nodes []node, maxNodes int) (assemblies []assembly) {
 	// number of additional nodes try synthesizing to, in addition to those that
 	// already have enough homology for overlap without any modifications for each node
 	synthCount := int(math.Max(5, 0.05*float64(len(nodes)))) // 5 of 5%, whichever is greater
-	// synthCount := 5
 
 	// sort with increasing start index
 	sort.Slice(nodes, func(i, j int) bool {

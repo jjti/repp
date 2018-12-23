@@ -135,7 +135,6 @@ func (a *assembly) fill(seq string, conf *config.Config) (frags []Fragment) {
 		pLength := len(fragPrimers[0].Seq + fragPrimers[1].Seq)
 		frag := n.fragment()
 		frag.Primers = fragPrimers
-		frag.Type = PCR
 		frag.Cost = conf.PCR.BPCost*float64(pLength) + n.cost
 		frags = append(frags, frag)
 
