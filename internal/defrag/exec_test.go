@@ -5,14 +5,15 @@ import (
 	"path"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/spf13/cobra"
 )
 
 func TestExecute(t *testing.T) {
-	in, _ := filepath.Abs(path.Join("..", "..", "test", "input.fa"))
-	out, _ := filepath.Abs(path.Join("..", "..", "bin", "test_output.json"))
+	in, _ := filepath.Abs(path.Join("..", "..", "test", "109049.addgene.fa"))
+	out, _ := filepath.Abs(path.Join("..", "..", "bin", "109049.addgene.json"))
 	dbs, _ := filepath.Abs(path.Join("..", "..", "test", "db2", "db2"))
 
 	// https://stackoverflow.com/a/50880663
@@ -42,9 +43,6 @@ func TestExecute(t *testing.T) {
 			Execute(tt.args.cmd, tt.args.args)
 		})
 	}
-
-	t.Error()
-
 }
 
 func Test_parseDBs(t *testing.T) {
@@ -94,5 +92,26 @@ func Test_parseDBs(t *testing.T) {
 				t.Errorf("parseDBs() = %v, want %v", gotPaths, tt.wantPaths)
 			}
 		})
+	}
+}
+
+// if an input fragment being built is exactly the same as one in a DB, it should be used
+// as is and without PCR or any preparation
+func Test_execute_single_vector(t *testing.T) {
+	in := path.Join("..", "..", "test", "109049.addgene.fa")
+	out := path.Join("..", "..", "bin", "109049.output.json")
+
+	assemblies := execute(in, out, "", true)
+
+	if len(assemblies) != 1 {
+		t.Fatal("failed to return the pareto optimal solution: 109049 alone")
+	}
+
+	if len(assemblies[0]) != 1 || !strings.Contains(assemblies[0][0].ID, "109049") {
+		t.Fatal("failed to use 109049 to build the vector")
+	}
+
+	if assemblies[0][0].Type != Vector {
+		t.Fatalf("failed to recognize 109049 as a Type.Vector, was %d", assemblies[0][0].Type)
 	}
 }
