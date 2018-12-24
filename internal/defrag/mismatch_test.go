@@ -10,6 +10,8 @@ import (
 )
 
 func Test_isMismatch(t *testing.T) {
+	c := config.New()
+
 	type args struct {
 		match match
 	}
@@ -41,7 +43,7 @@ func Test_isMismatch(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := isMismatch(tt.args.match); got != tt.want {
+			if got := isMismatch(tt.args.match, &c); got != tt.want {
 				t.Errorf("isMismatch() = %v, want %v", got, tt.want)
 			}
 		})
@@ -51,7 +53,7 @@ func Test_isMismatch(t *testing.T) {
 func TestMismatch(t *testing.T) {
 	testDB, _ := filepath.Abs(path.Join("..", "..", "test", "db", "db"))
 
-	vendors := config.New().Vendors()
+	conf := config.New()
 
 	type args struct {
 		primer string
@@ -95,7 +97,7 @@ func TestMismatch(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotMismatch, gotMatch, err := mismatch(tt.args.primer, tt.args.parent, testDB, vendors)
+			gotMismatch, gotMatch, err := mismatch(tt.args.primer, tt.args.parent, testDB, &conf)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Mismatch() error = %v, wantErr %v", err, tt.wantErr)
 				return

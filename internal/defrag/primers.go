@@ -96,7 +96,6 @@ func newP3Exec(last, this, next *node, seq string, conf *config.Config) p3Exec {
 //	2. the primers have off-targets in their parent source
 func (n *node) setPrimers(last, next *node, seq string, conf *config.Config) (err error) {
 	exec := newP3Exec(last, n, next, seq, conf)
-	vendorConfig := conf.Vendors()
 
 	// make input file, figure out how to create primers that share homology
 	// with neighboring nodes
@@ -128,7 +127,7 @@ func (n *node) setPrimers(last, next *node, seq string, conf *config.Config) (er
 	for _, primer := range n.primers {
 
 		// the node's id is the same as the entry ID in the database
-		mismatchExists, mm, err := mismatch(primer.Seq, n.id, conf.DBs, vendorConfig)
+		mismatchExists, mm, err := mismatch(primer.Seq, n.id, n.db, conf)
 
 		if err != nil {
 			n.primers = nil
@@ -244,7 +243,7 @@ func (p *p3Exec) input(minHomology int) error {
 	//
 	// http://primer3.sourceforge.net/primer3_manual.htm#SEQUENCE_PRIMER_PAIR_OK_REGION_LIST
 	if len(p.seq) > 300 && (lastDist > 5 || nextDist > 5) {
-		buffer := 150
+		buffer := 50 // TODO: move to settings
 
 		leftStart := start + len(p.seq)
 		leftEnd := start + len(p.seq) + buffer

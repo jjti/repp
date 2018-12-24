@@ -3,6 +3,7 @@ package defrag
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os/exec"
 	"path"
 	"path/filepath"
@@ -18,7 +19,7 @@ import (
 //
 // The equation used for the melting temperature is:
 // Tm = 81.5 + 0.41(%GC) - 675/N - % mismatch, where N = total number of bases.
-func isMismatch(m match) bool {
+func isMismatch(m match, c *config.Config) bool {
 	primer := strings.ToLower(m.seq)
 	primerL := float64(len(primer))
 
@@ -28,7 +29,7 @@ func isMismatch(m match) bool {
 	tmNoMismatch := 81.5 + 0.41*gcPerc - 675/float64(len(primer))
 	tmWithMismatch := tmNoMismatch - float64(m.mismatching)/primerL
 
-	return tmWithMismatch > 40 // TODO: move to settings
+	return tmWithMismatch > c.PCR.MaxOfftargetTm
 }
 
 // mismatch finds mismatching sequences between the query sequence and
@@ -36,11 +37,13 @@ func isMismatch(m match) bool {
 //
 // The parent sequence is passed as the entry id as it exists in the blast db
 // db is passed as the path to the db we're blasting against
-func mismatch(primer, parent, db string, v config.VendorConfig) (mismatch bool, m match, err error) {
+func mismatch(primer, parent, db string, c *config.Config) (mismatch bool, m match, err error) {
+	v := c.Vendors()
+
 	// path to the entry batch file to hold the parent entry accession
 	entry, _ := filepath.Abs(path.Join(v.Blastdir, parent+".entry"))
 
-	// path to the output sequence file  from querying the parent's sequence from the BLAST db
+	// path to the output sequence file from querying the parent's sequence from the BLAST db
 	parentPath, _ := filepath.Abs(path.Join(v.Blastdir, parent+".out"))
 
 	// path the query sequence input file
@@ -54,12 +57,13 @@ func mismatch(primer, parent, db string, v config.VendorConfig) (mismatch bool, 
 	// I was using the "-entry" flag on exec.Command, but have since
 	// switched to the simpler -entry_batch command (on a file) that resolves the issue
 	if err = ioutil.WriteFile(entry, []byte(parent), 0666); err != nil {
-		return false, m, fmt.Errorf("failed to write batch entry list: %v", err)
+		log.Fatalf("failed to write batch entry list: %v", err)
+		return
 	}
 
 	// make a blastdbcmd command (for querying a DB, very different from blastn)
 	queryCmd := exec.Command(
-		v.Makeblastdb,
+		v.Blastdbcmd,
 		"-db", db,
 		"-dbtype", "nucl",
 		"-entry_batch", entry,
@@ -67,6 +71,7 @@ func mismatch(primer, parent, db string, v config.VendorConfig) (mismatch bool, 
 		"-outfmt", "%f", // fasta format
 	)
 	if _, err := queryCmd.CombinedOutput(); err != nil {
+		log.Printf("warning: blastn error: %+v", err)
 		return false, m, nil // pretending there wasn't any mismatch
 	}
 
@@ -109,7 +114,7 @@ func mismatch(primer, parent, db string, v config.VendorConfig) (mismatch bool, 
 		if primerCount > 0 && m.seq == primer {
 			primerCount--
 			continue
-		} else if isMismatch(m) {
+		} else if isMismatch(m, c) {
 			return true, m, nil
 		}
 	}
