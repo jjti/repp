@@ -15,7 +15,7 @@ import (
 func TestExecute(t *testing.T) {
 	in, _ := filepath.Abs(path.Join("..", "..", "test", "109049.addgene.fa"))
 	out, _ := filepath.Abs(path.Join("..", "..", "bin", "109049.addgene.json"))
-	dbs, _ := filepath.Abs(path.Join("..", "..", "test", "db2", "db2"))
+	dbs, _ := filepath.Abs(path.Join("..", "..", "test", "db", "db"))
 
 	// https://stackoverflow.com/a/50880663
 	cmd := &cobra.Command{}
