@@ -32,10 +32,7 @@ type node struct {
 	// assemblies that span from this node to the end of the vector
 	assemblies []assembly
 
-	// assembly configuration
-	conf *config.Config
-
-	// the cost of the node. eg: fragments from Addgene cost $65
+	// cost of the node. eg: fragments from Addgene cost $65
 	cost float64
 
 	// url to get the node, eg: link for addgene page
@@ -43,6 +40,9 @@ type node struct {
 
 	// primers for amplifying a node, set with setPrimers
 	primers []Primer
+
+	// assembly configuration
+	conf *config.Config
 }
 
 // new creates a node from a Match
@@ -72,8 +72,10 @@ func new(m Match, seqL int, conf *config.Config) node {
 // fragment converts a node into a fragment
 func (n *node) fragment() Fragment {
 	// should have primers by this point, add up their expected cost
+	fragType := Vector
 	cost := n.cost
 	for _, p := range n.primers {
+		fragType = PCR // has primers, is a PCR fragment
 		cost += conf.PCR.BPCost * float64(len(p.Seq))
 	}
 
@@ -81,7 +83,7 @@ func (n *node) fragment() Fragment {
 		ID:      n.id,
 		Seq:     strings.ToUpper(n.seq),
 		Entry:   n.id,
-		Type:    PCR,
+		Type:    fragType,
 		URL:     n.url,
 		Primers: n.primers,
 		Cost:    cost,
@@ -176,7 +178,6 @@ func (n *node) reach(nodes []node, i, synthCount int) (reachable []int) {
 			break
 		}
 	}
-
 	return
 }
 
@@ -207,9 +208,9 @@ func (n *node) synthTo(next node, seq string) (synthedFrags []Fragment) {
 	fragL += n.conf.Fragments.MinHomology * 2
 	seq += seq // double to account for sequence across the zero-index
 
-	// slide along the range of sequence to create synthetic fragments for
+	// slide along the range of sequence to create synthetic fragments
 	// and create one at each point, each w/ MinHomology for the fragment
-	// before it and after it
+	// before and after it
 	for fragIndex := 0; fragIndex < int(fragC); fragIndex++ {
 		start := n.end - n.conf.Fragments.MinHomology // start w/ homology
 		start += fragIndex * fragL                    // slide along the range to cover

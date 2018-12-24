@@ -2,6 +2,7 @@ package defrag
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/jjtimmons/defrag/config"
 )
@@ -85,13 +86,35 @@ func (a *assembly) len() int {
 	return len(a.nodes) + a.synths
 }
 
-// fill traverses the nodes in an assembly and converts them into
-// fragments -- either pcr fragments or synthetic fragments
+// fill traverses the nodes in an assembly and converts them into fragments
 //
-// it can fail. For example, a PCR Fragment may have off-targets in
-// the parent vector. If that happens, we return the problem node and nil
-// building fragments
+// - Vector fragments if a node spans the whole target range (entirely contains it)
+//
+// - PCR fragments if the node subselects a region (BLAST match)
+//
+// - Synthetic fragments if there wasn't a match for a region
+//
+// It can fail. For example, a PCR Fragment may have off-targets in
+// the parent vector
 func (a *assembly) fill(seq string, conf *config.Config) (frags []Fragment, err error) {
+	fmt.Println(a.len(), len(a.nodes[0].seq), len(seq))
+
+	// edge case where a single node fills the whole target vector. Return just a single
+	// "fragment" (of Vector type... misnomer) that matches the target sequence 100%
+	if a.len() == 1 && len(a.nodes[0].seq) >= len(seq) {
+		n := a.nodes[0]
+		return []Fragment{
+			Fragment{
+				ID:    n.id,
+				Seq:   strings.ToUpper(n.seq),
+				Entry: n.id,
+				Type:  Vector,
+				URL:   n.url,
+				Cost:  n.cost, // only the ordering cost, no PCR/Synth etc
+			},
+		}, nil
+	}
+
 	// do two loops. the first is to fill in primers. let each node create primers for
 	// itself that will span it to the next or adjacent fragments. this has to be done
 	// in two loops because synthesis depends on nodes' ranges, and nodes' ranges
