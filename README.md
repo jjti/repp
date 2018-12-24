@@ -24,9 +24,20 @@ Find fragments to assemble a vector from a list of features by name. iGEM part n
 defrag features -i "pSB1C3 FJ172221" -o vector.json
 ```
 
-## Checks
+## Features
 
-- Primer off-targets (BLAST)
+Checks for and avoids primer off-targets (BLAST) with an annealing temp of >40tm
+
+Lets primer3 choose the best primers available within a range of sequence, if allowable given neighboring fragments:
+
+```
+In example below, A and C are too far away from B for annealing.
+Need to synthesize from A to B and from B to C.
+We let primer3_core pick the best primers available on B (within a 50bp range at the start and the end of B).
+
+------ :A         ------ :C
+          ------ :B
+```
 
 ## TODO
 
