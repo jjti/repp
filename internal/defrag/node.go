@@ -137,12 +137,12 @@ func (n *node) costTo(other node) (cost float64) {
 		if dist < -(n.conf.Fragments.MinHomology) {
 			// there's already enough overlap between this node and the one being tested
 			// estimating two primers, 20bp each
-			return 40*n.conf.PCR.BPCost + n.cost
+			return 40 * n.conf.PCR.BPCost
 		}
 
 		// we have to create some additional primer sequence to reach the next fragment
 		// guessing 40bp plus half MinHomology on each primer
-		return float64(40+n.conf.Fragments.MinHomology)*n.conf.PCR.BPCost + n.cost
+		return float64(40+n.conf.Fragments.MinHomology) * n.conf.PCR.BPCost
 	}
 
 	// we need to create a new synthetic fragment to get from this fragment to the next
@@ -150,7 +150,7 @@ func (n *node) costTo(other node) (cost float64) {
 	// for homology between the two
 	fragLength := n.conf.Fragments.MinHomology + dist
 
-	return n.conf.SynthCost(fragLength) + n.cost
+	return n.conf.SynthCost(fragLength)
 }
 
 // reach returns a slice of node indexes that overlap with, or are the first synth_count nodes

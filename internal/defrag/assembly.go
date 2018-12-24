@@ -48,6 +48,20 @@ func (a *assembly) add(n node, maxCount int) (newAssembly assembly, created, com
 	// calc the estimated dollar cost of getting to the next node
 	annealCost := a.nodes[len(a.nodes)-1].costTo(n)
 
+	// check whether the node is already contained in the assembly
+	nodeContained := false
+	for _, included := range a.nodes {
+		if included.id == n.id {
+			nodeContained = true
+			break
+		}
+	}
+
+	if !nodeContained {
+		// add the cost of procuring this node to the total assembly cost
+		annealCost += n.cost
+	}
+
 	if complete {
 		if synths < 1 {
 			// costs nothing to anneal node to self, already been PCR'ed
