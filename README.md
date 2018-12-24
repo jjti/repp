@@ -26,8 +26,9 @@ defrag features -i "pSB1C3 FJ172221" -o vector.json
 
 ## Features
 
-- Checks for and avoids primer off-targets (BLAST)
-- Lets primer3 choose the best primers available within a range of sequence, if allowable given neighboring fragments:
+Checks for and avoids primer off-targets (BLAST) with an annealing temp of >40tm
+
+Lets primer3 choose the best primers available within a range of sequence, if allowable given neighboring fragments:
 
 ```
 In example below, A and C are too far away from B for annealing.
