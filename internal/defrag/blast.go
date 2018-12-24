@@ -91,7 +91,7 @@ func blast(f *Fragment, dbs []string, minLength int, v config.VendorConfig) (mat
 
 		// make sure the db exists
 		if _, err := os.Stat(db); os.IsNotExist(err) {
-			return nil, fmt.Errorf("failed to find an Addgene database at %s", db)
+			return nil, fmt.Errorf("failed to find a BLAST database at %s", db)
 		}
 
 		// create the input file
