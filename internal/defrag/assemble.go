@@ -30,7 +30,7 @@ func assemble(matches []Match, seq string, conf *config.Config) [][]Fragment {
 
 	// build up slice of assemblies that could, within the upper-limit on
 	// fragment count, be assembled to make the target vector
-	assemblies := build(nodes, conf.Fragments.MaxCount)
+	assemblies := build(nodes, conf.Fragments.MaxCount, seq)
 
 	// build up a map from fragment count to a sorted list of assemblies with that number
 	sortedAssemblies := countMap(assemblies)

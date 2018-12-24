@@ -8,14 +8,14 @@ import (
 	"os/exec"
 	"path"
 	"runtime"
+	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/jjtimmons/defrag/config"
 )
 
-// blastExec is a small utility function for executing BLAST
-// on a fragment.
+// blastExec is a small utility function for executing BLAST on a fragment
 type blastExec struct {
 	// the fragment we're BLASTing
 	f *Fragment
@@ -53,26 +53,26 @@ func blast(f *Fragment, dbs []string, minLength int, v config.VendorConfig) (mat
 
 		// make sure the db exists
 		if _, err := os.Stat(db); os.IsNotExist(err) {
-			return nil, fmt.Errorf("Failed to find an Addgene database at %s", db)
+			return nil, fmt.Errorf("failed to find an Addgene database at %s", db)
 		}
 
 		// create the input file
 		if err := b.create(); err != nil {
-			return nil, fmt.Errorf("Failed at creating BLAST input file at %s: %v", b.in, err)
+			return nil, fmt.Errorf("failed at creating BLAST input file at %s: %v", b.in, err)
 		}
 
 		// execute BLAST
 		if err := b.run(); err != nil {
-			return nil, fmt.Errorf("Failed executing BLAST: %v", err)
+			return nil, fmt.Errorf("failed executing BLAST: %v", err)
 		}
 
 		// parse the output file to Matches against the Fragment
 		dbMatches, err := b.parse()
 		if err != nil {
-			return nil, fmt.Errorf("Failed to parse BLAST output: %v", err)
+			return nil, fmt.Errorf("failed to parse BLAST output: %v", err)
 		}
 
-		log.Printf("%d matches found in %s\n", len(dbMatches), db)
+		log.Printf("%d matches in %s\n", len(dbMatches), db)
 
 		// add these matches against the growing list of matches
 		matches = append(matches, dbMatches...)
@@ -83,6 +83,11 @@ func blast(f *Fragment, dbs []string, minLength int, v config.VendorConfig) (mat
 	if len(matches) < 1 {
 		return nil, fmt.Errorf("did not find any matches for %s", f.ID)
 	}
+
+	for _, m := range matches {
+		fmt.Println(m.Entry, m.Start, m.End)
+	}
+
 	return matches, err
 }
 
@@ -96,7 +101,7 @@ func (b *blastExec) create() error {
 	return ioutil.WriteFile(b.in, []byte(file), 0666)
 }
 
-// run calls the external blastn binary
+// run calls the external blastn binary on the input library
 func (b *blastExec) run() error {
 	threads := runtime.NumCPU() - 1
 	if threads < 1 {
@@ -118,13 +123,13 @@ func (b *blastExec) run() error {
 
 	// execute BLAST and wait on it to finish
 	if output, err := blastCmd.CombinedOutput(); err != nil {
-		log.Fatalf("Failed to execute blastn against db, %s: %v: %s", b.db, err, string(output))
-		return err
+		log.Fatalf("failed to execute blastn against db, %s: %v: %s", b.db, err, string(output))
 	}
+
 	return nil
 }
 
-// runs blast on the query file against another subject file (rather than the blastdb)
+// runs blast on the query file against another subject file (rather than blastdb)
 func (b *blastExec) runAgainst() error {
 	// create the blast command
 	// https://www.ncbi.nlm.nih.gov/books/NBK279682/
@@ -139,9 +144,10 @@ func (b *blastExec) runAgainst() error {
 
 	// execute BLAST and wait on it to finish
 	if output, err := blastCmd.CombinedOutput(); err != nil {
-		log.Fatalf("Failed to execute blastn against db, %s: %v: %s", b.db, err, string(output))
+		log.Fatalf("failed to execute blastn against db, %s: %v: %s", b.db, err, string(output))
 		return err
 	}
+
 	return nil
 }
 
@@ -196,4 +202,50 @@ func (b *blastExec) parse() (matches []Match, err error) {
 		})
 	}
 	return ms, nil
+}
+
+// filter "proper-izes" the matches from BLAST
+//
+// TODO: filter on multiple BLAST databases. Keep ALL fragments from non-remote repositories (ie free
+// fragments) but still properize out the remote fragments. So if a large fragment in the local repository
+// completely emcompasses a smaller fragment in Addgene, remove the fragment from the Addgene database.
+// Cannot do the same if there's a large fragment in the remote but not local db
+//
+// proper-izing fragment matches means removing those that are completely
+// self-contained in other fragments: the larger of the available fragments
+// will be the better one, since it covers a greater region and will almost
+// always be preferable to the smaller one
+//
+// Circular-arc graph: https://en.wikipedia.org/wiki/Circular-arc_graph
+//
+// also remove small fragments here, that are too small to be useful during assembly
+func filter(matches []Match, minSize int) (properized []Match) {
+	properized = []Match{}
+
+	// remove fragments that are shorter the minimum cut off size
+	var largeEnough []Match
+	for _, m := range matches {
+		if m.Length() > minSize {
+			largeEnough = append(largeEnough, m)
+		}
+	}
+
+	// sort largeEnough by their start index
+	// for fragments with equivelant starting indexes, put the larger one first
+	sort.Slice(largeEnough, func(i, j int) bool {
+		if largeEnough[i].Start != largeEnough[j].Start {
+			return largeEnough[i].Start < largeEnough[j].Start
+		}
+		return largeEnough[i].Length() > largeEnough[j].Length()
+	})
+
+	// only include those that aren't encompassed by the one before it
+	for _, m := range largeEnough {
+		lastMatch := len(properized) - 1
+		if lastMatch < 0 || m.End > properized[lastMatch].End {
+			properized = append(properized, m)
+		}
+	}
+
+	return properized
 }

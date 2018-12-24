@@ -54,7 +54,7 @@ func Mismatch(primer, parent, db string, v config.VendorConfig) (mismatch bool, 
 	// I was using the "-entry" flag on exec.Command, but have since
 	// switched to the simpler -entry_batch command (on a file) that resolves the issue
 	if err = ioutil.WriteFile(entry, []byte(parent), 0666); err != nil {
-		return false, match, fmt.Errorf("Failed to write batch entry list: %v", err)
+		return false, match, fmt.Errorf("failed to write batch entry list: %v", err)
 	}
 
 	// make a blastdbcmd command (for querying a DB, very different from blastn)
@@ -73,7 +73,7 @@ func Mismatch(primer, parent, db string, v config.VendorConfig) (mismatch bool, 
 	// create blast input file
 	inContent := fmt.Sprintf(">primer\n%s\n", primer)
 	if err = ioutil.WriteFile(in, []byte(inContent), 0666); err != nil {
-		return false, match, fmt.Errorf("Failed to write primer sequence to query FASTA file: %v", err)
+		return false, match, fmt.Errorf("failed to write primer sequence to query FASTA file: %v", err)
 	}
 
 	// blast the query sequence against the parent sequence
@@ -86,13 +86,13 @@ func Mismatch(primer, parent, db string, v config.VendorConfig) (mismatch bool, 
 
 	// execute blast
 	if err = b.runAgainst(); err != nil {
-		return false, match, fmt.Errorf("Failed to run blast against parent: %v", err)
+		return false, match, fmt.Errorf("failed to run blast against parent: %v", err)
 	}
 
 	// get the BLAST matches
 	matches, err := b.parse()
 	if err != nil {
-		return false, Match{}, fmt.Errorf("Failed to parse matches from %s: %v", out, err)
+		return false, Match{}, fmt.Errorf("failed to parse matches from %s: %v", out, err)
 	}
 
 	// parse the results and check whether any are cause for concern (by Tm)

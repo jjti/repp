@@ -277,7 +277,7 @@ func (p *p3Exec) input(minHomology int) error {
 	fileContents += "=" // required at file's end
 
 	if err := ioutil.WriteFile(p.in, []byte(fileContents), 0666); err != nil {
-		return fmt.Errorf("Failed to create primer3 input file %v: ", err)
+		return fmt.Errorf("failed to create primer3 input file %v: ", err)
 	}
 	return nil
 }
@@ -293,7 +293,7 @@ func (p *p3Exec) run() error {
 
 	// execute primer3 and wait on it to finish
 	if output, err := p3Cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("Failed to execute primer3: %s: %v", string(output), err)
+		return fmt.Errorf("failed to execute primer3: %s: %v", string(output), err)
 	}
 	return nil
 }
@@ -323,7 +323,7 @@ func (p *p3Exec) parse(input string) (err error) {
 	}
 
 	if p3Error := results["PRIMER_ERROR"]; p3Error != "" {
-		return fmt.Errorf("Failed to execute primer3: %s", p3Error)
+		return fmt.Errorf("failed to execute primer3: %s", p3Error)
 	}
 
 	// read in a single primer from the output string file

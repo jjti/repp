@@ -13,13 +13,13 @@ func read(path string) (fragments []Fragment, err error) {
 	if !filepath.IsAbs(path) {
 		path, err = filepath.Abs(path)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to create path to FASTA file: %s", err)
+			return nil, fmt.Errorf("failed to create path to FASTA file: %s", err)
 		}
 	}
 
 	dat, err := ioutil.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to read input FASTA path: %s", err)
+		return nil, fmt.Errorf("failed to read input FASTA path: %s", err)
 	}
 	file := string(dat)
 
@@ -62,7 +62,7 @@ func read(path string) (fragments []Fragment, err error) {
 
 	// opened and parsed file but found nothing
 	if len(fragments) < 1 {
-		return fragments, fmt.Errorf("Failed to parse fragment(s) from %s", file)
+		return fragments, fmt.Errorf("failed to parse fragment(s) from %s", file)
 	}
 
 	return
