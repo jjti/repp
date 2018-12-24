@@ -39,9 +39,9 @@ func Test_BLAST(t *testing.T) {
 		return
 	}
 
-	matchesContain := func(targ Match) {
+	matchesContain := func(targ match) {
 		for _, m := range matches {
-			if targ.Entry == m.Entry && targ.Start == m.Start && targ.End == m.End {
+			if targ.entry == m.entry && targ.start == m.start && targ.end == m.end {
 				return
 			}
 		}
@@ -49,10 +49,10 @@ func Test_BLAST(t *testing.T) {
 		t.Errorf("failed to find match %v in fragment matches", targ)
 	}
 
-	matchesContain(Match{
-		Entry: "gnl|addgene|107006(circular)",
-		Start: 0,
-		End:   72,
+	matchesContain(match{
+		entry: "gnl|addgene|107006(circular)",
+		start: 0,
+		end:   72,
 	})
 }
 
@@ -60,30 +60,30 @@ func Test_BLAST(t *testing.T) {
 // and those that are up against the edge of the fragment
 func Test_filter(t *testing.T) {
 	// test fragment with 3 matches that should be removed
-	matches := []Match{
+	matches := []match{
 		// shouldn't be removed
-		Match{
-			Entry: "m1",
-			Start: 15,
-			End:   19,
+		match{
+			entry: "m1",
+			start: 15,
+			end:   19,
 		},
 		// should be removed because it fits within m3
-		Match{
-			Entry: "m2",
-			Start: 29,
-			End:   34,
+		match{
+			entry: "m2",
+			start: 29,
+			end:   34,
 		},
 		// shouldn't be removed
-		Match{
-			Entry: "m3",
-			Start: 29,
-			End:   35,
+		match{
+			entry: "m3",
+			start: 29,
+			end:   35,
 		},
 		// shouldn't be removed
-		Match{
-			Entry: "m4",
-			Start: 31,
-			End:   72,
+		match{
+			entry: "m4",
+			start: 31,
+			end:   72,
 		},
 	}
 
@@ -96,7 +96,7 @@ func Test_filter(t *testing.T) {
 
 	// make sure m2 has been removed
 	for _, m := range newMatches {
-		if m.Entry == "m2" {
+		if m.entry == "m2" {
 			t.Error("m2 found in resulting matches, should have been removed")
 		}
 	}

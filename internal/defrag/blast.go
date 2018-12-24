@@ -15,6 +15,35 @@ import (
 	"github.com/jjtimmons/defrag/config"
 )
 
+// match is a blast "hit" in the blastdb
+type match struct {
+	// entry of the matched fragment in the database
+	entry string
+
+	// seq of the match on the target vector
+	seq string
+
+	// start of the fragment (0-indexed)
+	start int
+
+	// end of the fragment (0-indexed)
+	end int
+
+	// circular if it's a circular fragment (vector, plasmid, etc)
+	circular bool
+
+	// mismatching number of bps in the match (for primer off-targets)
+	mismatching int
+
+	// internal if the fragment doesn't have to be procured from a remote repository (eg Addgene, iGEM)
+	internal bool
+}
+
+// Length returns the length of the match on the target fragment
+func (m *match) Length() int {
+	return m.end - m.start + 1 // it's inclusive
+}
+
 // blastExec is a small utility function for executing BLAST on a fragment
 type blastExec struct {
 	// the fragment we're BLASTing
@@ -34,6 +63,9 @@ type blastExec struct {
 
 	// path to the blastn executable
 	blastn string
+
+	// internal if the db is a local/user owned list of fragments (ie free)
+	internal bool
 }
 
 // blast the passed Fragment against a set from the command line and create
@@ -41,14 +73,20 @@ type blastExec struct {
 //
 // Accepts a fragment to BLAST against, a list of dbs to BLAST it against,
 // a minLength for a match, and settings around blastn location, output dir, etc
-func blast(f *Fragment, dbs []string, minLength int, v config.VendorConfig) (matches []Match, err error) {
+func blast(f *Fragment, dbs []string, minLength int, v config.VendorConfig) (matches []match, err error) {
 	for _, db := range dbs {
+		internal := true
+		if strings.Contains(db, "addgene") {
+			internal = false
+		}
+
 		b := &blastExec{
-			f:      f,
-			db:     db,
-			in:     path.Join(v.Blastdir, f.ID+".input.fa"),
-			out:    path.Join(v.Blastdir, f.ID+".output"),
-			blastn: v.Blastn,
+			f:        f,
+			db:       db,
+			in:       path.Join(v.Blastdir, f.ID+".input.fa"),
+			out:      path.Join(v.Blastdir, f.ID+".output"),
+			blastn:   v.Blastn,
+			internal: internal,
 		}
 
 		// make sure the db exists
@@ -82,10 +120,6 @@ func blast(f *Fragment, dbs []string, minLength int, v config.VendorConfig) (mat
 	matches = filter(matches, minLength)
 	if len(matches) < 1 {
 		return nil, fmt.Errorf("did not find any matches for %s", f.ID)
-	}
-
-	for _, m := range matches {
-		fmt.Println(m.Entry, m.Start, m.End)
 	}
 
 	return matches, err
@@ -153,7 +187,7 @@ func (b *blastExec) runAgainst() error {
 
 // parse reads the output file into Matches on the Fragment
 // returns a slice of Matches for the blasted fragment
-func (b *blastExec) parse() (matches []Match, err error) {
+func (b *blastExec) parse() (matches []match, err error) {
 	// read in the results
 	file, err := ioutil.ReadFile(b.out)
 	if err != nil {
@@ -162,7 +196,7 @@ func (b *blastExec) parse() (matches []Match, err error) {
 	fileS := string(file)
 
 	// read it into Matches
-	var ms []Match
+	var ms []match
 	for _, line := range strings.Split(fileS, "\n") {
 		// comment lines start with a #
 		if strings.HasPrefix(line, "#") {
@@ -189,16 +223,17 @@ func (b *blastExec) parse() (matches []Match, err error) {
 		}
 
 		// create and append the new match
-		ms = append(ms, Match{
+		ms = append(ms, match{
 			// for later querying when checking for off-targets
-			Entry: id,
-			Seq:   strings.Replace(seq, "-", "", -1),
+			entry: id,
+			seq:   strings.Replace(seq, "-", "", -1),
 			// convert 1-based numbers to 0-based
-			Start: start - 1,
-			End:   end - 1,
+			start: start - 1,
+			end:   end - 1,
 			// brittle, but checking for circular in entry's id
-			Circular: strings.Contains(id, "(circular)"),
-			Mismatch: mismatch,
+			circular:    strings.Contains(id, "(circular)"),
+			mismatching: mismatch,
+			internal:    b.internal,
 		})
 	}
 	return ms, nil
@@ -206,10 +241,8 @@ func (b *blastExec) parse() (matches []Match, err error) {
 
 // filter "proper-izes" the matches from BLAST
 //
-// TODO: filter on multiple BLAST databases. Keep ALL fragments from non-remote repositories (ie free
-// fragments) but still properize out the remote fragments. So if a large fragment in the local repository
-// completely emcompasses a smaller fragment in Addgene, remove the fragment from the Addgene database.
-// Cannot do the same if there's a large fragment in the remote but not local db
+// TODO: filter further here, can remove external matches that are
+// entirely contained by internal matches but am not doing that here
 //
 // proper-izing fragment matches means removing those that are completely
 // self-contained in other fragments: the larger of the available fragments
@@ -219,33 +252,45 @@ func (b *blastExec) parse() (matches []Match, err error) {
 // Circular-arc graph: https://en.wikipedia.org/wiki/Circular-arc_graph
 //
 // also remove small fragments here, that are too small to be useful during assembly
-func filter(matches []Match, minSize int) (properized []Match) {
-	properized = []Match{}
+func filter(matches []match, minSize int) (properized []match) {
+	properized = []match{}
 
 	// remove fragments that are shorter the minimum cut off size
-	var largeEnough []Match
+	// separate the internal and external fragments. the internal
+	// ones should not be removed just if they're self-contained
+	// in another, because they may be cheaper to assemble
+	var internal []match
+	var external []match
 	for _, m := range matches {
 		if m.Length() > minSize {
-			largeEnough = append(largeEnough, m)
+			if m.internal {
+				internal = append(internal, m)
+			} else {
+				external = append(external, m)
+			}
 		}
 	}
 
-	// sort largeEnough by their start index
+	return append(properize(internal), properize(external)...)
+}
+
+// properize remove matches that are entirely contained within others
+func properize(matches []match) (properized []match) {
+	// sort matches by their start index
 	// for fragments with equivelant starting indexes, put the larger one first
-	sort.Slice(largeEnough, func(i, j int) bool {
-		if largeEnough[i].Start != largeEnough[j].Start {
-			return largeEnough[i].Start < largeEnough[j].Start
+	sort.Slice(matches, func(i, j int) bool {
+		if matches[i].start != matches[j].start {
+			return matches[i].start < matches[j].start
 		}
-		return largeEnough[i].Length() > largeEnough[j].Length()
+		return matches[i].Length() > matches[j].Length()
 	})
 
 	// only include those that aren't encompassed by the one before it
-	for _, m := range largeEnough {
+	for _, m := range matches {
 		lastMatch := len(properized) - 1
-		if lastMatch < 0 || m.End > properized[lastMatch].End {
+		if lastMatch < 0 || m.end > properized[lastMatch].end {
 			properized = append(properized, m)
 		}
 	}
-
-	return properized
+	return
 }

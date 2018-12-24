@@ -106,7 +106,7 @@ func (a *assembly) fill(seq string, conf *config.Config) (frags []Fragment, err 
 				ID:    n.id,
 				Seq:   strings.ToUpper(n.seq)[0:len(seq)],
 				Entry: n.id,
-				Type:  Vector,
+				Type:  vector,
 				URL:   n.url,
 				Cost:  n.cost, // only the ordering cost, no PCR/Synth etc
 			},

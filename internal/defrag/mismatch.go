@@ -18,25 +18,25 @@ import (
 //
 // The equation used for the melting temperature is:
 // Tm = 81.5 + 0.41(%GC) - 675/N - % mismatch, where N = total number of bases.
-func isMismatch(match Match) bool {
-	primer := strings.ToLower(match.Seq)
+func isMismatch(m match) bool {
+	primer := strings.ToLower(m.seq)
 	primerL := float64(len(primer))
 
 	noA := strings.Replace(primer, "a", "", -1)
 	noT := strings.Replace(noA, "t", "", -1)
 	gcPerc := float64(len(noT)) / primerL
 	tmNoMismatch := 81.5 + 0.41*gcPerc - 675/float64(len(primer))
-	tmWithMismatch := tmNoMismatch - float64(match.Mismatch)/primerL
+	tmWithMismatch := tmNoMismatch - float64(m.mismatching)/primerL
 
 	return tmWithMismatch > 40 // TODO: move to settings
 }
 
-// Mismatch finds mismatching sequences between the query sequence and
+// mismatch finds mismatching sequences between the query sequence and
 // the parent sequence
 //
 // The parent sequence is passed as the entry id as it exists in the blast db
 // db is passed as the path to the db we're blasting against
-func Mismatch(primer, parent, db string, v config.VendorConfig) (mismatch bool, match Match, err error) {
+func mismatch(primer, parent, db string, v config.VendorConfig) (mismatch bool, m match, err error) {
 	// path to the entry batch file to hold the parent entry accession
 	entry, _ := filepath.Abs(path.Join(v.Blastdir, parent+".entry"))
 
@@ -54,7 +54,7 @@ func Mismatch(primer, parent, db string, v config.VendorConfig) (mismatch bool, 
 	// I was using the "-entry" flag on exec.Command, but have since
 	// switched to the simpler -entry_batch command (on a file) that resolves the issue
 	if err = ioutil.WriteFile(entry, []byte(parent), 0666); err != nil {
-		return false, match, fmt.Errorf("failed to write batch entry list: %v", err)
+		return false, m, fmt.Errorf("failed to write batch entry list: %v", err)
 	}
 
 	// make a blastdbcmd command (for querying a DB, very different from blastn)
@@ -67,13 +67,13 @@ func Mismatch(primer, parent, db string, v config.VendorConfig) (mismatch bool, 
 		"-outfmt", "%f", // fasta format
 	)
 	if _, err := queryCmd.CombinedOutput(); err != nil {
-		return false, match, nil // pretending there wasn't any mismatch
+		return false, m, nil // pretending there wasn't any mismatch
 	}
 
 	// create blast input file
 	inContent := fmt.Sprintf(">primer\n%s\n", primer)
 	if err = ioutil.WriteFile(in, []byte(inContent), 0666); err != nil {
-		return false, match, fmt.Errorf("failed to write primer sequence to query FASTA file: %v", err)
+		return false, m, fmt.Errorf("failed to write primer sequence to query FASTA file: %v", err)
 	}
 
 	// blast the query sequence against the parent sequence
@@ -86,19 +86,19 @@ func Mismatch(primer, parent, db string, v config.VendorConfig) (mismatch bool, 
 
 	// execute blast
 	if err = b.runAgainst(); err != nil {
-		return false, match, fmt.Errorf("failed to run blast against parent: %v", err)
+		return false, m, fmt.Errorf("failed to run blast against parent: %v", err)
 	}
 
 	// get the BLAST matches
 	matches, err := b.parse()
 	if err != nil {
-		return false, Match{}, fmt.Errorf("failed to parse matches from %s: %v", out, err)
+		return false, match{}, fmt.Errorf("failed to parse matches from %s: %v", out, err)
 	}
 
 	// parse the results and check whether any are cause for concern (by Tm)
 	primerCount := 1 // times we expect to see the primer itself
 	for i, m := range matches {
-		if i == 0 && m.Circular {
+		if i == 0 && m.circular {
 			// if the match is against a circular fragment, we might expect to see
 			// the primer's sequence twice, rather than just once
 			primerCount++
@@ -106,7 +106,7 @@ func Mismatch(primer, parent, db string, v config.VendorConfig) (mismatch bool, 
 
 		// one of the matches will, of course, be against the primer itself
 		// and we don't want to double count it
-		if primerCount > 0 && m.Seq == primer {
+		if primerCount > 0 && m.seq == primer {
 			primerCount--
 			continue
 		} else if isMismatch(m) {
@@ -114,5 +114,5 @@ func Mismatch(primer, parent, db string, v config.VendorConfig) (mismatch bool, 
 		}
 	}
 
-	return false, Match{}, nil
+	return false, match{}, nil
 }

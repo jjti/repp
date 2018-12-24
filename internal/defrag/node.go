@@ -45,24 +45,24 @@ type node struct {
 	conf *config.Config
 }
 
-// new creates a node from a Match
-func new(m Match, seqL int, conf *config.Config) node {
+// newNode creates a node from a Match
+func newNode(m match, seqL int, conf *config.Config) node {
 	cost := 0.0
 	url := ""
-	if strings.Contains(m.Entry, "addgene") {
+	if strings.Contains(m.entry, "addgene") {
 		re := regexp.MustCompile("^.*addgene\\|(\\d*)")
-		match := re.FindStringSubmatch(m.Entry)
+		match := re.FindStringSubmatch(m.entry)
 
 		cost = conf.AddGeneVectorCost
 		url = fmt.Sprintf("https://www.addgene.org/%s/", match[1])
 	}
 
 	return node{
-		id:       m.Entry,
-		seq:      strings.ToUpper(m.Seq),
-		uniqueID: strconv.Itoa(m.Start%seqL) + m.Entry,
-		start:    m.Start,
-		end:      m.End,
+		id:       m.entry,
+		seq:      strings.ToUpper(m.seq),
+		uniqueID: strconv.Itoa(m.start%seqL) + m.entry,
+		start:    m.start,
+		end:      m.end,
 		conf:     conf,
 		cost:     cost,
 		url:      url,
@@ -72,10 +72,10 @@ func new(m Match, seqL int, conf *config.Config) node {
 // fragment converts a node into a fragment
 func (n *node) fragment() Fragment {
 	// should have primers by this point, add up their expected cost
-	fragType := Vector
+	fragType := vector
 	cost := n.cost
 	for _, p := range n.primers {
-		fragType = PCR // has primers, is a PCR fragment
+		fragType = pcr // has primers, is a PCR fragment
 		cost += conf.PCR.BPCost * float64(len(p.Seq))
 	}
 
@@ -219,7 +219,7 @@ func (n *node) synthTo(next node, seq string) (synthedFrags []Fragment) {
 		sFrag := Fragment{
 			ID:   fmt.Sprintf("%s-synthetic-%d", n.id, fragIndex+1),
 			Seq:  strings.ToUpper(seq[start:end]),
-			Type: Synthetic,
+			Type: synthetic,
 			Cost: n.conf.SynthCost(len(n.seq)) + n.cost,
 		}
 		synthedFrags = append(synthedFrags, sFrag)

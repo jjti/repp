@@ -44,8 +44,6 @@ func TestExecute(t *testing.T) {
 			Execute(tt.args.cmd, tt.args.args)
 		})
 	}
-
-	t.Fail()
 }
 
 func Test_parseDBs(t *testing.T) {
@@ -114,7 +112,7 @@ func Test_execute_single_vector(t *testing.T) {
 		t.Fatal("failed to use 109049 to build the vector")
 	}
 
-	if assemblies[0][0].Type != Vector {
+	if assemblies[0][0].Type != vector {
 		t.Fatalf("failed to recognize 109049 as a Type.Vector, was %d", assemblies[0][0].Type)
 	}
 }

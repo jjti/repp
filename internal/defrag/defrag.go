@@ -4,12 +4,12 @@ package defrag
 type Type int
 
 const (
-	// Vector is a circular sequence of DNA, e.g.: many of Addgene's plasmids
-	Vector Type = 0
+	// vector is a circular sequence of DNA, e.g.: many of Addgene's plasmids
+	vector Type = 0
 
-	// PCR fragments are those prepared by PCR, often a subselection of their parent vector
-	PCR Type = 1
+	// pcr fragments are those prepared by pcr, often a subselection of their parent vector
+	pcr Type = 1
 
-	// Synthetic fragments are those that will be fully synthesized (ex: gBlocks)
-	Synthetic Type = 2
+	// synthetic fragments are those that will be fully synthesized (ex: gBlocks)
+	synthetic Type = 2
 )

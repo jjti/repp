@@ -362,9 +362,9 @@ func Test_assembly_fill(t *testing.T) {
 			synthCount := 0
 
 			for _, f := range frags {
-				if f.Type == PCR {
+				if f.Type == pcr {
 					pcrCount++
-				} else if f.Type == Synthetic {
+				} else if f.Type == synthetic {
 					synthCount++
 				}
 			}
