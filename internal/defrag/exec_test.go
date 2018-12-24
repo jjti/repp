@@ -2,6 +2,7 @@ package defrag
 
 import (
 	"fmt"
+	"os"
 	"path"
 	"path/filepath"
 	"reflect"
@@ -115,5 +116,53 @@ func Test_execute_single_vector(t *testing.T) {
 
 	if assemblies[0][0].Type != Vector {
 		t.Fatalf("failed to recognize 109049 as a Type.Vector, was %d", assemblies[0][0].Type)
+	}
+}
+
+func Test_parseOut(t *testing.T) {
+	type args struct {
+		in string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantOut string
+	}{
+		{
+			"parse relative path to neighboring output path",
+			args{
+				in: "./test_file.fa",
+			},
+			"./test_file.defrag.json",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if gotOut := parseOut(tt.args.in); gotOut != tt.wantOut {
+				t.Errorf("parseOut() = %v, want %v", gotOut, tt.wantOut)
+			}
+		})
+	}
+}
+
+func Test_getInput(t *testing.T) {
+	// move into the test directory
+	os.Chdir(filepath.Join("..", "..", "test"))
+
+	tests := []struct {
+		name   string
+		wantIn string
+	}{
+		{
+			"get fasta file from directory",
+			"109049.addgene.fa",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if gotIn := getInput(); gotIn != tt.wantIn {
+				t.Errorf("getInput() = %v, want %v", gotIn, tt.wantIn)
+			}
+		})
 	}
 }
