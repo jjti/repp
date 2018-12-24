@@ -97,8 +97,6 @@ func (a *assembly) len() int {
 // It can fail. For example, a PCR Fragment may have off-targets in
 // the parent vector
 func (a *assembly) fill(seq string, conf *config.Config) (frags []Fragment, err error) {
-	fmt.Println(a.len(), len(a.nodes[0].seq), len(seq))
-
 	// edge case where a single node fills the whole target vector. Return just a single
 	// "fragment" (of Vector type... misnomer) that matches the target sequence 100%
 	if a.len() == 1 && len(a.nodes[0].seq) >= len(seq) {
@@ -106,7 +104,7 @@ func (a *assembly) fill(seq string, conf *config.Config) (frags []Fragment, err 
 		return []Fragment{
 			Fragment{
 				ID:    n.id,
-				Seq:   strings.ToUpper(n.seq),
+				Seq:   strings.ToUpper(n.seq)[0:len(seq)],
 				Entry: n.id,
 				Type:  Vector,
 				URL:   n.url,
@@ -144,7 +142,8 @@ func (a *assembly) fill(seq string, conf *config.Config) (frags []Fragment, err 
 		var next *node
 		if i < len(a.nodes)-1 {
 			next = a.nodes[i+1]
-		} else { // mock up a next fragment that's to the right of this terminal node
+		} else {
+			// mock up a next fragment that's to the right of this terminal node
 			first := a.nodes[0]
 			next = &node{
 				start: first.start + len(seq),

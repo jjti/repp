@@ -69,11 +69,11 @@ func write(filename string, input Fragment, assemblies [][]Fragment) {
 
 	output, err := json.MarshalIndent(out, "", "  ")
 	if err != nil {
-		log.Fatalf("Failed to serialize the output data: %v", err)
+		log.Fatalf("failed to serialize the output data: %v", err)
 	}
 
 	err = ioutil.WriteFile(filename, output, 0666)
 	if err != nil {
-		log.Fatalf("Failed to write the results to the file system: %v", err)
+		log.Fatalf("failed to write the results to the file system: %v", err)
 	}
 }
