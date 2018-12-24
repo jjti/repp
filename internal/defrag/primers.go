@@ -128,7 +128,7 @@ func (n *node) setPrimers(last, next *node, seq string, conf *config.Config) (er
 	for _, primer := range n.primers {
 
 		// the node's id is the same as the entry ID in the database
-		mismatchExists, mismatch, err := Mismatch(primer.Seq, n.id, conf.DBs, vendorConfig)
+		mismatchExists, mm, err := mismatch(primer.Seq, n.id, conf.DBs, vendorConfig)
 
 		if err != nil {
 			n.primers = nil
@@ -139,7 +139,7 @@ func (n *node) setPrimers(last, next *node, seq string, conf *config.Config) (er
 			n.primers = nil
 			return fmt.Errorf(
 				"Found a mismatching sequence, %s, against the primer %s",
-				mismatch.Seq,
+				mm.seq,
 				primer.Seq,
 			)
 		}

@@ -64,7 +64,7 @@ func execute(in, out, dbs string, addgene bool) [][]Fragment {
 
 	// set target fragment
 	if len(fragments) > 1 {
-		fmt.Printf(
+		log.Printf(
 			"warning: %d building fragments were in %s. Only targeting the first: %s",
 			len(fragments),
 			in,

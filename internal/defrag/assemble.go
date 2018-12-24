@@ -21,14 +21,14 @@ import (
 // "fill-in" the nodes. Create primers on the node if it's a PCR Fragment
 // or create a sequence to be synthesized if it's a synthetic fragment.
 // Error out and repeat the build stage if a node fails to be filled
-func assemble(matches []Match, seq string, conf *config.Config) [][]Fragment {
+func assemble(matches []match, seq string, conf *config.Config) [][]Fragment {
 	// map fragment Matches to nodes
 	var nodes []node
 	for _, m := range matches {
-		nodes = append(nodes, new(m, len(seq), conf))
+		nodes = append(nodes, newNode(m, len(seq), conf))
 	}
 
-	// build up slice of assemblies that could, within the upper-limit on
+	// build up a slice of assemblies that could, within the upper-limit on
 	// fragment count, be assembled to make the target vector
 	assemblies := build(nodes, conf.Fragments.MaxCount, seq)
 

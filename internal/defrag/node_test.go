@@ -398,7 +398,7 @@ func Test_node_synthTo(t *testing.T) {
 				Fragment{
 					ID:   "first-synthetic-1",
 					Seq:  "GGTGAGCTTAGGGGG",
-					Type: Synthetic,
+					Type: synthetic,
 					Cost: 160,
 				},
 			},
@@ -473,7 +473,7 @@ func Test_new(t *testing.T) {
 	c := config.New()
 
 	type args struct {
-		m    Match
+		m    match
 		seqL int
 	}
 	tests := []struct {
@@ -484,11 +484,11 @@ func Test_new(t *testing.T) {
 		{
 			"create a node from a match",
 			args{
-				m: Match{
-					Entry: "testMatch",
-					Seq:   "atgctagctagtg",
-					Start: 0,
-					End:   12,
+				m: match{
+					entry: "testMatch",
+					seq:   "atgctagctagtg",
+					start: 0,
+					end:   12,
 				},
 				seqL: 50,
 			},
@@ -505,7 +505,7 @@ func Test_new(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := new(tt.args.m, tt.args.seqL, &c); !reflect.DeepEqual(got, tt.want) {
+			if got := newNode(tt.args.m, tt.args.seqL, &c); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("new() = %+v, want %+v", got, tt.want)
 			}
 		})

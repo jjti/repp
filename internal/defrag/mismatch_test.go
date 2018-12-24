@@ -11,7 +11,7 @@ import (
 
 func Test_isMismatch(t *testing.T) {
 	type args struct {
-		match Match
+		match match
 	}
 	tests := []struct {
 		name string
@@ -21,9 +21,9 @@ func Test_isMismatch(t *testing.T) {
 		{
 			"find a mismatching primer",
 			args{
-				match: Match{
-					Seq:      "atgacgacgacgcggac",
-					Mismatch: 0,
+				match: match{
+					seq:         "atgacgacgacgcggac",
+					mismatching: 0,
 				},
 			},
 			true,
@@ -31,9 +31,9 @@ func Test_isMismatch(t *testing.T) {
 		{
 			"no false positive mistmatch",
 			args{
-				match: Match{
-					Seq:      "atgacgacgacgac",
-					Mismatch: 0,
+				match: match{
+					seq:         "atgacgacgacgac",
+					mismatching: 0,
 				},
 			},
 			false,
@@ -61,7 +61,7 @@ func TestMismatch(t *testing.T) {
 		name         string
 		args         args
 		wantMismatch bool
-		wantMatch    Match
+		wantMatch    match
 		wantErr      bool
 	}{
 		{
@@ -71,7 +71,7 @@ func TestMismatch(t *testing.T) {
 				"gnl|addgene|113726(circular)",
 			},
 			false,
-			Match{},
+			match{},
 			false,
 		},
 		// I intentionally added another off-target seq to 107006, AGTATAGTAGGTAGTCATTCTT
@@ -82,20 +82,20 @@ func TestMismatch(t *testing.T) {
 				"gnl|addgene|107006(circular)",
 			},
 			true,
-			Match{
-				Entry:    "addgene:107006(circular)",
-				Seq:      "AGTATAGTAGGTAGTCATTCTT",
-				Start:    0,
-				End:      23,
-				Circular: true,
-				Mismatch: 0,
+			match{
+				entry:       "addgene:107006(circular)",
+				seq:         "AGTATAGTAGGTAGTCATTCTT",
+				start:       0,
+				end:         23,
+				circular:    true,
+				mismatching: 0,
 			},
 			false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotMismatch, gotMatch, err := Mismatch(tt.args.primer, tt.args.parent, testDB, vendors)
+			gotMismatch, gotMatch, err := mismatch(tt.args.primer, tt.args.parent, testDB, vendors)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Mismatch() error = %v, wantErr %v", err, tt.wantErr)
 				return
