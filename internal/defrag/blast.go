@@ -29,6 +29,9 @@ type match struct {
 	// end of the fragment (0-indexed)
 	end int
 
+	// the db that was BLASTed against (used later for checking off-targets in parents)
+	db string
+
 	// circular if it's a circular fragment (vector, plasmid, etc)
 	circular bool
 
@@ -234,6 +237,7 @@ func (b *blastExec) parse() (matches []match, err error) {
 			circular:    strings.Contains(id, "(circular)"),
 			mismatching: mismatch,
 			internal:    b.internal,
+			db:          b.db, // store for checking off-targets later
 		})
 	}
 	return ms, nil

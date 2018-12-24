@@ -37,11 +37,17 @@ type PCRConfig struct {
 	// the cost per bp of primer DNA
 	BPCost float64 `mapstructure:"bp-cost"`
 
+	// MinLength is the minimum size of a fragment (used to filter BLAST results)
+	MinLength int `mapstructure:"min-length"`
+
 	// the maximum primer3 score allowable
 	P3MaxPenalty float64 `mapstructure:"primer3-penalty-max"`
 
-	// MinLength is the minimum size of a fragment (used to filter BLAST results)
-	MinLength int `mapstructure:"min-length"`
+	// the maximum length of a sequence to embed up or downstream of an amplified sequence
+	MaxEmbedLEngth int `mapstructure:"primer-max-embed-length"`
+
+	// MaxOfftargetTm is the maximum tm of an offtarget, above which PCR is abandoned
+	MaxOfftargetTm float64 `mapstructure:"primer-max-offtarget-tm"`
 }
 
 // SynthCost is meta about the cost of synthesizing DNA up to a certain
@@ -68,13 +74,13 @@ type SynthesisConfig struct {
 }
 
 // VendorConfig holds the paths to binaries needed for the library:
-// blastn, makeblastdb, and primer3_core
+// blastn, blastdbcmd, and primer3_core
 type VendorConfig struct {
 	// blastn binary
 	Blastn string
 
-	// makeblastdb binary
-	Makeblastdb string
+	// blastdbcmd binary
+	Blastdbcmd string
 
 	// blast io subdirectory
 	Blastdir string
@@ -189,9 +195,9 @@ func (c Config) Vendors() VendorConfig {
 		log.Fatalf("Failed to create a BLAST dir: %v", err)
 	}
 
-	makeblastdb := filepath.Join(Root, "vendor", "ncbi-blast-2.7.1+", "bin", "blastdbcmd")
-	if _, err := os.Stat(makeblastdb); err != nil {
-		log.Fatalf("Failed to locate makeblastdb executable: %v", err)
+	blastdbcmd := filepath.Join(Root, "vendor", "ncbi-blast-2.7.1+", "bin", "blastdbcmd")
+	if _, err := os.Stat(blastdbcmd); err != nil {
+		log.Fatalf("Failed to locate blastdbcmd executable: %v", err)
 	}
 
 	p3core := filepath.Join(Root, "vendor", "primer3-2.4.0", "src", "primer3_core")
@@ -212,7 +218,7 @@ func (c Config) Vendors() VendorConfig {
 	return VendorConfig{
 		Blastn:        blastn,
 		Blastdir:      blastdir,
-		Makeblastdb:   makeblastdb,
+		Blastdbcmd:    blastdbcmd,
 		Primer3core:   p3core,
 		Primer3config: p3conf,
 		Primer3dir:    p3dir,

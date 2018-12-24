@@ -35,6 +35,9 @@ type node struct {
 	// cost of the node. eg: fragments from Addgene cost $65
 	cost float64
 
+	// db that the node was derived from
+	db string
+
 	// url to get the node, eg: link for addgene page
 	url string
 
@@ -63,6 +66,7 @@ func newNode(m match, seqL int, conf *config.Config) node {
 		uniqueID: strconv.Itoa(m.start%seqL) + m.entry,
 		start:    m.start,
 		end:      m.end,
+		db:       m.db,
 		conf:     conf,
 		cost:     cost,
 		url:      url,
@@ -137,12 +141,12 @@ func (n *node) costTo(other node) (cost float64) {
 		if dist < -(n.conf.Fragments.MinHomology) {
 			// there's already enough overlap between this node and the one being tested
 			// estimating two primers, 20bp each
-			return 40 * n.conf.PCR.BPCost
+			return 46 * n.conf.PCR.BPCost
 		}
 
 		// we have to create some additional primer sequence to reach the next fragment
-		// guessing 40bp plus half MinHomology on each primer
-		return float64(40+n.conf.Fragments.MinHomology) * n.conf.PCR.BPCost
+		// guessing 46bp (2x primer3 target primer length) plus half MinHomology on each primer
+		return float64(46+n.conf.Fragments.MinHomology) * n.conf.PCR.BPCost
 	}
 
 	// we need to create a new synthetic fragment to get from this fragment to the next
