@@ -2,6 +2,7 @@ package defrag
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
 	"path"
 	"path/filepath"
@@ -25,22 +26,22 @@ import (
 func Execute(cmd *cobra.Command, args []string) {
 	in, err := cmd.Flags().GetString("in")
 	if err != nil {
-		log.Fatalf("Cannot parse an input path from args: %v", err)
+		in = getInput()
 	}
 
 	out, err := cmd.Flags().GetString("out")
 	if err != nil {
-		log.Fatalf("Cannot parse an output path from args: %v", err)
-	}
-
-	dbs, err := cmd.Flags().GetString("dbs")
-	if err != nil {
-		log.Fatal(err)
+		out = parseOut(in)
 	}
 
 	addgene, err := cmd.Flags().GetBool("addgene")
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	dbs, err := cmd.Flags().GetString("dbs")
+	if err != nil && !addgene {
+		log.Fatalf("failed to find dbs of building fragments: %v", err)
 	}
 
 	execute(in, out, dbs, addgene)
@@ -52,7 +53,7 @@ func execute(in, out, dbs string, addgene bool) [][]Fragment {
 
 	// no path to input file
 	if in == "" {
-		log.Fatal("failed: no input file argument")
+		log.Fatal("failed without an input file argument")
 	}
 
 	// read the target sequence (the first in the slice is used)
@@ -97,6 +98,37 @@ func execute(in, out, dbs string, addgene bool) [][]Fragment {
 
 	// return the builds (for e2e testing)
 	return builds
+}
+
+// getInput returns the first fasta file in the current directory. Is used
+// if the user hasn't specified an input file
+func getInput() (in string) {
+	dir, _ := filepath.Abs(".")
+	files, err := ioutil.ReadDir(dir)
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, file := range files {
+		if file.IsDir() {
+			continue
+		}
+
+		ext := strings.ToLower(filepath.Ext(file.Name()))
+		if ext == ".fa" || ext == ".fasta" {
+			return file.Name()
+		}
+	}
+
+	log.Fatalf("failed: no input argument set and no fasta file found in %s", dir)
+	return
+}
+
+// parseOut gets an outpath path from an input path (if no output path is
+// specified). It uses the same name as the input path to create an output
+func parseOut(in string) (out string) {
+	ext := filepath.Ext(in)
+	noExt := in[0 : len(in)-len(ext)]
+	return noExt + ".defrag.json"
 }
 
 // getDBs returns a list of absolute paths to BLAST databases used during a given run
