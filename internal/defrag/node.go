@@ -73,6 +73,23 @@ func newNode(m match, seqL int, conf *config.Config) node {
 	}
 }
 
+// copy returns a deep dopy of a node. used because nodes are mutated
+// during assembly filling, and we don't want primers being shared between
+// nodes in different assemblies
+func (n *node) copy() *node {
+	return &node{
+		id:       n.id,
+		seq:      n.seq,
+		uniqueID: n.uniqueID,
+		start:    n.start,
+		end:      n.end,
+		db:       n.db,
+		conf:     n.conf,
+		cost:     n.cost,
+		url:      n.url,
+	}
+}
+
 // fragment converts a node into a fragment
 func (n *node) fragment() Fragment {
 	// should have primers by this point, add up their expected cost
