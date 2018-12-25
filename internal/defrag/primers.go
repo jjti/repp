@@ -76,23 +76,6 @@ type p3Exec struct {
 	p3Dir string
 }
 
-// newP3Exec creates a p3Exec from a fragment
-func newP3Exec(last, this, next *node, seq string, conf *config.Config) p3Exec {
-	vendorConf := conf.Vendors()
-
-	return p3Exec{
-		n:      this,
-		last:   last,
-		next:   next,
-		seq:    strings.ToUpper(seq),
-		in:     path.Join(vendorConf.Primer3dir, this.id+".in"),
-		out:    path.Join(vendorConf.Primer3dir, this.id+".out"),
-		p3Path: vendorConf.Primer3core,
-		p3Conf: vendorConf.Primer3config,
-		p3Dir:  vendorConf.Primer3dir,
-	}
-}
-
 // setPrimers creates primers against a node and return an error if
 //	1. the primers have an unacceptably high primer3 penalty score
 //	2. the primers have off-targets in their parent source
@@ -131,7 +114,6 @@ func (n *node) setPrimers(last, next *node, seq string, conf *config.Config) (er
 
 	// 2. check for whether either of the primers have an off-target/mismatch
 	for _, primer := range n.primers {
-
 		// the node's id is the same as the entry ID in the database
 		mismatchExists, mm, err := mismatch(primer.Seq, n.id, n.db, conf)
 
@@ -149,8 +131,24 @@ func (n *node) setPrimers(last, next *node, seq string, conf *config.Config) (er
 			)
 		}
 	}
-
 	return
+}
+
+// newP3Exec creates a p3Exec from a fragment
+func newP3Exec(last, this, next *node, seq string, conf *config.Config) p3Exec {
+	vendorConf := conf.Vendors()
+
+	return p3Exec{
+		n:      this,
+		last:   last,
+		next:   next,
+		seq:    strings.ToUpper(seq),
+		in:     path.Join(vendorConf.Primer3dir, this.id+".in"),
+		out:    path.Join(vendorConf.Primer3dir, this.id+".out"),
+		p3Path: vendorConf.Primer3core,
+		p3Conf: vendorConf.Primer3config,
+		p3Dir:  vendorConf.Primer3dir,
+	}
 }
 
 // input makes a primer3 input settings file and writes it to the filesystem
@@ -164,13 +162,13 @@ func (p *p3Exec) input(minHomology, maxEmbedLength int) (bpAddLeft, bpAddRight i
 	// calc the bps to add on the left and right side of this node
 	addLeft := bpToShare(p.last, p.n, minHomology)
 	addRight := bpToShare(p.n, p.next, minHomology)
-	maxAdded := addLeft
-	if maxAdded < addRight {
-		maxAdded = addRight
+	growPrimers := addLeft
+	if growPrimers < addRight {
+		growPrimers = addRight
 	}
 
 	start := p.n.start
-	length := p.n.end - start + 1
+	length := p.n.end - start
 
 	// if one sides has a lot to add but the other doesn't, don't increase
 	// the primer generation size in primer3. will instead concat the sequence on later
@@ -178,30 +176,51 @@ func (p *p3Exec) input(minHomology, maxEmbedLength int) (bpAddLeft, bpAddRight i
 	if math.Abs(float64(addLeft)-float64(addRight)) > 6.0 {
 		bpAddLeft = addLeft
 		bpAddRight = addRight
-		maxAdded = 0
-	} else if maxAdded > 36-23 {
+		growPrimers = 0
+	} else if growPrimers > 36-26 {
 		// we can't exceed 36 bp here (primer3 upper-limit), just create primers for the portion that
 		// anneals to the template and add the other portion/seqs on later (in mutateNodePrimers)
 		bpAddLeft = addLeft
 		bpAddRight = addRight
-		maxAdded = 0
+		growPrimers = 0
 	} else {
 		start -= addLeft
-		length = p.n.end - start + 1
+		length = p.n.end - start
 		length += addRight
 	}
 
 	// sizes to make the primers and target size (min, opt, and max)
-	primerMin := 18 + maxAdded // defaults to 18
-	primerOpt := 20 + maxAdded
-	primerMax := 23 + maxAdded // defaults to 23
+	primerMin := 18 + growPrimers // defaults to 18
+	primerOpt := 20 + growPrimers
+	primerMax := 26 + growPrimers // defaults to 23
 
 	// check whether we have wiggle room on the left or right hand sides to move the
 	// primers inward (let primer3 pick better primers)
 	distFromLast := p.last.distTo(*p.n)
 	distFromNext := p.n.distTo(*p.next)
-	optimizeLeft := distFromLast > maxEmbedLength  // will we have to synthesize on the left anyway
-	optimizeRight := distFromNext > maxEmbedLength // will we have to synthesize on the right anyway
+
+	leftBuffer := 0
+	if distFromLast > maxEmbedLength {
+		// we'll synthesize on left, add 100bp of buffer
+		// TODO: move to settings
+		leftBuffer = 100
+	} else if distFromLast < -minHomology {
+		// there's enough additonal overlap that we can move this FWD primer inwards
+		// but only enough to ensure that there's still minHomology bp overlap
+		// and only enough so we leave the neighbor space for primer optimization too
+		leftBuffer = (-distFromLast - minHomology) / 2
+	}
+
+	rightBuffer := 0
+	if distFromNext > maxEmbedLength {
+		// will we have to synthesize on the right anyway, add 100bp of buffer
+		rightBuffer = 100
+	} else if distFromNext < -minHomology {
+		// we can shift the REV primer inwards by enough to ensure there's still
+		// minHomology bp overlap
+		// and leave enough space for the neighboring fragment to optimize too
+		rightBuffer = (-distFromNext - minHomology) / 2
+	}
 
 	// create the settings map from all instructions
 	file := settingsFile(
@@ -212,8 +231,8 @@ func (p *p3Exec) input(minHomology, maxEmbedLength int) (bpAddLeft, bpAddRight i
 		primerMin,
 		primerOpt,
 		primerMax,
-		optimizeLeft,
-		optimizeRight)
+		leftBuffer,
+		rightBuffer)
 
 	if err := ioutil.WriteFile(p.in, file, 0666); err != nil {
 		return 0, 0, fmt.Errorf("failed to write primer3 input file %v: ", err)
@@ -244,7 +263,9 @@ func bpToShare(left, right *node, minHomology int) (bpToAdd int) {
 func settingsFile(
 	seq, p3conf string,
 	start, length, primerMin, primerOpt, primerMax int,
-	optimizeLeft, optimizeRight bool) (file []byte) {
+	leftBuffer, rightBuffer int) (file []byte) {
+	// fmt.Println(start, length, leftBuffer, rightBuffer)
+
 	// see primer3 manual or /vendor/primer3-2.4.0/settings_files/p3_th_settings.txt
 	settings := map[string]string{
 		"PRIMER_THERMODYNAMIC_PARAMETERS_PATH": p3conf,
@@ -257,31 +278,32 @@ func settingsFile(
 		"PRIMER_EXPLAIN_FLAG":                  "1",
 	}
 
-	// if there is roon to optimize, we let primer3 pick better or the best primers available in the space
-	//
+	// if there is room to optimize, we let primer3 pick the best primers available in the space
 	// http://primer3.sourceforge.net/primer3_manual.htm#SEQUENCE_PRIMER_PAIR_OK_REGION_LIST
-	if optimizeLeft || optimizeRight {
-		buffer := 100 // TODO: in the case where there's overlap between fragments, this may not be fixed and instead depend on the amount of overlap
-
+	if leftBuffer > 0 || rightBuffer > 0 {
+		// V-ls  v-le               v-rs   v-re
+		// ---------------------------------
 		leftStart := start + len(seq)
-		leftEnd := start + len(seq) + buffer
-		rightStart := start + len(seq) + length - buffer
+		leftEnd := start + len(seq) + primerMax + leftBuffer
+		rightStart := start + len(seq) + length - rightBuffer - primerMax
 		excludeLength := rightStart - leftEnd
 
-		settings["PRIMER_TASK"] = "pick_primer_list"
+		settings["PRIMER_TASK"] = "generic"
 		settings["PRIMER_PICK_LEFT_PRIMER"] = "1"
 		settings["PRIMER_PICK_INTERNAL_OLIGO"] = "0"
 		settings["PRIMER_PICK_RIGHT_PRIMER"] = "1"
+		settings["PRIMER_MIN_TM"] = "54.0" // defaults to 57.0
+		settings["PRIMER_MAX_TM"] = "67.0" // defaults to 63.0
 
 		// ugly undoing of the above in case only one side has buffer
-		if !optimizeLeft {
+		if leftBuffer == 0 {
 			settings["SEQUENCE_FORCE_LEFT_START"] = strconv.Itoa(leftStart)
-		} else if !optimizeRight {
+		} else if rightBuffer == 0 {
 			settings["SEQUENCE_FORCE_RIGHT_START"] = strconv.Itoa(rightStart)
 		}
 
 		settings["PRIMER_PRODUCT_SIZE_RANGE"] = fmt.Sprintf("%d-%d", excludeLength, length)
-		settings["SEQUENCE_PRIMER_PAIR_OK_REGION_LIST"] = fmt.Sprintf("%d,%d,%d,%d", leftStart, buffer, rightStart, buffer)
+		settings["SEQUENCE_PRIMER_PAIR_OK_REGION_LIST"] = fmt.Sprintf("%d,%d,%d,%d", leftStart, leftBuffer+primerMax, rightStart, rightBuffer+primerMax)
 	} else {
 		// otherwise force the start and end of the PCR range
 		settings["PRIMER_TASK"] = "pick_cloning_primers"
@@ -341,6 +363,10 @@ func (p *p3Exec) parse(input string) (err error) {
 		return fmt.Errorf("failed to execute primer3: %s", p3Error)
 	}
 
+	if numPairs := results["PRIMER_PAIR_NUM_RETURNED"]; numPairs == "0" {
+		return fmt.Errorf("failed to create primers")
+	}
+
 	// read in a single primer from the output string file
 	// side is either "LEFT" or "RIGHT"
 	parsePrimer := func(side string) Primer {
@@ -394,7 +420,7 @@ func (p *p3Exec) parse(input string) (err error) {
 //
 // returning node for testing
 func mutateNodePrimers(n *node, seq string, addLeft, addRight int) (mutated *node) {
-	fmt.Println(n.id, addLeft, addRight, n.primers[0].Range.start, n.primers[1].Range.end)
+	// fmt.Println(n.id, addLeft, addRight, n.primers[0].Range.start, n.primers[1].Range.end)
 
 	template := seq + seq
 

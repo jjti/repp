@@ -33,7 +33,7 @@ func Test_setPrimers(t *testing.T) {
 		wantEnd     int
 	}{
 		{
-			"create primers without added homology",
+			"create without added homology",
 			node{
 				id:    "gnl|addgene|85039.2",
 				start: 0,
@@ -57,15 +57,15 @@ func Test_setPrimers(t *testing.T) {
 				seq: "CaGTCAaTCTTTCaCAAaTTTTGTaATCCAGAGGTTGATTATCGATAAGCTTGATATCGAATTCATAACttCgTATAGCATACATTATACGAAGTTATTCTTTGCACCATTCTAAAGAATAACAGTGATAATTTCTGGGTTAAGGCAAATAACTTCGTATAGGATACTTTATACGAAGTTATGCTAGCGCCACCATGTCTAGACTGGACAAGAGCAAAGTCATAAACTCTGCTCTGGAATTACTCAATGAAGTCGGTATCGAAGGCCTGACGACAAGGAAACTCGCTCAAAAGCTGGGAGTTGAGCAGCCTACCCTGTACTGGCACGTGAAGAACAAGCGGGCCCTGCTCGATGCCCTGGCAATCGAGATGCTGGACAGGCATCATACCCACTTCTGCCCCCTGGAAGGCGAGTCATGGCAAGACTTTCTGCGGAACAACGCCAAGTCATTCCGCTGTGCTCTCCTCTCACATCGCGACGGGGCTAAAGTGCATCTCGGCACCCGCCCAACAGAGAAACAGTACGAAACCCTGGAAAATCAGCTCGCGTTCCTGTGTCAGCAAGGCTTCTCCCTGGAGAACGCACTGTACGCTCTGTCCGCCGTGGGCCACTTTACACTGGGCTGCGTATTGGAGGATCAGGAGCATCAAGTAGCAAAAGAGGAAAGAGAGACACCTACCACCGATTCTATGCCCCCACTTCTGAGACAAGCAATTGAGCTGTTCGACCATCAGGGAGCCGAACCTGCCTTCCTTTTCGGCCTGGAACTAATCATATGTGGCCTGGAGAAACAGCTAAAGTGCGAAAGCGGCGGGCCGGCCGACGCCCTTGACGATTTTGACTTAGACATGCTCCCAGCCGATGCCCTTGACGACTTTGACCTTGATATGCTGCCTGCTGACGCTCTTGACGATTTtGACCTTGACATGCTCCCCGGGGGATCCGGAAGCGGAGCTACTAACTTCAGCCTGCTGAAGCAGGCTGGAgACGTGGAGGAGAACCCTGGACCTATGAGCGAGCTGATCAAGGAGAACATGCACATGAAGCTGTACATGGAgggc",
 			},
 			[]string{
-				"CAGTCAATCTTTCACAAATTTTG",
-				"GCCCTCCATGTACAGCTTCA", // rev-comp: TGAAGCTGTACATGGAGGGC
+				"CAGTCAATCTTTCACAAATTTTGT",
+				"CCCTCCATGTACAGCTTCATGT", // rev-comp: ACATGAAGCTGTACATGGAGGG
 			},
 			false,
 			0,
-			1060,
+			1059,
 		},
 		{
-			"create primers with homology",
+			"create with added homology",
 			node{
 				id:    "add_homology",
 				start: 500,
@@ -90,14 +90,14 @@ func Test_setPrimers(t *testing.T) {
 			},
 			[]string{
 				"CGGTAAGCAGGCGCTGGAAACAGTACAG",
-				"TTGTTTCCCTCCGTCATGCGACGCAATC",
+				"TGTTTCCCTCCGTCATGCGACGCAATCG",
 			},
 			false,
 			490,
-			805,
+			804,
 		},
 		{
-			"fail to create primers with off-targets",
+			"fail if there are off-targets",
 			node{
 				id:    "gnl|addgene|39412.1",
 				start: 0,
@@ -126,9 +126,41 @@ func Test_setPrimers(t *testing.T) {
 			1022,
 		},
 		{
-			"primers with extra space to avoid bad scores",
+			"embed additional sequence between fragments",
 			node{
-				id:    "add_extra_space",
+				id:    "embedded_primer_seq",
+				start: 50,
+				end:   350,
+				conf:  &c,
+				db:    db,
+			},
+			args{
+				last: &node{
+					id:    "last",
+					start: 0,
+					end:   45,
+					conf:  &c,
+				},
+				next: &node{
+					id:    "next",
+					start: 355,
+					end:   400,
+					conf:  &c,
+				},
+				seq: "GTAAATCCTGGGATCATTCAGTAGTAACCACAAACTTACGCTGGGGCTTCTTTGGCGGATTTTTACAGATACTAACCAGGTGATTTGAAGTAAATTAGTTGAGGATTTAGCCGCGCTATCCGGTAATCTCCAAATTAAAACATACCGTTCCATGAGGGCTAGAATTACTTACCGGCCTTCACCATGCCTGCGCTATACGCGCCCACTCTCCCGTTTATCCGTCCAAGCGGATGCAATGCGATCCTCCGCTAAGATATTCTTACGTGTAACGTAGCTATGTATTTTACAGAGCTGGCGTACGCGTTGAACACTTCACAGATGATAGGGATTCGGGTAAAGAGCGTGTTATTGGGGACTTACACAGGCGTAGACTACAATGGGCCCAACTCAATCACAGCTC",
+			},
+			[]string{
+				"TTACGCTGGGGCTTCTTTGGCGGATTTTTACAGATACT",
+				"CCTGTGTAAGTCCCCAATAACACGCTCTTTACCCGA", // rev comp is TCGGGTAAAGAGCGTGTTATTGGGGGACTTACACAGGC
+			},
+			false,
+			35,
+			364,
+		},
+		{
+			"optimization when synthesizing neighbors",
+			node{
+				id:    "optimize_synth",
 				start: 125,
 				end:   700,
 				conf:  &c,
@@ -154,13 +186,13 @@ func Test_setPrimers(t *testing.T) {
 				"TGATCCTCCAATACGCAGCC", // rev comp is GGCTGCGTATTGGAGGATCA
 			},
 			false,
-			172, // deprecation test only, got this from the output
+			172, // deprecation test only, got this from the output and confirmed it made sense
 			639,
 		},
 		{
-			"primers that embed additional sequence between fragments",
+			"optimize when there are large overlaps with neighbors",
 			node{
-				id:    "embedded_primer_seq",
+				id:    "optimize_overlaps",
 				start: 50,
 				end:   350,
 				conf:  &c,
@@ -170,24 +202,24 @@ func Test_setPrimers(t *testing.T) {
 				last: &node{
 					id:    "last",
 					start: 0,
-					end:   45,
+					end:   150,
 					conf:  &c,
 				},
 				next: &node{
 					id:    "next",
-					start: 355,
+					start: 250,
 					end:   400,
 					conf:  &c,
 				},
 				seq: "GTAAATCCTGGGATCATTCAGTAGTAACCACAAACTTACGCTGGGGCTTCTTTGGCGGATTTTTACAGATACTAACCAGGTGATTTGAAGTAAATTAGTTGAGGATTTAGCCGCGCTATCCGGTAATCTCCAAATTAAAACATACCGTTCCATGAGGGCTAGAATTACTTACCGGCCTTCACCATGCCTGCGCTATACGCGCCCACTCTCCCGTTTATCCGTCCAAGCGGATGCAATGCGATCCTCCGCTAAGATATTCTTACGTGTAACGTAGCTATGTATTTTACAGAGCTGGCGTACGCGTTGAACACTTCACAGATGATAGGGATTCGGGTAAAGAGCGTGTTATTGGGGACTTACACAGGCGTAGACTACAATGGGCCCAACTCAATCACAGCTC",
 			},
 			[]string{
-				"TTACGCTGGGGCTTCTTTGGCGGATTTTTACAGATACT",
-				"GCCTGTGTAAGTCCCCAATAACACGCTCTTTACCCGA", // rev comp is TCGGGTAAAGAGCGTGTTATTGGGGGACTTACACAGGC
+				"AGTTGAGGATTTAGCCGCGC",
+				"ACGCTCTTTACCCGAATCCC", // rev comp is TCGGGTAAAGAGCGTGTTATTGGGGGACTTACACAGGC
 			},
 			false,
-			35, // deprecation test only, got this from the output
-			365,
+			96, // deprecation test only, got this from the output and confirmed it made sense
+			343,
 		},
 	}
 	for _, tt := range tests {
@@ -226,60 +258,6 @@ func Test_setPrimers(t *testing.T) {
 
 			if !tt.wantErr && (tt.wantStart != tt.n.start || tt.wantEnd != tt.n.end) {
 				t.Errorf("wrong range for setPrimers() on %s, want %d-%d, got %d-%d", tt.n.id, tt.wantStart, tt.wantEnd, tt.n.start, tt.n.end)
-			}
-		})
-	}
-}
-
-func Test_p3Exec_input(t *testing.T) {
-	type fields struct {
-		n      *node
-		last   *node
-		next   *node
-		seq    string
-		in     string
-		out    string
-		p3Path string
-		p3Conf string
-		p3Dir  string
-	}
-	type args struct {
-		minHomology    int
-		maxEmbedLength int
-	}
-	tests := []struct {
-		name           string
-		fields         fields
-		args           args
-		wantBpAddLeft  int
-		wantBpAddRight int
-		wantErr        bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			p := &p3Exec{
-				n:      tt.fields.n,
-				last:   tt.fields.last,
-				next:   tt.fields.next,
-				seq:    tt.fields.seq,
-				in:     tt.fields.in,
-				out:    tt.fields.out,
-				p3Path: tt.fields.p3Path,
-				p3Conf: tt.fields.p3Conf,
-				p3Dir:  tt.fields.p3Dir,
-			}
-			gotBpAddLeft, gotBpAddRight, err := p.input(tt.args.minHomology, tt.args.maxEmbedLength)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("p3Exec.input() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if gotBpAddLeft != tt.wantBpAddLeft {
-				t.Errorf("p3Exec.input() gotBpAddLeft = %v, want %v", gotBpAddLeft, tt.wantBpAddLeft)
-			}
-			if gotBpAddRight != tt.wantBpAddRight {
-				t.Errorf("p3Exec.input() gotBpAddRight = %v, want %v", gotBpAddRight, tt.wantBpAddRight)
 			}
 		})
 	}

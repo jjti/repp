@@ -69,14 +69,14 @@ func (a *assembly) add(n node, maxCount int) (newAssembly assembly, created, com
 		}
 
 		return assembly{
-			nodes:  append(a.nodes, &n),
+			nodes:  append(a.nodes, n.copy()),
 			cost:   a.cost + annealCost,
 			synths: a.synths + synths,
 		}, created, complete
 	}
 
 	return assembly{
-		nodes:  append(a.nodes, &n),
+		nodes:  append(a.nodes, n.copy()),
 		cost:   a.cost + annealCost,
 		synths: a.synths + synths,
 	}, created, false
