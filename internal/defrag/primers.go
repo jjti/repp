@@ -352,7 +352,7 @@ func (p *p3Exec) settings(
 }
 
 // run the primer3 executable against the input file
-func (p *p3Exec) run() error {
+func (p *p3Exec) run() (err error) {
 	p3Cmd := exec.Command(
 		p.p3Path,
 		p.in,
@@ -364,7 +364,7 @@ func (p *p3Exec) run() error {
 	if output, err := p3Cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("failed to execute primer3: %s: %v", string(output), err)
 	}
-	return nil
+	return
 }
 
 // parse the output into primers
@@ -440,8 +440,7 @@ func (p *p3Exec) parse(input string) (err error) {
 		parsePrimer("LEFT"),
 		parsePrimer("RIGHT"),
 	}
-
-	return nil
+	return
 }
 
 // mutateNodePrimers adds additional bp to the sides of a node

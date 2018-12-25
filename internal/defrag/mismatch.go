@@ -41,10 +41,10 @@ func mismatch(primer, parent, db string, c *config.Config) (mismatch bool, m mat
 	v := c.Vendors()
 
 	// path to the entry batch file to hold the parent entry accession
-	entry, _ := filepath.Abs(path.Join(v.Blastdir, parent+".entry"))
+	entry, _ := filepath.Abs(path.Join(v.Blastdir, parent+".blastcmd.entry"))
 
 	// path to the output sequence file from querying the parent's sequence from the BLAST db
-	parentPath, _ := filepath.Abs(path.Join(v.Blastdir, parent+".out"))
+	parentPath, _ := filepath.Abs(path.Join(v.Blastdir, parent+".blastcmd.out"))
 
 	// path the query sequence input file
 	in, _ := filepath.Abs(path.Join(v.Blastdir, parent+".primer.query"))

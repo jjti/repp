@@ -158,6 +158,5 @@ func parseDBs(dbList string) (paths []string, err error) {
 		}
 		paths = append(paths, absPath)
 	}
-
 	return
 }

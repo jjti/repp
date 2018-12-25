@@ -511,3 +511,79 @@ func Test_new(t *testing.T) {
 		})
 	}
 }
+
+func Test_node_junction(t *testing.T) {
+	type fields struct {
+		id         string
+		uniqueID   string
+		seq        string
+		start      int
+		end        int
+		db         string
+		assemblies []assembly
+		cost       float64
+		url        string
+		primers    []Primer
+		conf       *config.Config
+	}
+	type args struct {
+		other       *node
+		minHomology int
+		maxHomology int
+	}
+	tests := []struct {
+		name         string
+		fields       fields
+		args         args
+		wantJunction string
+	}{
+		{
+			"find a junction",
+			fields{
+				seq: "ATGACACGATACGTTATCCACACAGATAGTAGAGATGACACAGATACGAGCGCCTTGAATAACGTACTCATCTCTA",
+			},
+			args{
+				other: &node{
+					seq: "GAGCGCCTTGAATAACGTACTCATCTCTATACATTCTCGTGCGCATCACTCTGAATGTACAAGCAACCCAAGAGGGCTGAGCCTGGACTCAGCTGGTTCCTGGGTGAGCTCGAGACTCGGGGTGACAGCTCTTCA",
+				},
+				minHomology: 5,
+				maxHomology: 40,
+			},
+			"GAGCGCCTTGAATAACGTACTCATCTCTA",
+		},
+		{
+			"fails to find a junction with mismatch",
+			fields{
+				seq: "ATGACACGATACGTTATCCACACAGATAGTAGAGATGACACAGATACGAGCGCCTTGAATAACGTACTCATCTCTAg", // <- extra g at the end that prevents this from being a junction
+			},
+			args{
+				other: &node{
+					seq: "GAGCGCCTTGAATAACGTACTCATCTCTATACATTCTCGTGCGCATCACTCTGAATGTACAAGCAACCCAAGAGGGCTGAGCCTGGACTCAGCTGGTTCCTGGGTGAGCTCGAGACTCGGGGTGACAGCTCTTCA",
+				},
+				minHomology: 5,
+				maxHomology: 40,
+			},
+			"",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			n := &node{
+				id:         tt.fields.id,
+				uniqueID:   tt.fields.uniqueID,
+				seq:        tt.fields.seq,
+				start:      tt.fields.start,
+				end:        tt.fields.end,
+				db:         tt.fields.db,
+				assemblies: tt.fields.assemblies,
+				cost:       tt.fields.cost,
+				url:        tt.fields.url,
+				primers:    tt.fields.primers,
+				conf:       tt.fields.conf,
+			}
+			if gotJunction := n.junction(tt.args.other, tt.args.minHomology, tt.args.maxHomology); gotJunction != tt.wantJunction {
+				t.Errorf("node.junction() = %v, want %v", gotJunction, tt.wantJunction)
+			}
+		})
+	}
+}
