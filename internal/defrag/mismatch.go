@@ -71,7 +71,7 @@ func mismatch(primer, parent, db string, c *config.Config) (mismatch bool, m mat
 		"-outfmt", "%f", // fasta format
 	)
 	if _, err := queryCmd.CombinedOutput(); err != nil {
-		log.Printf("warning: blastn error: %+v", err)
+		log.Printf("warning: failed to query %s from %s", parent, db)
 		return false, m, nil // pretending there wasn't any mismatch
 	}
 

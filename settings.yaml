@@ -15,7 +15,7 @@ pcr:
   min-length: 120
 
   # Max primer3 pair penalty score
-  primer3-penalty-max: 30.0
+  primer3-penalty-max: 15.0
 
   # Max embedded length. The most bp to include upstream of a annealing portion
   # of a primer but not annealing/creating a junction with a downstream part

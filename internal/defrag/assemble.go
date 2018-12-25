@@ -35,7 +35,7 @@ func assemble(matches []match, seq string, conf *config.Config) [][]Fragment {
 	// build up a map from fragment count to a sorted list of assemblies with that number
 	sortedAssemblies := countMap(assemblies)
 
-	// sort the keys of the assemblies (their fragment count) so we start with the smaller
+	// sort the keys of the assemblies (their fragment count). Start with the smaller
 	// assemblies first and work out way up
 	assemblyCounts := []int{}
 	for count := range sortedAssemblies {

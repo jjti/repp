@@ -19,7 +19,7 @@ type node struct {
 	// seq of the fragment
 	seq string
 
-	// unique-id of a match, the  start index % seq-length + id
+	// unique-id of a match, the start index % seq-length + id
 	// (unique identified that catches nodes that cross the zero-index)
 	uniqueID string
 
@@ -109,9 +109,9 @@ func (n *node) distTo(other node) (bpDist int) {
 func (n *node) synthDist(other node) (synthCount int) {
 	dist := n.distTo(other)
 
-	if dist <= 5 {
-		// if the dist is <5, we can PCR our way there
-		// add the mutated bp between the nodes with PCR
+	if dist <= n.conf.PCR.MaxEmbedLength {
+		// if the dist is <MaxEmbedLength, we can PCR our way there
+		// and add the mutated bp between the nodes with PCR
 		return 0
 	}
 
@@ -132,12 +132,12 @@ func (n *node) synthDist(other node) (synthCount int) {
 // Otherwise we find the total synthesis distance between this and
 // the other fragment and divide that by the cost per bp of synthesized DNA
 //
-// Account for the cost of the other node (eg if the node has to be ordered from
-// Addgene there's a cost in getting it)
+// This does not add in the cost of procurement, which is added to the assembly cost
+// in assembly.add()
 func (n *node) costTo(other node) (cost float64) {
 	dist := n.distTo(other)
 
-	if dist <= 5 {
+	if dist <= n.conf.PCR.MaxEmbedLength {
 		if dist < -(n.conf.Fragments.MinHomology) {
 			// there's already enough overlap between this node and the one being tested
 			// estimating two primers, 20bp each

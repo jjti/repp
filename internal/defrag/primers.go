@@ -1,8 +1,10 @@
 package defrag
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"os/exec"
 	"path"
 	"strconv"
@@ -99,7 +101,8 @@ func (n *node) setPrimers(last, next *node, seq string, conf *config.Config) (er
 
 	// make input file, figure out how to create primers that share homology
 	// with neighboring nodes
-	if err = exec.input(conf.Fragments.MinHomology); err != nil {
+	addLeft, addRight, err := exec.input(conf.Fragments.MinHomology, conf.PCR.MaxEmbedLength)
+	if err != nil {
 		return
 	}
 
@@ -110,6 +113,9 @@ func (n *node) setPrimers(last, next *node, seq string, conf *config.Config) (er
 	if err = exec.parse(seq); err != nil {
 		return
 	}
+
+	// update node's range, and add additional bp to the left and right primer if it wasn't included in the primer3 output
+	mutateNodePrimers(n, seq, addLeft, addRight)
 
 	// 1. check for whether the primers have too have a pair penalty score
 	if n.primers[0].PairPenalty > conf.PCR.P3MaxPenalty {
@@ -144,141 +150,151 @@ func (n *node) setPrimers(last, next *node, seq string, conf *config.Config) (er
 		}
 	}
 
-	// change the node's start and end index to match those of the start and end index
-	// of the primers, since the range may have shifted to get better primers
-	n.start = n.primers[0].Range.start
-	n.end = n.primers[1].Range.end
-
-	// update the node's seq to reflect that change
-	fullSeq := seq + seq
-	n.seq = fullSeq[n.start : n.end+1]
-
 	return
 }
 
-// input makes the primer3 input settings file and writes it to the filesystem
+// input makes a primer3 input settings file and writes it to the filesystem
 //
 // the primers on this node should account for creating homology
 // against the last node and the next node if there isn't enough
 // existing homology to begin with (the two nodes should share ~50/50)
-func (p *p3Exec) input(minHomology int) error {
-	// calc the # of bp this node shares with another
-	bpToShare := func(left, right *node) (bpToAdd int) {
-		// calc the # of bp the left node is responsible with the right one
-		bpToAdd = 0
-		if synthDist := left.synthDist(*right); synthDist == 0 {
-			// we're not going to synth our way here, check that there's already enough homology
-			if bpDist := left.distTo(*right); bpDist > -(minHomology) {
-				// this node will add half the homology to the last fragment
-				// ex: 5 bp distance leads to 2.5bp + ~10bp additonal
-				// ex: -10bp distance leads to ~0 bp additional:
-				//	other node is responsible for all of it
-				bpToAdd = bpDist + (minHomology / 2)
-			}
-		}
-		return
-	}
-
+//
+// returning settings for unit testing only
+func (p *p3Exec) input(minHomology, maxEmbedLength int) (bpAddLeft, bpAddRight int, err error) {
 	// calc the bps to add on the left and right side of this node
-	addLeft := bpToShare(p.last, p.n)
-	addRight := bpToShare(p.n, p.next)
+	addLeft := bpToShare(p.last, p.n, minHomology)
+	addRight := bpToShare(p.n, p.next, minHomology)
 	maxAdded := addLeft
-	if addRight > maxAdded {
+	if maxAdded < addRight {
 		maxAdded = addRight
 	}
 
-	// the node's range plus the additional bp added because of adding homology
-	start := p.n.start - addLeft
+	start := p.n.start
 	length := p.n.end - start + 1
-	length += addRight
 
-	// sizes to make the primers and target size (min, opt, and max)
-	primerMin := 18 // defaults to 18
-	primerOpt := 20
-	primerMax := 25 // defaults to 23
-	if maxAdded > 0 {
-		maxAdded += 2
-
-		// we can't exceed 36 here
-		if maxAdded > 36-primerMax {
-			maxAdded = 36 - primerMax
-		}
-
-		primerMin += maxAdded
-		primerOpt += maxAdded
-		primerMax += maxAdded
+	// if one sides has a lot to add but the other doesn't, don't increase
+	// the primer generation size in primer3. will instead concat the sequence on later
+	// because we do not want to throw off the annealing temp for the primers
+	if math.Abs(float64(addLeft)-float64(addRight)) > 6.0 {
+		bpAddLeft = addLeft
+		bpAddRight = addRight
+		maxAdded = 0
+	} else if maxAdded > 36-23 {
+		// we can't exceed 36 bp here (primer3 upper-limit), just create primers for the portion that
+		// anneals to the template and add the other portion/seqs on later (in mutateNodePrimers)
+		bpAddLeft = addLeft
+		bpAddRight = addRight
+		maxAdded = 0
+	} else {
+		start -= addLeft
+		length = p.n.end - start + 1
+		length += addRight
 	}
 
+	// sizes to make the primers and target size (min, opt, and max)
+	primerMin := 18 + maxAdded // defaults to 18
+	primerOpt := 20 + maxAdded
+	primerMax := 23 + maxAdded // defaults to 23
+
+	// check whether we have wiggle room on the left or right hand sides to move the
+	// primers inward (let primer3 pick better primers)
+	distFromLast := p.last.distTo(*p.n)
+	distFromNext := p.n.distTo(*p.next)
+	optimizeLeft := distFromLast > maxEmbedLength  // will we have to synthesize on the left anyway
+	optimizeRight := distFromNext > maxEmbedLength // will we have to synthesize on the right anyway
+
+	// create the settings map from all instructions
+	file := settingsFile(
+		p.seq,
+		p.p3Conf,
+		start,
+		length,
+		primerMin,
+		primerOpt,
+		primerMax,
+		optimizeLeft,
+		optimizeRight)
+
+	if err := ioutil.WriteFile(p.in, file, 0666); err != nil {
+		return 0, 0, fmt.Errorf("failed to write primer3 input file %v: ", err)
+	}
+	return
+}
+
+// bpToShare calculates the number of bp to add the end of a node to creat a junction between them
+// returns the number of bp that needs to be added to each node
+func bpToShare(left, right *node, minHomology int) (bpToAdd int) {
+	if synthDist := left.synthDist(*right); synthDist == 0 {
+		// we're not going to synth our way here, check that there's already enough homology
+		if bpDist := left.distTo(*right); bpDist > -minHomology {
+			// this node will add half the homology to the last fragment
+			// ex: 5 bp distance leads to 2.5bp + ~10bp additonal
+			// ex: -10bp distance leads to ~0 bp additional:
+			// 		other node is responsible for all of it
+			bpToAdd = bpDist + (minHomology / 2)
+		}
+	}
+	return
+}
+
+// settingsMap returns a new settings map for the primer3 config files
+// can either use pick_cloning_primers mode, if the start and end primers' locations
+// are fixed, or pick_primer_list mode if we're letting the primers shift and allowing
+// primer3 to pick the best ones. One side may be free to move and the other not
+func settingsFile(
+	seq, p3conf string,
+	start, length, primerMin, primerOpt, primerMax int,
+	optimizeLeft, optimizeRight bool) (file []byte) {
 	// see primer3 manual or /vendor/primer3-2.4.0/settings_files/p3_th_settings.txt
 	settings := map[string]string{
-		"PRIMER_THERMODYNAMIC_PARAMETERS_PATH": p.p3Conf,
+		"PRIMER_THERMODYNAMIC_PARAMETERS_PATH": p3conf,
 		"PRIMER_NUM_RETURN":                    "1",
-		"PRIMER_TASK":                          "pick_cloning_primers",
 		"PRIMER_PICK_ANYWAY":                   "1",
-		"SEQUENCE_TEMPLATE":                    p.seq + p.seq + p.seq, // triple sequence
-		"SEQUENCE_INCLUDED_REGION":             fmt.Sprintf("%d,%d", start+len(p.seq), length),
+		"SEQUENCE_TEMPLATE":                    seq + seq + seq,         // triple sequence
 		"PRIMER_MIN_SIZE":                      strconv.Itoa(primerMin), // default 18
 		"PRIMER_OPT_SIZE":                      strconv.Itoa(primerOpt),
 		"PRIMER_MAX_SIZE":                      strconv.Itoa(primerMax),
 		"PRIMER_EXPLAIN_FLAG":                  "1",
 	}
 
-	// check whether we have wiggle room on the left or right hand sides to move the
-	// primers inward (let primer3 pick better primers)
-	lastDist := p.last.distTo(*p.n)
-	if 0 > lastDist {
-		lastDist = 0
-	}
-
-	nextDist := p.n.distTo(*p.next)
-	if 0 > nextDist {
-		nextDist = 0
-	}
-
-	// change 5 to the number of bp we're willing to "insert" via PCR
-	// checking here for whether we're going to synthetisize the neighboring fragments
-	//
-	// if we are, there's more room to pick better primers at the ends of the fragment
-	// (or the best combination of primers within the available space)
+	// if there is roon to optimize, we let primer3 pick better or the best primers available in the space
 	//
 	// http://primer3.sourceforge.net/primer3_manual.htm#SEQUENCE_PRIMER_PAIR_OK_REGION_LIST
-	if len(p.seq) > 300 && (lastDist > 5 || nextDist > 5) {
-		buffer := 50 // TODO: move to settings
+	if optimizeLeft || optimizeRight {
+		buffer := 100 // TODO: in the case where there's overlap between fragments, this may not be fixed and instead depend on the amount of overlap
 
-		leftStart := start + len(p.seq)
-		leftEnd := start + len(p.seq) + buffer
-		rightStart := start + len(p.seq) + length - buffer
+		leftStart := start + len(seq)
+		leftEnd := start + len(seq) + buffer
+		rightStart := start + len(seq) + length - buffer
 		excludeLength := rightStart - leftEnd
 
-		if excludeLength > 0 {
-			delete(settings, "PRIMER_PICK_ANYWAY")
-			settings["PRIMER_TASK"] = "pick_primer_list"
-			settings["PRIMER_PICK_LEFT_PRIMER"] = "1"
-			settings["PRIMER_PICK_INTERNAL_OLIGO"] = "0"
-			settings["PRIMER_PICK_RIGHT_PRIMER"] = "1"
+		settings["PRIMER_TASK"] = "pick_primer_list"
+		settings["PRIMER_PICK_LEFT_PRIMER"] = "1"
+		settings["PRIMER_PICK_INTERNAL_OLIGO"] = "0"
+		settings["PRIMER_PICK_RIGHT_PRIMER"] = "1"
 
-			// ugly undoing of the above in case only one side has buffer
-			if lastDist <= 5 {
-				settings["SEQUENCE_FORCE_LEFT_START"] = strconv.Itoa(start + len(p.seq))
-			} else if nextDist <= 5 {
-				settings["SEQUENCE_FORCE_RIGHT_START"] = strconv.Itoa(start + len(p.seq) + length)
-			}
-
-			settings["PRIMER_PRODUCT_SIZE_RANGE"] = fmt.Sprintf("%d-%d", excludeLength, length)
-			settings["SEQUENCE_PRIMER_PAIR_OK_REGION_LIST"] = fmt.Sprintf("%d,%d,%d,%d", leftStart, buffer, rightStart, buffer)
+		// ugly undoing of the above in case only one side has buffer
+		if !optimizeLeft {
+			settings["SEQUENCE_FORCE_LEFT_START"] = strconv.Itoa(leftStart)
+		} else if !optimizeRight {
+			settings["SEQUENCE_FORCE_RIGHT_START"] = strconv.Itoa(rightStart)
 		}
+
+		settings["PRIMER_PRODUCT_SIZE_RANGE"] = fmt.Sprintf("%d-%d", excludeLength, length)
+		settings["SEQUENCE_PRIMER_PAIR_OK_REGION_LIST"] = fmt.Sprintf("%d,%d,%d,%d", leftStart, buffer, rightStart, buffer)
+	} else {
+		// otherwise force the start and end of the PCR range
+		settings["PRIMER_TASK"] = "pick_cloning_primers"
+		settings["SEQUENCE_INCLUDED_REGION"] = fmt.Sprintf("%d,%d", start+len(seq), length)
 	}
 
-	var fileContents string
+	var fileBuffer bytes.Buffer
 	for key, val := range settings {
-		fileContents += fmt.Sprintf("%s=%s\n", key, val)
+		fmt.Fprintf(&fileBuffer, "%s=%s\n", key, val)
 	}
-	fileContents += "=" // required at file's end
+	fileBuffer.WriteString("=") // required at file's end
 
-	if err := ioutil.WriteFile(p.in, []byte(fileContents), 0666); err != nil {
-		return fmt.Errorf("failed to create primer3 input file %v: ", err)
-	}
-	return nil
+	return fileBuffer.Bytes()
 }
 
 // run the primer3 executable against the input file
@@ -368,4 +384,65 @@ func (p *p3Exec) parse(input string) (err error) {
 	}
 
 	return nil
+}
+
+// mutateNodePrimers adds additional bp to the sides of a node
+// if there was additional homology bearing sequence that we were unable
+// to add through primer3 alone
+//
+// it also updates the range, start + end, of the node to match that of the primers
+//
+// returning node for testing
+func mutateNodePrimers(n *node, seq string, addLeft, addRight int) (mutated *node) {
+	fmt.Println(n.id, addLeft, addRight, n.primers[0].Range.start, n.primers[1].Range.end)
+
+	template := seq + seq
+
+	// add bp to the left/FWD primer to match the fragment to the left
+	if addLeft > 0 {
+		oldStart := n.primers[0].Range.start
+		n.primers[0].Seq = template[oldStart-addLeft:oldStart] + n.primers[0].Seq
+		n.primers[0].Range.start -= addLeft
+	}
+
+	// add bp to the right/REV primer to match the fragment to the right
+	if addRight > 0 {
+		oldEnd := n.primers[1].Range.end
+		n.primers[1].Seq = revComp(template[oldEnd+1:oldEnd+addRight+1]) + n.primers[1].Seq
+		n.primers[1].Range.end += addRight
+	}
+
+	// change the node's start and end index to match those of the start and end index
+	// of the primers, since the range may have shifted to get better primers
+	n.start = n.primers[0].Range.start
+	n.end = n.primers[1].Range.end
+
+	// update the node's seq to reflect that change
+	n.seq = template[n.start : n.end+1]
+
+	return n
+}
+
+// revComp returns the reverse complement of a template sequence
+func revComp(seq string) string {
+	seq = strings.ToUpper(seq)
+
+	revCompMap := map[rune]byte{
+		'A': 'T',
+		'T': 'A',
+		'G': 'C',
+		'C': 'G',
+	}
+
+	var revCompBuffer bytes.Buffer
+	for _, c := range seq {
+		revCompBuffer.WriteByte(revCompMap[c])
+	}
+
+	revCompBytes := revCompBuffer.Bytes()
+	for i := 0; i < len(revCompBytes)/2; i++ {
+		j := len(revCompBytes) - i - 1
+		revCompBytes[i], revCompBytes[j] = revCompBytes[j], revCompBytes[i]
+	}
+	return string(revCompBytes)
 }
