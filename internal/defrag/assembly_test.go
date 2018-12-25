@@ -50,7 +50,7 @@ func Test_assembly_add(t *testing.T) {
 		maxCount int
 	}
 	type args struct {
-		n node
+		n *node
 	}
 	tests := []struct {
 		name            string
@@ -68,11 +68,11 @@ func Test_assembly_add(t *testing.T) {
 				synths: 0,
 			},
 			args{
-				n: *n2,
+				n: n2,
 			},
 			assembly{
 				nodes:  []*node{n1, n2},
-				cost:   n1.costTo(*n2),
+				cost:   n1.costTo(n2),
 				synths: 0,
 			},
 			true,
@@ -86,11 +86,11 @@ func Test_assembly_add(t *testing.T) {
 				synths: 0,
 			},
 			args{
-				n: *n3,
+				n: n3,
 			},
 			assembly{
 				nodes:  []*node{n1, n3},
-				cost:   10.0 + n1.costTo(*n3),
+				cost:   10.0 + n1.costTo(n3),
 				synths: 1,
 			},
 			true,
@@ -104,7 +104,7 @@ func Test_assembly_add(t *testing.T) {
 				synths: 0,
 			},
 			args{
-				n: *n1,
+				n: n1,
 			},
 			assembly{
 				nodes:  []*node{n1, n2, n3, n1},
@@ -123,7 +123,7 @@ func Test_assembly_add(t *testing.T) {
 			},
 			args{
 				// a node that's too far away for straightforward annealing
-				n: node{
+				n: &node{
 					uniqueID: n1.uniqueID,
 					start:    n3.start + c.Synthesis.MaxLength,
 					end:      n3.end + c.Synthesis.MaxLength,
@@ -149,7 +149,7 @@ func Test_assembly_add(t *testing.T) {
 				synths: 0,
 			},
 			args{
-				n: *n2,
+				n: n2,
 			},
 			assembly{},
 			false,

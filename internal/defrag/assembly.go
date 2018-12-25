@@ -25,7 +25,7 @@ type assembly struct {
 // Update the cost of the assembly to include the link between the new first node and the one after it.
 // Store the node's id in the list of node ids.
 // Complete  an assembly if a node has matched up onto itself across the zero-index.
-func (a *assembly) add(n node, maxCount int) (newAssembly assembly, created, complete bool) {
+func (a *assembly) add(n *node, maxCount int) (newAssembly assembly, created, complete bool) {
 	// check if we could complete an assembly with this new node
 	complete = n.uniqueID == a.nodes[0].uniqueID
 	// calc the number of synthesis fragments needed to get to this next node
@@ -128,7 +128,7 @@ func (a *assembly) fill(seq string, conf *config.Config) (frags []Fragment, err 
 	}
 
 	// do two loops. the first is to fill in primers. let each node create primers for
-	// itself that will span it to the next or adjacent fragments. this has to be done
+	// itself that will span it to the last and next fragments (if reachable). this has to be done
 	// in two loops because synthesis depends on nodes' ranges, and nodes' ranges
 	// may change during setPrimers (we let primer3_core pick from a range of primer options)
 	for i, n := range a.nodes {
@@ -183,11 +183,10 @@ func (a *assembly) fill(seq string, conf *config.Config) (frags []Fragment, err 
 
 		// convert to a fragment from a node, store this to the list of building fragments
 		// cost is calculated here as the summed cost of both primers (based on length)
-		frag := n.fragment()
-		frags = append(frags, frag)
+		frags = append(frags, n.fragment())
 
 		// add synthesized fragments between this node and the next (if necessary)
-		if synthedFrags := n.synthTo(*a.nodes[i+1], seq); synthedFrags != nil {
+		if synthedFrags := n.synthTo(a.nodes[i+1], seq); synthedFrags != nil {
 			frags = append(frags, synthedFrags...)
 		}
 	}

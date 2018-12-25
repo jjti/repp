@@ -23,7 +23,7 @@ import (
 // Error out and repeat the build stage if a node fails to be filled
 func assemble(matches []match, seq string, conf *config.Config) [][]Fragment {
 	// map fragment Matches to nodes
-	var nodes []node
+	var nodes []*node
 	for _, m := range matches {
 		nodes = append(nodes, newNode(m, len(seq), conf))
 	}
