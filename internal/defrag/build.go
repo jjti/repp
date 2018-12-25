@@ -15,7 +15,7 @@ import (
 // 	  foreach that.node that this node overlaps with + synthCount:
 //	 	foreach assembly on that.node:
 //    	    add this.node to the assembly to create a new assembly, store on this.node
-func build(nodes []node, maxNodes int, seq string) (assemblies []assembly) {
+func build(nodes []*node, maxNodes int, seq string) (assemblies []assembly) {
 	// number of additional nodes try synthesizing to, in addition to those that
 	// already have enough homology for overlap without any modifications for each node
 	synthCount := int(math.Max(5, 0.05*float64(len(nodes)))) // 5 of 5%, whichever is greater
@@ -31,8 +31,8 @@ func build(nodes []node, maxNodes int, seq string) (assemblies []assembly) {
 		// it is the target vector. just return that as the assembly
 		if len(n.seq) >= len(seq) {
 			assemblies = append(assemblies, assembly{
-				nodes:  []*node{&n}, // just self
-				cost:   n.cost,      // just cost of procurement
+				nodes:  []*node{n}, // just self
+				cost:   n.cost,     // just cost of procurement
 				synths: 0,
 			})
 			break // can't top that
@@ -40,7 +40,7 @@ func build(nodes []node, maxNodes int, seq string) (assemblies []assembly) {
 
 		nodes[i].assemblies = []assembly{
 			assembly{
-				nodes:  []*node{&n}, // just self
+				nodes:  []*node{n},  // just self
 				cost:   n.costTo(n), // just PCR,
 				synths: 0,           // no synthetic nodes at start
 			},

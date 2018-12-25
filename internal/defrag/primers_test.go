@@ -263,8 +263,77 @@ func Test_setPrimers(t *testing.T) {
 	}
 }
 
+func Test_p3Exec_shrink(t *testing.T) {
+	type fields struct {
+		n      *node
+		last   *node
+		next   *node
+		seq    string
+		in     string
+		out    string
+		p3Path string
+		p3Conf string
+		p3Dir  string
+	}
+	type args struct {
+		last        *node
+		n           *node
+		next        *node
+		maxHomology int
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   *node
+	}{
+		{
+			"shrink node with an excessive amount of homology",
+			fields{}, // not relevant, nothing used from p3Exec
+			args{
+				last: &node{
+					start: 0,
+					end:   100,
+				},
+				n: &node{
+					start: 50,
+					end:   300,
+				},
+				next: &node{
+					start: 250,
+					end:   500,
+				},
+				maxHomology: 10, // much less than the 50bp overlap that's there
+			},
+			&node{
+				start: 90,
+				end:   260,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &p3Exec{
+				n:      tt.fields.n,
+				last:   tt.fields.last,
+				next:   tt.fields.next,
+				seq:    tt.fields.seq,
+				in:     tt.fields.in,
+				out:    tt.fields.out,
+				p3Path: tt.fields.p3Path,
+				p3Conf: tt.fields.p3Conf,
+				p3Dir:  tt.fields.p3Dir,
+			}
+			if got := p.shrink(tt.args.last, tt.args.n, tt.args.next, tt.args.maxHomology); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("p3Exec.shrink() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func Test_bpToShare(t *testing.T) {
 	c := config.New()
+	p := p3Exec{}
 
 	type args struct {
 		left        *node
@@ -330,7 +399,7 @@ func Test_bpToShare(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if gotBpToAdd := bpToShare(tt.args.left, tt.args.right, tt.args.minHomology); gotBpToAdd != tt.wantBpToAdd {
+			if gotBpToAdd := p.bpToShare(tt.args.left, tt.args.right, tt.args.minHomology); gotBpToAdd != tt.wantBpToAdd {
 				t.Errorf("bpToShare() = %v, want %v", gotBpToAdd, tt.wantBpToAdd)
 			}
 		})

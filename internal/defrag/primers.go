@@ -76,15 +76,20 @@ type p3Exec struct {
 	p3Dir string
 }
 
-// setPrimers creates primers against a node and return an error if
+// setPrimers creates primers against a node and returns an error if:
 //	1. the primers have an unacceptably high primer3 penalty score
-//	2. the primers have off-targets in their parent source
+//	2. the primers have off-targets in their source vector/fragment
 func (n *node) setPrimers(last, next *node, seq string, conf *config.Config) (err error) {
 	exec := newP3Exec(last, n, next, seq, conf)
 
-	// make input file, figure out how to create primers that share homology
-	// with neighboring nodes
-	addLeft, addRight, err := exec.input(conf.Fragments.MinHomology, conf.PCR.MaxEmbedLength)
+	// make input file and write to the fs
+	// find how many bp of additional sequence need to be added
+	// to the left and right primers (too large for primer3_core)
+	addLeft, addRight, err := exec.input(
+		conf.Fragments.MinHomology,
+		conf.Fragments.MaxHomology,
+		conf.PCR.MaxEmbedLength,
+	)
 	if err != nil {
 		return
 	}
@@ -158,10 +163,14 @@ func newP3Exec(last, this, next *node, seq string, conf *config.Config) p3Exec {
 // existing homology to begin with (the two nodes should share ~50/50)
 //
 // returning settings for unit testing only
-func (p *p3Exec) input(minHomology, maxEmbedLength int) (bpAddLeft, bpAddRight int, err error) {
+func (p *p3Exec) input(minHomology, maxHomology, maxEmbedLength int) (bpAddLeft, bpAddRight int, err error) {
+	// adjust the node's start and end index in the event that there's too much homology
+	// with the neighboring fragment
+	p.shrink(p.last, p.n, p.next, maxHomology) // could skip passing as a param, but this is a bit easier to test imo
+
 	// calc the bps to add on the left and right side of this node
-	addLeft := bpToShare(p.last, p.n, minHomology)
-	addRight := bpToShare(p.n, p.next, minHomology)
+	addLeft := p.bpToShare(p.last, p.n, minHomology)
+	addRight := p.bpToShare(p.n, p.next, minHomology)
 	growPrimers := addLeft
 	if growPrimers < addRight {
 		growPrimers = addRight
@@ -170,10 +179,14 @@ func (p *p3Exec) input(minHomology, maxEmbedLength int) (bpAddLeft, bpAddRight i
 	start := p.n.start
 	length := p.n.end - start
 
-	// if one sides has a lot to add but the other doesn't, don't increase
-	// the primer generation size in primer3. will instead concat the sequence on later
-	// because we do not want to throw off the annealing temp for the primers
+	// determine whether we need to add additional bp to the primers. if there's too much to
+	// add, or if we're adding largely different amounts to the FWD and REV primer, we set
+	// the number of bp to add as bpAddLeft and bpAddRight and do so after creating primers
+	// that anneal to the template
 	if math.Abs(float64(addLeft)-float64(addRight)) > 6.0 {
+		// if one sides has a lot to add but the other doesn't, don't increase
+		// the primer generation size in primer3. will instead concat the sequence on later
+		// because we do not want to throw off the annealing temp for the primers
 		bpAddLeft = addLeft
 		bpAddRight = addRight
 		growPrimers = 0
@@ -196,34 +209,14 @@ func (p *p3Exec) input(minHomology, maxEmbedLength int) (bpAddLeft, bpAddRight i
 
 	// check whether we have wiggle room on the left or right hand sides to move the
 	// primers inward (let primer3 pick better primers)
-	distFromLast := p.last.distTo(*p.n)
-	distFromNext := p.n.distTo(*p.next)
-
-	leftBuffer := 0
-	if distFromLast > maxEmbedLength {
-		// we'll synthesize on left, add 100bp of buffer
-		// TODO: move to settings
-		leftBuffer = 100
-	} else if distFromLast < -minHomology {
-		// there's enough additonal overlap that we can move this FWD primer inwards
-		// but only enough to ensure that there's still minHomology bp overlap
-		// and only enough so we leave the neighbor space for primer optimization too
-		leftBuffer = (-distFromLast - minHomology) / 2
-	}
-
-	rightBuffer := 0
-	if distFromNext > maxEmbedLength {
-		// will we have to synthesize on the right anyway, add 100bp of buffer
-		rightBuffer = 100
-	} else if distFromNext < -minHomology {
-		// we can shift the REV primer inwards by enough to ensure there's still
-		// minHomology bp overlap
-		// and leave enough space for the neighboring fragment to optimize too
-		rightBuffer = (-distFromNext - minHomology) / 2
-	}
+	//
+	// also adjust start and length in case there's TOO large an overhang and we need
+	// to trim it in one direction or the other
+	leftBuffer := p.buffer(p.last.distTo(p.n), minHomology, maxEmbedLength)
+	rightBuffer := p.buffer(p.n.distTo(p.next), minHomology, maxEmbedLength)
 
 	// create the settings map from all instructions
-	file := settingsFile(
+	file := p.settings(
 		p.seq,
 		p.p3Conf,
 		start,
@@ -232,7 +225,8 @@ func (p *p3Exec) input(minHomology, maxEmbedLength int) (bpAddLeft, bpAddRight i
 		primerOpt,
 		primerMax,
 		leftBuffer,
-		rightBuffer)
+		rightBuffer,
+	)
 
 	if err := ioutil.WriteFile(p.in, file, 0666); err != nil {
 		return 0, 0, fmt.Errorf("failed to write primer3 input file %v: ", err)
@@ -240,12 +234,31 @@ func (p *p3Exec) input(minHomology, maxEmbedLength int) (bpAddLeft, bpAddRight i
 	return
 }
 
+// shrink adjusts the start and end of a node in the scenario where
+// it excessively overlaps a neighboring fragment. For example, if there's
+// 700bp of overlap, this will trim it back so we just PCR a subselection of
+// the node and keep the overlap beneath the upper limit
+// TODO: consider giving minLength for PCR fragments precedent, this may subvert that rule
+func (p *p3Exec) shrink(last, n, next *node, maxHomology int) *node {
+	if distLeft := last.distTo(n); distLeft < -maxHomology {
+		// there's too much homology on the left side, we should move the node's start inward
+		n.start += (-distLeft) - maxHomology
+	}
+
+	if distRight := n.distTo(next); distRight < -maxHomology {
+		// there's too much homology on the right side, we should move the node's end inward
+		n.end -= (-distRight) - maxHomology
+	}
+
+	return n
+}
+
 // bpToShare calculates the number of bp to add the end of a node to creat a junction between them
 // returns the number of bp that needs to be added to each node
-func bpToShare(left, right *node, minHomology int) (bpToAdd int) {
-	if synthDist := left.synthDist(*right); synthDist == 0 {
+func (p *p3Exec) bpToShare(left, right *node, minHomology int) (bpToAdd int) {
+	if synthDist := left.synthDist(right); synthDist == 0 {
 		// we're not going to synth our way here, check that there's already enough homology
-		if bpDist := left.distTo(*right); bpDist > -minHomology {
+		if bpDist := left.distTo(right); bpDist > -minHomology {
 			// this node will add half the homology to the last fragment
 			// ex: 5 bp distance leads to 2.5bp + ~10bp additonal
 			// ex: -10bp distance leads to ~0 bp additional:
@@ -256,11 +269,30 @@ func bpToShare(left, right *node, minHomology int) (bpToAdd int) {
 	return
 }
 
+// buffer takes the dist from a one fragment to another and
+// returns the length of the "buffer" in which the primers can be optimized (let primer3 pick)
+//
+// dist is positive if there's a gap between the start/end of a fragment and the start/end of
+// the other and negative if they overlap
+func (p *p3Exec) buffer(dist, minHomology, maxEmbedLength int) (buffer int) {
+	if dist > maxEmbedLength {
+		// we'll synthesize because the gap is so large, add 100bp of buffer
+		return 100 // TODO: move "100" to settings
+	}
+	if dist < -minHomology {
+		// there's enough additonal overlap that we can move this FWD primer inwards
+		// but only enough to ensure that there's still minHomology bp overlap
+		// and only enough so we leave the neighbor space for primer optimization too
+		return (-dist - minHomology) / 2
+	}
+	return 0
+}
+
 // settingsMap returns a new settings map for the primer3 config files
 // can either use pick_cloning_primers mode, if the start and end primers' locations
 // are fixed, or pick_primer_list mode if we're letting the primers shift and allowing
 // primer3 to pick the best ones. One side may be free to move and the other not
-func settingsFile(
+func (p *p3Exec) settings(
 	seq, p3conf string,
 	start, length, primerMin, primerOpt, primerMax int,
 	leftBuffer, rightBuffer int) (file []byte) {
@@ -420,8 +452,6 @@ func (p *p3Exec) parse(input string) (err error) {
 //
 // returning node for testing
 func mutateNodePrimers(n *node, seq string, addLeft, addRight int) (mutated *node) {
-	// fmt.Println(n.id, addLeft, addRight, n.primers[0].Range.start, n.primers[1].Range.end)
-
 	template := seq + seq
 
 	// add bp to the left/FWD primer to match the fragment to the left

@@ -73,7 +73,7 @@ func Test_build(t *testing.T) {
 	}
 
 	type args struct {
-		nodes []node
+		nodes []*node
 	}
 	tests := []struct {
 		name           string
@@ -83,7 +83,7 @@ func Test_build(t *testing.T) {
 		{
 			"test building of assemblies",
 			args{
-				nodes: []node{*n21, *n22, *n23, *n24},
+				nodes: []*node{n21, n22, n23, n24},
 			},
 			[]assembly{a1, a2, a3},
 		},

@@ -6,6 +6,9 @@ fragments:
   # Minimum homology length between fragments
   min-homology: 20
 
+  # Maximum homology length between fragments
+  max-homology: 80
+
 # PCR settings
 pcr:
   # Cost per bp of PCR primer

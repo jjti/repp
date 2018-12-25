@@ -25,11 +25,14 @@ var (
 
 // FragmentConfig settings about fragments
 type FragmentConfig struct {
+	// the maximum number of fragments in the final assembly
+	MaxCount int `mapstructure:"max-count"`
+
 	// the minimum homology between this fragment and the net one
 	MinHomology int `mapstructure:"min-homology"`
 
-	// the maximum number of fragments in the final assembly
-	MaxCount int `mapstructure:"max-count"`
+	// maximum length of homology between two adjacent fragments in bp
+	MaxHomology int `mapstructure:" max-homology"`
 }
 
 // PCRConfig is settings for PCR

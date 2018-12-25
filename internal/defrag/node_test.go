@@ -18,7 +18,7 @@ func Test_node_distTo(t *testing.T) {
 		assemblies []assembly
 	}
 	type args struct {
-		other node
+		other *node
 	}
 	tests := []struct {
 		name       string
@@ -36,7 +36,7 @@ func Test_node_distTo(t *testing.T) {
 				assemblies: []assembly{},
 			},
 			args{
-				other: node{
+				other: &node{
 					id:         "2",
 					uniqueID:   "2",
 					start:      20,
@@ -54,7 +54,7 @@ func Test_node_distTo(t *testing.T) {
 				end:   40,
 			},
 			args{
-				other: node{
+				other: &node{
 					start: 60,
 					end:   100,
 				},
@@ -91,7 +91,7 @@ func Test_node_synthDist(t *testing.T) {
 		assemblies []assembly
 	}
 	type args struct {
-		other node
+		other *node
 	}
 	tests := []struct {
 		name           string
@@ -106,7 +106,7 @@ func Test_node_synthDist(t *testing.T) {
 				end:   40,
 			},
 			args{
-				other: node{
+				other: &node{
 					start: 20,
 					end:   60,
 					conf:  &c,
@@ -121,7 +121,7 @@ func Test_node_synthDist(t *testing.T) {
 				end:   40,
 			},
 			args{
-				other: node{
+				other: &node{
 					start: 60,
 					end:   80,
 					conf:  &c,
@@ -166,7 +166,7 @@ func Test_node_costTo(t *testing.T) {
 		assemblies []assembly
 	}
 	type args struct {
-		other node
+		other *node
 	}
 	tests := []struct {
 		name     string
@@ -181,7 +181,7 @@ func Test_node_costTo(t *testing.T) {
 				end:   50,
 			},
 			args{
-				other: node{
+				other: &node{
 					start: 20,
 					end:   100,
 					conf:  &c,
@@ -196,7 +196,7 @@ func Test_node_costTo(t *testing.T) {
 				end:   50,
 			},
 			args{
-				other: node{
+				other: &node{
 					start: 80,
 					end:   120,
 					conf:  &c,
@@ -211,7 +211,7 @@ func Test_node_costTo(t *testing.T) {
 				end:   n1.end,
 			},
 			args{
-				other: *n1,
+				other: n1,
 			},
 			1.2,
 		},
@@ -238,37 +238,37 @@ func Test_node_reach(t *testing.T) {
 
 	c.Fragments.MinHomology = 2
 
-	n11 := node{
+	n11 := &node{
 		start: 0,
 		end:   10,
 		conf:  &c,
 	}
-	n12 := node{
+	n12 := &node{
 		start: 5,
 		end:   15,
 		conf:  &c,
 	}
-	n13 := node{
+	n13 := &node{
 		start: 6,
 		end:   16,
 		conf:  &c,
 	}
-	n14 := node{
+	n14 := &node{
 		start: 7,
 		end:   17,
 		conf:  &c,
 	}
-	n15 := node{
+	n15 := &node{
 		start: 15,
 		end:   20,
 		conf:  &c,
 	}
-	n16 := node{
+	n16 := &node{
 		start: 16,
 		end:   21,
 		conf:  &c,
 	}
-	n17 := node{
+	n17 := &node{
 		start: 17,
 		end:   22,
 		conf:  &c,
@@ -282,7 +282,7 @@ func Test_node_reach(t *testing.T) {
 		assemblies []assembly
 	}
 	type args struct {
-		nodes      []node
+		nodes      []*node
 		i          int
 		synthCount int
 	}
@@ -299,7 +299,7 @@ func Test_node_reach(t *testing.T) {
 				end:   n11.end,
 			},
 			args{
-				[]node{n11, n12, n13, n14, n15, n16, n17},
+				[]*node{n11, n12, n13, n14, n15, n16, n17},
 				0,
 				2, // limit to 3 "synthable" nodes
 			},
@@ -314,7 +314,7 @@ func Test_node_reach(t *testing.T) {
 				end:   n11.end,
 			},
 			args{
-				[]node{n11, n12, n13, n14, n15, n16, n17},
+				[]*node{n11, n12, n13, n14, n15, n16, n17},
 				6,
 				2, // limit to 3 "synthable" nodes
 			},
@@ -354,7 +354,7 @@ func Test_node_synthTo(t *testing.T) {
 		assemblies []assembly
 	}
 	type args struct {
-		next node
+		next *node
 		seq  string
 	}
 	tests := []struct {
@@ -370,7 +370,7 @@ func Test_node_synthTo(t *testing.T) {
 				end:   16,
 			},
 			args{
-				next: node{
+				next: &node{
 					start: 13,
 					end:   20,
 					conf:  &c,
@@ -386,7 +386,7 @@ func Test_node_synthTo(t *testing.T) {
 				end:   16,
 			},
 			args{
-				next: node{
+				next: &node{
 					id:    "second",
 					start: 25,
 					end:   30,

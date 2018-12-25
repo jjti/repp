@@ -49,7 +49,7 @@ type node struct {
 }
 
 // newNode creates a node from a Match
-func newNode(m match, seqL int, conf *config.Config) node {
+func newNode(m match, seqL int, conf *config.Config) *node {
 	cost := 0.0
 	url := ""
 	if strings.Contains(m.entry, "addgene") {
@@ -60,7 +60,7 @@ func newNode(m match, seqL int, conf *config.Config) node {
 		url = fmt.Sprintf("https://www.addgene.org/%s/", match[1])
 	}
 
-	return node{
+	return &node{
 		id:       m.entry,
 		seq:      strings.ToUpper(m.seq),
 		uniqueID: strconv.Itoa(m.start%seqL) + m.entry,
@@ -116,14 +116,14 @@ func (n *node) fragment() Fragment {
 // distTo returns the distance between the start of this node and the end of the other.
 // assumes that this node starts before the other
 // will return a negative number if this node overlaps with the other and positive otherwise
-func (n *node) distTo(other node) (bpDist int) {
+func (n *node) distTo(other *node) (bpDist int) {
 	return other.start - n.end
 }
 
 // synthDist returns the number of synthesized fragments that would need to be created
 // between one node and another if the two were to be joined, with no existing
 // fragments/nodes in-between, in an assembly
-func (n *node) synthDist(other node) (synthCount int) {
+func (n *node) synthDist(other *node) (synthCount int) {
 	dist := n.distTo(other)
 
 	if dist <= n.conf.PCR.MaxEmbedLength {
@@ -151,7 +151,7 @@ func (n *node) synthDist(other node) (synthCount int) {
 //
 // This does not add in the cost of procurement, which is added to the assembly cost
 // in assembly.add()
-func (n *node) costTo(other node) (cost float64) {
+func (n *node) costTo(other *node) (cost float64) {
 	dist := n.distTo(other)
 
 	if dist <= n.conf.PCR.MaxEmbedLength {
@@ -176,7 +176,7 @@ func (n *node) costTo(other node) (cost float64) {
 
 // reach returns a slice of node indexes that overlap with, or are the first synth_count nodes
 // away from this one within a slice of ordered nodes
-func (n *node) reach(nodes []node, i, synthCount int) (reachable []int) {
+func (n *node) reach(nodes []*node, i, synthCount int) (reachable []int) {
 	reachable = []int{}
 
 	// accumulate the nodes that overlap with this one
@@ -207,7 +207,7 @@ func (n *node) reach(nodes []node, i, synthCount int) (reachable []int) {
 // one another and are within the upper and lower synthesis bounds.
 // seq is the vector's sequence. We need it to build up the target
 // vector's sequence
-func (n *node) synthTo(next node, seq string) (synthedFrags []Fragment) {
+func (n *node) synthTo(next *node, seq string) (synthedFrags []Fragment) {
 	// check whether we need to make synthetic fragments to get
 	// to the next fragment in the assembly
 	fragC := n.synthDist(next)
