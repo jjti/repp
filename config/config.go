@@ -44,7 +44,7 @@ type PCRConfig struct {
 	P3MaxPenalty float64 `mapstructure:"primer3-penalty-max"`
 
 	// the maximum length of a sequence to embed up or downstream of an amplified sequence
-	MaxEmbedLEngth int `mapstructure:"primer-max-embed-length"`
+	MaxEmbedLength int `mapstructure:"primer-max-embed-length"`
 
 	// MaxOfftargetTm is the maximum tm of an offtarget, above which PCR is abandoned
 	MaxOfftargetTm float64 `mapstructure:"primer-max-offtarget-tm"`

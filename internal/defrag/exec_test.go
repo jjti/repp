@@ -102,7 +102,7 @@ func Test_execute_single_vector(t *testing.T) {
 	in := path.Join("..", "..", "test", "109049.addgene.fa")
 	out := path.Join("..", "..", "bin", "109049.output.json")
 
-	assemblies := execute(in, out, "", true)
+	assemblies := execute(in, out, "", true) // use addgene database
 
 	if len(assemblies) != 1 {
 		t.Fatal("failed to return the pareto optimal solution: 109049 alone")
@@ -152,7 +152,7 @@ func Test_getInput(t *testing.T) {
 		wantIn string
 	}{
 		{
-			"get fasta file from directory",
+			"get fasta file from directory alone",
 			"109049.addgene.fa",
 		},
 	}
