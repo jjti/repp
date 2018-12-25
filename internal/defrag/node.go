@@ -16,12 +16,12 @@ type node struct {
 	// id of the node's source in the database (will be used to avoid off-targets within it)
 	id string
 
-	// seq of the fragment
-	seq string
-
-	// unique-id of a match, the start index % seq-length + id
-	// (unique identified that catches nodes that cross the zero-index)
+	// uniqueID of a match, the start index % seq-length + id
+	// used identified that catches nodes that cross the zero-index
 	uniqueID string
+
+	// seq of the node against the range on the target sequence
+	seq string
 
 	// start of this node on the target vector (which has been 3x'ed for BLAST)
 	start int
@@ -29,14 +29,14 @@ type node struct {
 	// end of this node on the target vector
 	end int
 
+	// db that the node was derived from
+	db string
+
 	// assemblies that span from this node to the end of the vector
 	assemblies []assembly
 
 	// cost of the node. eg: fragments from Addgene cost $65
 	cost float64
-
-	// db that the node was derived from
-	db string
 
 	// url to get the node, eg: link for addgene page
 	url string
@@ -48,7 +48,7 @@ type node struct {
 	conf *config.Config
 }
 
-// newNode creates a node from a Match
+// newNode creates a node from a match
 func newNode(m match, seqL int, conf *config.Config) *node {
 	cost := 0.0
 	url := ""
@@ -62,14 +62,14 @@ func newNode(m match, seqL int, conf *config.Config) *node {
 
 	return &node{
 		id:       m.entry,
-		seq:      strings.ToUpper(m.seq),
 		uniqueID: strconv.Itoa(m.start%seqL) + m.entry,
+		seq:      strings.ToUpper(m.seq),
 		start:    m.start,
 		end:      m.end,
 		db:       m.db,
-		conf:     conf,
 		cost:     cost,
 		url:      url,
+		conf:     conf,
 	}
 }
 
@@ -100,7 +100,7 @@ func (n *node) fragment() Fragment {
 		cost += conf.PCR.BPCost * float64(len(p.Seq))
 	}
 
-	frag := Fragment{
+	return Fragment{
 		ID:      n.id,
 		Seq:     strings.ToUpper(n.seq),
 		Entry:   n.id,
@@ -109,8 +109,6 @@ func (n *node) fragment() Fragment {
 		Primers: n.primers,
 		Cost:    cost,
 	}
-
-	return frag
 }
 
 // distTo returns the distance between the start of this node and the end of the other.
@@ -170,7 +168,6 @@ func (n *node) costTo(other *node) (cost float64) {
 	// to account for both the bps between them as well as the additional bps we need to add
 	// for homology between the two
 	fragLength := n.conf.Fragments.MinHomology + dist
-
 	return n.conf.SynthCost(fragLength)
 }
 
@@ -197,6 +194,42 @@ func (n *node) reach(nodes []*node, i, synthCount int) (reachable []int) {
 			reachable = append(reachable, i)
 		} else {
 			break
+		}
+	}
+	return
+}
+
+// junction checks for and returns any 100% identical homology between the end of this
+// node and the start of the other. returns an empty string if there's no junction between them
+func (n *node) junction(other *node, minHomology, maxHomology int) (junction string) {
+	thisSeq := strings.ToUpper(n.seq)
+	otherSeq := strings.ToUpper(other.seq)
+
+	//      v-maxHomology from end    v-minHomology from end
+	// ------------------------------------
+	//                    -----------------------------
+	start := len(thisSeq) - maxHomology
+	end := len(thisSeq) - minHomology
+
+	if start < 0 {
+		return ""
+	}
+
+	// for every possible start index
+	for i := start; i <= end; i++ {
+		// traverse from that index to the end of the seq
+		j := 0
+		for k := i; k < len(thisSeq); k++ {
+			if thisSeq[k] != otherSeq[j] {
+				break
+			} else {
+				j++
+			}
+
+			// we made it to the end of the sequence, there's a junction
+			if k == len(thisSeq)-1 {
+				return thisSeq[i:]
+			}
 		}
 	}
 	return
@@ -245,6 +278,5 @@ func (n *node) synthTo(next *node, seq string) (synthedFrags []Fragment) {
 		}
 		synthedFrags = append(synthedFrags, sFrag)
 	}
-
 	return
 }

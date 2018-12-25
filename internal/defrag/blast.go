@@ -42,12 +42,12 @@ type match struct {
 	internal bool
 }
 
-// Length returns the length of the match on the target fragment
-func (m *match) Length() int {
+// length returns the length of the match on the target fragment
+func (m *match) length() int {
 	return m.end - m.start + 1 // it's inclusive
 }
 
-// blastExec is a small utility function for executing BLAST on a fragment
+// blastExec is a small utility function for executing BLAST
 type blastExec struct {
 	// the fragment we're BLASTing
 	f *Fragment
@@ -139,7 +139,7 @@ func (b *blastExec) create() error {
 }
 
 // run calls the external blastn binary on the input library
-func (b *blastExec) run() error {
+func (b *blastExec) run() (err error) {
 	threads := runtime.NumCPU() - 1
 	if threads < 1 {
 		threads = 1
@@ -162,12 +162,11 @@ func (b *blastExec) run() error {
 	if output, err := blastCmd.CombinedOutput(); err != nil {
 		log.Fatalf("failed to execute blastn against db, %s: %v: %s", b.db, err, string(output))
 	}
-
-	return nil
+	return
 }
 
 // runs blast on the query file against another subject file (rather than blastdb)
-func (b *blastExec) runAgainst() error {
+func (b *blastExec) runAgainst() (err error) {
 	// create the blast command
 	// https://www.ncbi.nlm.nih.gov/books/NBK279682/
 	blastCmd := exec.Command(
@@ -184,8 +183,7 @@ func (b *blastExec) runAgainst() error {
 		log.Fatalf("failed to execute blastn against db, %s: %v: %s", b.db, err, string(output))
 		return err
 	}
-
-	return nil
+	return
 }
 
 // parse reads the output file into Matches on the Fragment
@@ -266,7 +264,7 @@ func filter(matches []match, minSize int) (properized []match) {
 	var internal []match
 	var external []match
 	for _, m := range matches {
-		if m.Length() > minSize {
+		if m.length() > minSize {
 			if m.internal {
 				internal = append(internal, m)
 			} else {
@@ -286,7 +284,7 @@ func properize(matches []match) (properized []match) {
 		if matches[i].start != matches[j].start {
 			return matches[i].start < matches[j].start
 		}
-		return matches[i].Length() > matches[j].Length()
+		return matches[i].length() > matches[j].length()
 	})
 
 	// only include those that aren't encompassed by the one before it

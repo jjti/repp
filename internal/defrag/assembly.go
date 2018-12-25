@@ -190,6 +190,5 @@ func (a *assembly) fill(seq string, conf *config.Config) (frags []Fragment, err 
 			frags = append(frags, synthedFrags...)
 		}
 	}
-
 	return
 }
