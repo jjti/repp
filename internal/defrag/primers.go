@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
-	"math"
 	"os/exec"
 	"path"
 	"strconv"
@@ -85,11 +84,10 @@ func (n *node) setPrimers(last, next *node, seq string, conf *config.Config) (er
 	// make input file and write to the fs
 	// find how many bp of additional sequence need to be added
 	// to the left and right primers (too large for primer3_core)
-	addLeft, addRight, err := exec.input(
-		conf.Fragments.MinHomology,
-		conf.Fragments.MaxHomology,
-		conf.PCR.MaxEmbedLength,
-	)
+	minHomology := conf.Fragments.MinHomology
+	maxHomology := conf.Fragments.MaxHomology
+	maxEmbedLength := conf.PCR.MaxEmbedLength
+	addLeft, addRight, err := exec.input(minHomology, maxHomology, maxEmbedLength)
 	if err != nil {
 		return
 	}
@@ -122,7 +120,7 @@ func (n *node) setPrimers(last, next *node, seq string, conf *config.Config) (er
 	var mm match
 
 	if n.fullSeq != "" {
-		mismatchExists, mm, err = parentMismatch(n.primers, n.id, n.fullSeq, conf)
+		mismatchExists, mm, err = seqMismatch(n.primers, n.id, n.fullSeq, conf)
 	} else {
 		// otherwise, query the fragment from the DB (try to find it) and then check for mismatches
 		mismatchExists, mm, err = parentMismatch(n.primers, n.id, n.db, conf)
@@ -139,7 +137,6 @@ func (n *node) setPrimers(last, next *node, seq string, conf *config.Config) (er
 			mm.seq,
 		)
 	}
-
 	return
 }
 
@@ -173,8 +170,8 @@ func (p *p3Exec) input(minHomology, maxHomology, maxEmbedLength int) (bpAddLeft,
 	p.shrink(p.last, p.n, p.next, maxHomology) // could skip passing as a param, but this is a bit easier to test imo
 
 	// calc the bps to add on the left and right side of this node
-	addLeft := p.bpToShare(p.last, p.n, minHomology)
-	addRight := p.bpToShare(p.n, p.next, minHomology)
+	addLeft := p.bpToAdd(p.last, p.n, minHomology)
+	addRight := p.bpToAdd(p.n, p.next, minHomology)
 	growPrimers := addLeft
 	if growPrimers < addRight {
 		growPrimers = addRight
@@ -187,7 +184,8 @@ func (p *p3Exec) input(minHomology, maxHomology, maxEmbedLength int) (bpAddLeft,
 	// add, or if we're adding largely different amounts to the FWD and REV primer, we set
 	// the number of bp to add as bpAddLeft and bpAddRight and do so after creating primers
 	// that anneal to the template
-	if math.Abs(float64(addLeft)-float64(addRight)) > 6.0 {
+	primerDiff := addLeft - addRight
+	if primerDiff > 5 || primerDiff < 5 {
 		// if one sides has a lot to add but the other doesn't, don't increase
 		// the primer generation size in primer3. will instead concat the sequence on later
 		// because we do not want to throw off the annealing temp for the primers
@@ -244,22 +242,33 @@ func (p *p3Exec) input(minHomology, maxHomology, maxEmbedLength int) (bpAddLeft,
 // the node and keep the overlap beneath the upper limit
 // TODO: consider giving minLength for PCR fragments precedent, this may subvert that rule
 func (p *p3Exec) shrink(last, n, next *node, maxHomology int) *node {
+	var shiftInLeft int
+	var shiftInRight int
+
 	if distLeft := last.distTo(n); distLeft < -maxHomology {
 		// there's too much homology on the left side, we should move the node's start inward
-		n.start += (-distLeft) - maxHomology
+		shiftInLeft = (-distLeft) - maxHomology
 	}
 
 	if distRight := n.distTo(next); distRight < -maxHomology {
 		// there's too much homology on the right side, we should move the node's end inward
-		n.end -= (-distRight) - maxHomology
+		shiftInRight = (-distRight) - maxHomology
+	}
+
+	// update the seq to slice for the new modified range
+	n.start += shiftInLeft
+	n.end -= shiftInRight
+
+	if n.seq != "" {
+		n.seq = n.seq[shiftInLeft : len(n.seq)-shiftInRight-shiftInLeft]
 	}
 
 	return n
 }
 
-// bpToShare calculates the number of bp to add the end of a node to creat a junction between them
-// returns the number of bp that needs to be added to each node
-func (p *p3Exec) bpToShare(left, right *node, minHomology int) (bpToAdd int) {
+// bpToAdd calculates the number of bp to add the end of a left node to create a junction
+// with the rightmost node
+func (p *p3Exec) bpToAdd(left, right *node, minHomology int) (bpToAdd int) {
 	if synthDist := left.synthDist(right); synthDist == 0 {
 		// we're not going to synth our way here, check that there's already enough homology
 		if bpDist := left.distTo(right); bpDist > -minHomology {

@@ -50,7 +50,7 @@ func Test_isMismatch(t *testing.T) {
 	}
 }
 
-func TestQueryMismatch(t *testing.T) {
+func Test_parentMismatch(t *testing.T) {
 	testDB, _ := filepath.Abs(path.Join("..", "..", "test", "db", "db"))
 
 	conf := config.New()
@@ -103,14 +103,14 @@ func TestQueryMismatch(t *testing.T) {
 				},
 			}, tt.args.parent, testDB, &conf)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("Mismatch() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("parentMismatch() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if gotMismatch != tt.wantMismatch {
-				t.Errorf("Mismatch() gotMismatch = %v, want %v", gotMismatch, tt.wantMismatch)
+				t.Errorf("parentMismatch() gotMismatch = %v, want %v", gotMismatch, tt.wantMismatch)
 			}
 			if !reflect.DeepEqual(gotMatch, tt.wantMatch) {
-				t.Errorf("Mismatch() gotMatch = %v, want %v", gotMatch, tt.wantMatch)
+				t.Errorf("parentMismatch() gotMatch = %v, want %v", gotMatch, tt.wantMatch)
 			}
 		})
 	}
