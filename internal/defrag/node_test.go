@@ -187,7 +187,7 @@ func Test_node_costTo(t *testing.T) {
 					conf:  &c,
 				},
 			},
-			1.2,
+			1.38,
 		},
 		{
 			"cost of synthesis if they don't overlap",
@@ -213,7 +213,7 @@ func Test_node_costTo(t *testing.T) {
 			args{
 				other: n1,
 			},
-			1.2,
+			1.38,
 		},
 	}
 	for _, tt := range tests {
@@ -479,7 +479,7 @@ func Test_new(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want node
+		want *node
 	}{
 		{
 			"create a node from a match",
@@ -492,7 +492,7 @@ func Test_new(t *testing.T) {
 				},
 				seqL: 50,
 			},
-			node{
+			&node{
 				id:         "testMatch",
 				seq:        "ATGCTAGCTAGTG",
 				uniqueID:   "0testMatch",

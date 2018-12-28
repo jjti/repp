@@ -91,9 +91,10 @@ func blastDBCmd(parent, db string, c *config.Config) (parentFile string) {
 
 	// read in the results as a fragment and return just the seq
 	fragments, err := read(parentPath)
-	if err != nil && len(fragments) >= 1 {
+	if err == nil && len(fragments) >= 1 {
 		return parentPath
 	}
+	log.Fatalln(err)
 	return
 }
 
@@ -106,10 +107,10 @@ func mismatch(primer, parentFile string, c *config.Config) (wasMismatch bool, m 
 	v := c.Vendors()
 
 	// path the query sequence input file
-	in, _ := filepath.Abs(path.Join(v.Blastdir, parentFile+".primer.query"))
+	in := parentFile + ".primer.query"
 
 	// path to the blastOutput file
-	out, _ := filepath.Abs(path.Join(v.Blastdir, parentFile+".blast"))
+	out := parentFile + ".blast"
 
 	// create blast input file
 	inContent := fmt.Sprintf(">primer\n%s\n", primer)
@@ -154,7 +155,6 @@ func mismatch(primer, parentFile string, c *config.Config) (wasMismatch bool, m 
 			return true, m, nil
 		}
 	}
-
 	return false, match{}, nil
 }
 
