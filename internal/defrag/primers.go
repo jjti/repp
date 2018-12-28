@@ -118,24 +118,28 @@ func (n *node) setPrimers(last, next *node, seq string, conf *config.Config) (er
 	}
 
 	// 2. check for whether either of the primers have an off-target/mismatch
-	for _, primer := range n.primers {
-		// the node's id is the same as the entry ID in the database
-		mismatchExists, mm, err := mismatch(primer.Seq, n.id, n.db, conf)
+	var mismatchExists bool
+	var mm match
 
-		if err != nil {
-			n.primers = nil
-			return err
-		}
-
-		if mismatchExists {
-			n.primers = nil
-			return fmt.Errorf(
-				"Found a mismatching sequence, %s, against the primer %s",
-				mm.seq,
-				primer.Seq,
-			)
-		}
+	if n.fullSeq != "" {
+		mismatchExists, mm, err = parentMismatch(n.primers, n.id, n.fullSeq, conf)
+	} else {
+		// otherwise, query the fragment from the DB (try to find it) and then check for mismatches
+		mismatchExists, mm, err = parentMismatch(n.primers, n.id, n.db, conf)
 	}
+
+	if err != nil {
+		n.primers = nil
+		return err
+	}
+	if mismatchExists {
+		n.primers = nil
+		return fmt.Errorf(
+			"Found a mismatching sequence, %s, against the primer",
+			mm.seq,
+		)
+	}
+
 	return
 }
 

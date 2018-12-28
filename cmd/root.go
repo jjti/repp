@@ -12,12 +12,8 @@ import (
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "defrag",
-	Short: "Build vectors from any of their sequence, features or fragments",
+	Short: "Build vectors from any of their vector sequence, features or fragments",
 	Long:  ``,
-
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
-	//	Run: func(cmd *cobra.Command, args []string) { },
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.

@@ -41,7 +41,7 @@ func TestExecute(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			Execute(tt.args.cmd, tt.args.args)
+			Vector(tt.args.cmd, tt.args.args)
 		})
 	}
 }
@@ -102,7 +102,7 @@ func Test_execute_single_vector(t *testing.T) {
 	in := path.Join("..", "..", "test", "109049.addgene.fa")
 	out := path.Join("..", "..", "bin", "109049.output.json")
 
-	assemblies := execute(in, out, "", true) // use addgene database
+	assemblies := execVector(in, out, "", true) // use addgene database
 
 	if len(assemblies) != 1 {
 		t.Fatal("failed to return the pareto optimal solution: 109049 alone")
@@ -136,7 +136,7 @@ func Test_parseOut(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if gotOut := parseOut(tt.args.in); gotOut != tt.wantOut {
+			if gotOut := guessOutput(tt.args.in); gotOut != tt.wantOut {
 				t.Errorf("parseOut() = %v, want %v", gotOut, tt.wantOut)
 			}
 		})
@@ -158,7 +158,7 @@ func Test_getInput(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if gotIn := getInput(); gotIn != tt.wantIn {
+			if gotIn := guessInput(); gotIn != tt.wantIn {
 				t.Errorf("getInput() = %v, want %v", gotIn, tt.wantIn)
 			}
 		})

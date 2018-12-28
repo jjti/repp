@@ -4,14 +4,15 @@ import (
 	"log"
 	"math"
 	"sort"
+	"strings"
 
 	"github.com/jjtimmons/defrag/config"
 )
 
-// assemble the BLAST matches into assemblies that span the target sequence
+// assembleREV converts BLAST matches into assemblies spanning the target sequence
 //
 // First build up assemblies, creating all possible assemblies that are
-// beneath the upper-bound limit on the number of fragments
+// beneath the upper-bound limit on the number of fragments fully covering the target sequence
 //
 // Then find the pareto optimal solutions that minimize either the cost
 // of the assembly or the number of fragments (relative to the other
@@ -21,7 +22,7 @@ import (
 // "fill-in" the nodes. Create primers on the node if it's a PCR Fragment
 // or create a sequence to be synthesized if it's a synthetic fragment.
 // Error out and repeat the build stage if a node fails to be filled
-func assemble(matches []match, seq string, conf *config.Config) [][]Fragment {
+func assembleREV(matches []match, seq string, conf *config.Config) [][]Fragment {
 	// map fragment Matches to nodes
 	var nodes []*node
 	for _, m := range matches {
@@ -121,4 +122,54 @@ func countMap(assemblies []assembly) map[int][]assembly {
 	}
 
 	return countToAssemblies
+}
+
+// assembleFWD takes a list of Fragments and returns the Vector we assume the user is
+// trying to build as well as the Fragments (possibly prepared via PCR)
+func assembleFWD(inputFragments []Fragment, conf *config.Config) (targetVector Fragment, fragments []Fragment) {
+	// convert the fragments to nodes (without a start and end)
+	nodes := make([]*node, len(inputFragments))
+	for _, f := range inputFragments {
+		nodes = append(nodes, &node{
+			id:      f.ID,
+			seq:     f.Seq,
+			fullSeq: f.Seq,
+			conf:    conf,
+		})
+	}
+
+	// find out how much overlap the *last* node has with its next one
+	// set the start, end, and vector sequence based on that
+	//
+	// add all of each nodes seq to the vector sequence, minus the region overlapping the next
+	minHomology := conf.Fragments.MinHomology
+	maxHomology := conf.Fragments.MaxHomology
+	var vectorSeq strings.Builder
+	for i, n := range nodes {
+		n.start = vectorSeq.Len()
+		n.end = n.start + len(n.seq)
+
+		junction := n.junction(nodes[(i+1)%len(nodes)], minHomology, maxHomology)
+
+		vectorSeq.WriteString(n.seq[0:len(junction)])
+
+		// on the last loop, make sure the end of the node doesn't cross the end of the vector
+		if i == len(nodes)-1 {
+			n.end %= vectorSeq.Len()
+		}
+	}
+
+	// create the assumed vector object
+	targetVector = Fragment{
+		Seq:  vectorSeq.String(),
+		Type: vector,
+	}
+
+	// create an assembly out of the nodes (to fill/convert to fragments with primers)
+	a := assembly{nodes: nodes}
+	fragments, err := a.fill(targetVector.Seq, conf)
+	if err != nil {
+		log.Fatalf("failed to fill in the nodes: %+v", err)
+	}
+	return targetVector, fragments
 }
