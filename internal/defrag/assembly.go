@@ -108,9 +108,13 @@ func (a *assembly) len() int {
 //
 // - Synthetic fragments if there wasn't a match for a region
 //
-// It can fail. For example, a PCR Fragment may have off-targets in
-// the parent vector
+// It can fail. For example, a PCR Fragment may have off-targets in the parent vector
+// TODO: add a duplicate homology check that will fail out this fill function
 func (a *assembly) fill(seq string, conf *config.Config) (frags []Fragment, err error) {
+	if a.duplicates(a.nodes, conf.Fragments.MinHomology, conf.Fragments.MaxHomology) {
+		return nil, fmt.Errorf("cannot fill has duplicate junctions")
+	}
+
 	// edge case where a single node fills the whole target vector. Return just a single
 	// "fragment" (of Vector type... misnomer) that matches the target sequence 100%
 	if a.len() == 1 && len(a.nodes[0].seq) >= len(seq) {
@@ -191,4 +195,20 @@ func (a *assembly) fill(seq string, conf *config.Config) (frags []Fragment, err 
 		}
 	}
 	return
+}
+
+// duplicates runs through all the nodes in an assembly and checks whether any of
+// them have unintended homology, or "duplicate homology"
+// Need to cheack each node's junction() with nodes other than the one after it
+// (which it's supposed to anneal to)
+func (a *assembly) duplicates(nodes []*node, minHomology, maxHomology int) bool {
+	c := len(nodes) // node count
+	for i, n := range nodes {
+		for j := 2; j <= c; j++ { // skip next node, this is supposed to anneal to that
+			if n.junction(nodes[(j+i)%c], minHomology, maxHomology) != "" {
+				return true
+			}
+		}
+	}
+	return false
 }

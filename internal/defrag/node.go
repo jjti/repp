@@ -23,6 +23,9 @@ type node struct {
 	// seq of the node against the range on the target sequence
 	seq string
 
+	// fullSeq is the entire seq of the node/fragment as it was read in (for forward engineering)
+	fullSeq string
+
 	// start of this node on the target vector (which has been 3x'ed for BLAST)
 	start int
 

@@ -379,3 +379,104 @@ func Test_assembly_fill(t *testing.T) {
 		})
 	}
 }
+
+func Test_assembly_duplicates(t *testing.T) {
+	type fields struct {
+		nodes  []*node
+		cost   float64
+		synths int
+	}
+	type args struct {
+		nodes       []*node
+		minHomology int
+		maxHomology int
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   bool
+	}{
+		{
+			"no false positive",
+			fields{},
+			args{
+				nodes: []*node{
+					&node{
+						seq: "ATACCTACTATGGATGACGTAGCAAC",
+					},
+					&node{
+						seq: "AGCAACTCGTTGATATCCACGTA",
+					},
+					&node{
+						seq: "CCACGTAGGTGCATGATGAGATGA",
+					},
+					&node{
+						seq: "TGAGATGATCTACTGTATACCTACT",
+					},
+				},
+				minHomology: 5,
+				maxHomology: 10,
+			},
+			false,
+		},
+		{
+			"assembly with a self-annealing node",
+			fields{},
+			args{
+				nodes: []*node{
+					&node{
+						seq: "CAGATGACGATGGCAACTGAGATGAGACCAGATGACGATG", // <- node (if much larger) has the chance to circularize
+					},
+					&node{
+						seq: "CAGATGACGATGTCGTTGATATACCTACTGGAGAGCACAG",
+					},
+					&node{
+						seq: "TGGAGAGCACAGATGGATGACGTAATGATGATGACCGCAAC",
+					},
+					&node{
+						seq: "ACCGCAACTCGTTGATATACCTACTCAGATGACGAT",
+					},
+				},
+				minHomology: 5,
+				maxHomology: 20,
+			},
+			true,
+		},
+		{
+			"assembly with a duplicate junction",
+			fields{},
+			args{
+				nodes: []*node{
+					&node{
+						seq: "ATGATGCCACGTGCAACTGAGATGAGACCAGATGACGATG", // <- same junction
+					},
+					&node{
+						seq: "CAGATGACGATGTCGTTGATATACCTACTGGAGAGCACAG",
+					},
+					&node{
+						seq: "TGGAGAGCACAGATGGATGACGTAATGACAGATGACGATG", // <- same junction
+					},
+					&node{
+						seq: "CAGATGACGATGACCGCAACTCGTTGATGATGCCAC",
+					},
+				},
+				minHomology: 5,
+				maxHomology: 20,
+			},
+			true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := &assembly{
+				nodes:  tt.fields.nodes,
+				cost:   tt.fields.cost,
+				synths: tt.fields.synths,
+			}
+			if got := a.duplicates(tt.args.nodes, tt.args.minHomology, tt.args.maxHomology); got != tt.want {
+				t.Errorf("assembly.duplicates() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// Execute is the root of the `defrag seq` functionality
+// Vector is the root of the `defrag vector` functionality
 //
 // the goal is to find an "optimal" assembly vector with:
 // 	1. the fewest fragments
@@ -23,15 +23,15 @@ import (
 // 	4. no inverted repeats in the junctions
 // 	5. no off-target binding sites in the parent vectors
 //	6. low primer3 penalty scores
-func Execute(cmd *cobra.Command, args []string) {
+func Vector(cmd *cobra.Command, args []string) {
 	in, err := cmd.Flags().GetString("in")
 	if err != nil {
-		in = getInput()
+		in = guessInput()
 	}
 
 	out, err := cmd.Flags().GetString("out")
 	if err != nil {
-		out = parseOut(in)
+		out = guessOutput(in)
 	}
 
 	addgene, err := cmd.Flags().GetBool("addgene")
@@ -44,11 +44,13 @@ func Execute(cmd *cobra.Command, args []string) {
 		log.Fatalf("failed to find dbs of building fragments: %v", err)
 	}
 
-	execute(in, out, dbs, addgene)
+	execVector(in, out, dbs, addgene)
 }
 
-// execute accepts an input path, output path, dbs and whether to use addgene
-func execute(in, out, dbs string, addgene bool) [][]Fragment {
+// execVector accepts an input path with a vector to build, an output path
+// to write solutions to, dbs of possible building fragments and
+// a flag for whether to use addgene as a building fragment source
+func execVector(in, out, dbs string, addgene bool) [][]Fragment {
 	conf := config.New()
 
 	// no path to input file
@@ -86,7 +88,7 @@ func execute(in, out, dbs string, addgene bool) [][]Fragment {
 	}
 
 	// build up the assemblies
-	builds := assemble(matches, targetFrag.Seq, &conf)
+	builds := assembleREV(matches, targetFrag.Seq, &conf)
 
 	// try to write the JSON to the output file path
 	if !filepath.IsAbs(out) {
@@ -100,9 +102,46 @@ func execute(in, out, dbs string, addgene bool) [][]Fragment {
 	return builds
 }
 
-// getInput returns the first fasta file in the current directory. Is used
+// Fragments accepts a cobra.Command with flags for assembling a list of
+// fragments together into a vector (in the order specified). Fragments
+// without junctions for their neighbors are prepared via PCR
+func Fragments(cmd *cobra.Command, args []string) {
+	in, err := cmd.Flags().GetString("in")
+	if err != nil {
+		in = guessInput()
+	}
+
+	out, err := cmd.Flags().GetString("out")
+	if err != nil {
+		out = guessOutput(in)
+	}
+
+	execFragments(in, out)
+}
+
+// execFragments takes an input file with a list of fragments to assemble,
+// pieces them together (preparing them if necessary) and writing the results
+// with primers to the out file
+func execFragments(in, out string) {
+	c := config.New()
+
+	// read the target sequence (the first in the slice is used)
+	inputFragments, err := read(in)
+	if err != nil {
+		log.Fatalf("failed to read in fasta files at %s: %v", in, err)
+	}
+
+	// try to find the target vector (sequence) and prepare the fragments to
+	// assemble it
+	target, fragments := assembleFWD(inputFragments, &c)
+
+	// write the single list of fragments as a possible solution to the output file
+	write(out, target, [][]Fragment{fragments})
+}
+
+// guessInput returns the first fasta file in the current directory. Is used
 // if the user hasn't specified an input file
-func getInput() (in string) {
+func guessInput() (in string) {
 	dir, _ := filepath.Abs(".")
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
@@ -123,20 +162,21 @@ func getInput() (in string) {
 	return
 }
 
-// parseOut gets an outpath path from an input path (if no output path is
+// guessOutput gets an outpath path from an input path (if no output path is
 // specified). It uses the same name as the input path to create an output
-func parseOut(in string) (out string) {
+func guessOutput(in string) (out string) {
 	ext := filepath.Ext(in)
 	noExt := in[0 : len(in)-len(ext)]
 	return noExt + ".defrag.json"
 }
 
-// getDBs returns a list of absolute paths to BLAST databases used during a given run
+// getDBs returns a list of absolute paths to BLAST databases
 func getDBs(dbsInput, root string, addgene bool) (paths []string, err error) {
 	if addgene {
 		addgenePath := path.Join(root, "assets", "addgene", "db", "addgene")
 		return parseDBs(dbsInput + "," + addgenePath)
 	}
+
 	return parseDBs(dbsInput)
 }
 

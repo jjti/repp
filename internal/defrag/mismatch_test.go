@@ -50,7 +50,7 @@ func Test_isMismatch(t *testing.T) {
 	}
 }
 
-func TestMismatch(t *testing.T) {
+func TestQueryMismatch(t *testing.T) {
 	testDB, _ := filepath.Abs(path.Join("..", "..", "test", "db", "db"))
 
 	conf := config.New()
@@ -97,7 +97,11 @@ func TestMismatch(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotMismatch, gotMatch, err := mismatch(tt.args.primer, tt.args.parent, testDB, &conf)
+			gotMismatch, gotMatch, err := parentMismatch([]Primer{
+				Primer{
+					Seq: tt.args.primer,
+				},
+			}, tt.args.parent, testDB, &conf)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Mismatch() error = %v, wantErr %v", err, tt.wantErr)
 				return
