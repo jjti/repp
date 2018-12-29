@@ -1,7 +1,6 @@
 package defrag
 
 import (
-	"path"
 	"reflect"
 	"testing"
 
@@ -284,8 +283,9 @@ func Test_assembly_len(t *testing.T) {
 func Test_assembly_fill(t *testing.T) {
 	c := config.New()
 	c.Fragments.MinHomology = 5
-	c.DBs = path.Join("..", "..", "test", "db", "db")
+	c.Fragments.MaxHomology = 50
 	c.Synthesis.MaxLength = 1000
+	c.PCR.P3MaxPenalty = 40.0
 
 	// All of these ids correspond to entires in the test BLAST db
 	f1 := &node{
@@ -320,7 +320,7 @@ func Test_assembly_fill(t *testing.T) {
 		id:       "gnl|addgene|107006(circular)",
 		uniqueID: "01",
 		start:    102 + 121 + 224 + 150,
-		end:      102 + 121 + 224,
+		end:      102 + 121 + 224 + 150 + 57,
 		seq:      "CGTCGGCCGGCCCGCCGCTTTcgcacGCCCTGGCAATCGAGATGCTGGACAGGCATC",
 		conf:     &c,
 	}
@@ -356,7 +356,11 @@ func Test_assembly_fill(t *testing.T) {
 				cost:   tt.fields.cost,
 				synths: tt.fields.synths,
 			}
-			frags, _ := a.fill(tt.args.seq, &c)
+			frags, err := a.fill(tt.args.seq, &c)
+
+			if err != nil {
+				t.Error(err)
+			}
 
 			pcrCount := 0
 			synthCount := 0

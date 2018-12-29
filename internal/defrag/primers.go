@@ -105,14 +105,13 @@ func (n *node) setPrimers(last, next *node, seq string, conf *config.Config) (er
 
 	// 1. check for whether the primers have too have a pair penalty score
 	if n.primers[0].PairPenalty > conf.PCR.P3MaxPenalty {
-		n.primers = nil
-		return fmt.Errorf(
-			"Primers have pair primer3 penalty score of %f, should be less than %f:\n%+v\n%+v",
+		errMessage := fmt.Sprintf("Primers have pair primer3 penalty score of %f, should be less than %f:\n%+v\n%+v",
 			n.primers[0].PairPenalty,
 			conf.PCR.P3MaxPenalty,
 			n.primers[0],
-			n.primers[1],
-		)
+			n.primers[1])
+		n.primers = nil
+		return fmt.Errorf(errMessage)
 	}
 
 	// 2. check for whether either of the primers have an off-target/mismatch
@@ -340,16 +339,19 @@ func (p *p3Exec) settings(
 		settings["PRIMER_MIN_TM"] = "54.0" // defaults to 57.0
 		settings["PRIMER_MAX_TM"] = "67.0" // defaults to 63.0
 
-		// ugly undoing of the above in case only one side has buffer
-		if leftBuffer == 0 {
-			settings["SEQUENCE_FORCE_LEFT_START"] = strconv.Itoa(leftStart)
-		} else if rightBuffer == 0 {
-			settings["SEQUENCE_FORCE_RIGHT_START"] = strconv.Itoa(rightStart)
+		if excludeLength >= 0 {
+			// ugly undoing of the above in case only one side has buffer
+			if leftBuffer == 0 {
+				settings["SEQUENCE_FORCE_LEFT_START"] = strconv.Itoa(leftStart)
+			} else if rightBuffer == 0 {
+				settings["SEQUENCE_FORCE_RIGHT_START"] = strconv.Itoa(rightStart)
+			}
+			settings["PRIMER_PRODUCT_SIZE_RANGE"] = fmt.Sprintf("%d-%d", excludeLength, length)
+			settings["SEQUENCE_PRIMER_PAIR_OK_REGION_LIST"] = fmt.Sprintf("%d,%d,%d,%d", leftStart, leftBuffer+primerMax, rightStart, rightBuffer+primerMax)
 		}
+	}
 
-		settings["PRIMER_PRODUCT_SIZE_RANGE"] = fmt.Sprintf("%d-%d", excludeLength, length)
-		settings["SEQUENCE_PRIMER_PAIR_OK_REGION_LIST"] = fmt.Sprintf("%d,%d,%d,%d", leftStart, leftBuffer+primerMax, rightStart, rightBuffer+primerMax)
-	} else {
+	if _, rangeSet := settings["SEQUENCE_PRIMER_PAIR_OK_REGION_LIST"]; !rangeSet {
 		// otherwise force the start and end of the PCR range
 		settings["PRIMER_TASK"] = "pick_cloning_primers"
 		settings["SEQUENCE_INCLUDED_REGION"] = fmt.Sprintf("%d,%d", start+len(seq), length)
@@ -375,7 +377,7 @@ func (p *p3Exec) run() (err error) {
 
 	// execute primer3 and wait on it to finish
 	if output, err := p3Cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("failed to execute primer3: %s: %v", string(output), err)
+		return fmt.Errorf("failed to execute primer3 on input file %s: %s: %v", p.in, string(output), err)
 	}
 	return
 }
