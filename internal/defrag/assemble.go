@@ -127,15 +127,21 @@ func countMap(assemblies []assembly) map[int][]assembly {
 // assembleFWD takes a list of Fragments and returns the Vector we assume the user is
 // trying to build as well as the Fragments (possibly prepared via PCR)
 func assembleFWD(inputFragments []Fragment, conf *config.Config) (targetVector Fragment, fragments []Fragment) {
+	if len(inputFragments) < 1 {
+		log.Fatalln("failed: no fragments to assemble")
+	}
+
 	// convert the fragments to nodes (without a start and end)
 	nodes := make([]*node, len(inputFragments))
-	for _, f := range inputFragments {
-		nodes = append(nodes, &node{
+	for i, f := range inputFragments {
+		nodes[i] = &node{
 			id:      f.ID,
 			seq:     f.Seq,
 			fullSeq: f.Seq,
 			conf:    conf,
-		})
+			start:   0,
+			end:     0,
+		}
 	}
 
 	// find out how much overlap the *last* node has with its next one
@@ -144,19 +150,18 @@ func assembleFWD(inputFragments []Fragment, conf *config.Config) (targetVector F
 	// add all of each nodes seq to the vector sequence, minus the region overlapping the next
 	minHomology := conf.Fragments.MinHomology
 	maxHomology := conf.Fragments.MaxHomology
+	junction := nodes[len(nodes)-1].junction(nodes[0], minHomology, maxHomology)
 	var vectorSeq strings.Builder
 	for i, n := range nodes {
-		n.start = vectorSeq.Len()
-		n.end = n.start + len(n.seq)
+		// correct for this node's overlap with the last node
+		n.start = vectorSeq.Len() - len(junction)
+		n.end = n.start + len(n.seq) - 1
 
-		junction := n.junction(nodes[(i+1)%len(nodes)], minHomology, maxHomology)
+		// find the junction between this node and the next (if there is one)
+		junction = n.junction(nodes[(i+1)%len(nodes)], minHomology, maxHomology)
 
-		vectorSeq.WriteString(n.seq[0:len(junction)])
-
-		// on the last loop, make sure the end of the node doesn't cross the end of the vector
-		if i == len(nodes)-1 {
-			n.end %= vectorSeq.Len()
-		}
+		// add this node's sequence onto the accumulated vector sequence
+		vectorSeq.WriteString(n.seq[0 : len(n.seq)-len(junction)])
 	}
 
 	// create the assumed vector object

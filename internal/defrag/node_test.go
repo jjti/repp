@@ -565,6 +565,20 @@ func Test_node_junction(t *testing.T) {
 			},
 			"",
 		},
+		{
+			"finds a small junction",
+			fields{
+				seq: "ACGTGCTAGCTACATCGATCGTAGCTAGCTAGCATCG",
+			},
+			args{
+				other: &node{
+					seq: "AGCTAGCATCGACTGATCACTAGCATCGACTAGCTAG",
+				},
+				minHomology: 5,
+				maxHomology: 40,
+			},
+			"AGCTAGCATCG",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
