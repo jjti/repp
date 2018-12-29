@@ -12,4 +12,7 @@ const (
 
 	// synthetic fragments are those that will be fully synthesized (ex: gBlocks)
 	synthetic Type = 2
+
+	// linear fragment, ie the type of a fragment as it was uploaded submitted and without PCR/synthesis
+	existing Type = 3
 )

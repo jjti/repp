@@ -26,6 +26,9 @@ type node struct {
 	// fullSeq is the entire seq of the node/fragment as it was read in (for forward engineering)
 	fullSeq string
 
+	// circular if it was submitted/created as a circular fragment (marked as such in the DB)
+	circular bool
+
 	// start of this node on the target vector (which has been 3x'ed for BLAST)
 	start int
 
@@ -67,6 +70,7 @@ func newNode(m match, seqL int, conf *config.Config) *node {
 		id:       m.entry,
 		uniqueID: strconv.Itoa(m.start%seqL) + m.entry,
 		seq:      strings.ToUpper(m.seq),
+		circular: m.circular,
 		start:    m.start,
 		end:      m.end,
 		db:       m.db,
@@ -96,10 +100,17 @@ func (n *node) copy() *node {
 // fragment converts a node into a fragment
 func (n *node) fragment() Fragment {
 	// should have primers by this point, add up their expected cost
-	fragType := vector
+	fragType := existing
 	cost := n.cost
+
+	// if was passed as a circular match in the db, it's a vector
+	if n.circular {
+		fragType = vector
+	}
+
+	// has primers, is a PCR fragment
 	for _, p := range n.primers {
-		fragType = pcr // has primers, is a PCR fragment
+		fragType = pcr
 		cost += conf.PCR.BPCost * float64(len(p.Seq))
 	}
 
@@ -215,7 +226,7 @@ func (n *node) junction(other *node, minHomology, maxHomology int) (junction str
 	end := len(thisSeq) - minHomology
 
 	if start < 0 {
-		return ""
+		start = 0
 	}
 
 	// for every possible start index

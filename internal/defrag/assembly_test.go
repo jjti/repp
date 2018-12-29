@@ -396,10 +396,11 @@ func Test_assembly_duplicates(t *testing.T) {
 		maxHomology int
 	}
 	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		want   bool
+		name         string
+		fields       fields
+		args         args
+		want         bool
+		wantJunction string
 	}{
 		{
 			"no false positive",
@@ -423,6 +424,7 @@ func Test_assembly_duplicates(t *testing.T) {
 				maxHomology: 10,
 			},
 			false,
+			"",
 		},
 		{
 			"assembly with a self-annealing node",
@@ -446,6 +448,7 @@ func Test_assembly_duplicates(t *testing.T) {
 				maxHomology: 20,
 			},
 			true,
+			"CAGATGACGATG",
 		},
 		{
 			"assembly with a duplicate junction",
@@ -469,6 +472,28 @@ func Test_assembly_duplicates(t *testing.T) {
 				maxHomology: 20,
 			},
 			true,
+			"CAGATGACGATG",
+		},
+		{
+			"another false positive to avoid",
+			fields{},
+			args{
+				nodes: []*node{
+					&node{
+						seq: "ACGTGCTAGCTACATCGATCGTAGCTAGCTAGCATCG", // this shouldn't be flagged as anything
+					},
+					&node{
+						seq: "AGCTAGCATCGACTGATCACTAGCATCGACTAGCTAG",
+					},
+					&node{
+						seq: "TCGACTAGCTAGAACTGATGCTAGACGTGCTAGCTACA",
+					},
+				},
+				minHomology: 8,
+				maxHomology: 20,
+			},
+			false,
+			"",
 		},
 	}
 	for _, tt := range tests {
@@ -478,8 +503,14 @@ func Test_assembly_duplicates(t *testing.T) {
 				cost:   tt.fields.cost,
 				synths: tt.fields.synths,
 			}
-			if got := a.duplicates(tt.args.nodes, tt.args.minHomology, tt.args.maxHomology); got != tt.want {
-				t.Errorf("assembly.duplicates() = %v, want %v", got, tt.want)
+			isDuplicate, duplicateSeq := a.duplicates(tt.args.nodes, tt.args.minHomology, tt.args.maxHomology)
+
+			if isDuplicate != tt.want {
+				t.Errorf("assembly.duplicates() = %v, want %v", isDuplicate, tt.want)
+			}
+
+			if duplicateSeq != tt.wantJunction {
+				t.Errorf("assembly.duplicates() = %v, want %v", duplicateSeq, tt.wantJunction)
 			}
 		})
 	}

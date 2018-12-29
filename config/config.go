@@ -32,7 +32,7 @@ type FragmentConfig struct {
 	MinHomology int `mapstructure:"min-homology"`
 
 	// maximum length of homology between two adjacent fragments in bp
-	MaxHomology int `mapstructure:" max-homology"`
+	MaxHomology int `mapstructure:"max-homology"`
 }
 
 // PCRConfig is settings for PCR

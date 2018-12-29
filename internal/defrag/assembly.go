@@ -109,10 +109,14 @@ func (a *assembly) len() int {
 // - Synthetic fragments if there wasn't a match for a region
 //
 // It can fail. For example, a PCR Fragment may have off-targets in the parent vector
-// TODO: add a duplicate homology check that will fail out this fill function
 func (a *assembly) fill(seq string, conf *config.Config) (frags []Fragment, err error) {
-	if a.duplicates(a.nodes, conf.Fragments.MinHomology, conf.Fragments.MaxHomology) {
-		return nil, fmt.Errorf("cannot fill has duplicate junctions")
+	minHomology := conf.Fragments.MinHomology
+	maxHomology := conf.Fragments.MaxHomology
+
+	// check for and error out if there are duplicate ends between fragments
+	// ie unintended junctions between fragments that shouldn't be annealing
+	if hasDuplicate, duplicateSeq := a.duplicates(a.nodes, minHomology, maxHomology); hasDuplicate {
+		return nil, fmt.Errorf("cannot fill, has duplicate junction sequence %s", duplicateSeq)
 	}
 
 	// edge case where a single node fills the whole target vector. Return just a single
@@ -122,7 +126,7 @@ func (a *assembly) fill(seq string, conf *config.Config) (frags []Fragment, err 
 		return []Fragment{
 			Fragment{
 				ID:    n.id,
-				Seq:   strings.ToUpper(n.seq)[0:len(seq)],
+				Seq:   strings.ToUpper(n.seq)[0:len(seq)], // it may be longer
 				Entry: n.id,
 				Type:  vector,
 				URL:   n.url,
@@ -147,7 +151,12 @@ func (a *assembly) fill(seq string, conf *config.Config) (frags []Fragment, err 
 		var last *node
 		if i == 0 {
 			// mock up a last fragment that's to the left of this starting node
-			final := a.nodes[len(a.nodes)-2]
+			final := a.nodes[len(a.nodes)-1]
+			if n.uniqueID != "" && n.uniqueID == final.uniqueID {
+				// -2 is if the first and last are the same and is just there for circularization
+				final = a.nodes[len(a.nodes)-2]
+			}
+
 			last = &node{
 				start: final.start - len(seq),
 				end:   final.end - len(seq),
@@ -170,10 +179,21 @@ func (a *assembly) fill(seq string, conf *config.Config) (frags []Fragment, err 
 			}
 		}
 
-		if err := n.setPrimers(last, next, seq, conf); err != nil || len(n.primers) < 2 {
-			return nil, fmt.Errorf("failed to fill %s: %v", n.id, err)
+		// create primers for the node and add them to the node if it needs them
+		// to anneal to the adjacent fragments
+		distLeft := last.distTo(n)
+		distRight := n.distTo(next)
+
+		// if the node has a full seq from upload and already has enough overlap with
+		// the last and next nodes, we don't have to add anything to it (PCR it)
+		if n.fullSeq == "" || (distLeft < -minHomology && distRight < -minHomology) {
+			if err := n.setPrimers(last, next, seq, conf); err != nil || len(n.primers) < 2 {
+				return nil, fmt.Errorf("failed to fill %s: %v", n.id, err)
+			}
 		}
 	}
+
+	fmt.Println(len(a.nodes))
 
 	// do another loop to covert the nodes with primers to fragments and
 	// synthesize the sequence between nodes
@@ -181,7 +201,7 @@ func (a *assembly) fill(seq string, conf *config.Config) (frags []Fragment, err 
 		// last node, do nothing
 		// here only to allow for vector "circularization" if we need to synthesize
 		// from a.nodes[len(a.nodes)-2] to a.nodes[len(a.nodes)-1]
-		if i > 0 && n.uniqueID == a.nodes[0].uniqueID {
+		if i > 0 && n.uniqueID != "" && n.uniqueID == a.nodes[0].uniqueID {
 			break
 		}
 
@@ -190,7 +210,7 @@ func (a *assembly) fill(seq string, conf *config.Config) (frags []Fragment, err 
 		frags = append(frags, n.fragment())
 
 		// add synthesized fragments between this node and the next (if necessary)
-		if synthedFrags := n.synthTo(a.nodes[i+1], seq); synthedFrags != nil {
+		if synthedFrags := n.synthTo(a.nodes[(i+1)%len(a.nodes)], seq); synthedFrags != nil {
 			frags = append(frags, synthedFrags...)
 		}
 	}
@@ -201,14 +221,14 @@ func (a *assembly) fill(seq string, conf *config.Config) (frags []Fragment, err 
 // them have unintended homology, or "duplicate homology"
 // Need to cheack each node's junction() with nodes other than the one after it
 // (which it's supposed to anneal to)
-func (a *assembly) duplicates(nodes []*node, minHomology, maxHomology int) bool {
+func (a *assembly) duplicates(nodes []*node, minHomology, maxHomology int) (bool, string) {
 	c := len(nodes) // node count
 	for i, n := range nodes {
 		for j := 2; j <= c; j++ { // skip next node, this is supposed to anneal to that
-			if n.junction(nodes[(j+i)%c], minHomology, maxHomology) != "" {
-				return true
+			if junc := n.junction(nodes[(j+i)%c], minHomology, maxHomology); junc != "" {
+				return true, junc
 			}
 		}
 	}
-	return false
+	return false, ""
 }
