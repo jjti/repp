@@ -3,13 +3,66 @@ package defrag
 import (
 	"log"
 	"math"
+	"os"
 	"sort"
-	"strings"
 
 	"github.com/jjtimmons/defrag/config"
+	"github.com/spf13/cobra"
 )
 
-// assembleREV converts BLAST matches into assemblies spanning the target sequence
+// Vector is the root of the `defrag vector` functionality
+//
+// the goal is to find an "optimal" assembly vector with:
+// 	1. the fewest fragments
+// 	2. the lowest overall assembly cost ($)
+// and, secondarily:
+//	3. no duplicate end regions between Gibson fragments
+// 	4. no inverted repeats in the junctions
+// 	5. no off-target binding sites in the parent vectors
+//	6. low primer3 penalty scores
+func Vector(cmd *cobra.Command, args []string) {
+	defer os.Exit(0)
+	vector(parseFlags(cmd))
+}
+
+// vector assembles a vector using reverse engineering
+func vector(input *flags) [][]Fragment {
+	conf := config.New()
+
+	// read the target sequence (the first in the slice is used)
+	fragments, err := read(input.in)
+	if err != nil {
+		log.Fatalf("failed to read in fasta files at %s: %v", input.in, err)
+	}
+
+	// set target fragment
+	if len(fragments) > 1 {
+		log.Printf(
+			"warning: %d building fragments were in %s. Only targeting the first: %s",
+			len(fragments),
+			input.in,
+			fragments[0].ID,
+		)
+	}
+	targetFrag := fragments[0]
+
+	// get all the matches against the fragment
+	matches, err := blast(&targetFrag, input.dbs, conf.Fragments.MinHomology, conf.Vendors())
+	if err != nil {
+		log.Fatalf("failed to blast %s against the BLAST DB: %v", targetFrag.ID, err)
+	}
+
+	// build up the assemblies
+	builds := buildVector(matches, targetFrag.Seq, &conf)
+
+	// try to write the JSON to the output file path
+	write(input.out, targetFrag, builds)
+
+	// return the builds (for e2e testing)
+	return builds
+}
+
+// buildVector converts BLAST matches into assemblies spanning the target sequence
 //
 // First build up assemblies, creating all possible assemblies that are
 // beneath the upper-bound limit on the number of fragments fully covering the target sequence
@@ -22,7 +75,7 @@ import (
 // "fill-in" the nodes. Create primers on the node if it's a PCR Fragment
 // or create a sequence to be synthesized if it's a synthetic fragment.
 // Error out and repeat the build stage if a node fails to be filled
-func assembleREV(matches []match, seq string, conf *config.Config) [][]Fragment {
+func buildVector(matches []match, seq string, conf *config.Config) [][]Fragment {
 	// map fragment Matches to nodes
 	var nodes []*node
 	for _, m := range matches {
@@ -122,59 +175,4 @@ func countMap(assemblies []assembly) map[int][]assembly {
 	}
 
 	return countToAssemblies
-}
-
-// assembleFWD takes a list of Fragments and returns the Vector we assume the user is
-// trying to build as well as the Fragments (possibly prepared via PCR)
-func assembleFWD(inputFragments []Fragment, conf *config.Config) (targetVector Fragment, fragments []Fragment) {
-	if len(inputFragments) < 1 {
-		log.Fatalln("failed: no fragments to assemble")
-	}
-
-	// convert the fragments to nodes (without a start and end)
-	nodes := make([]*node, len(inputFragments))
-	for i, f := range inputFragments {
-		nodes[i] = &node{
-			id:      f.ID,
-			seq:     f.Seq,
-			fullSeq: f.Seq,
-			conf:    conf,
-			start:   0,
-			end:     0,
-		}
-	}
-
-	// find out how much overlap the *last* node has with its next one
-	// set the start, end, and vector sequence based on that
-	//
-	// add all of each nodes seq to the vector sequence, minus the region overlapping the next
-	minHomology := conf.Fragments.MinHomology
-	maxHomology := conf.Fragments.MaxHomology
-	junction := nodes[len(nodes)-1].junction(nodes[0], minHomology, maxHomology)
-	var vectorSeq strings.Builder
-	for i, n := range nodes {
-		// correct for this node's overlap with the last node
-		n.start = vectorSeq.Len() - len(junction)
-		n.end = n.start + len(n.seq) - 1
-
-		// find the junction between this node and the next (if there is one)
-		junction = n.junction(nodes[(i+1)%len(nodes)], minHomology, maxHomology)
-
-		// add this node's sequence onto the accumulated vector sequence
-		vectorSeq.WriteString(n.seq[0 : len(n.seq)-len(junction)])
-	}
-
-	// create the assumed vector object
-	targetVector = Fragment{
-		Seq:  vectorSeq.String(),
-		Type: vector,
-	}
-
-	// create an assembly out of the nodes (to fill/convert to fragments with primers)
-	a := assembly{nodes: nodes}
-	fragments, err := a.fill(targetVector.Seq, conf)
-	if err != nil {
-		log.Fatalf("failed to fill in the nodes: %+v", err)
-	}
-	return targetVector, fragments
 }

@@ -128,7 +128,7 @@ func (a *assembly) fill(seq string, conf *config.Config) (frags []Fragment, err 
 				ID:    n.id,
 				Seq:   strings.ToUpper(n.seq)[0:len(seq)], // it may be longer
 				Entry: n.id,
-				Type:  vector,
+				Type:  circular,
 				URL:   n.url,
 				Cost:  n.cost, // only the ordering cost, no PCR/Synth etc
 			},
@@ -192,8 +192,6 @@ func (a *assembly) fill(seq string, conf *config.Config) (frags []Fragment, err 
 			}
 		}
 	}
-
-	fmt.Println(len(a.nodes))
 
 	// do another loop to covert the nodes with primers to fragments and
 	// synthesize the sequence between nodes
