@@ -104,7 +104,7 @@ func Test_inputParser_getInput(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if gotIn := parser.guessInput(); gotIn != tt.wantIn {
+			if gotIn, _ := parser.guessInput(); gotIn != tt.wantIn {
 				t.Errorf("getInput() = %v, want %v", gotIn, tt.wantIn)
 			}
 		})
