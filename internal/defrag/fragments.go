@@ -14,7 +14,13 @@ import (
 // without junctions for their neighbors are prepared via PCR
 func Fragments(cmd *cobra.Command, args []string) {
 	defer os.Exit(0)
-	fragments(parseFlags(cmd))
+
+	input, err := parseFlags(cmd)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	fragments(input)
 }
 
 // fragments pieces together a list of fragments into a single vector
@@ -32,7 +38,9 @@ func fragments(input *flags) {
 	target, fragments := assembleFragments(inputFragments, &conf)
 
 	// write the single list of fragments as a possible solution to the output file
-	write(input.out, target, [][]Fragment{fragments})
+	if err := write(input.out, target, [][]Fragment{fragments}); err != nil {
+		log.Fatal(err)
+	}
 }
 
 // assembleFragments takes a list of Fragments and returns the Vector we assume the user is

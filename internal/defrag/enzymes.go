@@ -22,8 +22,8 @@ type enzyme struct {
 	cutInd  int
 }
 
-// Enzymes is a Cobra command that prints out all the stdout and lets the user know which
-// enzymes are available for linearization
+// Enzymes is a Cobra command that prints out all the enzymes to the stdout
+// along with their recognition sequence
 func Enzymes(cmd *cobra.Command, args []string) {
 	var enzymeNameLog strings.Builder
 	enzymeNameLog.WriteString("Enzymes in defrag:")

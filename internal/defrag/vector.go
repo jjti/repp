@@ -22,10 +22,16 @@ import (
 //	6. low primer3 penalty scores
 func Vector(cmd *cobra.Command, args []string) {
 	defer os.Exit(0)
-	vector(parseFlags(cmd))
+
+	input, err := parseFlags(cmd)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	vector(input)
 }
 
-// vector assembles a vector using reverse engineering
+// vector builds a vector using reverse engineering
 func vector(input *flags) [][]Fragment {
 	conf := config.New()
 
@@ -56,7 +62,9 @@ func vector(input *flags) [][]Fragment {
 	builds := buildVector(matches, targetFrag.Seq, &conf)
 
 	// try to write the JSON to the output file path
-	write(input.out, targetFrag, builds)
+	if err := write(input.out, targetFrag, builds); err != nil {
+		log.Fatal(err)
+	}
 
 	// return the builds (for e2e testing)
 	return builds

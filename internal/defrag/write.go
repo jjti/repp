@@ -2,8 +2,8 @@ package defrag
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
-	"log"
 	"sort"
 	"strings"
 	"time"
@@ -46,7 +46,7 @@ type Out struct {
 // filename is the output file to write to
 // target is the vector we tried to assemble
 // assemblies are the solutions that can build up the target vector
-func write(filename string, target Fragment, assemblies [][]Fragment) {
+func write(filename string, target Fragment, assemblies [][]Fragment) (err error) {
 	// calculate final cost of the assembly and fragment count
 	solutions := []Solution{}
 	for _, assembly := range assemblies {
@@ -73,11 +73,11 @@ func write(filename string, target Fragment, assemblies [][]Fragment) {
 
 	output, err := json.MarshalIndent(out, "", "  ")
 	if err != nil {
-		log.Fatalf("failed to serialize the output data: %v", err)
+		return fmt.Errorf("failed to serialize output: %v", err)
 	}
 
-	err = ioutil.WriteFile(filename, output, 0666)
-	if err != nil {
-		log.Fatalf("failed to write the results to the file system: %v", err)
+	if err = ioutil.WriteFile(filename, output, 0666); err != nil {
+		return fmt.Errorf("failed to write the output: %v", err)
 	}
+	return nil
 }

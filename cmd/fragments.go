@@ -24,6 +24,7 @@ func init() {
 	FragmentsCmd.Flags().StringP("in", "i", "", "Input file with a list of building fragments <FASTA>")
 	FragmentsCmd.Flags().StringP("out", "o", "", "Output file name with fragments and primers <JSON>")
 	FragmentsCmd.Flags().StringP("dbs", "d", "", "Comma separated list of databases with building fragments")
+	VectorCmd.Flags().BoolP("addgene", "a", false, "Whether to use the Addgene repository as a source of building fragments")
 	FragmentsCmd.Flags().StringP("backbone", "b", "",
 		`Entry name of a backbone to insert the fragments into. Must match an entry 
 	in one of the dbs (either those passed manually or AddGene, iGEM). If an
