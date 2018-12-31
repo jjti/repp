@@ -105,7 +105,7 @@ func (n *node) fragment() Fragment {
 
 	// if was passed as a circular match in the db, it's a vector
 	if n.circular {
-		fragType = vector
+		fragType = circular
 	}
 
 	// has primers, is a PCR fragment

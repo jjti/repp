@@ -105,7 +105,7 @@ func (n *node) setPrimers(last, next *node, seq string, conf *config.Config) (er
 
 	// 1. check for whether the primers have too have a pair penalty score
 	if n.primers[0].PairPenalty > conf.PCR.P3MaxPenalty {
-		errMessage := fmt.Sprintf("Primers have pair primer3 penalty score of %f, should be less than %f:\n%+v\n%+v",
+		errMessage := fmt.Sprintf("primers have pair primer3 penalty score of %f, should be less than %f:\n%+v\n%+v",
 			n.primers[0].PairPenalty,
 			conf.PCR.P3MaxPenalty,
 			n.primers[0],
@@ -119,6 +119,7 @@ func (n *node) setPrimers(last, next *node, seq string, conf *config.Config) (er
 	var mm match
 
 	if n.fullSeq != "" {
+		// we have the full sequence (it was included in the forward design)
 		mismatchExists, mm, err = seqMismatch(n.primers, n.id, n.fullSeq, conf)
 	} else {
 		// otherwise, query the fragment from the DB (try to find it) and then check for mismatches
@@ -132,7 +133,7 @@ func (n *node) setPrimers(last, next *node, seq string, conf *config.Config) (er
 	if mismatchExists {
 		n.primers = nil
 		return fmt.Errorf(
-			"Found a mismatching sequence, %s, against the primer",
+			"found a mismatching sequence, %s, against the primer",
 			mm.seq,
 		)
 	}
@@ -308,7 +309,6 @@ func (p *p3Exec) settings(
 	seq, p3conf string,
 	start, length, primerMin, primerOpt, primerMax int,
 	leftBuffer, rightBuffer int) (file []byte) {
-	// fmt.Println(start, length, leftBuffer, rightBuffer)
 
 	// see primer3 manual or /vendor/primer3-2.4.0/settings_files/p3_th_settings.txt
 	settings := map[string]string{
