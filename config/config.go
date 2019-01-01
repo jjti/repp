@@ -196,7 +196,7 @@ func (c Config) Vendors() VendorConfig {
 	}
 
 	blastdbcmddir := filepath.Join(Root, "bin", "blastdbcmd")
-	if err := os.MkdirAll(blastdir, os.ModePerm); err != nil {
+	if err := os.MkdirAll(blastdbcmddir, os.ModePerm); err != nil {
 		log.Fatalf("Failed to create a blastdbcmd dir: %v", err)
 	}
 
