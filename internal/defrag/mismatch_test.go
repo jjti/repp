@@ -43,7 +43,7 @@ func Test_isMismatch(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := isMismatch(tt.args.match, &c); got != tt.want {
+			if got := isMismatch(tt.args.match, c); got != tt.want {
 				t.Errorf("isMismatch() = %v, want %v", got, tt.want)
 			}
 		})
@@ -101,7 +101,7 @@ func Test_parentMismatch(t *testing.T) {
 				Primer{
 					Seq: tt.args.primer,
 				},
-			}, tt.args.parent, testDB, &conf)
+			}, tt.args.parent, testDB, conf)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("parentMismatch() error = %v, wantErr %v", err, tt.wantErr)
 				return

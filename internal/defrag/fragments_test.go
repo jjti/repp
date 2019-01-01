@@ -36,7 +36,7 @@ func Test_assembleFragments(t *testing.T) {
 						Seq: "TCGACTAGCTAGAACTGATCTAGACGTGCTAGCTACA",
 					},
 				},
-				&c,
+				c,
 			},
 			Fragment{
 				Seq: "ACGTGCTAGCTACATCGATCGTAGCTAGCTAGCATCGACTGATCACTAGCATCGACTAGCTAGAACTGATCTAG",

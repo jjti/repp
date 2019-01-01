@@ -23,18 +23,18 @@ import (
 func Vector(cmd *cobra.Command, args []string) {
 	defer os.Exit(0)
 
-	input, err := parseFlags(cmd)
+	conf := config.New()
+
+	input, err := parseFlags(cmd, conf)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	vector(input)
+	vector(input, conf)
 }
 
 // vector builds a vector using reverse engineering
-func vector(input *flags) [][]Fragment {
-	conf := config.New()
-
+func vector(input *flags, conf *config.Config) [][]Fragment {
 	// read the target sequence (the first in the slice is used)
 	fragments, err := read(input.in)
 	if err != nil {
@@ -59,7 +59,7 @@ func vector(input *flags) [][]Fragment {
 	}
 
 	// build up the assemblies
-	builds := buildVector(matches, targetFrag.Seq, &conf)
+	builds := buildVector(matches, targetFrag.Seq, conf)
 
 	// try to write the JSON to the output file path
 	if err := write(input.out, targetFrag, builds); err != nil {

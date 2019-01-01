@@ -94,18 +94,26 @@ func Test_inputParser_getInput(t *testing.T) {
 	os.Chdir(filepath.Join("..", "..", "test"))
 
 	tests := []struct {
-		name   string
-		wantIn string
+		name    string
+		wantIn  string
+		wantErr bool
 	}{
 		{
 			"get fasta file from directory alone",
 			"109049.addgene.fa",
+			false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if gotIn, _ := parser.guessInput(); gotIn != tt.wantIn {
+			gotIn, err := parser.guessInput()
+			if gotIn != tt.wantIn {
 				t.Errorf("getInput() = %v, want %v", gotIn, tt.wantIn)
+			}
+
+			gotErr := err != nil
+			if gotErr != tt.wantErr { // yuck
+				t.Errorf("getInput() did or didn't return an error when it should have")
 			}
 		})
 	}

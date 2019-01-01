@@ -13,8 +13,25 @@ import (
 var rootCmd = &cobra.Command{
 	Use:   "defrag",
 	Short: "Build vectors from any of their vector sequence, features or fragments",
-	Long:  ``,
+	Long: `Entry name of a backbone to insert the fragments into. Must match an entry 
+	in one of the dbs (either those passed manually or in AddGene, iGEM). If an
+	enzyme chosen, the backbone will be linearized with that enzyme and
+	the largest resulting fragment will be used as the backbone. If no enzyme
+	is specified, defrag will chose one nearest the first bp of the backbone with a
+	single recognition site`,
 }
+
+// backboneHelp is the help message for the backbone CLI argument
+var backboneHelp = `Entry name of a backbone to insert the fragments into. Must match an entry 
+	in one of the dbs (either those passed manually or in AddGene, iGEM). If an
+	enzyme chosen, the backbone will be linearized with that enzyme and
+	the largest resulting fragment will be used as the backbone. If no enzyme
+	is specified, defrag will chose one nearest the first bp of the backbone with a
+	single recognition site`
+
+var enzymeHelp = `Name of a enzyme to linearize the backbone with (backbone must be specified).
+	The enzyme's name must be recognizable by defrag. Use 'defrag enzymes' for a list
+	of recognized enzyme names and their recognition sequences`
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.

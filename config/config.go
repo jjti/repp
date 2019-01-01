@@ -88,6 +88,9 @@ type VendorConfig struct {
 	// blast io subdirectory
 	Blastdir string
 
+	// blastdbcmd subdirectory
+	Blastdbcmddir string
+
 	// primer3_core binary
 	Primer3core string
 
@@ -130,10 +133,10 @@ type Config struct {
 //
 // TODO: check for and error out on nonsense config values
 // TODO: add back the config file path setting
-func New() Config {
+func New() *Config {
 	// check if the singleton has been defined, return as is if so
 	if singleton.filled {
-		return singleton
+		return &singleton
 	}
 
 	// read in intialization files
@@ -150,7 +153,7 @@ func New() Config {
 
 	// marked as filled to avoid repeating
 	singleton.filled = true
-	return singleton
+	return &singleton
 }
 
 // SynthCost returns the cost of synthesizing a stretch of DNA
@@ -203,6 +206,11 @@ func (c Config) Vendors() VendorConfig {
 		log.Fatalf("Failed to locate blastdbcmd executable: %v", err)
 	}
 
+	blastdbcmddir := filepath.Join(Root, "bin", "blastdbcmd")
+	if err := os.MkdirAll(blastdir, os.ModePerm); err != nil {
+		log.Fatalf("Failed to create a blastdbcmd dir: %v", err)
+	}
+
 	p3core := filepath.Join(Root, "vendor", "primer3-2.4.0", "src", "primer3_core")
 	if _, err := os.Stat(p3core); err != nil {
 		log.Fatalf("Failed to locate primer3 executable: %v", err)
@@ -222,6 +230,7 @@ func (c Config) Vendors() VendorConfig {
 		Blastn:        blastn,
 		Blastdir:      blastdir,
 		Blastdbcmd:    blastdbcmd,
+		Blastdbcmddir: blastdbcmddir,
 		Primer3core:   p3core,
 		Primer3config: p3conf,
 		Primer3dir:    p3dir,
