@@ -47,14 +47,14 @@ type Primer struct {
 
 // p3Exec is a utility struct for executing primer3 to create primers for a part
 type p3Exec struct {
-	// node that we're trying to create primers for
-	n *node
+	// Frag that we're trying to create primers for
+	n *Frag
 
-	// the node before this one
-	last *node
+	// the Frag before this one
+	last *Frag
 
-	// the node after this one
-	next *node
+	// the Frag after this one
+	next *Frag
 
 	// the target sequence
 	seq string
@@ -75,10 +75,10 @@ type p3Exec struct {
 	p3Dir string
 }
 
-// setPrimers creates primers against a node and returns an error if:
+// setPrimers creates primers against a Frag and returns an error if:
 //	1. the primers have an unacceptably high primer3 penalty score
 //	2. the primers have off-targets in their source vector/fragment
-func (n *node) setPrimers(last, next *node, seq string, conf *config.Config) (err error) {
+func (n *Frag) setPrimers(last, next *Frag, seq string, conf *config.Config) (err error) {
 	exec := newP3Exec(last, n, next, seq, conf)
 
 	// make input file and write to the fs
@@ -100,17 +100,17 @@ func (n *node) setPrimers(last, next *node, seq string, conf *config.Config) (er
 		return
 	}
 
-	// update node's range, and add additional bp to the left and right primer if it wasn't included in the primer3 output
+	// update Frag's range, and add additional bp to the left and right primer if it wasn't included in the primer3 output
 	mutateNodePrimers(n, seq, addLeft, addRight)
 
 	// 1. check for whether the primers have too have a pair penalty score
-	if n.primers[0].PairPenalty > conf.PCR.P3MaxPenalty {
+	if n.Primers[0].PairPenalty > conf.PCR.P3MaxPenalty {
 		errMessage := fmt.Sprintf("primers have pair primer3 penalty score of %f, should be less than %f:\n%+v\n%+v",
-			n.primers[0].PairPenalty,
+			n.Primers[0].PairPenalty,
 			conf.PCR.P3MaxPenalty,
-			n.primers[0],
-			n.primers[1])
-		n.primers = nil
+			n.Primers[0],
+			n.Primers[1])
+		n.Primers = nil
 		return fmt.Errorf(errMessage)
 	}
 
@@ -120,18 +120,18 @@ func (n *node) setPrimers(last, next *node, seq string, conf *config.Config) (er
 
 	if n.fullSeq != "" {
 		// we have the full sequence (it was included in the forward design)
-		mismatchExists, mm, err = seqMismatch(n.primers, n.id, n.fullSeq, conf)
+		mismatchExists, mm, err = seqMismatch(n.Primers, n.ID, n.fullSeq, conf)
 	} else {
 		// otherwise, query the fragment from the DB (try to find it) and then check for mismatches
-		mismatchExists, mm, err = parentMismatch(n.primers, n.id, n.db, conf)
+		mismatchExists, mm, err = parentMismatch(n.Primers, n.ID, n.db, conf)
 	}
 
 	if err != nil {
-		n.primers = nil
+		n.Primers = nil
 		return err
 	}
 	if mismatchExists {
-		n.primers = nil
+		n.Primers = nil
 		return fmt.Errorf(
 			"found a mismatching sequence, %s, against the primer",
 			mm.seq,
@@ -141,7 +141,7 @@ func (n *node) setPrimers(last, next *node, seq string, conf *config.Config) (er
 }
 
 // newP3Exec creates a p3Exec from a fragment
-func newP3Exec(last, this, next *node, seq string, conf *config.Config) p3Exec {
+func newP3Exec(last, this, next *Frag, seq string, conf *config.Config) p3Exec {
 	vendorConf := conf.Vendors()
 
 	return p3Exec{
@@ -149,8 +149,8 @@ func newP3Exec(last, this, next *node, seq string, conf *config.Config) p3Exec {
 		last:   last,
 		next:   next,
 		seq:    strings.ToUpper(seq),
-		in:     path.Join(vendorConf.Primer3dir, this.id+".in"),
-		out:    path.Join(vendorConf.Primer3dir, this.id+".out"),
+		in:     path.Join(vendorConf.Primer3dir, this.ID+".in"),
+		out:    path.Join(vendorConf.Primer3dir, this.ID+".out"),
 		p3Path: vendorConf.Primer3core,
 		p3Conf: vendorConf.Primer3config,
 		p3Dir:  vendorConf.Primer3dir,
@@ -159,17 +159,17 @@ func newP3Exec(last, this, next *node, seq string, conf *config.Config) p3Exec {
 
 // input makes a primer3 input settings file and writes it to the filesystem
 //
-// the primers on this node should account for creating homology
-// against the last node and the next node if there isn't enough
+// the primers on this Frag should account for creating homology
+// against the last Frag and the next Frag if there isn't enough
 // existing homology to begin with (the two nodes should share ~50/50)
 //
 // returning settings for unit testing only
 func (p *p3Exec) input(minHomology, maxHomology, maxEmbedLength int) (bpAddLeft, bpAddRight int, err error) {
-	// adjust the node's start and end index in the event that there's too much homology
+	// adjust the Frag's start and end index in the event that there's too much homology
 	// with the neighboring fragment
 	p.shrink(p.last, p.n, p.next, maxHomology) // could skip passing as a param, but this is a bit easier to test imo
 
-	// calc the bps to add on the left and right side of this node
+	// calc the bps to add on the left and right side of this Frag
 	addLeft := p.bpToAdd(p.last, p.n, minHomology)
 	addRight := p.bpToAdd(p.n, p.next, minHomology)
 	growPrimers := addLeft
@@ -236,22 +236,22 @@ func (p *p3Exec) input(minHomology, maxHomology, maxEmbedLength int) (bpAddLeft,
 	return
 }
 
-// shrink adjusts the start and end of a node in the scenario where
+// shrink adjusts the start and end of a Frag in the scenario where
 // it excessively overlaps a neighboring fragment. For example, if there's
 // 700bp of overlap, this will trim it back so we just PCR a subselection of
-// the node and keep the overlap beneath the upper limit
+// the Frag and keep the overlap beneath the upper limit
 // TODO: consider giving minLength for PCR fragments precedent, this may subvert that rule
-func (p *p3Exec) shrink(last, n, next *node, maxHomology int) *node {
+func (p *p3Exec) shrink(last, n, next *Frag, maxHomology int) *Frag {
 	var shiftInLeft int
 	var shiftInRight int
 
 	if distLeft := last.distTo(n); distLeft < -maxHomology {
-		// there's too much homology on the left side, we should move the node's start inward
+		// there's too much homology on the left side, we should move the Frag's start inward
 		shiftInLeft = (-distLeft) - maxHomology
 	}
 
 	if distRight := n.distTo(next); distRight < -maxHomology {
-		// there's too much homology on the right side, we should move the node's end inward
+		// there's too much homology on the right side, we should move the Frag's end inward
 		shiftInRight = (-distRight) - maxHomology
 	}
 
@@ -259,23 +259,23 @@ func (p *p3Exec) shrink(last, n, next *node, maxHomology int) *node {
 	n.start += shiftInLeft
 	n.end -= shiftInRight
 
-	if n.seq != "" {
-		n.seq = n.seq[shiftInLeft : len(n.seq)-shiftInRight-shiftInLeft]
+	if n.Seq != "" {
+		n.Seq = n.Seq[shiftInLeft : len(n.Seq)-shiftInRight-shiftInLeft]
 	}
 
 	return n
 }
 
-// bpToAdd calculates the number of bp to add the end of a left node to create a junction
-// with the rightmost node
-func (p *p3Exec) bpToAdd(left, right *node, minHomology int) (bpToAdd int) {
+// bpToAdd calculates the number of bp to add the end of a left Frag to create a junction
+// with the rightmost Frag
+func (p *p3Exec) bpToAdd(left, right *Frag, minHomology int) (bpToAdd int) {
 	if synthDist := left.synthDist(right); synthDist == 0 {
 		// we're not going to synth our way here, check that there's already enough homology
 		if bpDist := left.distTo(right); bpDist > -minHomology {
-			// this node will add half the homology to the last fragment
+			// this Frag will add half the homology to the last fragment
 			// ex: 5 bp distance leads to 2.5bp + ~10bp additonal
 			// ex: -10bp distance leads to ~0 bp additional:
-			// 		other node is responsible for all of it
+			// 		other Frag is responsible for all of it
 			bpToAdd = bpDist + (minHomology / 2)
 		}
 	}
@@ -451,44 +451,44 @@ func (p *p3Exec) parse(input string) (err error) {
 		}
 	}
 
-	p.n.primers = []Primer{
+	p.n.Primers = []Primer{
 		parsePrimer("LEFT"),
 		parsePrimer("RIGHT"),
 	}
 	return
 }
 
-// mutateNodePrimers adds additional bp to the sides of a node
+// mutateNodePrimers adds additional bp to the sides of a Frag
 // if there was additional homology bearing sequence that we were unable
 // to add through primer3 alone
 //
-// it also updates the range, start + end, of the node to match that of the primers
+// it also updates the range, start + end, of the Frag to match that of the primers
 //
-// returning node for testing
-func mutateNodePrimers(n *node, seq string, addLeft, addRight int) (mutated *node) {
+// returning Frag for testing
+func mutateNodePrimers(n *Frag, seq string, addLeft, addRight int) (mutated *Frag) {
 	template := seq + seq
 
 	// add bp to the left/FWD primer to match the fragment to the left
 	if addLeft > 0 {
-		oldStart := n.primers[0].Range.start
-		n.primers[0].Seq = template[oldStart-addLeft:oldStart] + n.primers[0].Seq
-		n.primers[0].Range.start -= addLeft
+		oldStart := n.Primers[0].Range.start
+		n.Primers[0].Seq = template[oldStart-addLeft:oldStart] + n.Primers[0].Seq
+		n.Primers[0].Range.start -= addLeft
 	}
 
 	// add bp to the right/REV primer to match the fragment to the right
 	if addRight > 0 {
-		oldEnd := n.primers[1].Range.end
-		n.primers[1].Seq = revComp(template[oldEnd+1:oldEnd+addRight+1]) + n.primers[1].Seq
-		n.primers[1].Range.end += addRight
+		oldEnd := n.Primers[1].Range.end
+		n.Primers[1].Seq = revComp(template[oldEnd+1:oldEnd+addRight+1]) + n.Primers[1].Seq
+		n.Primers[1].Range.end += addRight
 	}
 
-	// change the node's start and end index to match those of the start and end index
+	// change the Frag's start and end index to match those of the start and end index
 	// of the primers, since the range may have shifted to get better primers
-	n.start = n.primers[0].Range.start
-	n.end = n.primers[1].Range.end
+	n.start = n.Primers[0].Range.start
+	n.end = n.Primers[1].Range.end
 
-	// update the node's seq to reflect that change
-	n.seq = template[n.start : n.end+1]
+	// update the Frag's seq to reflect that change
+	n.Seq = template[n.start : n.end+1]
 
 	return n
 }

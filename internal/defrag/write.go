@@ -24,7 +24,7 @@ type Solution struct {
 	Cost float64 `json:"costDollars"`
 
 	// Fragments used to build this solution
-	Fragments []Fragment `json:"fragments"`
+	Fragments []Frag `json:"fragments"`
 }
 
 // Out is the result output from this assembly
@@ -46,7 +46,7 @@ type Out struct {
 // filename is the output file to write to
 // target is the vector we tried to assemble
 // assemblies are the solutions that can build up the target vector
-func write(filename string, target Fragment, assemblies [][]Fragment) (err error) {
+func write(filename string, target Frag, assemblies [][]Frag) (err error) {
 	// calculate final cost of the assembly and fragment count
 	solutions := []Solution{}
 	for _, assembly := range assemblies {

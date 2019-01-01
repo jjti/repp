@@ -38,24 +38,24 @@ func fragments(input *flags, conf *config.Config) {
 	target, fragments := assembleFragments(inputFragments, conf)
 
 	// write the single list of fragments as a possible solution to the output file
-	if err := write(input.out, target, [][]Fragment{fragments}); err != nil {
+	if err := write(input.out, target, [][]Frag{fragments}); err != nil {
 		log.Fatal(err)
 	}
 }
 
 // assembleFragments takes a list of Fragments and returns the Vector we assume the user is
 // trying to build as well as the Fragments (possibly prepared via PCR)
-func assembleFragments(inputFragments []Fragment, conf *config.Config) (targetVector Fragment, fragments []Fragment) {
+func assembleFragments(inputFragments []Frag, conf *config.Config) (targetVector Frag, fragments []Frag) {
 	if len(inputFragments) < 1 {
 		log.Fatalln("failed: no fragments to assemble")
 	}
 
 	// convert the fragments to nodes (without a start and end)
-	nodes := make([]*node, len(inputFragments))
+	nodes := make([]*Frag, len(inputFragments))
 	for i, f := range inputFragments {
-		nodes[i] = &node{
-			id:      f.ID,
-			seq:     f.Seq,
+		nodes[i] = &Frag{
+			ID:      f.ID,
+			Seq:     f.Seq,
 			fullSeq: f.Seq,
 			conf:    conf,
 			start:   0,
@@ -63,7 +63,7 @@ func assembleFragments(inputFragments []Fragment, conf *config.Config) (targetVe
 		}
 	}
 
-	// find out how much overlap the *last* node has with its next one
+	// find out how much overlap the *last* Frag has with its next one
 	// set the start, end, and vector sequence based on that
 	//
 	// add all of each nodes seq to the vector sequence, minus the region overlapping the next
@@ -72,19 +72,19 @@ func assembleFragments(inputFragments []Fragment, conf *config.Config) (targetVe
 	junction := nodes[len(nodes)-1].junction(nodes[0], minHomology, maxHomology)
 	var vectorSeq strings.Builder
 	for i, n := range nodes {
-		// correct for this node's overlap with the last node
+		// correct for this Frag's overlap with the last Frag
 		n.start = vectorSeq.Len() - len(junction)
-		n.end = n.start + len(n.seq) - 1
+		n.end = n.start + len(n.Seq) - 1
 
-		// find the junction between this node and the next (if there is one)
+		// find the junction between this Frag and the next (if there is one)
 		junction = n.junction(nodes[(i+1)%len(nodes)], minHomology, maxHomology)
 
-		// add this node's sequence onto the accumulated vector sequence
-		vectorSeq.WriteString(n.seq[0 : len(n.seq)-len(junction)])
+		// add this Frag's sequence onto the accumulated vector sequence
+		vectorSeq.WriteString(n.Seq[0 : len(n.Seq)-len(junction)])
 	}
 
 	// create the assumed vector object
-	targetVector = Fragment{
+	targetVector = Frag{
 		Seq:  vectorSeq.String(),
 		Type: circular,
 	}

@@ -13,44 +13,44 @@ func Test_assembleFragments(t *testing.T) {
 	c.Fragments.MaxHomology = 20
 
 	type args struct {
-		inputFragments []Fragment
+		inputFragments []Frag
 		conf           *config.Config
 	}
 	tests := []struct {
 		name             string
 		args             args
-		wantTargetVector Fragment
-		wantFragments    []Fragment
+		wantTargetVector Frag
+		wantFragments    []Frag
 	}{
 		{
 			"fragments with enough overlap",
 			args{
-				[]Fragment{
-					Fragment{
+				[]Frag{
+					Frag{
 						Seq: "ACGTGCTAGCTACATCGATCGTAGCTAGCTAGCATCG",
 					},
-					Fragment{
+					Frag{
 						Seq: "AGCTAGCATCGACTGATCACTAGCATCGACTAGCTAG",
 					},
-					Fragment{
+					Frag{
 						Seq: "TCGACTAGCTAGAACTGATCTAGACGTGCTAGCTACA",
 					},
 				},
 				c,
 			},
-			Fragment{
+			Frag{
 				Seq: "ACGTGCTAGCTACATCGATCGTAGCTAGCTAGCATCGACTGATCACTAGCATCGACTAGCTAGAACTGATCTAG",
 			},
-			[]Fragment{
-				Fragment{
+			[]Frag{
+				Frag{
 					Seq:  "ACGTGCTAGCTACATCGATCGTAGCTAGCTAGCATCG",
 					Type: existing,
 				},
-				Fragment{
+				Frag{
 					Seq:  "AGCTAGCATCGACTGATCACTAGCATCGACTAGCTAG",
 					Type: existing,
 				},
-				Fragment{
+				Frag{
 					Seq:  "TCGACTAGCTAGAACTGATCTAGACGTGCTAGCTACA",
 					Type: existing,
 				},

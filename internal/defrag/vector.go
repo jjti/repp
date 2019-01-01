@@ -34,7 +34,7 @@ func Vector(cmd *cobra.Command, args []string) {
 }
 
 // vector builds a vector using reverse engineering
-func vector(input *flags, conf *config.Config) [][]Fragment {
+func vector(input *flags, conf *config.Config) [][]Frag {
 	// read the target sequence (the first in the slice is used)
 	fragments, err := read(input.in)
 	if err != nil {
@@ -80,14 +80,14 @@ func vector(input *flags, conf *config.Config) [][]Fragment {
 // assembly plans)
 //
 // Then, for each pareto optimal solution, traverse the assembly and
-// "fill-in" the nodes. Create primers on the node if it's a PCR Fragment
+// "fill-in" the nodes. Create primers on the Frag if it's a PCR Frag
 // or create a sequence to be synthesized if it's a synthetic fragment.
-// Error out and repeat the build stage if a node fails to be filled
-func buildVector(matches []match, seq string, conf *config.Config) [][]Fragment {
+// Error out and repeat the build stage if a Frag fails to be filled
+func buildVector(matches []match, seq string, conf *config.Config) [][]Frag {
 	// map fragment Matches to nodes
-	var nodes []*node
+	var nodes []*Frag
 	for _, m := range matches {
-		nodes = append(nodes, newNode(m, len(seq), conf))
+		nodes = append(nodes, newFrag(m, len(seq), conf))
 	}
 
 	// build up a slice of assemblies that could, within the upper-limit on
@@ -108,7 +108,7 @@ func buildVector(matches []match, seq string, conf *config.Config) [][]Fragment 
 	// "fill-in" the fragments (create synthetic fragments and primers)
 	// skip assemblies that wouldn't be less than the current cheapest assembly
 	minCostAssembly := math.MaxFloat64
-	filled := make(map[int][]Fragment)
+	filled := make(map[int][]Frag)
 	for _, count := range assemblyCounts {
 		// get the first assembly that fills properly (cheapest workable solution)
 		for _, singleAssembly := range sortedAssemblies[count] {
@@ -123,8 +123,8 @@ func buildVector(matches []match, seq string, conf *config.Config) [][]Fragment 
 				log.Fatal(err)
 			}
 
-			// if a node in the assembly fails to be prepared,
-			// remove all assemblies with the node and try again
+			// if a Frag in the assembly fails to be prepared,
+			// remove all assemblies with the Frag and try again
 			if filledFragments != nil {
 				assemblyCost := 0.0
 				for _, f := range filledFragments {
@@ -147,7 +147,7 @@ func buildVector(matches []match, seq string, conf *config.Config) [][]Fragment 
 		}
 	}
 
-	var found [][]Fragment
+	var found [][]Frag
 	for _, frags := range filled {
 		found = append(found, frags)
 	}
@@ -166,7 +166,7 @@ func countMap(assemblies []assembly) map[int][]assembly {
 	countToAssemblies := make(map[int][]assembly)
 	for _, a := range assemblies {
 		// The "-1"s here are because the assemblies are circular and
-		// their last node is the same as the first. The total number
+		// their last Frag is the same as the first. The total number
 		// of nodes/fragments in the assembly is actually one less than
 		// the assembly's length
 		if as, ok := countToAssemblies[a.len()-1]; ok {
