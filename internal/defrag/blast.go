@@ -161,7 +161,7 @@ func (b *blastExec) run() (err error) {
 
 	// execute BLAST and wait on it to finish
 	if output, err := blastCmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("failed to execute blastn against db, %s: %v: %s", b.db, err, string(output))
+		return fmt.Errorf("failed to execute blastn against %s: %v: %s", b.db, err, string(output))
 	}
 	return
 }
@@ -181,7 +181,7 @@ func (b *blastExec) runAgainst() (err error) {
 
 	// execute BLAST and wait on it to finish
 	if output, err := blastCmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("failed to execute blastn against db, %s: %v: %s", b.db, err, string(output))
+		return fmt.Errorf("failed to execute blastn against %s: %v: %s", b.subject, err, string(output))
 	}
 	return
 }
@@ -300,8 +300,8 @@ func properize(matches []match) (properized []match) {
 // blastdbcmd queries a fragment/vector by its FASTA entry name (entry) from a BLAST db (db)
 //
 // entry here is the ID that's associated with the fragment in its source DB (db)
-func blastdbcmd(entry, db string, c *config.Config) (output string, err error) {
-	v := c.Vendors()
+func blastdbcmd(entry, db string, conf *config.Config) (output string, err error) {
+	v := conf.Vendors()
 
 	// path to the entry batch file to hold the entry accession
 	entryPath, _ := filepath.Abs(path.Join(v.Blastdbcmddir, entry+".input"))
@@ -314,7 +314,7 @@ func blastdbcmd(entry, db string, c *config.Config) (output string, err error) {
 	// I was using the "-entry" flag on exec.Command, but have since
 	// switched to the simpler -entry_batch command (on a file) that resolves the issue
 	if err := ioutil.WriteFile(entryPath, []byte(entry), 0666); err != nil {
-		return "", fmt.Errorf("failed to write batch entry list: %v", err)
+		return "", fmt.Errorf("failed to write blastdbcmd entry file at %s: %v", entryPath, err)
 	}
 
 	// make a blastdbcmd command (for querying a DB, very different from blastn)

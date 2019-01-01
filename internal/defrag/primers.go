@@ -48,7 +48,7 @@ type Primer struct {
 // p3Exec is a utility struct for executing primer3 to create primers for a part
 type p3Exec struct {
 	// Frag that we're trying to create primers for
-	n *Frag
+	f *Frag
 
 	// the Frag before this one
 	last *Frag
@@ -78,8 +78,8 @@ type p3Exec struct {
 // setPrimers creates primers against a Frag and returns an error if:
 //	1. the primers have an unacceptably high primer3 penalty score
 //	2. the primers have off-targets in their source vector/fragment
-func (n *Frag) setPrimers(last, next *Frag, seq string, conf *config.Config) (err error) {
-	exec := newP3Exec(last, n, next, seq, conf)
+func (f *Frag) setPrimers(last, next *Frag, seq string, conf *config.Config) (err error) {
+	exec := newP3Exec(last, f, next, seq, conf)
 
 	// make input file and write to the fs
 	// find how many bp of additional sequence need to be added
@@ -101,16 +101,16 @@ func (n *Frag) setPrimers(last, next *Frag, seq string, conf *config.Config) (er
 	}
 
 	// update Frag's range, and add additional bp to the left and right primer if it wasn't included in the primer3 output
-	mutateNodePrimers(n, seq, addLeft, addRight)
+	mutateNodePrimers(f, seq, addLeft, addRight)
 
 	// 1. check for whether the primers have too have a pair penalty score
-	if n.Primers[0].PairPenalty > conf.PCR.P3MaxPenalty {
-		errMessage := fmt.Sprintf("primers have pair primer3 penalty score of %f, should be less than %f:\n%+v\n%+v",
-			n.Primers[0].PairPenalty,
+	if f.Primers[0].PairPenalty > conf.PCR.P3MaxPenalty {
+		errMessage := fmt.Sprintf("primers have pair primer3 penalty score of %f, should be less than %f:\f%+v\f%+v",
+			f.Primers[0].PairPenalty,
 			conf.PCR.P3MaxPenalty,
-			n.Primers[0],
-			n.Primers[1])
-		n.Primers = nil
+			f.Primers[0],
+			f.Primers[1])
+		f.Primers = nil
 		return fmt.Errorf(errMessage)
 	}
 
@@ -118,20 +118,20 @@ func (n *Frag) setPrimers(last, next *Frag, seq string, conf *config.Config) (er
 	var mismatchExists bool
 	var mm match
 
-	if n.fullSeq != "" {
+	if f.fullSeq != "" {
 		// we have the full sequence (it was included in the forward design)
-		mismatchExists, mm, err = seqMismatch(n.Primers, n.ID, n.fullSeq, conf)
+		mismatchExists, mm, err = seqMismatch(f.Primers, f.ID, f.fullSeq, conf)
 	} else {
 		// otherwise, query the fragment from the DB (try to find it) and then check for mismatches
-		mismatchExists, mm, err = parentMismatch(n.Primers, n.ID, n.db, conf)
+		mismatchExists, mm, err = parentMismatch(f.Primers, f.ID, f.db, conf)
 	}
 
 	if err != nil {
-		n.Primers = nil
+		f.Primers = nil
 		return err
 	}
 	if mismatchExists {
-		n.Primers = nil
+		f.Primers = nil
 		return fmt.Errorf(
 			"found a mismatching sequence, %s, against the primer",
 			mm.seq,
@@ -145,7 +145,7 @@ func newP3Exec(last, this, next *Frag, seq string, conf *config.Config) p3Exec {
 	vendorConf := conf.Vendors()
 
 	return p3Exec{
-		n:      this,
+		f:      this,
 		last:   last,
 		next:   next,
 		seq:    strings.ToUpper(seq),
@@ -167,18 +167,18 @@ func newP3Exec(last, this, next *Frag, seq string, conf *config.Config) p3Exec {
 func (p *p3Exec) input(minHomology, maxHomology, maxEmbedLength int) (bpAddLeft, bpAddRight int, err error) {
 	// adjust the Frag's start and end index in the event that there's too much homology
 	// with the neighboring fragment
-	p.shrink(p.last, p.n, p.next, maxHomology) // could skip passing as a param, but this is a bit easier to test imo
+	p.shrink(p.last, p.f, p.next, maxHomology) // could skip passing as a param, but this is a bit easier to test imo
 
 	// calc the bps to add on the left and right side of this Frag
-	addLeft := p.bpToAdd(p.last, p.n, minHomology)
-	addRight := p.bpToAdd(p.n, p.next, minHomology)
+	addLeft := p.bpToAdd(p.last, p.f, minHomology)
+	addRight := p.bpToAdd(p.f, p.next, minHomology)
 	growPrimers := addLeft
 	if growPrimers < addRight {
 		growPrimers = addRight
 	}
 
-	start := p.n.start
-	length := p.n.end - start
+	start := p.f.start
+	length := p.f.end - start
 
 	// determine whether we need to add additional bp to the primers. if there's too much to
 	// add, or if we're adding largely different amounts to the FWD and REV primer, we set
@@ -200,7 +200,7 @@ func (p *p3Exec) input(minHomology, maxHomology, maxEmbedLength int) (bpAddLeft,
 		growPrimers = 0
 	} else {
 		start -= addLeft
-		length = p.n.end - start
+		length = p.f.end - start
 		length += addRight
 	}
 
@@ -214,8 +214,8 @@ func (p *p3Exec) input(minHomology, maxHomology, maxEmbedLength int) (bpAddLeft,
 	//
 	// also adjust start and length in case there's TOO large an overhang and we need
 	// to trim it in one direction or the other
-	leftBuffer := p.buffer(p.last.distTo(p.n), minHomology, maxEmbedLength)
-	rightBuffer := p.buffer(p.n.distTo(p.next), minHomology, maxEmbedLength)
+	leftBuffer := p.buffer(p.last.distTo(p.f), minHomology, maxEmbedLength)
+	rightBuffer := p.buffer(p.f.distTo(p.next), minHomology, maxEmbedLength)
 
 	// create the settings map from all instructions
 	file := p.settings(
@@ -241,29 +241,29 @@ func (p *p3Exec) input(minHomology, maxHomology, maxEmbedLength int) (bpAddLeft,
 // 700bp of overlap, this will trim it back so we just PCR a subselection of
 // the Frag and keep the overlap beneath the upper limit
 // TODO: consider giving minLength for PCR fragments precedent, this may subvert that rule
-func (p *p3Exec) shrink(last, n, next *Frag, maxHomology int) *Frag {
+func (p *p3Exec) shrink(last, f, next *Frag, maxHomology int) *Frag {
 	var shiftInLeft int
 	var shiftInRight int
 
-	if distLeft := last.distTo(n); distLeft < -maxHomology {
+	if distLeft := last.distTo(f); distLeft < -maxHomology {
 		// there's too much homology on the left side, we should move the Frag's start inward
 		shiftInLeft = (-distLeft) - maxHomology
 	}
 
-	if distRight := n.distTo(next); distRight < -maxHomology {
+	if distRight := f.distTo(next); distRight < -maxHomology {
 		// there's too much homology on the right side, we should move the Frag's end inward
 		shiftInRight = (-distRight) - maxHomology
 	}
 
 	// update the seq to slice for the new modified range
-	n.start += shiftInLeft
-	n.end -= shiftInRight
+	f.start += shiftInLeft
+	f.end -= shiftInRight
 
-	if n.Seq != "" {
-		n.Seq = n.Seq[shiftInLeft : len(n.Seq)-shiftInRight-shiftInLeft]
+	if f.Seq != "" {
+		f.Seq = f.Seq[shiftInLeft : len(f.Seq)-shiftInRight-shiftInLeft]
 	}
 
-	return n
+	return f
 }
 
 // bpToAdd calculates the number of bp to add the end of a left Frag to create a junction
@@ -359,7 +359,7 @@ func (p *p3Exec) settings(
 
 	var fileBuffer bytes.Buffer
 	for key, val := range settings {
-		fmt.Fprintf(&fileBuffer, "%s=%s\n", key, val)
+		fmt.Fprintf(&fileBuffer, "%s=%s\f", key, val)
 	}
 	fileBuffer.WriteString("=") // required at file's end
 
@@ -395,7 +395,7 @@ func (p *p3Exec) parse(input string) (err error) {
 
 	// read in results into map, they're all 1:1
 	results := make(map[string]string)
-	for _, line := range strings.Split(fileContents, "\n") {
+	for _, line := range strings.Split(fileContents, "\f") {
 		keyVal := strings.Split(line, "=")
 		if len(keyVal) > 1 {
 			results[strings.TrimSpace(keyVal[0])] = strings.TrimSpace(keyVal[1])
@@ -451,7 +451,7 @@ func (p *p3Exec) parse(input string) (err error) {
 		}
 	}
 
-	p.n.Primers = []Primer{
+	p.f.Primers = []Primer{
 		parsePrimer("LEFT"),
 		parsePrimer("RIGHT"),
 	}
@@ -465,32 +465,32 @@ func (p *p3Exec) parse(input string) (err error) {
 // it also updates the range, start + end, of the Frag to match that of the primers
 //
 // returning Frag for testing
-func mutateNodePrimers(n *Frag, seq string, addLeft, addRight int) (mutated *Frag) {
+func mutateNodePrimers(f *Frag, seq string, addLeft, addRight int) (mutated *Frag) {
 	template := seq + seq
 
 	// add bp to the left/FWD primer to match the fragment to the left
 	if addLeft > 0 {
-		oldStart := n.Primers[0].Range.start
-		n.Primers[0].Seq = template[oldStart-addLeft:oldStart] + n.Primers[0].Seq
-		n.Primers[0].Range.start -= addLeft
+		oldStart := f.Primers[0].Range.start
+		f.Primers[0].Seq = template[oldStart-addLeft:oldStart] + f.Primers[0].Seq
+		f.Primers[0].Range.start -= addLeft
 	}
 
 	// add bp to the right/REV primer to match the fragment to the right
 	if addRight > 0 {
-		oldEnd := n.Primers[1].Range.end
-		n.Primers[1].Seq = revComp(template[oldEnd+1:oldEnd+addRight+1]) + n.Primers[1].Seq
-		n.Primers[1].Range.end += addRight
+		oldEnd := f.Primers[1].Range.end
+		f.Primers[1].Seq = revComp(template[oldEnd+1:oldEnd+addRight+1]) + f.Primers[1].Seq
+		f.Primers[1].Range.end += addRight
 	}
 
 	// change the Frag's start and end index to match those of the start and end index
 	// of the primers, since the range may have shifted to get better primers
-	n.start = n.Primers[0].Range.start
-	n.end = n.Primers[1].Range.end
+	f.start = f.Primers[0].Range.start
+	f.end = f.Primers[1].Range.end
 
 	// update the Frag's seq to reflect that change
-	n.Seq = template[n.start : n.end+1]
+	f.Seq = template[f.start : f.end+1]
 
-	return n
+	return f
 }
 
 // revComp returns the reverse complement of a template sequence
