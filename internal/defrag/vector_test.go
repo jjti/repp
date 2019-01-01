@@ -49,13 +49,13 @@ func Test_vector(t *testing.T) {
 // as is and without PCR or any preparation
 func Test_vector_single_vector(t *testing.T) {
 	c := config.New()
-	in := path.Join("..", "..", "test", "109049.addgene.fa")
-	out := path.Join("..", "..", "bin", "109049.output.json")
-
-	assemblies := vector(&flags{
-		in:  in,
-		out: out,
-	}, c) // use addgene database
+	testFlags := newFlags(
+		path.Join("..", "..", "test", "109049.addgene.fa"),
+		path.Join("..", "..", "bin", "109049.output.json"),
+		[]string{},
+		true,
+	)
+	assemblies := vector(testFlags, c) // use addgene database
 
 	if len(assemblies) != 1 {
 		t.Fatal("failed to return the pareto optimal solution: 109049 alone")
@@ -72,31 +72,31 @@ func Test_vector_single_vector(t *testing.T) {
 
 func Test_countMaps(t *testing.T) {
 	a1 := assembly{
-		nodes: []*Frag{
+		frags: []*Frag{
 			n1, n1,
 		},
 		cost: 11.0,
 	}
 	a2 := assembly{
-		nodes: []*Frag{
+		frags: []*Frag{
 			n1, n2, n1,
 		},
 		cost: 12.5,
 	}
 	a3 := assembly{
-		nodes: []*Frag{
+		frags: []*Frag{
 			n2, n3, n2,
 		},
 		cost: 12.0,
 	}
 	a4 := assembly{
-		nodes: []*Frag{
+		frags: []*Frag{
 			n1, n2, n3, n1,
 		},
 		cost: 10.0,
 	}
 	a5 := assembly{
-		nodes: []*Frag{
+		frags: []*Frag{
 			n2, n3, n1, n2,
 		},
 		cost: 10.5,

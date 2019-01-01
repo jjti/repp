@@ -50,34 +50,35 @@ func assembleFragments(inputFragments []Frag, conf *config.Config) (targetVector
 		log.Fatalln("failed: no fragments to assemble")
 	}
 
-	// convert the fragments to nodes (without a start and end)
-	nodes := make([]*Frag, len(inputFragments))
+	// convert the fragments to frags (without a start and end)
+	frags := make([]*Frag, len(inputFragments))
 	for i, f := range inputFragments {
-		nodes[i] = &Frag{
+		frags[i] = &Frag{
 			ID:      f.ID,
 			Seq:     f.Seq,
 			fullSeq: f.Seq,
 			conf:    conf,
 			start:   0,
 			end:     0,
+			Type:    existing,
 		}
 	}
 
 	// find out how much overlap the *last* Frag has with its next one
 	// set the start, end, and vector sequence based on that
 	//
-	// add all of each nodes seq to the vector sequence, minus the region overlapping the next
+	// add all of each frags seq to the vector sequence, minus the region overlapping the next
 	minHomology := conf.Fragments.MinHomology
 	maxHomology := conf.Fragments.MaxHomology
-	junction := nodes[len(nodes)-1].junction(nodes[0], minHomology, maxHomology)
+	junction := frags[len(frags)-1].junction(frags[0], minHomology, maxHomology)
 	var vectorSeq strings.Builder
-	for i, n := range nodes {
+	for i, n := range frags {
 		// correct for this Frag's overlap with the last Frag
 		n.start = vectorSeq.Len() - len(junction)
 		n.end = n.start + len(n.Seq) - 1
 
 		// find the junction between this Frag and the next (if there is one)
-		junction = n.junction(nodes[(i+1)%len(nodes)], minHomology, maxHomology)
+		junction = n.junction(frags[(i+1)%len(frags)], minHomology, maxHomology)
 
 		// add this Frag's sequence onto the accumulated vector sequence
 		vectorSeq.WriteString(n.Seq[0 : len(n.Seq)-len(junction)])
@@ -89,11 +90,11 @@ func assembleFragments(inputFragments []Frag, conf *config.Config) (targetVector
 		Type: circular,
 	}
 
-	// create an assembly out of the nodes (to fill/convert to fragments with primers)
-	a := assembly{nodes: nodes}
+	// create an assembly out of the frags (to fill/convert to fragments with primers)
+	a := assembly{frags: frags}
 	fragments, err := a.fill(targetVector.Seq, conf)
 	if err != nil {
-		log.Fatalf("failed to fill in the nodes: %+v", err)
+		log.Fatalf("failed to fill in the frags: %+v", err)
 	}
 	return targetVector, fragments
 }

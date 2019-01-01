@@ -74,7 +74,7 @@ type Frag struct {
 	Type Type `json:"-"`
 
 	// Assembly configuration
-	conf *config.Config `json:"-"`
+	conf *config.Config
 }
 
 // newFrag creates a Frag from a match
@@ -117,6 +117,7 @@ func (f *Frag) copy() *Frag {
 		conf:     f.conf,
 		Cost:     f.Cost,
 		URL:      f.URL,
+		Type:     f.Type,
 	}
 }
 
@@ -282,8 +283,8 @@ func (f *Frag) synthTo(next *Frag, seq string) (synthedFrags []Frag) {
 		sFrag := Frag{
 			ID:   fmt.Sprintf("%s-synthetic-%d", f.ID, fragIndex+1),
 			Seq:  strings.ToUpper(seq[start:end]),
-			Type: synthetic,
 			Cost: f.conf.SynthCost(len(f.Seq)) + f.Cost,
+			Type: synthetic,
 		}
 		synthedFrags = append(synthedFrags, sFrag)
 	}

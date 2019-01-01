@@ -43,8 +43,10 @@ func Test_assembleFragments(t *testing.T) {
 			},
 			[]Frag{
 				Frag{
-					Seq:  "ACGTGCTAGCTACATCGATCGTAGCTAGCTAGCATCG",
-					Type: existing,
+					Seq:   "ACGTGCTAGCTACATCGATCGTAGCTAGCTAGCATCG",
+					Type:  existing,
+					start: -14,
+					end:   22,
 				},
 				Frag{
 					Seq:  "AGCTAGCATCGACTGATCACTAGCATCGACTAGCTAG",
@@ -60,11 +62,19 @@ func Test_assembleFragments(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			gotTargetVector, gotFragments := assembleFragments(tt.args.inputFragments, tt.args.conf)
+
 			if !reflect.DeepEqual(gotTargetVector, tt.wantTargetVector) {
 				t.Errorf("assembleFWD() gotTargetVector = %v, want %v", gotTargetVector, tt.wantTargetVector)
 			}
-			if !reflect.DeepEqual(gotFragments, tt.wantFragments) {
-				t.Errorf("assembleFWD() gotFragments = %v, want %v", gotFragments, tt.wantFragments)
+
+			for i, wantF := range tt.wantFragments {
+				if wantF.Seq != gotFragments[i].Seq {
+					t.Errorf("assembleFWD() gotFragment.Seq = %v, want %v", gotFragments[i].Seq, wantF.Seq)
+				}
+
+				if wantF.Type != gotFragments[i].Type {
+					t.Errorf("assembleFWD() gotFragment.Type = %v, want %v", gotFragments[i].Type, wantF.Type)
+				}
 			}
 		})
 	}

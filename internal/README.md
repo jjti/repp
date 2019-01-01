@@ -1,4 +1,4 @@
-# DEFRAG Approach
+# defrag
 
 FRAG_COUNT_LIMIT = maximum number of fragments to include in the assembly
 
