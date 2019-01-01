@@ -118,10 +118,20 @@ func (p *inputParser) guessOutput(in string) (out string) {
 func (p *inputParser) parseDBs(dbsInput, root string, addgene bool) (paths []string, err error) {
 	dbs := dbsInput
 	if addgene {
-		addgenePath := path.Join(root, "assets", "addgene", "db", "addgene")
-		dbs += addgenePath
+		dbs += path.Join(root, "assets", "addgene", "db", "addgene")
 	}
-	return p.dbPaths(dbs)
+
+	if paths, err = p.dbPaths(dbs); err != nil {
+		return nil, err
+	}
+
+	// make sure all the blast databases exist in the user's FS
+	for _, path := range paths {
+		if _, err := os.Stat(path); os.IsNotExist(err) {
+			return nil, fmt.Errorf("failed to find a BLAST database at %s", path)
+		}
+	}
+	return paths, nil
 }
 
 // dbPaths turns a single string of comma separated BLAST dbs into a
@@ -139,13 +149,6 @@ func (p *inputParser) dbPaths(dbList string) (paths []string, err error) {
 			return nil, fmt.Errorf("failed to create absolute path: %v", err)
 		}
 		paths = append(paths, absPath)
-	}
-
-	// make sure all the blast databases exist in the user's FS
-	for _, path := range paths {
-		if _, err := os.Stat(path); os.IsNotExist(err) {
-			return nil, fmt.Errorf("failed to find a BLAST database at %s", path)
-		}
 	}
 
 	return

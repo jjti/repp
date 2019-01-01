@@ -17,10 +17,6 @@ import (
 var (
 	// Root is the Root directory of the app (set in init)
 	Root = ""
-
-	// singleton is a single settings object
-	// used so we only read/unmartial the settings file once
-	singleton Config
 )
 
 // FragmentConfig settings about fragments
@@ -134,11 +130,6 @@ type Config struct {
 // TODO: check for and error out on nonsense config values
 // TODO: add back the config file path setting
 func New() *Config {
-	// check if the singleton has been defined, return as is if so
-	if singleton.filled {
-		return &singleton
-	}
-
 	// read in intialization files
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Println("Using config file: ", viper.ConfigFileUsed())
@@ -147,13 +138,11 @@ func New() *Config {
 	}
 
 	// move into the singleton Config struct
-	if err := viper.Unmarshal(&singleton); err != nil {
+	config := &Config{}
+	if err := viper.Unmarshal(&config); err != nil {
 		log.Fatalf("Failed to decode settings file %s: %v", viper.ConfigFileUsed(), err)
 	}
-
-	// marked as filled to avoid repeating
-	singleton.filled = true
-	return &singleton
+	return config
 }
 
 // SynthCost returns the cost of synthesizing a stretch of DNA
