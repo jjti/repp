@@ -317,7 +317,7 @@ func Test_p3Exec_shrink(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &p3Exec{
-				n:      tt.fields.n,
+				f:      tt.fields.n,
 				last:   tt.fields.last,
 				next:   tt.fields.next,
 				seq:    tt.fields.seq,
