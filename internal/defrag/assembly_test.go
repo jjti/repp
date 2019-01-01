@@ -70,7 +70,7 @@ func Test_assembly_add(t *testing.T) {
 				n: n2,
 			},
 			assembly{
-				nodes:  []*Frag{n1, n2},
+				frags:  []*Frag{n1, n2},
 				cost:   n1.costTo(n2),
 				synths: 0,
 			},
@@ -88,7 +88,7 @@ func Test_assembly_add(t *testing.T) {
 				n: n3,
 			},
 			assembly{
-				nodes:  []*Frag{n1, n3},
+				frags:  []*Frag{n1, n3},
 				cost:   10.0 + n1.costTo(n3),
 				synths: 1,
 			},
@@ -106,7 +106,7 @@ func Test_assembly_add(t *testing.T) {
 				n: n1,
 			},
 			assembly{
-				nodes:  []*Frag{n1, n2, n3, n1},
+				frags:  []*Frag{n1, n2, n3, n1},
 				cost:   10.0,
 				synths: 0,
 			},
@@ -129,7 +129,7 @@ func Test_assembly_add(t *testing.T) {
 				},
 			},
 			assembly{
-				nodes: []*Frag{n1, n2, n3, &Frag{
+				frags: []*Frag{n1, n2, n3, &Frag{
 					uniqueID: n1.uniqueID,
 					start:    n3.start + c.Synthesis.MaxLength,
 					end:      n3.end + c.Synthesis.MaxLength,
@@ -158,7 +158,7 @@ func Test_assembly_add(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			a := &assembly{
-				nodes:  tt.fields.nodes,
+				frags:  tt.fields.nodes,
 				cost:   tt.fields.cost,
 				synths: tt.fields.synths,
 			}
@@ -226,7 +226,7 @@ func Test_assembly_contains(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			a := &assembly{
-				nodes:  tt.fields.nodes,
+				frags:  tt.fields.nodes,
 				cost:   tt.fields.cost,
 				synths: tt.fields.synths,
 			}
@@ -269,7 +269,7 @@ func Test_assembly_len(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			a := &assembly{
-				nodes:  tt.fields.nodes,
+				frags:  tt.fields.nodes,
 				cost:   tt.fields.cost,
 				synths: tt.fields.synths,
 			}
@@ -352,7 +352,7 @@ func Test_assembly_fill(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			a := &assembly{
-				nodes:  tt.fields.nodes,
+				frags:  tt.fields.nodes,
 				cost:   tt.fields.cost,
 				synths: tt.fields.synths,
 			}
@@ -499,7 +499,7 @@ func Test_assembly_duplicates(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			a := &assembly{
-				nodes:  tt.fields.nodes,
+				frags:  tt.fields.nodes,
 				cost:   tt.fields.cost,
 				synths: tt.fields.synths,
 			}

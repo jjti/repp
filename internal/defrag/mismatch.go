@@ -25,9 +25,8 @@ func parentMismatch(primers []Primer, parent, db string, conf *config.Config) (w
 			log.Println(err) // just write the error
 			// TODO: if we fail to find the parent, query the fullSeq as it was sent
 			return false, match{}, nil
-		} else {
-			return false, match{}, err
 		}
+		return false, match{}, err
 	}
 
 	// check each primer for mismatches

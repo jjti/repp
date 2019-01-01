@@ -31,7 +31,7 @@ func build(frags []*Frag, maxNodes int, seq string) (assemblies []assembly) {
 		// it is the target vector. just return that as the assembly
 		if len(f.Seq) >= len(seq) {
 			assemblies = append(assemblies, assembly{
-				nodes:  []*Frag{f}, // just self
+				frags:  []*Frag{f}, // just self
 				cost:   f.Cost,     // just cost of procurement
 				synths: 0,
 			})
@@ -40,7 +40,7 @@ func build(frags []*Frag, maxNodes int, seq string) (assemblies []assembly) {
 
 		frags[i].assemblies = []assembly{
 			assembly{
-				nodes:  []*Frag{f},  // just self
+				frags:  []*Frag{f},  // just self
 				cost:   f.costTo(f), // just PCR,
 				synths: 0,           // no synthetic frags at start
 			},

@@ -58,17 +58,17 @@ func Test_build(t *testing.T) {
 	// output
 	a1 := assembly{
 		// wrap w/o synthesis
-		nodes:  []*Frag{n21, n22, n23},
+		frags:  []*Frag{n21, n22, n23},
 		synths: 0,
 	}
 	a2 := assembly{
 		// wrap w/ synthesis
-		nodes:  []*Frag{n21, n23},
+		frags:  []*Frag{n21, n23},
 		synths: 1,
 	}
 	a3 := assembly{
 		// wrap w/o synthsis
-		nodes:  []*Frag{n22, n23, n24},
+		frags:  []*Frag{n22, n23, n24},
 		synths: 0,
 	}
 
@@ -93,7 +93,7 @@ func Test_build(t *testing.T) {
 	getNodeSet := func(as []assembly) (assemblyIDs []string) {
 		for _, a := range as {
 			thisID := ""
-			for _, n := range a.nodes {
+			for _, n := range a.frags {
 				thisID += n.ID
 			}
 			assemblyIDs = append(assemblyIDs, thisID)

@@ -26,6 +26,22 @@ type flags struct {
 // inputParser contains methods for parsing flags from the input &cobra.Command
 type inputParser struct{}
 
+// newFlags makes a new flags object out of the in, out, dbs passed
+//
+// just for testing right now, but may also be useful for AWS lambda down the line
+func newFlags(in, out string, dbs []string, addgene bool) *flags {
+	dbPaths := dbs
+	if addgene {
+		dbPaths = append(dbPaths, path.Join(config.Root, "assets", "addgene", "db", "addgene"))
+	}
+
+	return &flags{
+		in:  in,
+		out: out,
+		dbs: dbPaths,
+	}
+}
+
 // parseFlags gathers the in path, out path, etc from the cobra cmd object
 func parseFlags(cmd *cobra.Command, conf *config.Config) (parsedFlags *flags, err error) {
 	p := inputParser{}

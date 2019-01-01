@@ -10,8 +10,8 @@ import (
 // assembly is a slice of nodes ordered by the nodes
 // distance from the end of the target vector
 type assembly struct {
-	// nodes, ordered by distance from the "end" of the vector
-	nodes []*Frag
+	// frags, ordered by distance from the "end" of the vector
+	frags []*Frag
 
 	// estimated cost of making this assembly
 	cost float64
@@ -27,9 +27,9 @@ type assembly struct {
 // Complete  an assembly if a Frag has matched up onto itself across the zero-index.
 func (a *assembly) add(f *Frag, maxCount int) (newAssembly assembly, created, complete bool) {
 	// check if we could complete an assembly with this new Frag
-	complete = f.uniqueID == a.nodes[0].uniqueID
+	complete = f.uniqueID == a.frags[0].uniqueID
 	// calc the number of synthesis fragments needed to get to this next Frag
-	synths := a.nodes[len(a.nodes)-1].synthDist(f)
+	synths := a.frags[len(a.frags)-1].synthDist(f)
 
 	newCount := a.len() + synths
 	if !complete {
@@ -46,11 +46,11 @@ func (a *assembly) add(f *Frag, maxCount int) (newAssembly assembly, created, co
 	created = true
 
 	// calc the estimated dollar cost of getting to the next Frag
-	annealCost := a.nodes[len(a.nodes)-1].costTo(f)
+	annealCost := a.frags[len(a.frags)-1].costTo(f)
 
 	// check whether the Frag is already contained in the assembly
 	nodeContained := false
-	for _, included := range a.nodes {
+	for _, included := range a.frags {
 		if included.ID == f.ID {
 			nodeContained = true
 			break
@@ -69,14 +69,14 @@ func (a *assembly) add(f *Frag, maxCount int) (newAssembly assembly, created, co
 		}
 
 		return assembly{
-			nodes:  append(a.nodes, f.copy()),
+			frags:  append(a.frags, f.copy()),
 			cost:   a.cost + annealCost,
 			synths: a.synths + synths,
 		}, created, complete
 	}
 
 	return assembly{
-		nodes:  append(a.nodes, f.copy()),
+		frags:  append(a.frags, f.copy()),
 		cost:   a.cost + annealCost,
 		synths: a.synths + synths,
 	}, created, false
@@ -84,7 +84,7 @@ func (a *assembly) add(f *Frag, maxCount int) (newAssembly assembly, created, co
 
 // contains returns if the ID of the Frag has already been seen in this assembly
 func (a *assembly) contains(f Frag) (hasNode bool) {
-	for _, otherN := range a.nodes {
+	for _, otherN := range a.frags {
 		// they're the same if they have the same ID and start index
 		// ID isn't enough by itself because there may be multiple with the same
 		// entry ID in the BLAST db
@@ -97,7 +97,7 @@ func (a *assembly) contains(f Frag) (hasNode bool) {
 
 // len returns len(assembly.nodes) + the synthesis fragment count
 func (a *assembly) len() int {
-	return len(a.nodes) + a.synths
+	return len(a.frags) + a.synths
 }
 
 // fill traverses the nodes in an assembly and converts them into fragments
@@ -115,14 +115,14 @@ func (a *assembly) fill(seq string, conf *config.Config) (frags []Frag, err erro
 
 	// check for and error out if there are duplicate ends between fragments
 	// ie unintended junctions between fragments that shouldn't be annealing
-	if hasDuplicate, duplicateSeq := a.duplicates(a.nodes, minHomology, maxHomology); hasDuplicate {
+	if hasDuplicate, duplicateSeq := a.duplicates(a.frags, minHomology, maxHomology); hasDuplicate {
 		return nil, fmt.Errorf("cannot fill, has duplicate junction sequence %s", duplicateSeq)
 	}
 
 	// edge case where a single Frag fills the whole target vector. Return just a single
 	// "fragment" (of Vector type... misnomer) that matches the target sequence 100%
-	if a.len() == 1 && len(a.nodes[0].Seq) >= len(seq) {
-		f := a.nodes[0]
+	if a.len() == 1 && len(a.frags[0].Seq) >= len(seq) {
+		f := a.frags[0]
 		return []Frag{
 			Frag{
 				ID:    f.ID,
@@ -139,11 +139,11 @@ func (a *assembly) fill(seq string, conf *config.Config) (frags []Frag, err erro
 	// itself that will span it to the last and next fragments (if reachable). this has to be done
 	// in two loops because synthesis depends on nodes' ranges, and nodes' ranges
 	// may change during setPrimers (we let primer3_core pick from a range of primer options)
-	for i, f := range a.nodes {
+	for i, f := range a.frags {
 		// last Frag, do nothing
 		// here only to allow for vector "circularization" if we need to synthesize
 		// from a.nodes[len(a.nodes)-2] to a.nodes[len(a.nodes)-1]
-		if i > 0 && f.uniqueID == a.nodes[0].uniqueID {
+		if i > 0 && f.uniqueID == a.frags[0].uniqueID {
 			break
 		}
 
@@ -151,10 +151,10 @@ func (a *assembly) fill(seq string, conf *config.Config) (frags []Frag, err erro
 		var last *Frag
 		if i == 0 {
 			// mock up a last fragment that's to the left of this starting Frag
-			final := a.nodes[len(a.nodes)-1]
+			final := a.frags[len(a.frags)-1]
 			if f.uniqueID != "" && f.uniqueID == final.uniqueID {
 				// -2 is if the first and last are the same and is just there for circularization
-				final = a.nodes[len(a.nodes)-2]
+				final = a.frags[len(a.frags)-2]
 			}
 
 			last = &Frag{
@@ -163,15 +163,15 @@ func (a *assembly) fill(seq string, conf *config.Config) (frags []Frag, err erro
 				conf:  conf,
 			}
 		} else {
-			last = a.nodes[i-1]
+			last = a.frags[i-1]
 		}
 
 		var next *Frag
-		if i < len(a.nodes)-1 {
-			next = a.nodes[i+1]
+		if i < len(a.frags)-1 {
+			next = a.frags[i+1]
 		} else {
 			// mock up a next fragment that's to the right of this terminal Frag
-			first := a.nodes[0]
+			first := a.frags[0]
 			next = &Frag{
 				start: first.start + len(seq),
 				end:   first.end + len(seq),
@@ -190,16 +190,19 @@ func (a *assembly) fill(seq string, conf *config.Config) (frags []Frag, err erro
 			if err := f.setPrimers(last, next, seq, conf); err != nil || len(f.Primers) < 2 {
 				return nil, fmt.Errorf("failed to fill %s: %v", f.ID, err)
 			}
+			f.Type = pcr // is now a pcr type
+		} else {
+			f.Type = existing // no change needed
 		}
 	}
 
 	// do another loop to covert the nodes with primers to fragments and
 	// synthesize the sequence between nodes
-	for i, f := range a.nodes {
+	for i, f := range a.frags {
 		// last Frag, do nothing
 		// here only to allow for vector "circularization" if we need to synthesize
 		// from a.nodes[len(a.nodes)-2] to a.nodes[len(a.nodes)-1]
-		if i > 0 && f.uniqueID != "" && f.uniqueID == a.nodes[0].uniqueID {
+		if i > 0 && f.uniqueID != "" && f.uniqueID == a.frags[0].uniqueID {
 			break
 		}
 
@@ -208,7 +211,7 @@ func (a *assembly) fill(seq string, conf *config.Config) (frags []Frag, err erro
 		frags = append(frags, *f)
 
 		// add synthesized fragments between this Frag and the next (if necessary)
-		if synthedFrags := f.synthTo(a.nodes[(i+1)%len(a.nodes)], seq); synthedFrags != nil {
+		if synthedFrags := f.synthTo(a.frags[(i+1)%len(a.frags)], seq); synthedFrags != nil {
 			frags = append(frags, synthedFrags...)
 		}
 	}

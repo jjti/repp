@@ -1,10 +1,12 @@
 package defrag
 
 import (
+	"fmt"
 	"log"
 	"math"
 	"os"
 	"sort"
+	"strings"
 
 	"github.com/jjtimmons/defrag/config"
 	"github.com/spf13/cobra"
@@ -55,7 +57,9 @@ func vector(input *flags, conf *config.Config) [][]Frag {
 	// get all the matches against the fragment
 	matches, err := blast(&targetFrag, input.dbs, conf.Fragments.MinHomology, conf.Vendors())
 	if err != nil {
-		log.Fatalf("failed to blast %s against the BLAST DB: %v", targetFrag.ID, err)
+		fmt.Printf("%+v", input.dbs)
+		dbMessage := strings.Join(input.dbs, ", ")
+		log.Fatalf("failed to blast %s against the dbs %s: %v", targetFrag.ID, dbMessage, err)
 	}
 
 	// build up the assemblies
