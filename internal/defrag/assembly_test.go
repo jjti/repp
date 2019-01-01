@@ -11,19 +11,19 @@ import (
 var (
 	c = config.New()
 
-	n1 = &node{
+	n1 = &Frag{
 		uniqueID: "1",
 		start:    0,
 		end:      50,
 		conf:     c,
 	}
-	n2 = &node{
+	n2 = &Frag{
 		uniqueID: "2",
 		start:    20,
 		end:      80,
 		conf:     c,
 	}
-	n3 = &node{
+	n3 = &Frag{
 		uniqueID: "3",
 		start:    60,
 		end:      100,
@@ -43,13 +43,13 @@ func Test_assembly_add(t *testing.T) {
 
 	// create the nodes for testing
 	type fields struct {
-		nodes    []*node
+		nodes    []*Frag
 		cost     float64
 		synths   int
 		maxCount int
 	}
 	type args struct {
-		n *node
+		n *Frag
 	}
 	tests := []struct {
 		name            string
@@ -62,7 +62,7 @@ func Test_assembly_add(t *testing.T) {
 		{
 			"add with overlap",
 			fields{
-				nodes:  []*node{n1},
+				nodes:  []*Frag{n1},
 				cost:   0,
 				synths: 0,
 			},
@@ -70,7 +70,7 @@ func Test_assembly_add(t *testing.T) {
 				n: n2,
 			},
 			assembly{
-				nodes:  []*node{n1, n2},
+				nodes:  []*Frag{n1, n2},
 				cost:   n1.costTo(n2),
 				synths: 0,
 			},
@@ -80,7 +80,7 @@ func Test_assembly_add(t *testing.T) {
 		{
 			"add with synthesis",
 			fields{
-				nodes:  []*node{n1},
+				nodes:  []*Frag{n1},
 				cost:   10.0,
 				synths: 0,
 			},
@@ -88,7 +88,7 @@ func Test_assembly_add(t *testing.T) {
 				n: n3,
 			},
 			assembly{
-				nodes:  []*node{n1, n3},
+				nodes:  []*Frag{n1, n3},
 				cost:   10.0 + n1.costTo(n3),
 				synths: 1,
 			},
@@ -98,7 +98,7 @@ func Test_assembly_add(t *testing.T) {
 		{
 			"add with completion",
 			fields{
-				nodes:  []*node{n1, n2, n3},
+				nodes:  []*Frag{n1, n2, n3},
 				cost:   10.0,
 				synths: 0,
 			},
@@ -106,7 +106,7 @@ func Test_assembly_add(t *testing.T) {
 				n: n1,
 			},
 			assembly{
-				nodes:  []*node{n1, n2, n3, n1},
+				nodes:  []*Frag{n1, n2, n3, n1},
 				cost:   10.0,
 				synths: 0,
 			},
@@ -116,20 +116,20 @@ func Test_assembly_add(t *testing.T) {
 		{
 			"add with completion requiring synthesis",
 			fields{
-				nodes:  []*node{n1, n2, n3},
+				nodes:  []*Frag{n1, n2, n3},
 				cost:   16.4,
 				synths: 0,
 			},
 			args{
-				// a node that's too far away for straightforward annealing
-				n: &node{
+				// a Frag that's too far away for straightforward annealing
+				n: &Frag{
 					uniqueID: n1.uniqueID,
 					start:    n3.start + c.Synthesis.MaxLength,
 					end:      n3.end + c.Synthesis.MaxLength,
 				},
 			},
 			assembly{
-				nodes: []*node{n1, n2, n3, &node{
+				nodes: []*Frag{n1, n2, n3, &Frag{
 					uniqueID: n1.uniqueID,
 					start:    n3.start + c.Synthesis.MaxLength,
 					end:      n3.end + c.Synthesis.MaxLength,
@@ -143,7 +143,7 @@ func Test_assembly_add(t *testing.T) {
 		{
 			"don't exceed fragment limit",
 			fields{
-				nodes:  []*node{n1, n2, n3, n2, n3},
+				nodes:  []*Frag{n1, n2, n3, n2, n3},
 				cost:   10.0,
 				synths: 0,
 			},
@@ -178,13 +178,13 @@ func Test_assembly_add(t *testing.T) {
 
 func Test_assembly_contains(t *testing.T) {
 	type fields struct {
-		nodes    []*node
+		nodes    []*Frag
 		cost     float64
 		synths   int
 		maxCount int
 	}
 	type args struct {
-		n node
+		n Frag
 	}
 	tests := []struct {
 		name            string
@@ -193,30 +193,30 @@ func Test_assembly_contains(t *testing.T) {
 		wantIsContained bool
 	}{
 		{
-			"contains node",
+			"contains Frag",
 			fields{
-				[]*node{n1, n2},
+				[]*Frag{n1, n2},
 				0.0,
 				0,
 				5,
 			},
 			args{
-				node{
+				Frag{
 					uniqueID: "1",
 				},
 			},
 			true,
 		},
 		{
-			"doesn't contain node",
+			"doesn't contain Frag",
 			fields{
-				[]*node{n1, n2},
+				[]*Frag{n1, n2},
 				0.0,
 				0,
 				5,
 			},
 			args{
-				node{
+				Frag{
 					uniqueID: "3",
 				},
 			},
@@ -239,7 +239,7 @@ func Test_assembly_contains(t *testing.T) {
 
 func Test_assembly_len(t *testing.T) {
 	type fields struct {
-		nodes    []*node
+		nodes    []*Frag
 		cost     float64
 		synths   int
 		maxCount int
@@ -252,7 +252,7 @@ func Test_assembly_len(t *testing.T) {
 		{
 			"length without synths",
 			fields{
-				nodes:  []*node{n1, n2},
+				nodes:  []*Frag{n1, n2},
 				synths: 0,
 			},
 			2,
@@ -260,7 +260,7 @@ func Test_assembly_len(t *testing.T) {
 		{
 			"length with synths",
 			fields{
-				nodes:  []*node{n1, n2},
+				nodes:  []*Frag{n1, n2},
 				synths: 2,
 			},
 			4,
@@ -288,45 +288,45 @@ func Test_assembly_fill(t *testing.T) {
 	c.PCR.P3MaxPenalty = 40.0
 
 	// All of these ids correspond to entires in the test BLAST db
-	f1 := &node{
-		id:       "gnl|addgene|113726(circular)",
+	f1 := &Frag{
+		ID:       "gnl|addgene|113726(circular)",
 		uniqueID: "01",
 		start:    5,
 		end:      119 + 5,
-		seq:      "GTTGGAGTCCACGTTCTTTAATAGTGGACTCTTGTTCCAAACTGGAACAACACTCAACCCTATCTCGGTCTATTCTTTTGATTTATAAGGGATTTTGCCGATTTCGGCCTATTGGTTA",
+		Seq:      "GTTGGAGTCCACGTTCTTTAATAGTGGACTCTTGTTCCAAACTGGAACAACACTCAACCCTATCTCGGTCTATTCTTTTGATTTATAAGGGATTTTGCCGATTTCGGCCTATTGGTTA",
 		conf:     c,
 	}
 
-	f2 := &node{
-		id:       "gnl|addgene|85039.1",
+	f2 := &Frag{
+		ID:       "gnl|addgene|85039.1",
 		uniqueID: "02",
 		start:    102,
 		end:      102 + 141,
-		seq:      "CTCGTAGGGCTTGCCTTCGCCCTCGGATGTGCACTTGAAGTGGTGGTTGTTCACGGTGCCCTCCATGTACAGCTTCATGTGCATGTTCTCCTTGATCAGCTCGCTCATAGGTCCAGGGTTCTCCTCCACGTCTCCAGCCTG",
+		Seq:      "CTCGTAGGGCTTGCCTTCGCCCTCGGATGTGCACTTGAAGTGGTGGTTGTTCACGGTGCCCTCCATGTACAGCTTCATGTGCATGTTCTCCTTGATCAGCTCGCTCATAGGTCCAGGGTTCTCCTCCACGTCTCCAGCCTG",
 		conf:     c,
 	}
 
-	f3 := &node{
-		id:       "gnl|addgene|39412.1",
+	f3 := &Frag{
+		ID:       "gnl|addgene|39412.1",
 		uniqueID: "03",
 		start:    102 + 121,
 		end:      102 + 121 + 224,
-		seq:      "CACGTCTCCAGCCTGCTTCAGCAGGCTGAAGTTAGTAGCTCCGCTTCCGGATCCCCCGGGGAGCATGTCAAGGTCAAAATCGTCAAGAGCGTCAGCAGGCAGCATATCAAGGTCAAAGTCGTCAAGGGCATCGGCTGGGAgCATGTCTAAgTCAAAATCGTCAAGGGCGTCGGCCGGCCCGCCGCTTTcgcacGCCCTGGCAATCGAGATGCTGGACAGGCATC",
+		Seq:      "CACGTCTCCAGCCTGCTTCAGCAGGCTGAAGTTAGTAGCTCCGCTTCCGGATCCCCCGGGGAGCATGTCAAGGTCAAAATCGTCAAGAGCGTCAGCAGGCAGCATATCAAGGTCAAAGTCGTCAAGGGCATCGGCTGGGAgCATGTCTAAgTCAAAATCGTCAAGGGCGTCGGCCGGCCCGCCGCTTTcgcacGCCCTGGCAATCGAGATGCTGGACAGGCATC",
 		conf:     c,
 	}
 
 	// starts 150bp past the end of f3, will require synthesis
-	f4 := &node{
-		id:       "gnl|addgene|107006(circular)",
+	f4 := &Frag{
+		ID:       "gnl|addgene|107006(circular)",
 		uniqueID: "01",
 		start:    102 + 121 + 224 + 150,
 		end:      102 + 121 + 224 + 150 + 57,
-		seq:      "CGTCGGCCGGCCCGCCGCTTTcgcacGCCCTGGCAATCGAGATGCTGGACAGGCATC",
+		Seq:      "CGTCGGCCGGCCCGCCGCTTTcgcacGCCCTGGCAATCGAGATGCTGGACAGGCATC",
 		conf:     c,
 	}
 
 	type fields struct {
-		nodes    []*node
+		nodes    []*Frag
 		cost     float64
 		synths   int
 		maxCount int
@@ -342,7 +342,7 @@ func Test_assembly_fill(t *testing.T) {
 		{
 			"fill in an assembly",
 			fields{
-				nodes: []*node{f1, f2, f3, f4},
+				nodes: []*Frag{f1, f2, f3, f4},
 			},
 			args{
 				seq: "GGCCGCAATAAAATATCTTTATTTTCATTACATCTGTGTGTTGGTTTTTTGTGTGAATCGATAGTACTAACATGACCACCTTGATCTTCATGGTCTGGGTGCCCTCGTAGGGCTTGCCTTCGCCCTCGGATGTGCACTTGAAGTGGTGGTTGTTCACGGTGCCCTCCATGTACAGCTTCATGTGCATGTTCTCCTTGATCAGCTCGCTCATAGGTCCAGGGTTCTCCTCCACGTCTCCAGCCTGCTTCAGCAGGCTGAAGTTAGTAGCTCCGCTTCCGGATCCCCCGGGGAGCATGTCAAGGTCAAAATCGTCAAGAGCGTCAGCAGGCAGCATATCAAGGTCAAAGTCGTCAAGGGCATCGGCTGGGAgCATGTCTAAgTCAAAATCGTCAAGGGCGTCGGCCGGCCCGCCGCTTTcgcacGCCCTGGCAATCGAGATGCTGGACAGGCATCATACCCACTTCTGCCCCCTGGAAGGCGAGTCATGGCAAGACTTTCTGCGGAACAACGCCAAGTCATTCCGCTGTGCTCTCCTCTCACATCGCGACGGGGCTAAAGTGCATCTCGGCACCCGCCCAACAGAGAAACAGTACGAAACCCTGGAAAATCAGCTCGCGTTCCTGTGTCAGCAAGGCTTCTCCCTGGAGAACGCACTGTACGCTCTGTCCGCCGTGGGCCACTTTACACTGGGCTGCGTATTGGAGGATCAGGAGCATCAAGTAGCAAAAGAGGAAAGAGAGACACCTACCACCGATTCTATGCCTGACTGTGGCGGGTGAGCTTAGGGGGCCTCCGCTCCAGCTCGACACCGGGCAGCTGCTGAAGATCGCGAAGAGAGGGGGAGTAACAGCGGTAGAGGCAGTGCACGCCTGGCGCAATGCGCTCACCGGGGCCCCCTTGAACCTGACCCCAGACCAGGTAGTCGCAATCGCGAACAATAATGGGGGAAAGCAAGCCCTGGAAACCGTGCAAAGGTTGTTGCCGGTCCTTTGTCAAGACCACGGCCTTACACCGGAGCAAGTCGTGGCCATTGCAAGCAATGGGGGTGGCAAACAGGCTCTTGAGACGGTTCAGAGACTTCTCCCAGTTCTCTGTCAAGCCGTTGGAGTCCACGTTCTTTAATAGTGGACTCTTGTTCCAAACTGGAACAACACTCAACCCTATCTCGGTCTATTCTTTTGATTTATAAGGGATTTTGCCGATTTCGGCCTATTGGTTAAAAAATGAGCTGATTTAACAAAAATTTAACGCGAATTTTAACAAAATATTAACGCTTACAATTTAGGTGGCACTTTTCGGGGAAATGTGCGCGGAACCCCTATTTGTTTATTTTTCTAAATACATTCAAATATGTATCCGCTCATGAGACAATAACCCTGATAAATGCTTCAATAATATTGAAAAAGGAAGAGTATGAGTATTCAACATTTCCGTGTCGCCCTTATTCCCTTTTTTGCGGCATTTTGCCTTCCTGTTTTTGCTCACCCAGAAACGCTGGTGAAAGTAAAAGATGCTGAAGATCAGTTGGGTGCACGAGTGGGTTACATCGAACTGGATCTCAACAGCGGTAAGATCCTTGAGAGTTTTCGCCCCGAAGAACGTTTTCCAATGATGAGCACTTTTAAAGTTCTGCTATGTGGCGCGGTATTATCCCGTATTGACGCCGGGCAAGAGCAACTCGGTCGCCGCATACACTATTCTCAGAATGACTTGGTTGAGTACTCACCAGTCACAGAAAAGCATCTTACGGATGGCATGACAGTAAGAGAATTATGCAGTGCTGCCATAACCATGAGTGATAACACTGCGGCCAACTTACTTCTGACAACGATCGGAGGACCGAAGGAGCTAACCGCTTTTTTGCACAACATGGGGGATCATGTAACTCGCCTTGATCGTTGGGAACCGGAGCTGAATGAAGCCATACCAAACGACGAGCGTGACACCACGATGCCTGTAGCAATGGCAACAACGTTGCGCAAACTATTAACTGGCGAACTACTTACTCTAGCTTCCCGGCAACAATTAATAGACTGGATGGAGGCGGATAAAGTTGCAGGACCACTTCTGCGCTCGGCCCTTCCGGCTGGCTGGTTTATTGCTGATAAATCTGGAGCCGGTGAGCGTGGGTCTCGCGGTATCATTGCAGCACTGGGGCCAGATGGTAAGCCCTCCCGTATCGTAGTTATCTACACGACGGGGAGTCAGGCAACTATGGATGAACGAAATAGACAGATCGCTGAGATAGGTGCCTCACTGATTAAGCATTGGTAACTGTCAGACCAAGTTTACTCATATATACTTTAGATTGATTTAAAACTTCATTTTTAATTTAAAAGGATCTAGGTGAAGATCCTTTTTGATAATCTCATGACCAAAATCCCTTAACGTGAGTTTTCGTTCCACTGAGCGTCAGACCCCGTAGAA",
@@ -386,12 +386,12 @@ func Test_assembly_fill(t *testing.T) {
 
 func Test_assembly_duplicates(t *testing.T) {
 	type fields struct {
-		nodes  []*node
+		nodes  []*Frag
 		cost   float64
 		synths int
 	}
 	type args struct {
-		nodes       []*node
+		nodes       []*Frag
 		minHomology int
 		maxHomology int
 	}
@@ -406,18 +406,18 @@ func Test_assembly_duplicates(t *testing.T) {
 			"no false positive",
 			fields{},
 			args{
-				nodes: []*node{
-					&node{
-						seq: "ATACCTACTATGGATGACGTAGCAAC",
+				nodes: []*Frag{
+					&Frag{
+						Seq: "ATACCTACTATGGATGACGTAGCAAC",
 					},
-					&node{
-						seq: "AGCAACTCGTTGATATCCACGTA",
+					&Frag{
+						Seq: "AGCAACTCGTTGATATCCACGTA",
 					},
-					&node{
-						seq: "CCACGTAGGTGCATGATGAGATGA",
+					&Frag{
+						Seq: "CCACGTAGGTGCATGATGAGATGA",
 					},
-					&node{
-						seq: "TGAGATGATCTACTGTATACCTACT",
+					&Frag{
+						Seq: "TGAGATGATCTACTGTATACCTACT",
 					},
 				},
 				minHomology: 5,
@@ -427,21 +427,21 @@ func Test_assembly_duplicates(t *testing.T) {
 			"",
 		},
 		{
-			"assembly with a self-annealing node",
+			"assembly with a self-annealing Frag",
 			fields{},
 			args{
-				nodes: []*node{
-					&node{
-						seq: "CAGATGACGATGGCAACTGAGATGAGACCAGATGACGATG", // <- node (if much larger) has the chance to circularize
+				nodes: []*Frag{
+					&Frag{
+						Seq: "CAGATGACGATGGCAACTGAGATGAGACCAGATGACGATG", // <- Frag (if much larger) has the chance to circularize
 					},
-					&node{
-						seq: "CAGATGACGATGTCGTTGATATACCTACTGGAGAGCACAG",
+					&Frag{
+						Seq: "CAGATGACGATGTCGTTGATATACCTACTGGAGAGCACAG",
 					},
-					&node{
-						seq: "TGGAGAGCACAGATGGATGACGTAATGATGATGACCGCAAC",
+					&Frag{
+						Seq: "TGGAGAGCACAGATGGATGACGTAATGATGATGACCGCAAC",
 					},
-					&node{
-						seq: "ACCGCAACTCGTTGATATACCTACTCAGATGACGAT",
+					&Frag{
+						Seq: "ACCGCAACTCGTTGATATACCTACTCAGATGACGAT",
 					},
 				},
 				minHomology: 5,
@@ -454,18 +454,18 @@ func Test_assembly_duplicates(t *testing.T) {
 			"assembly with a duplicate junction",
 			fields{},
 			args{
-				nodes: []*node{
-					&node{
-						seq: "ATGATGCCACGTGCAACTGAGATGAGACCAGATGACGATG", // <- same junction
+				nodes: []*Frag{
+					&Frag{
+						Seq: "ATGATGCCACGTGCAACTGAGATGAGACCAGATGACGATG", // <- same junction
 					},
-					&node{
-						seq: "CAGATGACGATGTCGTTGATATACCTACTGGAGAGCACAG",
+					&Frag{
+						Seq: "CAGATGACGATGTCGTTGATATACCTACTGGAGAGCACAG",
 					},
-					&node{
-						seq: "TGGAGAGCACAGATGGATGACGTAATGACAGATGACGATG", // <- same junction
+					&Frag{
+						Seq: "TGGAGAGCACAGATGGATGACGTAATGACAGATGACGATG", // <- same junction
 					},
-					&node{
-						seq: "CAGATGACGATGACCGCAACTCGTTGATGATGCCAC",
+					&Frag{
+						Seq: "CAGATGACGATGACCGCAACTCGTTGATGATGCCAC",
 					},
 				},
 				minHomology: 5,
@@ -478,15 +478,15 @@ func Test_assembly_duplicates(t *testing.T) {
 			"another false positive to avoid",
 			fields{},
 			args{
-				nodes: []*node{
-					&node{
-						seq: "ACGTGCTAGCTACATCGATCGTAGCTAGCTAGCATCG", // this shouldn't be flagged as anything
+				nodes: []*Frag{
+					&Frag{
+						Seq: "ACGTGCTAGCTACATCGATCGTAGCTAGCTAGCATCG", // this shouldn't be flagged as anything
 					},
-					&node{
-						seq: "AGCTAGCATCGACTGATCACTAGCATCGACTAGCTAG",
+					&Frag{
+						Seq: "AGCTAGCATCGACTGATCACTAGCATCGACTAGCTAG",
 					},
-					&node{
-						seq: "TCGACTAGCTAGAACTGATGCTAGACGTGCTAGCTACA",
+					&Frag{
+						Seq: "TCGACTAGCTAGAACTGATGCTAGACGTGCTAGCTACA",
 					},
 				},
 				minHomology: 8,

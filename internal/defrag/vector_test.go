@@ -72,31 +72,31 @@ func Test_vector_single_vector(t *testing.T) {
 
 func Test_countMaps(t *testing.T) {
 	a1 := assembly{
-		nodes: []*node{
+		nodes: []*Frag{
 			n1, n1,
 		},
 		cost: 11.0,
 	}
 	a2 := assembly{
-		nodes: []*node{
+		nodes: []*Frag{
 			n1, n2, n1,
 		},
 		cost: 12.5,
 	}
 	a3 := assembly{
-		nodes: []*node{
+		nodes: []*Frag{
 			n2, n3, n2,
 		},
 		cost: 12.0,
 	}
 	a4 := assembly{
-		nodes: []*node{
+		nodes: []*Frag{
 			n1, n2, n3, n1,
 		},
 		cost: 10.0,
 	}
 	a5 := assembly{
-		nodes: []*node{
+		nodes: []*Frag{
 			n2, n3, n1, n2,
 		},
 		cost: 10.5,

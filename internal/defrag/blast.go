@@ -51,7 +51,7 @@ func (m *match) length() int {
 // blastExec is a small utility function for executing BLAST
 type blastExec struct {
 	// the fragment we're BLASTing
-	f *Fragment
+	f *Frag
 
 	// the path to the database we're BLASTing against
 	db string
@@ -72,12 +72,12 @@ type blastExec struct {
 	internal bool
 }
 
-// blast the passed Fragment against a set from the command line and create
+// blast the passed Frag against a set from the command line and create
 // matches for those that are long enough
 //
 // Accepts a fragment to BLAST against, a list of dbs to BLAST it against,
 // a minLength for a match, and settings around blastn location, output dir, etc
-func blast(f *Fragment, dbs []string, minLength int, v config.VendorConfig) (matches []match, err error) {
+func blast(f *Frag, dbs []string, minLength int, v config.VendorConfig) (matches []match, err error) {
 	for _, db := range dbs {
 		internal := true
 		if strings.Contains(db, "addgene") {
@@ -108,7 +108,7 @@ func blast(f *Fragment, dbs []string, minLength int, v config.VendorConfig) (mat
 			return nil, fmt.Errorf("failed executing BLAST: %v", err)
 		}
 
-		// parse the output file to Matches against the Fragment
+		// parse the output file to Matches against the Frag
 		dbMatches, err := b.parse()
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse BLAST output: %v", err)
@@ -186,7 +186,7 @@ func (b *blastExec) runAgainst() (err error) {
 	return
 }
 
-// parse reads the output file into Matches on the Fragment
+// parse reads the output file into Matches on the Frag
 // returns a slice of Matches for the blasted fragment
 func (b *blastExec) parse() (matches []match, err error) {
 	// read in the results
@@ -210,8 +210,8 @@ func (b *blastExec) parse() (matches []match, err error) {
 			continue
 		}
 
-		// the full id of the entry in the db
-		id := strings.Replace(cols[0], ">", "", -1)
+		// the full ID of the entry in the db
+		ID := strings.Replace(cols[0], ">", "", -1)
 
 		start, _ := strconv.Atoi(cols[1])
 		end, _ := strconv.Atoi(cols[2])
@@ -226,13 +226,13 @@ func (b *blastExec) parse() (matches []match, err error) {
 		// create and append the new match
 		ms = append(ms, match{
 			// for later querying when checking for off-targets
-			entry: id,
+			entry: ID,
 			seq:   strings.Replace(seq, "-", "", -1),
 			// convert 1-based numbers to 0-based
 			start: start - 1,
 			end:   end - 1,
-			// brittle, but checking for circular in entry's id
-			circular:    strings.Contains(id, "(circular)"),
+			// brittle, but checking for circular in entry's ID
+			circular:    strings.Contains(ID, "(circular)"),
 			mismatching: mismatch,
 			internal:    b.internal,
 			db:          b.db, // store for checking off-targets later
@@ -299,7 +299,7 @@ func properize(matches []match) (properized []match) {
 
 // blastdbcmd queries a fragment/vector by its FASTA entry name (entry) from a BLAST db (db)
 //
-// entry here is the id that's associated with the fragment in its source DB (db)
+// entry here is the ID that's associated with the fragment in its source DB (db)
 func blastdbcmd(entry, db string, c *config.Config) (output string, err error) {
 	v := c.Vendors()
 

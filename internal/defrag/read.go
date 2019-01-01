@@ -9,7 +9,7 @@ import (
 )
 
 // read a FASTA file (by its path on local FS) to a slice of Fragments
-func read(path string) (fragments []Fragment, err error) {
+func read(path string) (fragments []Frag, err error) {
 	if !filepath.IsAbs(path) {
 		path, err = filepath.Abs(path)
 		if err != nil {
@@ -53,9 +53,9 @@ func read(path string) (fragments []Fragment, err error) {
 	}
 
 	// build and return the new fragments
-	for i, id := range ids {
-		fragments = append(fragments, Fragment{
-			ID:  id,
+	for i, ID := range ids {
+		fragments = append(fragments, Frag{
+			ID:  ID,
 			Seq: seqs[i],
 		})
 	}

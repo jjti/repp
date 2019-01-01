@@ -40,12 +40,12 @@ func Test_read(t *testing.T) {
 		for _, f := range fragments {
 			// ensure we got an ID
 			if len(f.ID) < 1 {
-				t.Error("failed to load an ID for a Fragment from FASTA")
+				t.Error("failed to load an ID for a Frag from FASTA")
 			}
 
 			// ensure we got a Seq
 			if len(f.Seq) < 1 {
-				t.Errorf("failed to parse a sequence for Fragment %s", f.ID)
+				t.Errorf("failed to parse a sequence for Frag %s", f.ID)
 			}
 		}
 	}

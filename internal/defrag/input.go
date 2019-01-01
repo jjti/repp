@@ -19,7 +19,7 @@ type flags struct {
 	in       string
 	out      string
 	dbs      []string
-	backbone Fragment
+	backbone Frag
 	enzyme   enzyme
 }
 
@@ -60,7 +60,7 @@ func parseFlags(cmd *cobra.Command, conf *config.Config) (parsedFlags *flags, er
 	// check if user asked for a specific backbone, confirm it exists in one of the dbs
 	backboneEntry, _ := cmd.Flags().GetString("backbone")
 	if backboneEntry != "" {
-		// confirm that the backbone exists in one of the dbs, gather it as a Fragment if it does
+		// confirm that the backbone exists in one of the dbs, gather it as a Frag if it does
 		parsedFlags.backbone, err = p.getBackbone(backboneEntry, parsedFlags.dbs, conf)
 		if err != nil {
 			return
@@ -155,7 +155,7 @@ func (p *inputParser) dbPaths(dbList string) (paths []string, err error) {
 // one of the databases. Avoid nonsense backbones
 //
 // TODO: use goroutine
-func (p *inputParser) getBackbone(entry string, dbs []string, c *config.Config) (f Fragment, err error) {
+func (p *inputParser) getBackbone(entry string, dbs []string, c *config.Config) (f Frag, err error) {
 	// move through each db and see if it contains the backbone
 	for _, db := range dbs {
 		// if outFile is defined here we managed to query it from the db
@@ -166,7 +166,7 @@ func (p *inputParser) getBackbone(entry string, dbs []string, c *config.Config) 
 	}
 
 	dbMessage := strings.Join(dbs, "\n")
-	return Fragment{}, fmt.Errorf("failed to find backbone %s in any of:\n%s", entry, dbMessage)
+	return Frag{}, fmt.Errorf("failed to find backbone %s in any of:\n%s", entry, dbMessage)
 }
 
 // getEnzymes return the enzyme with the name passed. errors out if there is none
