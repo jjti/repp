@@ -359,7 +359,7 @@ func (p *p3Exec) settings(
 
 	var fileBuffer bytes.Buffer
 	for key, val := range settings {
-		fmt.Fprintf(&fileBuffer, "%s=%s\f", key, val)
+		fmt.Fprintf(&fileBuffer, "%s=%s\n", key, val)
 	}
 	fileBuffer.WriteString("=") // required at file's end
 
@@ -395,7 +395,7 @@ func (p *p3Exec) parse(input string) (err error) {
 
 	// read in results into map, they're all 1:1
 	results := make(map[string]string)
-	for _, line := range strings.Split(fileContents, "\f") {
+	for _, line := range strings.Split(fileContents, "\n") {
 		keyVal := strings.Split(line, "=")
 		if len(keyVal) > 1 {
 			results[strings.TrimSpace(keyVal[0])] = strings.TrimSpace(keyVal[1])
@@ -414,6 +414,8 @@ func (p *p3Exec) parse(input string) (err error) {
 		return fmt.Errorf("failed to create primers")
 	}
 
+	fmt.Println(p.in)
+
 	// read in a single primer from the output string file
 	// side is either "LEFT" or "RIGHT"
 	parsePrimer := func(side string) Primer {
@@ -429,8 +431,9 @@ func (p *p3Exec) parse(input string) (err error) {
 		pairfloat, _ := strconv.ParseFloat(pairPenalty, 64)
 
 		primerRange := results[fmt.Sprintf("PRIMER_%s_0", side)]
+		fmt.Printf("%+v", strings.Split(primerRange, ","))
 		primerStart, _ := strconv.Atoi(strings.Split(primerRange, ",")[0])
-		primerStart = primerStart - len(input)
+		primerStart -= len(input)
 		primerEnd := primerStart + len(seq)
 		if side == "RIGHT" {
 			primerStart -= len(seq)
@@ -466,7 +469,7 @@ func (p *p3Exec) parse(input string) (err error) {
 //
 // returning Frag for testing
 func mutateNodePrimers(f *Frag, seq string, addLeft, addRight int) (mutated *Frag) {
-	template := seq + seq
+	template := seq + seq + seq
 
 	// add bp to the left/FWD primer to match the fragment to the left
 	if addLeft > 0 {

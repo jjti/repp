@@ -20,20 +20,26 @@ func parentMismatch(primers []Primer, parent, db string, conf *config.Config) (w
 	// ugly check here for whether we just failed to get the parent entry from a db
 	// which isn't a huge deal (shouldn't be flagged as a mismatch)
 	// this is similar to what io.IsNotExist does
-	failedToQuery := strings.Contains(err.Error(), "failed to query")
-	if err != nil && !failedToQuery {
-		return false, match{}, err
-	} else if failedToQuery {
-		log.Println(err)
+	if err != nil {
+		if strings.Contains(err.Error(), "failed to query") {
+			log.Println(err) // just write the error
+			// TODO: if we fail to find the parent, query the fullSeq as it was sent
+			return false, match{}, nil
+		} else {
+			return false, match{}, err
+		}
 	}
 
 	// check each primer for mismatches
-	for _, primer := range primers {
-		wasMismatch, m, err = mismatch(primer.Seq, parentFile, conf)
-		if wasMismatch || err != nil {
-			return
+	if parentFile != "" {
+		for _, primer := range primers {
+			wasMismatch, m, err = mismatch(primer.Seq, parentFile, conf)
+			if wasMismatch || err != nil {
+				return
+			}
 		}
 	}
+
 	return
 }
 
@@ -56,7 +62,8 @@ func seqMismatch(primers []Primer, parentID, parentSeq string, conf *config.Conf
 			return
 		}
 	}
-	return
+
+	return false, match{}, nil
 }
 
 // mismatch finds mismatching sequences between the query sequence and
