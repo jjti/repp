@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"runtime"
 	"sort"
 	"strconv"
@@ -99,7 +100,7 @@ func blast(f *Fragment, dbs []string, minLength int, v config.VendorConfig) (mat
 
 		// create the input file
 		if err := b.create(); err != nil {
-			return nil, fmt.Errorf("failed at creating BLAST input file at %s: %v", b.in, err)
+			return nil, fmt.Errorf("failed to write a BLAST input file at %s: %v", b.in, err)
 		}
 
 		// execute BLAST
@@ -252,7 +253,7 @@ func (b *blastExec) parse() (matches []match, err error) {
 //
 // Circular-arc graph: https://en.wikipedia.org/wiki/Circular-arc_graph
 //
-// also remove small fragments here, that are too small to be useful during assembly
+// also remove small fragments here that are too small to be useful during assembly
 func filter(matches []match, minSize int) (properized []match) {
 	properized = []match{}
 
@@ -294,4 +295,48 @@ func properize(matches []match) (properized []match) {
 		}
 	}
 	return
+}
+
+// blastdbcmd queries a fragment/vector by its FASTA entry name (entry) from a BLAST db (db)
+//
+// entry here is the id that's associated with the fragment in its source DB (db)
+func blastdbcmd(entry, db string, c *config.Config) (output string, err error) {
+	v := c.Vendors()
+
+	// path to the entry batch file to hold the entry accession
+	entryPath, _ := filepath.Abs(path.Join(v.Blastdbcmddir, entry+".input"))
+
+	// path to the output sequence file from querying the entry's sequence from the BLAST db
+	output, _ = filepath.Abs(path.Join(v.Blastdbcmddir, entry+".output"))
+
+	// write entry to file
+	// this was a 2-day issue I couldn't resolve...
+	// I was using the "-entry" flag on exec.Command, but have since
+	// switched to the simpler -entry_batch command (on a file) that resolves the issue
+	if err := ioutil.WriteFile(entryPath, []byte(entry), 0666); err != nil {
+		return "", fmt.Errorf("failed to write batch entry list: %v", err)
+	}
+
+	// make a blastdbcmd command (for querying a DB, very different from blastn)
+	queryCmd := exec.Command(
+		v.Blastdbcmd,
+		"-db", db,
+		"-dbtype", "nucl",
+		"-entry_batch", entryPath,
+		"-out", output,
+		"-outfmt", "%f", // fasta format
+	)
+
+	// execute
+	if _, err := queryCmd.CombinedOutput(); err != nil {
+		return "", fmt.Errorf("warning: failed to query %s from %s", entry, db)
+	}
+
+	// read in the results as a fragment and return just the seq
+	fragments, err := read(output)
+	if err == nil && len(fragments) >= 1 {
+		return output, nil
+	}
+
+	return "", fmt.Errorf("warning: failed to query %s from %s", entry, db)
 }

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"os/exec"
 	"path"
 	"path/filepath"
 	"strings"
@@ -16,11 +15,16 @@ import (
 // any mismatches in the seq before returning
 func parentMismatch(primers []Primer, parent, db string, conf *config.Config) (wasMismatch bool, m match, err error) {
 	// try and query for the parent in the source DB and write to a file
-	parentFile, err := blastDBCmd(parent, db, conf)
-	if parentFile == "" {
-		return false, match{}, nil
-	} else if err != nil {
+	parentFile, err := blastdbcmd(parent, db, conf)
+
+	// ugly check here for whether we just failed to get the parent entry from a db
+	// which isn't a huge deal (shouldn't be flagged as a mismatch)
+	// this is similar to what io.IsNotExist does
+	failedToQuery := strings.Contains(err.Error(), "failed to query")
+	if err != nil && !failedToQuery {
 		return false, match{}, err
+	} else if failedToQuery {
+		log.Println(err)
 	}
 
 	// check each primer for mismatches
@@ -51,49 +55,6 @@ func seqMismatch(primers []Primer, parentID, parentSeq string, conf *config.Conf
 		if wasMismatch || err != nil {
 			return
 		}
-	}
-	return
-}
-
-// blastDBCmd gets the full parent's sequence from the DB that it came from
-// returns an empty string if we can't find the sequence
-//
-// parent here is the id that's associated with the fragment in its source DB
-func blastDBCmd(parent, db string, c *config.Config) (parentFile string, err error) {
-	v := c.Vendors()
-
-	// path to the entry batch file to hold the parent entry accession
-	entry, _ := filepath.Abs(path.Join(v.Blastdir, parent+".parent.entry"))
-
-	// path to the output sequence file from querying the parent's sequence from the BLAST db
-	parentPath, _ := filepath.Abs(path.Join(v.Blastdir, parent+".parent"))
-
-	// write entry to file
-	// this was a 2-day bug I couldn't resolve...
-	// I was using the "-entry" flag on exec.Command, but have since
-	// switched to the simpler -entry_batch command (on a file) that resolves the issue
-	if err := ioutil.WriteFile(entry, []byte(parent), 0666); err != nil {
-		return "", fmt.Errorf("failed to write batch entry list: %v", err)
-	}
-
-	// make a blastdbcmd command (for querying a DB, very different from blastn)
-	queryCmd := exec.Command(
-		v.Blastdbcmd,
-		"-db", db,
-		"-dbtype", "nucl",
-		"-entry_batch", entry,
-		"-out", parentPath,
-		"-outfmt", "%f", // fasta format
-	)
-	if _, err := queryCmd.CombinedOutput(); err != nil {
-		log.Printf("warning: failed to query %s from %s", parent, db)
-		return "", nil // failed to get parent sequence from the db
-	}
-
-	// read in the results as a fragment and return just the seq
-	fragments, err := read(parentPath)
-	if err == nil && len(fragments) >= 1 {
-		return parentPath, nil
 	}
 	return
 }

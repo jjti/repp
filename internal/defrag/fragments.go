@@ -15,19 +15,19 @@ import (
 func Fragments(cmd *cobra.Command, args []string) {
 	defer os.Exit(0)
 
-	input, err := parseFlags(cmd)
+	conf := config.New()
+
+	input, err := parseFlags(cmd, conf)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	fragments(input)
+	fragments(input, conf)
 }
 
 // fragments pieces together a list of fragments into a single vector
 // with the fragments in the order and orientation specified
-func fragments(input *flags) {
-	conf := config.New()
-
+func fragments(input *flags, conf *config.Config) {
 	// read the target sequence (the first in the slice is used)
 	inputFragments, err := read(input.in)
 	if err != nil {
@@ -35,7 +35,7 @@ func fragments(input *flags) {
 	}
 
 	// try to find the target vector (sequence) and prepare the fragments to build it
-	target, fragments := assembleFragments(inputFragments, &conf)
+	target, fragments := assembleFragments(inputFragments, conf)
 
 	// write the single list of fragments as a possible solution to the output file
 	if err := write(input.out, target, [][]Fragment{fragments}); err != nil {

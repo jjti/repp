@@ -31,28 +31,28 @@ func Test_build(t *testing.T) {
 		uniqueID: "1",
 		start:    0,
 		end:      10,
-		conf:     &c,
+		conf:     c,
 	}
 	n22 := &node{
 		id:       "2",
 		uniqueID: "2",
 		start:    5,
 		end:      15,
-		conf:     &c,
+		conf:     c,
 	}
 	n23 := &node{
 		id:       "3",
 		uniqueID: "1",
 		start:    14,
 		end:      30,
-		conf:     &c,
+		conf:     c,
 	}
 	n24 := &node{
 		id:       "4",
 		uniqueID: "2",
 		start:    28,
 		end:      35,
-		conf:     &c,
+		conf:     c,
 	}
 
 	// output

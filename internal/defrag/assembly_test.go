@@ -15,19 +15,19 @@ var (
 		uniqueID: "1",
 		start:    0,
 		end:      50,
-		conf:     &c,
+		conf:     c,
 	}
 	n2 = &node{
 		uniqueID: "2",
 		start:    20,
 		end:      80,
-		conf:     &c,
+		conf:     c,
 	}
 	n3 = &node{
 		uniqueID: "3",
 		start:    60,
 		end:      100,
-		conf:     &c,
+		conf:     c,
 	}
 )
 
@@ -294,7 +294,7 @@ func Test_assembly_fill(t *testing.T) {
 		start:    5,
 		end:      119 + 5,
 		seq:      "GTTGGAGTCCACGTTCTTTAATAGTGGACTCTTGTTCCAAACTGGAACAACACTCAACCCTATCTCGGTCTATTCTTTTGATTTATAAGGGATTTTGCCGATTTCGGCCTATTGGTTA",
-		conf:     &c,
+		conf:     c,
 	}
 
 	f2 := &node{
@@ -303,7 +303,7 @@ func Test_assembly_fill(t *testing.T) {
 		start:    102,
 		end:      102 + 141,
 		seq:      "CTCGTAGGGCTTGCCTTCGCCCTCGGATGTGCACTTGAAGTGGTGGTTGTTCACGGTGCCCTCCATGTACAGCTTCATGTGCATGTTCTCCTTGATCAGCTCGCTCATAGGTCCAGGGTTCTCCTCCACGTCTCCAGCCTG",
-		conf:     &c,
+		conf:     c,
 	}
 
 	f3 := &node{
@@ -312,7 +312,7 @@ func Test_assembly_fill(t *testing.T) {
 		start:    102 + 121,
 		end:      102 + 121 + 224,
 		seq:      "CACGTCTCCAGCCTGCTTCAGCAGGCTGAAGTTAGTAGCTCCGCTTCCGGATCCCCCGGGGAGCATGTCAAGGTCAAAATCGTCAAGAGCGTCAGCAGGCAGCATATCAAGGTCAAAGTCGTCAAGGGCATCGGCTGGGAgCATGTCTAAgTCAAAATCGTCAAGGGCGTCGGCCGGCCCGCCGCTTTcgcacGCCCTGGCAATCGAGATGCTGGACAGGCATC",
-		conf:     &c,
+		conf:     c,
 	}
 
 	// starts 150bp past the end of f3, will require synthesis
@@ -322,7 +322,7 @@ func Test_assembly_fill(t *testing.T) {
 		start:    102 + 121 + 224 + 150,
 		end:      102 + 121 + 224 + 150 + 57,
 		seq:      "CGTCGGCCGGCCCGCCGCTTTcgcacGCCCTGGCAATCGAGATGCTGGACAGGCATC",
-		conf:     &c,
+		conf:     c,
 	}
 
 	type fields struct {
@@ -356,7 +356,7 @@ func Test_assembly_fill(t *testing.T) {
 				cost:   tt.fields.cost,
 				synths: tt.fields.synths,
 			}
-			frags, err := a.fill(tt.args.seq, &c)
+			frags, err := a.fill(tt.args.seq, c)
 
 			if err != nil {
 				t.Error(err)

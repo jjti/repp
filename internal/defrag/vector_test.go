@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/jjtimmons/defrag/config"
 	"github.com/spf13/cobra"
 )
 
@@ -47,13 +48,14 @@ func Test_vector(t *testing.T) {
 // if an input fragment being built is exactly the same as one in a DB, it should be used
 // as is and without PCR or any preparation
 func Test_vector_single_vector(t *testing.T) {
+	c := config.New()
 	in := path.Join("..", "..", "test", "109049.addgene.fa")
 	out := path.Join("..", "..", "bin", "109049.output.json")
 
 	assemblies := vector(&flags{
 		in:  in,
 		out: out,
-	}) // use addgene database
+	}, c) // use addgene database
 
 	if len(assemblies) != 1 {
 		t.Fatal("failed to return the pareto optimal solution: 109049 alone")

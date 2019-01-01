@@ -42,7 +42,7 @@ func Test_node_distTo(t *testing.T) {
 					start:      20,
 					end:        60,
 					assemblies: []assembly{},
-					conf:       &c,
+					conf:       c,
 				},
 			},
 			-20,
@@ -70,7 +70,7 @@ func Test_node_distTo(t *testing.T) {
 				start:      tt.fields.start,
 				end:        tt.fields.end,
 				assemblies: tt.fields.assemblies,
-				conf:       &c,
+				conf:       c,
 			}
 			if gotBpDist := n.distTo(tt.args.other); gotBpDist != tt.wantBpDist {
 				t.Errorf("node.distTo() = %v, want %v", gotBpDist, tt.wantBpDist)
@@ -109,7 +109,7 @@ func Test_node_synthDist(t *testing.T) {
 				other: &node{
 					start: 20,
 					end:   60,
-					conf:  &c,
+					conf:  c,
 				},
 			},
 			0,
@@ -124,7 +124,7 @@ func Test_node_synthDist(t *testing.T) {
 				other: &node{
 					start: 60,
 					end:   80,
-					conf:  &c,
+					conf:  c,
 				},
 			},
 			1,
@@ -138,7 +138,7 @@ func Test_node_synthDist(t *testing.T) {
 				start:      tt.fields.start,
 				end:        tt.fields.end,
 				assemblies: tt.fields.assemblies,
-				conf:       &c,
+				conf:       c,
 			}
 			if gotSynthCount := n.synthDist(tt.args.other); gotSynthCount != tt.wantSynthCount {
 				t.Errorf("node.synthDist() = %v, want %v", gotSynthCount, tt.wantSynthCount)
@@ -184,7 +184,7 @@ func Test_node_costTo(t *testing.T) {
 				other: &node{
 					start: 20,
 					end:   100,
-					conf:  &c,
+					conf:  c,
 				},
 			},
 			1.38,
@@ -199,7 +199,7 @@ func Test_node_costTo(t *testing.T) {
 				other: &node{
 					start: 80,
 					end:   120,
-					conf:  &c,
+					conf:  c,
 				},
 			},
 			(20.0 + 30.0) * 0.05,
@@ -224,7 +224,7 @@ func Test_node_costTo(t *testing.T) {
 				start:      tt.fields.start,
 				end:        tt.fields.end,
 				assemblies: tt.fields.assemblies,
-				conf:       &c,
+				conf:       c,
 			}
 			if gotCost := n.costTo(tt.args.other); gotCost != tt.wantCost {
 				t.Errorf("node.costTo() = %v, want %v", gotCost, tt.wantCost)
@@ -241,37 +241,37 @@ func Test_node_reach(t *testing.T) {
 	n11 := &node{
 		start: 0,
 		end:   10,
-		conf:  &c,
+		conf:  c,
 	}
 	n12 := &node{
 		start: 5,
 		end:   15,
-		conf:  &c,
+		conf:  c,
 	}
 	n13 := &node{
 		start: 6,
 		end:   16,
-		conf:  &c,
+		conf:  c,
 	}
 	n14 := &node{
 		start: 7,
 		end:   17,
-		conf:  &c,
+		conf:  c,
 	}
 	n15 := &node{
 		start: 15,
 		end:   20,
-		conf:  &c,
+		conf:  c,
 	}
 	n16 := &node{
 		start: 16,
 		end:   21,
-		conf:  &c,
+		conf:  c,
 	}
 	n17 := &node{
 		start: 17,
 		end:   22,
-		conf:  &c,
+		conf:  c,
 	}
 
 	type fields struct {
@@ -330,7 +330,7 @@ func Test_node_reach(t *testing.T) {
 				start:      tt.fields.start,
 				end:        tt.fields.end,
 				assemblies: tt.fields.assemblies,
-				conf:       &c,
+				conf:       c,
 			}
 			if gotReachable := n.reach(tt.args.nodes, tt.args.i, tt.args.synthCount); !reflect.DeepEqual(gotReachable, tt.wantReachable) {
 				t.Errorf("node.reach() = %v, want %v", gotReachable, tt.wantReachable)
@@ -373,7 +373,7 @@ func Test_node_synthTo(t *testing.T) {
 				next: &node{
 					start: 13,
 					end:   20,
-					conf:  &c,
+					conf:  c,
 				},
 			},
 			nil,
@@ -390,7 +390,7 @@ func Test_node_synthTo(t *testing.T) {
 					id:    "second",
 					start: 25,
 					end:   30,
-					conf:  &c,
+					conf:  c,
 				},
 				seq: "TGCTGACTGTGGCGGGTGAGCTTAGGGGGCCTCCGCTCCAGCTCGACACCGGGCAGCTGC",
 			},
@@ -413,7 +413,7 @@ func Test_node_synthTo(t *testing.T) {
 				start:      tt.fields.start,
 				end:        tt.fields.end,
 				assemblies: tt.fields.assemblies,
-				conf:       &c,
+				conf:       c,
 			}
 			if gotSynthedFrags := n.synthTo(tt.args.next, tt.args.seq); !reflect.DeepEqual(gotSynthedFrags, tt.wantSynthedFrags) {
 				t.Errorf("node.synthTo() = %v, want %v", gotSynthedFrags, tt.wantSynthedFrags)
@@ -460,7 +460,7 @@ func Test_node_fragment(t *testing.T) {
 				start:      tt.fields.start,
 				end:        tt.fields.end,
 				assemblies: tt.fields.assemblies,
-				conf:       &c,
+				conf:       c,
 			}
 			if got := n.fragment(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("node.fragment() = %v, want %v", got, tt.want)
@@ -499,13 +499,13 @@ func Test_new(t *testing.T) {
 				start:      0,
 				end:        12,
 				assemblies: nil,
-				conf:       &c,
+				conf:       c,
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := newNode(tt.args.m, tt.args.seqL, &c); !reflect.DeepEqual(got, tt.want) {
+			if got := newNode(tt.args.m, tt.args.seqL, c); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("new() = %+v, want %+v", got, tt.want)
 			}
 		})
