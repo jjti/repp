@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -44,6 +45,90 @@ func Enzymes(cmd *cobra.Command, args []string) {
 	log.Println(enzymeNameLog.String())
 
 	os.Exit(0) // that's it, just log
+}
+
+// digest a Frag (backbone) with an enzyme's first recogition site
+//
+// remove the 5' end of the fragment post-cleaving. it will be degraded.
+// keep exposed 3' ends. good visual explanation:
+// https://warwick.ac.uk/study/csde/gsp/eportfolio/directory/pg/lsujcw/gibsonguide/
+func digest(frag Frag, enz enzyme) (digested Frag, err error) {
+	wrappedBp := 38 // largest current recognition site in the list of enzymes below
+	if len(frag.Seq) < wrappedBp {
+		return Frag{}, fmt.Errorf("%s is too short for digestion", frag.ID)
+	}
+
+	// turn recognition site (with ambigous bps) into a recognition seq
+	reg := regexp.MustCompile(recogRegex(enz.recog))
+	seq := frag.Seq + frag.Seq[0:wrappedBp]
+	revCompSeq := revComp(frag.Seq) + revComp(frag.Seq[0:wrappedBp])
+
+	// positive if template strand has overhang
+	// negative if rev comp strand has overhang
+	templateOverhangLength := enz.cutInd - enz.hangInd
+	cutIndex := -1
+	digestedSeq := ""
+	if reg.MatchString(seq) {
+		// template
+		cutIndex = reg.FindStringIndex(seq)[0] // first int is the start of match
+	}
+	if reg.MatchString(revCompSeq) {
+		// reverse complement
+		revCutIndex := reg.FindStringIndex(revCompSeq)[0]
+		revCutIndex = len(frag.Seq) - revCutIndex - len(enz.recog) // flip it to account for being on rev comp
+		revCutIndex = (revCutIndex + len(frag.Seq)) % len(frag.Seq)
+		if revCutIndex >= 0 && (revCutIndex < cutIndex || cutIndex < 0) {
+			cutIndex = revCutIndex // take whichever occurs sooner in the sequence
+		}
+	}
+	if cutIndex == -1 {
+		// no valid cutsites in the sequence
+		return Frag{}, fmt.Errorf("no %s cutsites found in %s", enz.recog, frag.ID)
+	}
+
+	if templateOverhangLength >= 0 {
+		cutIndex = (cutIndex + enz.cutInd) % len(frag.Seq)
+		digestedSeq = frag.Seq[cutIndex:] + frag.Seq[:cutIndex]
+	} else {
+		bottomIndex := (cutIndex + enz.cutInd) % len(frag.Seq)
+		topIndex := (cutIndex + enz.hangInd) % len(frag.Seq)
+		digestedSeq = frag.Seq[topIndex:] + frag.Seq[:bottomIndex]
+	}
+
+	return Frag{
+		ID:  frag.ID,
+		Seq: digestedSeq,
+	}, nil
+}
+
+// recogRegex turns a recognition sequence into a regex sequence for searching
+// sequence for searching the template sequence for digestion sites
+func recogRegex(recog string) (decoded string) {
+	regexDecode := map[rune]string{
+		'A': "A",
+		'C': "C",
+		'G': "G",
+		'T': "T",
+		'M': "(A|C)",
+		'R': "(A|G)",
+		'W': "(A|T)",
+		'Y': "(C|T)",
+		'S': "(C|G)",
+		'K': "(G|T)",
+		'H': "(A|C|T)",
+		'D': "(A|G|T)",
+		'V': "(A|C|G)",
+		'B': "(C|G|T)",
+		'N': "(A|C|G|T)",
+		'X': "(A|C|G|T)",
+	}
+
+	var regexDecoder strings.Builder
+	for _, c := range recog {
+		regexDecoder.WriteString(regexDecode[c])
+	}
+
+	return regexDecoder.String()
 }
 
 func init() {
@@ -269,14 +354,12 @@ func init() {
 		"BstNI":      enzyme{recog: "CCWGG", hangInd: 3, cutInd: 2},
 		"BtsCI":      enzyme{recog: "GGATGNN", hangInd: 5, cutInd: 7},
 		"BtsIMutI":   enzyme{recog: "CAGTGNN", hangInd: 5, cutInd: 7},
-		"DpnI":       enzyme{recog: "GmATC", hangInd: 3, cutInd: 3},
 		"FauI":       enzyme{recog: "CCCGCNNNNNN", hangInd: 11, cutInd: 9},
 		"FokI":       enzyme{recog: "GGATGNNNNNNNNNNNNN", hangInd: 18, cutInd: 14},
 		"HgaI":       enzyme{recog: "GACGCNNNNNNNNNN", hangInd: 15, cutInd: 10},
 		"HphI":       enzyme{recog: "GGTGANNNNNNNN", hangInd: 12, cutInd: 13},
 		"Hpy99I":     enzyme{recog: "CGWCG", hangInd: 0, cutInd: 5},
 		"HpyAV":      enzyme{recog: "CCTTCNNNNNN", hangInd: 10, cutInd: 11},
-		"LpnPI":      enzyme{recog: "CmCDGNNNNNNNNNNNNNN", hangInd: 19, cutInd: 15},
 		"MboII":      enzyme{recog: "GAAGANNNNNNNN", hangInd: 12, cutInd: 13},
 		"MlyI":       enzyme{recog: "GAGTCNNNNN", hangInd: 10, cutInd: 10},
 		"NciI":       enzyme{recog: "CCSGG", hangInd: 3, cutInd: 2},
@@ -329,9 +412,6 @@ func init() {
 		"ScrFI":      enzyme{recog: "CCNGG", hangInd: 3, cutInd: 2},
 		"StyD4I":     enzyme{recog: "CCNGG", hangInd: 5, cutInd: 0},
 		"TaqI":       enzyme{recog: "TCGA", hangInd: 3, cutInd: 1},
-		"AbaSI":      enzyme{recog: "hmCNNNNNNNNNNN", hangInd: 12, cutInd: 14},
-		"FspEI":      enzyme{recog: "CmCNNNNNNNNNNNNNNNN", hangInd: 19, cutInd: 15},
-		"MspJI":      enzyme{recog: "mCNNRNNNNNNNNNNNNN", hangInd: 18, cutInd: 14},
 		"Nt.CviPII":  enzyme{recog: "CCD", hangInd: 0, cutInd: 0},
 	}
 }

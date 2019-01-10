@@ -95,7 +95,6 @@ func parseFlags(cmd *cobra.Command, conf *config.Config) (parsedFlags *flags, er
 	if parsedFlags.enzyme, err = p.getEnzyme(enzymeName); err != nil {
 		return nil, err
 	}
-
 	return
 }
 
@@ -174,12 +173,14 @@ func (p *inputParser) dbPaths(dbList string) (paths []string, err error) {
 // one of the databases. Avoid nonsense backbones
 //
 // TODO: use goroutine
+// TODO: test
 func (p *inputParser) getBackbone(entry string, dbs []string, c *config.Config) (f Frag, err error) {
 	// move through each db and see if it contains the backbone
 	for _, db := range dbs {
 		// if outFile is defined here we managed to query it from the db
 		if outFile, _ := blastdbcmd(entry, db, c); outFile != "" {
 			frags, err := read(outFile)
+			frags[0].Type = circular // assume its circular here, used as backbone
 			return frags[0], err
 		}
 	}

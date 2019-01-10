@@ -36,6 +36,8 @@ func Vector(cmd *cobra.Command, args []string) {
 }
 
 // vector builds a vector using reverse engineering
+//
+// TODO: redesign this for a linear input stretch
 func vector(input *flags, conf *config.Config) [][]Frag {
 	// read the target sequence (the first in the slice is used)
 	fragments, err := read(input.in)
