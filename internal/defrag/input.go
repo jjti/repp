@@ -20,7 +20,6 @@ type flags struct {
 	out      string
 	dbs      []string
 	backbone Frag
-	enzyme   enzyme
 }
 
 // inputParser contains methods for parsing flags from the input &cobra.Command
@@ -75,26 +74,33 @@ func parseFlags(cmd *cobra.Command, conf *config.Config) (parsedFlags *flags, er
 
 	// check if user asked for a specific backbone, confirm it exists in one of the dbs
 	backboneEntry, _ := cmd.Flags().GetString("backbone")
-	if backboneEntry != "" {
-		// confirm that the backbone exists in one of the dbs, gather it as a Frag if it does
-		parsedFlags.backbone, err = p.getBackbone(backboneEntry, parsedFlags.dbs, conf)
-		if err != nil {
-			return
-		}
-	}
 
 	// check if they also specified an enzyme
 	enzymeName, _ := cmd.Flags().GetString("enzyme")
 
-	// enzyme should only be specified if backbone is
-	if enzymeName != "" && backboneEntry == "" {
-		return nil, fmt.Errorf("enzymes can only be chosen if a backbone is as well")
+	// try to digest the backbone with the enzyme
+	if backboneEntry != "" {
+		if enzymeName == "" {
+			return nil, fmt.Errorf("backbone passed, %s, without an enzyme to digest it", backboneEntry)
+		}
+
+		// confirm that the backbone exists in one of the dbs, gather it as a Frag if it does
+		backbone, err := p.getBackbone(backboneEntry, parsedFlags.dbs, conf)
+		if err != nil {
+			return nil, err
+		}
+
+		// gather the enzyme by name, err if it's unknown
+		enzyme, err := p.getEnzyme(enzymeName)
+		if err != nil {
+			return nil, err
+		}
+
+		if parsedFlags.backbone, err = digest(backbone, enzyme); err != nil {
+			return nil, err
+		}
 	}
 
-	// gather the enzyme by name, err if it's unknown
-	if parsedFlags.enzyme, err = p.getEnzyme(enzymeName); err != nil {
-		return nil, err
-	}
 	return
 }
 
