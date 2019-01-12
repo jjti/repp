@@ -28,13 +28,18 @@ func Fragments(cmd *cobra.Command, args []string) {
 // fragments pieces together a list of fragments into a single vector
 // with the fragments in the order and orientation specified
 func fragments(input *flags, conf *config.Config) {
-	// read the target sequence (the first in the slice is used)
+	// read in the consituent fragments
 	inputFragments, err := read(input.in)
 	if err != nil {
 		log.Fatalf("failed to read in fasta files at %s: %v", input.in, err)
 	}
 
-	// try to find the target vector (sequence) and prepare the fragments to build it
+	// add in the backbone if it was provided
+	if input.backbone.ID != "" {
+		inputFragments = append([]Frag{input.backbone}, inputFragments...)
+	}
+
+	// piece together the adjacent fragments
 	target, fragments := assembleFragments(inputFragments, conf)
 
 	// write the single list of fragments as a possible solution to the output file
@@ -50,7 +55,7 @@ func assembleFragments(inputFragments []Frag, conf *config.Config) (targetVector
 		log.Fatalln("failed: no fragments to assemble")
 	}
 
-	// convert the fragments to frags (without a start and end)
+	// convert the fragments to frags (without a start and end and with the conf)
 	frags := make([]*Frag, len(inputFragments))
 	for i, f := range inputFragments {
 		frags[i] = &Frag{
