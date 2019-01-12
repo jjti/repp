@@ -48,13 +48,18 @@ func vector(input *flags, conf *config.Config) [][]Frag {
 	// set target fragment
 	if len(fragments) > 1 {
 		log.Printf(
-			"warning: %d building fragments were in %s. Only targeting the first: %s",
+			"warning: %d fragments were in %s. Only targeting the sequence of the first: %s",
 			len(fragments),
 			input.in,
 			fragments[0].ID,
 		)
 	}
 	targetFrag := fragments[0]
+
+	// if a backbone was specified, add it to the sequence of the target frag
+	if input.backbone.ID != "" {
+		targetFrag.Seq += input.backbone.Seq
+	}
 
 	// get all the matches against the fragment
 	matches, err := blast(&targetFrag, input.dbs, conf.Fragments.MinHomology, conf.Vendors())
