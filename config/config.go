@@ -5,18 +5,11 @@ package config
 import (
 	"fmt"
 	"log"
-	"os"
+	"os/exec"
 	"path"
-	"path/filepath"
-	"runtime"
 	"sort"
 
 	"github.com/spf13/viper"
-)
-
-var (
-	// Root is the Root directory of the app (set in init)
-	Root = ""
 )
 
 // FragmentConfig settings about fragments
@@ -72,31 +65,6 @@ type SynthesisConfig struct {
 	MinLength int `mapstructure:"min-length"`
 }
 
-// VendorConfig holds the paths to binaries needed for the library:
-// blastn, blastdbcmd, and primer3_core
-type VendorConfig struct {
-	// blastn binary
-	Blastn string
-
-	// blastdbcmd binary
-	Blastdbcmd string
-
-	// blast io subdirectory
-	Blastdir string
-
-	// blastdbcmd subdirectory
-	Blastdbcmddir string
-
-	// primer3_core binary
-	Primer3core string
-
-	// primer3 config folder, needed for thermodynamic calculations
-	Primer3config string
-
-	// primer3 io subdirectory
-	Primer3dir string
-}
-
 // Config is the Root-level settings struct and is a mix
 // of settings available in settings.yaml and those
 // available from the command line
@@ -109,6 +77,13 @@ type Config struct {
 
 	// the cost of a single Addgene vector
 	AddGeneVectorCost float64 `mapstructure:"addgene-vector-cost"`
+
+	// the cost of a single part from the iGEM registry
+	IGEMPartCost float64 `mapstructure:"igem-part-cost"`
+
+	// primer3 config folder, needed for thermodynamic calculations
+	// created in the settings file during `make install`
+	Primer3config string `mapstructure:"primer3_config-path"`
 
 	// Fragment level settings
 	Fragments FragmentConfig
@@ -130,11 +105,31 @@ type Config struct {
 // TODO: check for and error out on nonsense config values
 // TODO: add back the config file path setting
 func New() *Config {
+	if userConfigPath := viper.GetString("config"); userConfigPath != "" {
+		viper.AddConfigPath(userConfigPath) // user has specified a path to a settings file
+	} else {
+		viper.AddConfigPath(path.Join("etc", "defrag")) // settings are /etc/defrag
+	}
+	viper.SetConfigName("settings") // no yaml needed, just a config file called settings
+
 	// read in intialization files
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Println("Using config file: ", viper.ConfigFileUsed())
 	} else {
 		log.Fatalf("Failed to read in config file: %v", err)
+	}
+
+	// make sure all depedencies are available (may belong elsewhere)
+	if _, err := exec.LookPath("blastn"); err != nil {
+		log.Fatal("no blastn executable available in PATH, try `make install`")
+	}
+
+	if _, err := exec.LookPath("blastdbcmd"); err != nil {
+		log.Fatal("no blastdbcmd executable available in PATH, try `make install`")
+	}
+
+	if _, err := exec.LookPath("primer3_core"); err != nil {
+		log.Fatal("no primer3_core executable available in PATH, try `make install`")
 	}
 
 	// move into the singleton Config struct
@@ -174,72 +169,4 @@ func (c Config) SynthCost(fragLength int) float64 {
 		return synthCost.Dollars
 	}
 	return float64(fragLength) * synthCost.Dollars
-}
-
-// Vendors returns a new config for paths to library dependencies. It also creates
-// subdirectories for primer3 and blast to store their input+output files in
-// (mostly for debugging)
-func (c Config) Vendors() VendorConfig {
-	blastn := filepath.Join(Root, "vendor", "ncbi-blast-2.7.1+", "bin", "blastn")
-	if _, err := os.Stat(blastn); os.IsNotExist(err) {
-		log.Fatalf("failed to find a BLAST executable at %s", blastn)
-	}
-
-	blastdir := filepath.Join(Root, "bin", "blast")
-	if err := os.MkdirAll(blastdir, os.ModePerm); err != nil {
-		log.Fatalf("Failed to create a BLAST dir: %v", err)
-	}
-
-	blastdbcmd := filepath.Join(Root, "vendor", "ncbi-blast-2.7.1+", "bin", "blastdbcmd")
-	if _, err := os.Stat(blastdbcmd); err != nil {
-		log.Fatalf("Failed to locate blastdbcmd executable: %v", err)
-	}
-
-	blastdbcmddir := filepath.Join(Root, "bin", "blastdbcmd")
-	if err := os.MkdirAll(blastdbcmddir, os.ModePerm); err != nil {
-		log.Fatalf("Failed to create a blastdbcmd dir: %v", err)
-	}
-
-	p3core := filepath.Join(Root, "vendor", "primer3-2.4.0", "src", "primer3_core")
-	if _, err := os.Stat(p3core); err != nil {
-		log.Fatalf("Failed to locate primer3 executable: %v", err)
-	}
-
-	p3conf := filepath.Join(Root, "vendor", "primer3-2.4.0", "src", "primer3_config") + string(filepath.Separator)
-	if _, err := os.Stat(p3conf); err != nil {
-		log.Fatalf("Failed to locate primer3 config folder: %v", err)
-	}
-
-	p3dir := filepath.Join(Root, "bin", "primer3")
-	if err := os.MkdirAll(p3dir, os.ModePerm); err != nil {
-		log.Fatalf("Failed to create a primer3 outut dir: %v", err)
-	}
-
-	return VendorConfig{
-		Blastn:        blastn,
-		Blastdir:      blastdir,
-		Blastdbcmd:    blastdbcmd,
-		Blastdbcmddir: blastdbcmddir,
-		Primer3core:   p3core,
-		Primer3config: p3conf,
-		Primer3dir:    p3dir,
-	}
-}
-
-// init and set viper's paths to the local config file
-func init() {
-	_, filename, _, ok := runtime.Caller(0)
-	if !ok {
-		log.Panicln("No caller information")
-	}
-	Root, _ = filepath.Abs(path.Join(path.Dir(filename), ".."))
-
-	if confFlag := viper.GetString("config"); confFlag != "" {
-		viper.AddConfigPath(confFlag) // settings are in Root of repo
-	} else {
-		viper.AddConfigPath(Root) // settings are in Root of repo
-	}
-
-	viper.SetConfigName("settings") // no yaml needed, just a config file called settings
-	viper.AutomaticEnv()            // enviornment variables that match
 }

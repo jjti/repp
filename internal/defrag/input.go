@@ -31,7 +31,7 @@ type inputParser struct{}
 func newFlags(in, out string, dbs []string, addgene bool) *flags {
 	dbPaths := dbs
 	if addgene {
-		dbPaths = append(dbPaths, path.Join(config.Root, "assets", "addgene", "db", "addgene"))
+		dbPaths = append(dbPaths, path.Join("etc", "defrag", "addgene"))
 	}
 
 	return &flags{
@@ -43,6 +43,7 @@ func newFlags(in, out string, dbs []string, addgene bool) *flags {
 
 // parseFlags gathers the in path, out path, etc from the cobra cmd object
 func parseFlags(cmd *cobra.Command, conf *config.Config) (parsedFlags *flags, err error) {
+	parsedFlags = &flags{}
 	p := inputParser{}
 
 	if parsedFlags.in, err = cmd.Flags().GetString("in"); err != nil {
@@ -62,13 +63,18 @@ func parseFlags(cmd *cobra.Command, conf *config.Config) (parsedFlags *flags, er
 		return nil, fmt.Errorf("failed to parse addgene flag: %v", err)
 	}
 
+	igem, err := cmd.Flags().GetBool("igem")
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse igem flag: %v", err)
+	}
+
 	dbString, err := cmd.Flags().GetString("dbs")
 	if err != nil && !addgene {
 		return nil, fmt.Errorf("failed to parse building fragments: %v", err)
 	}
 
 	// read in the BLAST DB paths
-	if parsedFlags.dbs, err = p.parseDBs(dbString, config.Root, addgene); err != nil || len(parsedFlags.dbs) == 0 {
+	if parsedFlags.dbs, err = p.parseDBs(dbString, addgene, igem); err != nil || len(parsedFlags.dbs) == 0 {
 		return nil, fmt.Errorf("failed to find any fragment databases: %v", err)
 	}
 
@@ -136,10 +142,13 @@ func (p *inputParser) guessOutput(in string) (out string) {
 }
 
 // parseDBs returns a list of absolute paths to BLAST databases
-func (p *inputParser) parseDBs(dbsInput, root string, addgene bool) (paths []string, err error) {
-	dbs := dbsInput
+func (p *inputParser) parseDBs(dbs string, addgene, igem bool) (paths []string, err error) {
+	root := path.Join("etc", "defrag")
 	if addgene {
-		dbs += path.Join(root, "assets", "addgene", "db", "addgene")
+		dbs += "," + path.Join(root, "addgene")
+	}
+	if igem {
+		dbs += "," + path.Join(root, "igem")
 	}
 
 	if paths, err = p.dbPaths(dbs); err != nil {
@@ -189,8 +198,8 @@ func (p *inputParser) getBackbone(backbone string, dbs []string, c *config.Confi
 	// move through each db and see if it contains the backbone
 	for _, db := range dbs {
 		// if outFile is defined here we managed to query it from the db
-		if outFile, _ := blastdbcmd(backbone, db, c); outFile != "" {
-			frags, err := read(outFile)
+		if outFile, _ := blastdbcmd(backbone, db, c); outFile.Name() != "" {
+			frags, err := read(outFile.Name())
 			frags[0].Type = circular // assume its circular here, used as backbone
 			return frags[0], err
 		}

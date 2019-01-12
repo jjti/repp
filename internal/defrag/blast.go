@@ -6,14 +6,20 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"path"
-	"path/filepath"
 	"runtime"
 	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/jjtimmons/defrag/config"
+)
+
+var (
+	// blastnDir is a temporary directory for all blastn output
+	blastnDir = ""
+
+	// blastdbcmd is a temporary directory for all blastdbcmd output
+	blastdbcmdDir = ""
 )
 
 // match is a blast "hit" in the blastdb
@@ -56,17 +62,14 @@ type blastExec struct {
 	// the path to the database we're BLASTing against
 	db string
 
-	// the path to the input BLAST file
-	in string
+	// the input BLAST file
+	in *os.File
 
-	// the path for the BLAST output
-	out string
+	// the output BLAST file
+	out *os.File
 
 	// optional path to a FASTA file with a subject FASTA sequence
 	subject string
-
-	// path to the blastn executable
-	blastn string
 
 	// internal if the db is a local/user owned list of fragments (ie free)
 	internal bool
@@ -77,19 +80,33 @@ type blastExec struct {
 //
 // Accepts a fragment to BLAST against, a list of dbs to BLAST it against,
 // a minLength for a match, and settings around blastn location, output dir, etc
-func blast(f *Frag, dbs []string, minLength int, v config.VendorConfig) (matches []match, err error) {
+func blast(f *Frag, dbs []string, minLength int) (matches []match, err error) {
+	in, err := ioutil.TempFile(blastnDir, f.ID+".in-*")
+	if err != nil {
+		return nil, err
+	}
+	defer os.Remove(in.Name())
+
+	out, err := ioutil.TempFile(blastnDir, f.ID+".out-*")
+	if err != nil {
+		return nil, err
+	}
+	if err = out.Close(); err != nil {
+		return nil, err
+	}
+	defer os.Remove(out.Name())
+
 	for _, db := range dbs {
 		internal := true
-		if strings.Contains(db, "addgene") {
+		if strings.Contains(db, "addgene") || strings.Contains(db, "igem") {
 			internal = false
 		}
 
 		b := &blastExec{
 			f:        f,
 			db:       db,
-			in:       path.Join(v.Blastdir, f.ID+".input.fa"),
-			out:      path.Join(v.Blastdir, f.ID+".output"),
-			blastn:   v.Blastn,
+			in:       in,
+			out:      out,
 			internal: internal,
 		}
 
@@ -100,7 +117,7 @@ func blast(f *Frag, dbs []string, minLength int, v config.VendorConfig) (matches
 
 		// create the input file
 		if err := b.create(); err != nil {
-			return nil, fmt.Errorf("failed to write a BLAST input file at %s: %v", b.in, err)
+			return nil, fmt.Errorf("failed to write a BLAST input file at %s: %v", b.in.Name(), err)
 		}
 
 		// execute BLAST
@@ -136,7 +153,10 @@ func (b *blastExec) create() error {
 	// add the sequence to itself because it's circular
 	// and we want to find matches across the zero-index.
 	file := fmt.Sprintf(">%s\n%s\n", b.f.ID, b.f.Seq+b.f.Seq)
-	return ioutil.WriteFile(b.in, []byte(file), 0666)
+	if _, err := b.in.WriteString(file); err != nil {
+		return err
+	}
+	return b.in.Close()
 }
 
 // run calls the external blastn binary on the input library
@@ -149,11 +169,11 @@ func (b *blastExec) run() (err error) {
 	// create the blast command
 	// https://www.ncbi.nlm.nih.gov/books/NBK279682/
 	blastCmd := exec.Command(
-		b.blastn,
+		"blastn",
 		"-task", "blastn",
 		"-db", b.db,
-		"-query", b.in,
-		"-out", b.out,
+		"-query", b.in.Name(),
+		"-out", b.out.Name(),
 		"-outfmt", "7 sseqid qstart qend sstart send sseq mismatch",
 		"-perc_identity", "100",
 		"-num_threads", strconv.Itoa(threads),
@@ -171,11 +191,11 @@ func (b *blastExec) runAgainst() (err error) {
 	// create the blast command
 	// https://www.ncbi.nlm.nih.gov/books/NBK279682/
 	blastCmd := exec.Command(
-		b.blastn,
+		"blastn",
 		"-task", "blastn",
-		"-query", b.in,
+		"-query", b.in.Name(),
 		"-subject", b.subject,
-		"-out", b.out,
+		"-out", b.out.Name(),
 		"-outfmt", "7 sseqid qstart qend sstart send sseq mismatch",
 	)
 
@@ -190,7 +210,7 @@ func (b *blastExec) runAgainst() (err error) {
 // returns a slice of Matches for the blasted fragment
 func (b *blastExec) parse() (matches []match, err error) {
 	// read in the results
-	file, err := ioutil.ReadFile(b.out)
+	file, err := ioutil.ReadFile(b.out.Name())
 	if err != nil {
 		return
 	}
@@ -300,43 +320,204 @@ func properize(matches []match) (properized []match) {
 // blastdbcmd queries a fragment/vector by its FASTA entry name (entry) from a BLAST db (db)
 //
 // entry here is the ID that's associated with the fragment in its source DB (db)
-func blastdbcmd(entry, db string, conf *config.Config) (output string, err error) {
-	v := conf.Vendors()
-
+func blastdbcmd(entry, db string, conf *config.Config) (output *os.File, err error) {
 	// path to the entry batch file to hold the entry accession
-	entryPath, _ := filepath.Abs(path.Join(v.Blastdbcmddir, entry+".input"))
+	entryFile, err := ioutil.TempFile(blastdbcmdDir, ".in-*")
+	if err != nil {
+		return nil, err
+	}
+	defer os.Remove(entryFile.Name())
 
 	// path to the output sequence file from querying the entry's sequence from the BLAST db
-	output, _ = filepath.Abs(path.Join(v.Blastdbcmddir, entry+".output"))
+	output, err = ioutil.TempFile(blastdbcmdDir, ".out-*")
+	if err != nil {
+		return nil, err
+	}
+	defer os.Remove(output.Name())
 
 	// write entry to file
 	// this was a 2-day issue I couldn't resolve...
 	// I was using the "-entry" flag on exec.Command, but have since
 	// switched to the simpler -entry_batch command (on a file) that resolves the issue
-	if err := ioutil.WriteFile(entryPath, []byte(entry), 0666); err != nil {
-		return "", fmt.Errorf("failed to write blastdbcmd entry file at %s: %v", entryPath, err)
+	if _, err := entryFile.WriteString(entry); err != nil {
+		return nil, fmt.Errorf("failed to write blastdbcmd entry file at %s: %v", entryFile.Name(), err)
 	}
 
 	// make a blastdbcmd command (for querying a DB, very different from blastn)
 	queryCmd := exec.Command(
-		v.Blastdbcmd,
+		"blastdbcmd",
 		"-db", db,
 		"-dbtype", "nucl",
-		"-entry_batch", entryPath,
-		"-out", output,
+		"-entry_batch", entryFile.Name(),
+		"-out", output.Name(),
 		"-outfmt", "%f", // fasta format
 	)
 
 	// execute
 	if _, err := queryCmd.CombinedOutput(); err != nil {
-		return "", fmt.Errorf("warning: failed to query %s from %s", entry, db)
+		return nil, fmt.Errorf("warning: failed to query %s from %s", entry, db)
 	}
 
 	// read in the results as a fragment and return just the seq
-	fragments, err := read(output)
+	fragments, err := read(output.Name())
 	if err == nil && len(fragments) >= 1 {
 		return output, nil
 	}
 
-	return "", fmt.Errorf("warning: failed to query %s from %s", entry, db)
+	return nil, fmt.Errorf("warning: failed to query %s from %s", entry, db)
+}
+
+// parentMismatch both searches for a the parent fragment in its source DB and queries for
+// any mismatches in the seq before returning
+func parentMismatch(primers []Primer, parent, db string, conf *config.Config) (wasMismatch bool, m match, err error) {
+	// try and query for the parent in the source DB and write to a file
+	parentFile, err := blastdbcmd(parent, db, conf)
+
+	// ugly check here for whether we just failed to get the parent entry from a db
+	// which isn't a huge deal (shouldn't be flagged as a mismatch)
+	// this is similar to what io.IsNotExist does
+	if err != nil {
+		if strings.Contains(err.Error(), "failed to query") {
+			log.Println(err) // just write the error
+			// TODO: if we fail to find the parent, query the fullSeq as it was sent
+			return false, match{}, nil
+		}
+		return false, match{}, err
+	}
+
+	// check each primer for mismatches
+	if parentFile.Name() != "" {
+		for _, primer := range primers {
+			wasMismatch, m, err = mismatch(primer.Seq, parentFile, conf)
+			if wasMismatch || err != nil {
+				return
+			}
+		}
+	}
+
+	return
+}
+
+// seqMismatch queries for any mismatching primer locations in the parent sequence
+// unlike parentMismatch, it doesn't first find the parent fragment from the db it came from
+func seqMismatch(primers []Primer, parentID, parentSeq string, conf *config.Config) (wasMismatch bool, m match, err error) {
+	parentFile, err := ioutil.TempFile(blastnDir, parentID+".parent-*")
+	if err != nil {
+		return false, match{}, err
+	}
+	defer os.Remove(parentFile.Name())
+
+	inContent := fmt.Sprintf(">%s\n%s\n", parentID, parentSeq)
+	if _, err = parentFile.WriteString(inContent); err != nil {
+		return false, m, fmt.Errorf("failed to write primer sequence to query FASTA file: %v", err)
+	}
+
+	// check each primer for mismatches
+	for _, primer := range primers {
+		wasMismatch, m, err = mismatch(primer.Seq, parentFile, conf)
+		if wasMismatch || err != nil {
+			return
+		}
+	}
+
+	return false, match{}, nil
+}
+
+// mismatch finds mismatching sequences between the query sequence and
+// the parent sequence (in the parent file)
+//
+// The fragment to query against is stored in a file ".parent"
+// db is passed as the path to the db we're blasting against
+func mismatch(primer string, parentFile *os.File, c *config.Config) (wasMismatch bool, m match, err error) {
+	// path to the entry batch file to hold the entry accession
+	in, err := ioutil.TempFile(blastnDir, parentFile.Name()+".primer.in")
+	if err != nil {
+		return false, match{}, err
+	}
+	defer os.Remove(in.Name())
+
+	// path to the output sequence file from querying the entry's sequence from the BLAST db
+	out, err := ioutil.TempFile(blastnDir, parentFile.Name()+".primer.out")
+	if err != nil {
+		return false, match{}, err
+	}
+	defer os.Remove(out.Name())
+
+	// create blast input file
+	inContent := fmt.Sprintf(">primer\n%s\n", primer)
+	if _, err = in.WriteString(inContent); err != nil {
+		return false, m, fmt.Errorf("failed to write primer sequence to query FASTA file: %v", err)
+	}
+
+	// blast the query sequence against the parentFile sequence
+	b := blastExec{
+		in:      in,
+		out:     out,
+		subject: parentFile.Name(),
+	}
+
+	// execute blast
+	if err = b.runAgainst(); err != nil {
+		return false, m, fmt.Errorf("failed to run blast against parent: %v", err)
+	}
+
+	// get the BLAST matches
+	matches, err := b.parse()
+	if err != nil {
+		return false, match{}, fmt.Errorf("failed to parse matches from %s: %v", out.Name(), err)
+	}
+
+	// parse the results and check whether any are cause for concern (by Tm)
+	primerCount := 1 // times we expect to see the primer itself
+	for i, m := range matches {
+		if i == 0 && m.circular {
+			// if the match is against a circular fragment, we might expect to see
+			// the primer's sequence twice, rather than just once
+			primerCount++
+		}
+
+		// one of the matches will, of course, be against the primer itself
+		// and we don't want to double count it
+		if primerCount > 0 && m.seq == primer {
+			primerCount--
+			continue
+		} else if isMismatch(m, c) {
+			return true, m, nil
+		}
+	}
+	return false, match{}, nil
+}
+
+// isMismatch reutns whether the match constitutes a mismatch
+// between it and the would be primer sequence
+//
+// source: http://depts.washington.edu/bakerpg/primertemp/
+//
+// The equation used for the melting temperature is:
+// Tm = 81.5 + 0.41(%GC) - 675/N - % mismatch, where N = total number of bases.
+func isMismatch(m match, c *config.Config) bool {
+	primer := strings.ToLower(m.seq)
+	primerL := float64(len(primer))
+
+	noA := strings.Replace(primer, "a", "", -1)
+	noT := strings.Replace(noA, "t", "", -1)
+	gcPerc := float64(len(noT)) / primerL
+	tmNoMismatch := 81.5 + 0.41*gcPerc - 675/float64(len(primer))
+	tmWithMismatch := tmNoMismatch - float64(m.mismatching)/primerL
+
+	return tmWithMismatch > c.PCR.MaxOfftargetTm
+}
+
+func init() {
+	var err error
+
+	blastnDir, err = ioutil.TempDir("", "blastn")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	blastdbcmdDir, err = ioutil.TempDir("", "blastdbcmd")
+	if err != nil {
+		log.Fatal(err)
+	}
 }

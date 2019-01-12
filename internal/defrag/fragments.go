@@ -13,8 +13,6 @@ import (
 // fragments together into a vector (in the order specified). Fragments
 // without junctions for their neighbors are prepared via PCR
 func Fragments(cmd *cobra.Command, args []string) {
-	defer os.Exit(0)
-
 	conf := config.New()
 
 	input, err := parseFlags(cmd, conf)
@@ -23,6 +21,8 @@ func Fragments(cmd *cobra.Command, args []string) {
 	}
 
 	fragments(input, conf)
+
+	os.Exit(0)
 }
 
 // fragments pieces together a list of fragments into a single vector

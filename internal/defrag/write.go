@@ -7,12 +7,6 @@ import (
 	"sort"
 	"strings"
 	"time"
-
-	"github.com/jjtimmons/defrag/config"
-)
-
-var (
-	conf = config.New()
 )
 
 // Solution is a single solution to build up the target vector

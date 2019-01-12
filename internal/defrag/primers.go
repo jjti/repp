@@ -4,13 +4,17 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+	"log"
+	"os"
 	"os/exec"
-	"path"
 	"strconv"
 	"strings"
 
 	"github.com/jjtimmons/defrag/config"
 )
+
+// primer3Dir is a temporary directory holding primer3 input and output
+var primer3Dir = ""
 
 // ranged: a stretch that a primer spans relative to the target sequence
 type ranged struct {
@@ -60,10 +64,10 @@ type p3Exec struct {
 	seq string
 
 	// input file
-	in string
+	in *os.File
 
 	// output file
-	out string
+	out *os.File
 
 	// path to primer3 executable
 	p3Path string
@@ -79,7 +83,7 @@ type p3Exec struct {
 //	1. the primers have an unacceptably high primer3 penalty score
 //	2. the primers have off-targets in their source vector/fragment
 func (f *Frag) setPrimers(last, next *Frag, seq string, conf *config.Config) (err error) {
-	exec := newP3Exec(last, f, next, seq, conf)
+	psExec := newP3Exec(last, f, next, seq, conf)
 
 	// make input file and write to the fs
 	// find how many bp of additional sequence need to be added
@@ -87,16 +91,16 @@ func (f *Frag) setPrimers(last, next *Frag, seq string, conf *config.Config) (er
 	minHomology := conf.Fragments.MinHomology
 	maxHomology := conf.Fragments.MaxHomology
 	maxEmbedLength := conf.PCR.MaxEmbedLength
-	addLeft, addRight, err := exec.input(minHomology, maxHomology, maxEmbedLength)
+	addLeft, addRight, err := psExec.input(minHomology, maxHomology, maxEmbedLength)
 	if err != nil {
 		return
 	}
 
-	if err = exec.run(); err != nil {
+	if err = psExec.run(); err != nil {
 		return
 	}
 
-	if err = exec.parse(seq); err != nil {
+	if err = psExec.parse(seq); err != nil {
 		return
 	}
 
@@ -137,23 +141,27 @@ func (f *Frag) setPrimers(last, next *Frag, seq string, conf *config.Config) (er
 			mm.seq,
 		)
 	}
+
+	os.Remove(psExec.in.Name()) // delete the input and output files
+	os.Remove(psExec.out.Name())
+
 	return
 }
 
 // newP3Exec creates a p3Exec from a fragment
 func newP3Exec(last, this, next *Frag, seq string, conf *config.Config) p3Exec {
-	vendorConf := conf.Vendors()
-
+	in, _ := ioutil.TempFile(primer3Dir, this.ID+".in-*")
+	out, _ := ioutil.TempFile(primer3Dir, this.ID+".out-*")
 	return p3Exec{
 		f:      this,
 		last:   last,
 		next:   next,
 		seq:    strings.ToUpper(seq),
-		in:     path.Join(vendorConf.Primer3dir, this.ID+".in"),
-		out:    path.Join(vendorConf.Primer3dir, this.ID+".out"),
-		p3Path: vendorConf.Primer3core,
-		p3Conf: vendorConf.Primer3config,
-		p3Dir:  vendorConf.Primer3dir,
+		in:     in,
+		out:    out,
+		p3Path: "primer3_core",
+		p3Conf: conf.Primer3config,
+		p3Dir:  primer3Dir,
 	}
 }
 
@@ -230,7 +238,7 @@ func (p *p3Exec) input(minHomology, maxHomology, maxEmbedLength int) (bpAddLeft,
 		rightBuffer,
 	)
 
-	if err := ioutil.WriteFile(p.in, file, 0666); err != nil {
+	if _, err := p.in.Write(file); err != nil {
 		return 0, 0, fmt.Errorf("failed to write primer3 input file %v: ", err)
 	}
 	return
@@ -370,14 +378,14 @@ func (p *p3Exec) settings(
 func (p *p3Exec) run() (err error) {
 	p3Cmd := exec.Command(
 		p.p3Path,
-		p.in,
-		"-output", p.out,
+		p.in.Name(),
+		"-output", p.out.Name(),
 		"-strict_tags",
 	)
 
 	// execute primer3 and wait on it to finish
 	if output, err := p3Cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("failed to execute primer3 on input file %s: %s: %v", p.in, string(output), err)
+		return fmt.Errorf("failed to execute primer3 on input file %s: %s: %v", p.in.Name(), string(output), err)
 	}
 	return
 }
@@ -387,7 +395,7 @@ func (p *p3Exec) run() (err error) {
 // input is the target sequence we're building for. We need it to modulo
 // the primer ranges
 func (p *p3Exec) parse(input string) (err error) {
-	file, err := ioutil.ReadFile(p.out)
+	file, err := ioutil.ReadFile(p.out.Name())
 	if err != nil {
 		return
 	}
@@ -518,4 +526,13 @@ func revComp(seq string) string {
 		revCompBytes[i], revCompBytes[j] = revCompBytes[j], revCompBytes[i]
 	}
 	return string(revCompBytes)
+}
+
+func init() {
+	var err error
+
+	primer3Dir, err = ioutil.TempDir("", "primer3")
+	if err != nil {
+		log.Fatal(err)
+	}
 }

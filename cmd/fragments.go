@@ -25,6 +25,7 @@ func init() {
 	FragmentsCmd.Flags().StringP("out", "o", "", "Output file name with fragments and primers <JSON>")
 	FragmentsCmd.Flags().StringP("dbs", "d", "", "Comma separated list of databases with building fragments")
 	FragmentsCmd.Flags().BoolP("addgene", "a", false, "Whether to use the Addgene repository as a source of building fragments")
+	FragmentsCmd.Flags().BoolP("igem", "g", false, "Whether to use the iGEM repository as a source of building fragments")
 	FragmentsCmd.Flags().StringP("backbone", "b", "", backboneHelp)
 	FragmentsCmd.Flags().StringP("enzyme", "e", "", enzymeHelp)
 
