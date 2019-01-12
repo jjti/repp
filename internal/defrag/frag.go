@@ -81,12 +81,21 @@ type Frag struct {
 func newFrag(m match, seqL int, conf *config.Config) *Frag {
 	cost := 0.0
 	url := ""
-	if strings.Contains(m.entry, "addgene") {
+	if strings.Contains(m.entry, "gnl|addgene") {
+		// create a link to the source Addgene page
 		re := regexp.MustCompile("^.*addgene\\|(\\d*)")
 		match := re.FindStringSubmatch(m.entry)
 
-		cost = conf.AddGeneVectorCost
+		cost = conf.AddGeneVectorCost // cost of addgene procurement
 		url = fmt.Sprintf("https://www.addgene.org/%s/", match[1])
+	}
+	if strings.Contains(m.entry, "gnl|igem") {
+		// create a source to the source iGEM page
+		re := regexp.MustCompile("^.*igem\\|(\\[^ ]*)")
+		match := re.FindStringSubmatch(m.entry)
+
+		cost = conf.IGEMPartCost // cost of igem part procurement
+		url = fmt.Sprintf("http://parts.igem.org/Part:%s", match[1])
 	}
 
 	return &Frag{

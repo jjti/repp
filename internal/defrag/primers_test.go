@@ -1,6 +1,7 @@
 package defrag
 
 import (
+	"os"
 	"path"
 	"reflect"
 	"strings"
@@ -270,8 +271,8 @@ func Test_p3Exec_shrink(t *testing.T) {
 		last   *Frag
 		next   *Frag
 		seq    string
-		in     string
-		out    string
+		in     *os.File
+		out    *os.File
 		p3Path string
 		p3Conf string
 		p3Dir  string

@@ -23,8 +23,6 @@ import (
 // 	5. no off-target binding sites in the parent vectors
 //	6. low primer3 penalty scores
 func Vector(cmd *cobra.Command, args []string) {
-	defer os.Exit(0)
-
 	conf := config.New()
 
 	input, err := parseFlags(cmd, conf)
@@ -33,6 +31,8 @@ func Vector(cmd *cobra.Command, args []string) {
 	}
 
 	vector(input, conf)
+
+	os.Exit(0)
 }
 
 // vector builds a vector using reverse engineering
@@ -62,7 +62,7 @@ func vector(input *flags, conf *config.Config) [][]Frag {
 	}
 
 	// get all the matches against the fragment
-	matches, err := blast(&targetFrag, input.dbs, conf.Fragments.MinHomology, conf.Vendors())
+	matches, err := blast(&targetFrag, input.dbs, conf.Fragments.MinHomology)
 	if err != nil {
 		fmt.Printf("%+v", input.dbs)
 		dbMessage := strings.Join(input.dbs, ", ")

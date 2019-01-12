@@ -1,31 +1,22 @@
 
 import concurrent.futures
+import multiprocessing
 import os
 import string
+import sys
 from concurrent.futures import ThreadPoolExecutor, wait
 
 import requests
 from lxml import html
 
-INDEX_LIMIT = 150000
-
-# output test directory for addgene
-os.chdir(os.path.join("assets", "addgene"))
-
 # valid file characters
-valid_chars = "-_.() %s%s" % (string.ascii_letters, string.digits)
-
-# find the saved files and Addgene pages already seen
-max_page = max([int(f.split("_")[0]) for f in os.listdir(".") if "_" in f])
-
-page_indicies = [i for i in range(1, INDEX_LIMIT) if i > max_page]
-
+VALID_CHARS = "-_.() %s%s" % (string.ascii_letters, string.digits)
 
 def clean_name(addgene_name):
     """
     convert an addgene name to one that's file name compliant
     """
-    return "".join([c for c in addgene_name if c in valid_chars])
+    return "".join([c for c in addgene_name if c in VALID_CHARS])
 
 
 """
@@ -36,15 +27,18 @@ AddGene pages are all indexed by the vector's id like: https://www.addgene.org/8
 create FASTA files for each in test/data/addgene
 
 if Addgene has full sequence information (prefered):
-    save it as <vector_name>_circular in the fasta file
+    save it as ">gnl|addgene|<addgene id> circular fwd" in the fasta file
 else:
-    save it as <vector_name>_linear in the fasta file
+    save it as ">gnl|addgene|<addgene id> linear fwd" in the fasta file
 
-save the file as <vector_id>_<vector_name>.fa
+save the file as <vector_id>_<addgene id>.fa
 """
 
 
 def parse(page_index):
+    if page_index % 1000 == 0:
+        sys.stdout.flush(page_index)
+
     """
     get a page from addgene and save its fragments/vectors if it's a defined id
     """
@@ -65,7 +59,7 @@ def parse(page_index):
 
     # create the file, we'll delete if afterwards if there was only
     # partial DNA available (had N's in it)
-    file_path = str(page_index) + "_" + name + ".fa"
+    file_path = os.path.join("files", str(page_index) + "_" + name + ".fa")
     file_written = False
     with open(file_path, "w") as f:
         if full_seq_blocks:
@@ -73,7 +67,7 @@ def parse(page_index):
             seq = full_seq_blocks[0].split("\n")[1:]
             seq = "".join(seq)
             seq = "".join(seq.split())
-            f.write(">" + name + "_circular" + "\n" + seq)
+            f.write(">gnl|addgene|" + str(page_index) + " " + name + " circular fwd\n" + seq)
             file_written = True
         else:
             # partial seq information available, write that
@@ -89,7 +83,7 @@ def parse(page_index):
 
                 # don't save files with unknown basepairs
                 if "N" not in seq:
-                    f.write(">" + name + "_linear_" + str(count) + "\n" + seq + "\n")
+                    f.write(">gnl|addgene|" + str(page_index) + "." + str(count) + " " + name + " linear fwd\n" + seq + "\n")
                     count += 1
                     file_written = True
 
@@ -98,20 +92,50 @@ def parse(page_index):
         os.remove(file_path)
 
 
-futures = []
-with ThreadPoolExecutor(max_workers=7) as executor:
-    """
-    try and scrape with 7-threads
-    """
-    for page in page_indicies:
-        futures.append(executor.submit(parse, page))
-wait(futures)
+def scrape_files():
+    INDEX_LIMIT = 150000
 
-# recalculate the seen indicies and save to the fs so we don't scan again in future
-seen_indices = set([int(f.split("_")[0]) for f in os.listdir(".") if "_" in f])
-empty_indices = [i for i in range(1, INDEX_LIMIT) if i not in seen_indices]
-with open(".addgeneignore", "w") as f:
-    for ind in empty_indices:
-        f.write(str(ind) + "\n")
+    # output test directory for addgene
+    os.chdir(os.path.join("assets", "addgene"))
 
-print "max page index: ", max(seen_indices)
+    # find the saved files and Addgene pages already seen on local filesystem
+    files = [f for f in os.listdir(".") if f and "fa" in f]
+    max_page = max([int(f.split("_")[0]) for f in files] + [1])
+
+    # files to ignore, don't correspond to addgene parts
+    addgeneignore = set([int(f.strip()) for f in open(".addgeneignore", "r").readlines()])
+
+    page_indicies = [i for i in range(1, INDEX_LIMIT) if i > max_page and i not in addgeneignore]
+
+    futures = []
+    with ThreadPoolExecutor(max_workers=multiprocessing.cpu_count()) as executor:
+        """
+        try and scrape with all available CPUs
+        """
+        for page in page_indicies:
+            futures.append(executor.submit(parse, page))
+    wait(futures)
+
+    # recalculate the seen indicies and save to the fs so we don't scan again in future
+    seen_indices = set([int(f.split("_")[0]) for f in os.listdir(".") if "_" in f and f is not ".DS"])
+    empty_indices = [i for i in range(1, INDEX_LIMIT) if i not in seen_indices]
+    with open(".addgeneignore", "w") as f:
+        for ind in empty_indices:
+            f.write(str(ind) + "\n")
+
+    print "max page index: ", max(seen_indices)
+
+def combine():
+    # combine all the FASTA files into one
+    os.chdir(os.path.join(".", "assets", "addgene", "db"))
+
+    # open a single FASTA for a combined db
+    with open("addgene", "w") as combined_fasta:
+        # move into repo full of files
+        os.chdir(os.path.join("..", "files"))
+
+        # read in all the addgene fasta files and combine into one that makeblastdb can act on
+        for f in os.listdir("."):
+            combined_fasta.write(open(f, "r").read().strip() + "\n")
+
+combine()

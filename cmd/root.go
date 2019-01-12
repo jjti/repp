@@ -13,12 +13,7 @@ import (
 var rootCmd = &cobra.Command{
 	Use:   "defrag",
 	Short: "Build vectors from any of their vector sequence, features or fragments",
-	Long: `Entry name of a backbone to insert the fragments into. Must match an entry 
-	in one of the dbs (either those passed manually or in AddGene, iGEM). If an
-	enzyme chosen, the backbone will be linearized with that enzyme and
-	the largest resulting fragment will be used as the backbone. If no enzyme
-	is specified, defrag will chose one nearest the first bp of the backbone with a
-	single recognition site`,
+	Long:  ``,
 }
 
 // backboneHelp is the help message for the backbone CLI argument

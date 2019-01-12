@@ -27,6 +27,7 @@ func init() {
 	VectorCmd.Flags().StringP("out", "o", "", "Output file name with solutions <JSON>")
 	VectorCmd.Flags().StringP("dbs", "d", "", "Comma separated list of databases with building fragments")
 	VectorCmd.Flags().BoolP("addgene", "a", false, "Whether to use the Addgene repository as a source of building fragments")
+	VectorCmd.Flags().BoolP("igem", "g", false, "Whether to use the iGEM repository as a source of building fragments")
 	VectorCmd.Flags().StringP("backbone", "b", "", backboneHelp)
 	VectorCmd.Flags().StringP("enzyme", "e", "", enzymeHelp)
 }

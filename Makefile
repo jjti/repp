@@ -1,52 +1,65 @@
 # Basic go commands
-GOCMD=/usr/local/go/bin/go
+GOCMD=go
 GOBUILD=$(GOCMD) build
 GOCLEAN=$(GOCMD) clean
 GOTEST=$(GOCMD) test
 GOGET=$(GOCMD) get
 
-# Binary name
-BINARY_NAME=./bin/defrag
+ETC_DIR=/etc/defrag
 
-# Tool directory
-VENDOR_DIR=./vendor/
+# get the platform type
+PLATFORM := $(shell uname)
 
-# BLAST paths
-# TODO: for different operating systems
-BLAST_NAME=ncbi-blast-2.7.1+
-BLAST_MAC_FTP=ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/$(BLAST_NAME)-x64-macosx.tar.gz
-BLAST_MAC_LOCAL=$(VENDOR_DIR)$(BLAST_NAME).tar.gz
+# copy settings file, going to add to it during install
+SETTINGS=./settings.yaml
+TEMP_SETTINGS=./settings.temp
 
-# Primer3 paths
-PRIMER3_NAME=primer3-2.4.0
-PRIMER3_SOURCEFORGE=https://sourceforge.net/projects/primer3/files/primer3/2.4.0/primer3-2.4.0.tar.gz/download
-PRIMER3_LOCAL=$(VENDOR_DIR)$(PRIMER3_NAME).tar.gz
+ifeq ($(OS),Windows_NT)
+	$(error "defrag" does not support Windows)
+endif
 
-all: build mock
-build: 
-		$(GOBUILD) -o $(BINARY_NAME) -v
-test: 
-		$(GOTEST) -v ./...
-clean: 
-		$(GOCLEAN)
-		rm -f $(BINARY_NAME)
-		rm -f $(BINARY_UNIX)
-run:
-		$(GOBUILD) -o $(BINARY_NAME) -v ./...
-		./$(BINARY_NAME)
-deps: 
-		# download BLAST
-		curl $(BLAST_MAC_FTP) -o $(BLAST_MAC_LOCAL)
-		tar xvzf $(BLAST_MAC_LOCAL) -C $(VENDOR_DIR)
-		rm $(BLAST_MAC_LOCAL)
+install:
+	mkdir -p $(ETC_DIR)
+	cp $(SETTINGS) $(TEMP_SETTINGS)
 
-		# download primer3
-		curl -L $(PRIMER3_SOURCEFORGE) -o $(PRIMER3_LOCAL)
-		tar xvzf $(PRIMER3_LOCAL) -C $(VENDOR_DIR)
-		rm $(PRIMER3_LOCAL)
+# install outside dependencies, copy binary to /usr/local/bin
+ifeq ($(PLATFORM),Linux)
+	apt-get install ncbi-blast+ primer3
 
-		# make primer3
-		make -C $(VENDOR_DIR)$(PRIMER3_NAME)/src
-mock: 
-		$(BINARY_NAME) make -t ./test/input.fa
+	echo "\nprimer3_config-path: /etc/primer3_config/" >> $(TEMP_SETTINGS)
+
+	cp ./bin/os/linux /usr/local/bin/defrag
+endif
+
+ifeq ($(PLATFORM),Darwin)
+ifeq (, $(shell which brew))
+	# install homebrew
+	/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+endif
+ifeq (, $(shell which blastn))
+	# install BLAST
+	brew install blast
+endif
+ifeq (, $(shell which primer3_core))
+	# install primer3
+	brew install primer3
+endif
+	echo "\nprimer3_config-path: /usr/local/share/primer3/primer3_config/" >> $(TEMP_SETTINGS)
+
+	cp ./bin/os/darwin /usr/local/bin/defrag
+endif
+
+	# install config file to /etc/defrag
+	mv $(TEMP_SETTINGS) $(ETC_DIR)/settings.yaml
+
+	# unzip BLAST databases
+	unzip -jo ./assets/addgene/db.zip -d $(ETC_DIR) 
+	unzip -jo ./assets/igem/db.zip -d $(ETC_DIR) 
+	
+build:
+		# build for all operating systems
+		env GOOS=linux $(GOBUILD) -o ./bin/linux -v
+		env GOOS=darwin $(GOBUILD) -o ./bin/darwin -v
+		env GOOS=windows $(GOBUILD) -o ./bin/windows -v
+
 

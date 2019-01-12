@@ -58,3 +58,6 @@ synthesis:
 
 # cost of a single addgene vector
 addgene-vector-cost: 65.0
+
+# cost of a single igem part
+igem-part-cost: 15.0
