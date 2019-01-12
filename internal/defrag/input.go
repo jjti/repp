@@ -73,19 +73,19 @@ func parseFlags(cmd *cobra.Command, conf *config.Config) (parsedFlags *flags, er
 	}
 
 	// check if user asked for a specific backbone, confirm it exists in one of the dbs
-	backboneEntry, _ := cmd.Flags().GetString("backbone")
+	backbone, _ := cmd.Flags().GetString("backbone")
 
 	// check if they also specified an enzyme
 	enzymeName, _ := cmd.Flags().GetString("enzyme")
 
 	// try to digest the backbone with the enzyme
-	if backboneEntry != "" {
+	if backbone != "" {
 		if enzymeName == "" {
-			return nil, fmt.Errorf("backbone passed, %s, without an enzyme to digest it", backboneEntry)
+			return nil, fmt.Errorf("backbone passed, %s, without an enzyme to digest it", backbone)
 		}
 
-		// confirm that the backbone exists in one of the dbs, gather it as a Frag if it does
-		backbone, err := p.getBackbone(backboneEntry, parsedFlags.dbs, conf)
+		// confirm that the backbone exists in one of the dbs (or local fs) gather it as a Frag if it does
+		backbone, err := p.getBackbone(backbone, parsedFlags.dbs, conf)
 		if err != nil {
 			return nil, err
 		}
@@ -180,11 +180,16 @@ func (p *inputParser) dbPaths(dbList string) (paths []string, err error) {
 //
 // TODO: use goroutine
 // TODO: test
-func (p *inputParser) getBackbone(entry string, dbs []string, c *config.Config) (f Frag, err error) {
+func (p *inputParser) getBackbone(backbone string, dbs []string, c *config.Config) (f Frag, err error) {
+	// first try to get the backbone out of a local file
+	if frags, err := read(backbone); err == nil && len(frags) > 0 {
+		return frags[0], nil // it was a local file
+	}
+
 	// move through each db and see if it contains the backbone
 	for _, db := range dbs {
 		// if outFile is defined here we managed to query it from the db
-		if outFile, _ := blastdbcmd(entry, db, c); outFile != "" {
+		if outFile, _ := blastdbcmd(backbone, db, c); outFile != "" {
 			frags, err := read(outFile)
 			frags[0].Type = circular // assume its circular here, used as backbone
 			return frags[0], err
@@ -192,7 +197,7 @@ func (p *inputParser) getBackbone(entry string, dbs []string, c *config.Config) 
 	}
 
 	dbMessage := strings.Join(dbs, "\n")
-	return Frag{}, fmt.Errorf("failed to find backbone %s in any of:\n%s", entry, dbMessage)
+	return Frag{}, fmt.Errorf("failed to find backbone %s in local filesystem or any of:\n%s", backbone, dbMessage)
 }
 
 // getEnzymes return the enzyme with the name passed. errors out if there is none
