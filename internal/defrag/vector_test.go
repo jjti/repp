@@ -14,7 +14,7 @@ import (
 
 func Test_vector(t *testing.T) {
 	in, _ := filepath.Abs(path.Join("..", "..", "test", "109049.addgene.fa"))
-	out, _ := filepath.Abs(path.Join("..", "..", "bin", "109049.addgene.json"))
+	out, _ := filepath.Abs(path.Join("..", "..", "test", "output", "109049.addgene.json"))
 	dbs, _ := filepath.Abs(path.Join("..", "..", "test", "db", "db"))
 
 	// https://stackoverflow.com/a/50880663
@@ -23,6 +23,7 @@ func Test_vector(t *testing.T) {
 	cmd.Flags().String("out", out, "")
 	cmd.Flags().String("dbs", dbs, "")
 	cmd.Flags().Bool("addgene", true, "")
+	cmd.Flags().Bool("igem", true, "")
 
 	type args struct {
 		cmd  *cobra.Command
@@ -52,7 +53,7 @@ func Test_vector_single_vector(t *testing.T) {
 	c := config.New()
 	testFlags := newFlags(
 		path.Join("..", "..", "test", "109049.addgene.fa"),
-		path.Join("..", "..", "bin", "109049.output.json"),
+		path.Join("..", "..", "test", "output", "109049.output.json"),
 		[]string{},
 		true,
 	)

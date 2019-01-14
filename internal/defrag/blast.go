@@ -54,7 +54,7 @@ func (m *match) length() int {
 	return m.end - m.start + 1 // it's inclusive
 }
 
-// blastExec is a small utility function for executing BLAST
+// blastExec is a small utility object for executing BLAST
 type blastExec struct {
 	// the fragment we're BLASTing
 	f *Frag
@@ -81,17 +81,14 @@ type blastExec struct {
 // Accepts a fragment to BLAST against, a list of dbs to BLAST it against,
 // a minLength for a match, and settings around blastn location, output dir, etc
 func blast(f *Frag, dbs []string, minLength int) (matches []match, err error) {
-	in, err := ioutil.TempFile(blastnDir, f.ID+".in-*")
+	in, err := ioutil.TempFile(blastnDir, f.ID+"in-*")
 	if err != nil {
 		return nil, err
 	}
 	defer os.Remove(in.Name())
 
-	out, err := ioutil.TempFile(blastnDir, f.ID+".out-*")
+	out, err := ioutil.TempFile(blastnDir, f.ID+"out-*")
 	if err != nil {
-		return nil, err
-	}
-	if err = out.Close(); err != nil {
 		return nil, err
 	}
 	defer os.Remove(out.Name())
@@ -156,7 +153,7 @@ func (b *blastExec) create() error {
 	if _, err := b.in.WriteString(file); err != nil {
 		return err
 	}
-	return b.in.Close()
+	return nil
 }
 
 // run calls the external blastn binary on the input library
@@ -317,6 +314,39 @@ func properize(matches []match) (properized []match) {
 	return
 }
 
+// parentMismatch both searches for a the parent fragment in its source DB and queries for
+// any mismatches in the seq before returning
+func parentMismatch(primers []Primer, parent, db string, conf *config.Config) (wasMismatch bool, m match, err error) {
+	// try and query for the parent in the source DB and write to a file
+	parentFile, err := blastdbcmd(parent, db, conf)
+
+	// ugly check here for whether we just failed to get the parent entry from a db
+	// which isn't a huge deal (shouldn't be flagged as a mismatch)
+	// this is similar to what io.IsNotExist does
+	if err != nil {
+		if strings.Contains(err.Error(), "failed to query") {
+			log.Println(err) // just write the error
+			// TODO: if we fail to find the parent, query the fullSeq as it was sent
+			return false, match{}, nil
+		}
+		return false, match{}, err
+	}
+
+	// check each primer for mismatches
+	if parentFile.Name() != "" {
+		defer os.Remove(parentFile.Name())
+
+		for _, primer := range primers {
+			wasMismatch, m, err = mismatch(primer.Seq, parentFile, conf)
+			if wasMismatch || err != nil {
+				return
+			}
+		}
+	}
+
+	return
+}
+
 // blastdbcmd queries a fragment/vector by its FASTA entry name (entry) from a BLAST db (db)
 //
 // entry here is the ID that's associated with the fragment in its source DB (db)
@@ -333,7 +363,6 @@ func blastdbcmd(entry, db string, conf *config.Config) (output *os.File, err err
 	if err != nil {
 		return nil, err
 	}
-	defer os.Remove(output.Name())
 
 	// write entry to file
 	// this was a 2-day issue I couldn't resolve...
@@ -365,37 +394,6 @@ func blastdbcmd(entry, db string, conf *config.Config) (output *os.File, err err
 	}
 
 	return nil, fmt.Errorf("warning: failed to query %s from %s", entry, db)
-}
-
-// parentMismatch both searches for a the parent fragment in its source DB and queries for
-// any mismatches in the seq before returning
-func parentMismatch(primers []Primer, parent, db string, conf *config.Config) (wasMismatch bool, m match, err error) {
-	// try and query for the parent in the source DB and write to a file
-	parentFile, err := blastdbcmd(parent, db, conf)
-
-	// ugly check here for whether we just failed to get the parent entry from a db
-	// which isn't a huge deal (shouldn't be flagged as a mismatch)
-	// this is similar to what io.IsNotExist does
-	if err != nil {
-		if strings.Contains(err.Error(), "failed to query") {
-			log.Println(err) // just write the error
-			// TODO: if we fail to find the parent, query the fullSeq as it was sent
-			return false, match{}, nil
-		}
-		return false, match{}, err
-	}
-
-	// check each primer for mismatches
-	if parentFile.Name() != "" {
-		for _, primer := range primers {
-			wasMismatch, m, err = mismatch(primer.Seq, parentFile, conf)
-			if wasMismatch || err != nil {
-				return
-			}
-		}
-	}
-
-	return
 }
 
 // seqMismatch queries for any mismatching primer locations in the parent sequence
@@ -430,14 +428,14 @@ func seqMismatch(primers []Primer, parentID, parentSeq string, conf *config.Conf
 // db is passed as the path to the db we're blasting against
 func mismatch(primer string, parentFile *os.File, c *config.Config) (wasMismatch bool, m match, err error) {
 	// path to the entry batch file to hold the entry accession
-	in, err := ioutil.TempFile(blastnDir, parentFile.Name()+".primer.in")
+	in, err := ioutil.TempFile(blastnDir, ".primer.in")
 	if err != nil {
 		return false, match{}, err
 	}
 	defer os.Remove(in.Name())
 
 	// path to the output sequence file from querying the entry's sequence from the BLAST db
-	out, err := ioutil.TempFile(blastnDir, parentFile.Name()+".primer.out")
+	out, err := ioutil.TempFile(blastnDir, ".primer.out")
 	if err != nil {
 		return false, match{}, err
 	}

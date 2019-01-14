@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os/exec"
-	"path"
+	"path/filepath"
 	"sort"
 
 	"github.com/spf13/viper"
@@ -108,7 +108,7 @@ func New() *Config {
 	if userConfigPath := viper.GetString("config"); userConfigPath != "" {
 		viper.AddConfigPath(userConfigPath) // user has specified a path to a settings file
 	} else {
-		viper.AddConfigPath(path.Join("etc", "defrag")) // settings are /etc/defrag
+		viper.AddConfigPath(string(filepath.Separator) + "etc" + string(filepath.Separator) + "defrag") // settings are /etc/defrag
 	}
 	viper.SetConfigName("settings") // no yaml needed, just a config file called settings
 
@@ -116,7 +116,7 @@ func New() *Config {
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Println("Using config file: ", viper.ConfigFileUsed())
 	} else {
-		log.Fatalf("Failed to read in config file: %v", err)
+		log.Fatalf("%v", err)
 	}
 
 	// make sure all depedencies are available (may belong elsewhere)

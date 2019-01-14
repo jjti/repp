@@ -143,7 +143,7 @@ func (p *inputParser) guessOutput(in string) (out string) {
 
 // parseDBs returns a list of absolute paths to BLAST databases
 func (p *inputParser) parseDBs(dbs string, addgene, igem bool) (paths []string, err error) {
-	root := path.Join("etc", "defrag")
+	root := string(filepath.Separator) + "etc" + string(filepath.Separator) + "defrag"
 	if addgene {
 		dbs += "," + path.Join(root, "addgene")
 	}
@@ -199,6 +199,7 @@ func (p *inputParser) getBackbone(backbone string, dbs []string, c *config.Confi
 	for _, db := range dbs {
 		// if outFile is defined here we managed to query it from the db
 		if outFile, _ := blastdbcmd(backbone, db, c); outFile.Name() != "" {
+			defer os.Remove(outFile.Name())
 			frags, err := read(outFile.Name())
 			frags[0].Type = circular // assume its circular here, used as backbone
 			return frags[0], err
