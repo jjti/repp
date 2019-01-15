@@ -12,7 +12,48 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// VectorCmd is the root of the `defrag vector` functionality
+// VectorCmd is the interface for building a vector, from a sequence, from
+// the command line
+func VectorCmd(cmd *cobra.Command, args []string) {
+	conf := config.New()
+
+	input, err := parseCmdFlags(cmd, conf)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	target, builds, err := vector(input, conf)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	// write the results to the filesystem at the out location
+	if _, err := write(input.out, target, builds); err != nil {
+		log.Fatalln(err)
+	}
+
+	os.Exit(0)
+}
+
+// VectorJSON is an interface for designing a vector from a JSON
+// representation of the flags to pass to `vector`
+func VectorJSON(json []byte) (output []byte, err error) {
+	conf := config.New()
+
+	input, err := parseJSONFlags(json, conf)
+	defer os.Remove(input.in) // they're temporary files
+	defer os.Remove(input.out)
+	if err != nil {
+		return
+	}
+
+	target, builds, err := vector(input, conf)
+
+	// write the results to a JSON formatted []byte slice, return
+	return write(input.out, target, builds)
+}
+
+// vector builds a vector using reverse engineering
 //
 // the goal is to find an "optimal" assembly vector with:
 // 	1. the fewest fragments
@@ -22,27 +63,11 @@ import (
 // 	4. no inverted repeats in the junctions
 // 	5. no off-target binding sites in the parent vectors
 //	6. low primer3 penalty scores
-func VectorCmd(cmd *cobra.Command, args []string) {
-	conf := config.New()
-
-	input, err := parseCmdFlags(cmd, conf)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	vector(input, conf)
-
-	os.Exit(0)
-}
-
-// vector builds a vector using reverse engineering
-//
-// TODO: redesign this for a linear input stretch
-func vector(input *flags, conf *config.Config) [][]Frag {
+func vector(input *flags, conf *config.Config) (Frag, [][]Frag, error) {
 	// read the target sequence (the first in the slice is used)
 	fragments, err := read(input.in)
 	if err != nil {
-		log.Fatalf("failed to read in fasta files at %s: %v", input.in, err)
+		return Frag{}, nil, fmt.Errorf("failed to read in fasta files at %s: %v", input.in, err)
 	}
 
 	// set target fragment
@@ -66,19 +91,11 @@ func vector(input *flags, conf *config.Config) [][]Frag {
 	if err != nil {
 		fmt.Printf("%+v", input.dbs)
 		dbMessage := strings.Join(input.dbs, ", ")
-		log.Fatalf("failed to blast %s against the dbs %s: %v", targetFrag.ID, dbMessage, err)
+		return Frag{}, nil, fmt.Errorf("failed to blast %s against the dbs %s: %v", targetFrag.ID, dbMessage, err)
 	}
 
-	// build up the assemblies
-	builds := buildVector(matches, targetFrag.Seq, conf)
-
-	// try to write the JSON to the output file path
-	if err := write(input.out, targetFrag, builds); err != nil {
-		log.Fatal(err)
-	}
-
-	// return the builds (for e2e testing)
-	return builds
+	// build up the assemblies and returns them
+	return targetFrag, buildVector(matches, targetFrag.Seq, conf), nil
 }
 
 // buildVector converts BLAST matches into assemblies spanning the target sequence

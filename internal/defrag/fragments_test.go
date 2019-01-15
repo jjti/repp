@@ -61,7 +61,7 @@ func Test_assembleFragments(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotTargetVector, gotFragments := assembleFragments(tt.args.inputFragments, tt.args.conf)
+			gotTargetVector, gotFragments, _ := assembleFragments(tt.args.inputFragments, tt.args.conf)
 
 			if !reflect.DeepEqual(gotTargetVector, tt.wantTargetVector) {
 				t.Errorf("assembleFWD() gotTargetVector = %v, want %v", gotTargetVector, tt.wantTargetVector)
