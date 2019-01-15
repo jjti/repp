@@ -9,13 +9,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// Fragments accepts a cobra.Command with flags for assembling a list of
-// fragments together into a vector (in the order specified). Fragments
+// FragmentsCmd accepts a cobra.Command with flags for assembling a list of
+// fragments together into a vector (in the order specified). FragmentsCmd
 // without junctions for their neighbors are prepared via PCR
-func Fragments(cmd *cobra.Command, args []string) {
+func FragmentsCmd(cmd *cobra.Command, args []string) {
 	conf := config.New()
 
-	input, err := parseFlags(cmd, conf)
+	input, err := parseCmdFlags(cmd, conf)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -28,7 +28,7 @@ func Fragments(cmd *cobra.Command, args []string) {
 // fragments pieces together a list of fragments into a single vector
 // with the fragments in the order and orientation specified
 func fragments(input *flags, conf *config.Config) {
-	// read in the consituent fragments
+	// read in the constituent fragments
 	inputFragments, err := read(input.in)
 	if err != nil {
 		log.Fatalf("failed to read in fasta files at %s: %v", input.in, err)

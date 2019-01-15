@@ -42,7 +42,7 @@ func Test_vector(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			Vector(tt.args.cmd, tt.args.args)
+			VectorCmd(tt.args.cmd, tt.args.args)
 		})
 	}
 }
@@ -51,13 +51,13 @@ func Test_vector(t *testing.T) {
 // as is and without PCR or any preparation
 func Test_vector_single_vector(t *testing.T) {
 	c := config.New()
-	testFlags := newFlags(
+	fs := testFlags(
 		path.Join("..", "..", "test", "109049.addgene.fa"),
 		path.Join("..", "..", "test", "output", "109049.output.json"),
 		[]string{},
 		true,
 	)
-	assemblies := vector(testFlags, c) // use addgene database
+	assemblies := vector(fs, c) // use addgene database
 
 	if len(assemblies) != 1 {
 		t.Fatal("failed to return the pareto optimal solution: 109049 alone")

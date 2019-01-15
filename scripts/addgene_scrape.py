@@ -9,6 +9,9 @@ from concurrent.futures import ThreadPoolExecutor, wait
 import requests
 from lxml import html
 
+# output test directory for addgene
+os.chdir(os.path.join("assets", "addgene"))
+
 # valid file characters
 VALID_CHARS = "-_.() %s%s" % (string.ascii_letters, string.digits)
 
@@ -36,13 +39,16 @@ save the file as <vector_id>_<addgene id>.fa
 
 
 def parse(page_index):
-    if page_index % 1000 == 0:
-        sys.stdout.flush(page_index)
-
     """
     get a page from addgene and save its fragments/vectors if it's a defined id
     """
+    page = requests.get("https://www.addgene.org/" + str(page_index))
+    if "Discontinued" in page.content:
+        # avoid discontinued sequences
+        return False
+
     page = requests.get("https://www.addgene.org/" + str(page_index) + "/sequences/")
+
     tree = html.fromstring(page.content)
 
     # XPath to the title
@@ -90,13 +96,16 @@ def parse(page_index):
     # was all partial data
     if not file_written:
         os.remove(file_path)
+    
+    return file_written
+
+assert(parse(39081)) == True
+assert(parse(24873)) == False # discontinued
+
 
 
 def scrape_files():
     INDEX_LIMIT = 150000
-
-    # output test directory for addgene
-    os.chdir(os.path.join("assets", "addgene"))
 
     # find the saved files and Addgene pages already seen on local filesystem
     files = [f for f in os.listdir(".") if f and "fa" in f]
@@ -127,7 +136,7 @@ def scrape_files():
 
 def combine():
     # combine all the FASTA files into one
-    os.chdir(os.path.join(".", "assets", "addgene", "db"))
+    os.chdir("db")
 
     # open a single FASTA for a combined db
     with open("addgene", "w") as combined_fasta:
@@ -138,4 +147,6 @@ def combine():
         for f in os.listdir("."):
             combined_fasta.write(open(f, "r").read().strip() + "\n")
 
+
+scrape_files()
 combine()
