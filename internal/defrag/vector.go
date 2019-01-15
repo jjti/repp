@@ -12,7 +12,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// Vector is the root of the `defrag vector` functionality
+// VectorCmd is the root of the `defrag vector` functionality
 //
 // the goal is to find an "optimal" assembly vector with:
 // 	1. the fewest fragments
@@ -22,10 +22,10 @@ import (
 // 	4. no inverted repeats in the junctions
 // 	5. no off-target binding sites in the parent vectors
 //	6. low primer3 penalty scores
-func Vector(cmd *cobra.Command, args []string) {
+func VectorCmd(cmd *cobra.Command, args []string) {
 	conf := config.New()
 
-	input, err := parseFlags(cmd, conf)
+	input, err := parseCmdFlags(cmd, conf)
 	if err != nil {
 		log.Fatalln(err)
 	}

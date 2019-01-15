@@ -15,7 +15,7 @@ var VectorCmd = &cobra.Command{
 	
 	All combinations of fragments matching the target sequence are checked
 	to find the one with the fewest fragments and lowest overall assembly cost.`,
-	Run: defrag.Vector,
+	Run: defrag.VectorCmd,
 }
 
 // set flags
