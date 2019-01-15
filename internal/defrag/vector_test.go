@@ -57,7 +57,10 @@ func Test_vector_single_vector(t *testing.T) {
 		[]string{},
 		true,
 	)
-	assemblies := vector(fs, c) // use addgene database
+	_, assemblies, err := vector(fs, c) // use addgene database
+	if err != nil {
+		t.Error(err)
+	}
 
 	if len(assemblies) != 1 {
 		t.Fatal("failed to return the pareto optimal solution: 109049 alone")

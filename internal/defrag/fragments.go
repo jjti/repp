@@ -1,6 +1,7 @@
 package defrag
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -25,13 +26,25 @@ func FragmentsCmd(cmd *cobra.Command, args []string) {
 	os.Exit(0)
 }
 
+// FragmentsJSON is the JSON interface for assembling fragments via a web-facing API
+func FragmentsJSON(json []byte) (output []byte, err error) {
+	conf := config.New()
+
+	input, err := parseJSONFlags(json, conf)
+	if err != nil {
+		return nil, err
+	}
+
+	return fragments(input, conf)
+}
+
 // fragments pieces together a list of fragments into a single vector
 // with the fragments in the order and orientation specified
-func fragments(input *flags, conf *config.Config) {
+func fragments(input *flags, conf *config.Config) (output []byte, err error) {
 	// read in the constituent fragments
 	inputFragments, err := read(input.in)
 	if err != nil {
-		log.Fatalf("failed to read in fasta files at %s: %v", input.in, err)
+		return nil, fmt.Errorf("failed to read in fasta files at %s: %v", input.in, err)
 	}
 
 	// add in the backbone if it was provided
@@ -40,19 +53,20 @@ func fragments(input *flags, conf *config.Config) {
 	}
 
 	// piece together the adjacent fragments
-	target, fragments := assembleFragments(inputFragments, conf)
+	target, fragments, err := assembleFragments(inputFragments, conf)
+	if err != nil {
+		return
+	}
 
 	// write the single list of fragments as a possible solution to the output file
-	if err := write(input.out, target, [][]Frag{fragments}); err != nil {
-		log.Fatal(err)
-	}
+	return write(input.out, target, [][]Frag{fragments})
 }
 
 // assembleFragments takes a list of Fragments and returns the Vector we assume the user is
 // trying to build as well as the Fragments (possibly prepared via PCR)
-func assembleFragments(inputFragments []Frag, conf *config.Config) (targetVector Frag, fragments []Frag) {
+func assembleFragments(inputFragments []Frag, conf *config.Config) (targetVector Frag, fragments []Frag, err error) {
 	if len(inputFragments) < 1 {
-		log.Fatalln("failed: no fragments to assemble")
+		return Frag{}, nil, fmt.Errorf("failed: no fragments to assemble")
 	}
 
 	// convert the fragments to frags (without a start and end and with the conf)
@@ -97,9 +111,9 @@ func assembleFragments(inputFragments []Frag, conf *config.Config) (targetVector
 
 	// create an assembly out of the frags (to fill/convert to fragments with primers)
 	a := assembly{frags: frags}
-	fragments, err := a.fill(targetVector.Seq, conf)
+	fragments, err = a.fill(targetVector.Seq, conf)
 	if err != nil {
-		log.Fatalf("failed to fill in the frags: %+v", err)
+		return Frag{}, nil, fmt.Errorf("failed to fill in the frags: %+v", err)
 	}
-	return targetVector, fragments
+	return targetVector, fragments, nil
 }

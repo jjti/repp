@@ -1,6 +1,7 @@
 package defrag
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -16,9 +17,16 @@ import (
 // flags conatins parsed cobra flags like "in", "out", "dbs", etc that
 // are used by multiple commands
 type flags struct {
-	in       string
-	out      string
-	dbs      []string
+	// the name of the file to write the input to
+	in string
+
+	// the name of the file to write the output to
+	out string
+
+	// a list of dbs to run BLAST against (their names' on the filesystem)
+	dbs []string
+
+	// the backbone (optional) to insert the pieces into
 	backbone Frag
 }
 
@@ -111,6 +119,69 @@ func parseCmdFlags(cmd *cobra.Command, conf *config.Config) (parsedFlags *flags,
 	return
 }
 
+// parseJSONFlags parses a JSON payload into flags usable by defrag
+//
+// it's distinct from parseCmdFlags because we want to write the io files ourselves
+func parseJSONFlags(payload []byte, conf *config.Config) (parsedFlags *flags, err error) {
+	parsedFlags = &flags{}
+	parser := inputParser{}
+
+	inputPayload := &Payload{}
+	if err := json.Unmarshal(payload, inputPayload); err != nil {
+		return nil, err // failed to demarshal
+	}
+
+	// write the input file to the local file system as a temp file
+	in, _ := ioutil.TempFile("", "json-input-*")
+	if inputPayload.Target != "" {
+		in.WriteString(fmt.Sprintf(">target_json\n%s\n", inputPayload.Target))
+	} else if inputPayload.Fragments != nil {
+		for _, frag := range inputPayload.Fragments {
+			in.WriteString(fmt.Sprintf(">%s\n%s\n", frag.ID, frag.Seq))
+		}
+	} else {
+		return nil, fmt.Errorf("no input vector or fragments passed")
+	}
+	parsedFlags.in = in.Name() // store path to this new temporary file
+
+	// ditto
+	out, _ := ioutil.TempFile("", "json-output-*")
+	parsedFlags.out = out.Name()
+
+	// get the db paths. from JSON, this is just for getting the path
+	// to addgene and iGEM
+	dbs, err := parser.parseDBs("", inputPayload.Addgene, inputPayload.IGEM)
+	if err != nil {
+		return nil, err
+	}
+	parsedFlags.dbs = dbs
+
+	// try to digest the backbone with the enzyme
+	if inputPayload.Backbone != "" {
+		if inputPayload.Enzyme == "" {
+			return nil, fmt.Errorf("backbone passed, %s, without an enzyme to digest it", inputPayload.Backbone)
+		}
+
+		// confirm that the backbone exists in one of the dbs (or local fs) gather it as a Frag if it does
+		backbone, err := parser.getBackbone(inputPayload.Backbone, parsedFlags.dbs, conf)
+		if err != nil {
+			return nil, err
+		}
+
+		// gather the enzyme by name, err if it's unknown
+		enzyme, err := parser.getEnzyme(inputPayload.Enzyme)
+		if err != nil {
+			return nil, err
+		}
+
+		if parsedFlags.backbone, err = digest(backbone, enzyme); err != nil {
+			return nil, err
+		}
+	}
+
+	return
+}
+
 // guessInput returns the first fasta file in the current directory. Is used
 // if the user hasn't specified an input file
 func (p *inputParser) guessInput() (in string, err error) {
@@ -185,8 +256,8 @@ func (p *inputParser) dbPaths(dbList string) (paths []string, err error) {
 	return
 }
 
-// getBackbone is for confirming that the fragment passed actually exists in
-// one of the databases. Avoid nonsense backbones
+// getBackbone is for finding the backbone in one of the available databases
+// non-existent backbones will throw an error
 //
 // TODO: use goroutine
 // TODO: test
@@ -208,7 +279,7 @@ func (p *inputParser) getBackbone(backbone string, dbs []string, c *config.Confi
 	}
 
 	dbMessage := strings.Join(dbs, "\n")
-	return Frag{}, fmt.Errorf("failed to find backbone %s in local filesystem or any of:\n%s", backbone, dbMessage)
+	return Frag{}, fmt.Errorf("failed to find backbone %s in any of:\n%s", backbone, dbMessage)
 }
 
 // getEnzymes return the enzyme with the name passed. errors out if there is none
