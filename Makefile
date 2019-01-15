@@ -7,6 +7,8 @@ GOGET=$(GOCMD) get
 
 ETC_DIR=/etc/defrag
 
+DEFRAG_DBS=https://console.cloud.google.com/storage/browser/defrag
+
 # get the platform type
 PLATFORM := $(shell uname)
 
@@ -28,7 +30,7 @@ ifeq ($(PLATFORM),Linux)
 
 	echo "\nprimer3_config-path: /etc/primer3_config/" >> $(TEMP_SETTINGS)
 
-	cp ./bin/os/linux /usr/local/bin/defrag
+	cp ./bin/linux /usr/local/bin/defrag
 endif
 
 ifeq ($(PLATFORM),Darwin)
@@ -46,20 +48,19 @@ ifeq (, $(shell which primer3_core))
 endif
 	echo "\nprimer3_config-path: /usr/local/share/primer3/primer3_config/" >> $(TEMP_SETTINGS)
 
-	cp ./bin/os/darwin /usr/local/bin/defrag
+	cp ./bin/darwin /usr/local/bin/defrag
 endif
 
 	# install config file to /etc/defrag
 	mv $(TEMP_SETTINGS) $(ETC_DIR)/settings.yaml
 
 	# unzip BLAST databases
-	unzip -jo ./assets/addgene/db.zip -d $(ETC_DIR) 
-	unzip -jo ./assets/igem/db.zip -d $(ETC_DIR) 
+	unzip -jo ./assets/addgene/addgene.zip -d $(ETC_DIR) 
+	unzip -jo ./assets/igem/igem.zip -d $(ETC_DIR) 
 	
 build:
 		# build for all operating systems
 		env GOOS=linux $(GOBUILD) -o ./bin/linux -v
 		env GOOS=darwin $(GOBUILD) -o ./bin/darwin -v
-		env GOOS=windows $(GOBUILD) -o ./bin/windows -v
 
 

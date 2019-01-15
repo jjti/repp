@@ -21,7 +21,5 @@ vendor/*/**
 test/output/**
 
 # addgene raw FASTA files, too many, ignore them (saving only addgene/repo.zip instead)
-assets/addgene/files/**
-assets/addgene/db/**
-assets/igem/files/**
-assets/igem/db/**
+assets/addgene/**
+assets/igem/**
