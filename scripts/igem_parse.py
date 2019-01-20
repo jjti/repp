@@ -20,6 +20,8 @@ def get_parts():
     # create element tree object
     parts_string = open("xml_parts.parsed.xml", "r").read()
 
+    seen_names = set()
+
     parts = []  # list of name, seq, circular tuples
     for row in parts_string.split("<row>"):
         if '"discontinued">1<' in row or '"sample_status">Not in stock' in row:
@@ -44,9 +46,10 @@ def get_parts():
         if seq_match:
             seq = seq_match[1]
 
-        if name and type and seq and len(seq) > 10:
+        if name and type and seq and len(seq) > 10 and name not in seen_names:
             is_circular = "backbone" in type.lower() or "plasmid" in type.lower()
             parts.append((name, seq, is_circular))
+            seen_names.add(name)
     return parts
 
 
