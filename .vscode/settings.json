@@ -1,6 +1,6 @@
 {
   "go.useLanguageServer": true,
-  "python.pythonPath": "/usr/local/bin/python",
+  "python.pythonPath": "/usr/local/bin/python3",
   "python.formatting.provider": "black",
   "git.ignoreLimitWarning": true,
   "files.exclude": {
@@ -10,5 +10,8 @@
     "**/CVS": true,
     "**/.DS_Store": true,
     "assets/addgene/repo": true
+  },
+  "code-runner.executorMap": {
+    "python": "python3"
   }
 }
