@@ -15,6 +15,7 @@ os.chdir(os.path.join("assets", "addgene"))
 # valid file characters
 VALID_CHARS = "-_.() %s%s" % (string.ascii_letters, string.digits)
 
+
 def clean_name(addgene_name):
     """
     convert an addgene name to one that's file name compliant
@@ -73,7 +74,9 @@ def parse(page_index):
             seq = full_seq_blocks[0].split("\n")[1:]
             seq = "".join(seq)
             seq = "".join(seq.split())
-            f.write(">gnl|addgene|" + str(page_index) + " " + name + " circular fwd\n" + seq)
+            f.write(
+                ">gnl|addgene|" + str(page_index) + " " + name + " circular fwd\n" + seq
+            )
             file_written = True
         else:
             # partial seq information available, write that
@@ -89,19 +92,29 @@ def parse(page_index):
 
                 # don't save files with unknown basepairs
                 if "N" not in seq:
-                    f.write(">gnl|addgene|" + str(page_index) + "." + str(count) + " " + name + " linear fwd\n" + seq + "\n")
+                    f.write(
+                        ">gnl|addgene|"
+                        + str(page_index)
+                        + "."
+                        + str(count)
+                        + " "
+                        + name
+                        + " linear fwd\n"
+                        + seq
+                        + "\n"
+                    )
                     count += 1
                     file_written = True
 
     # was all partial data
     if not file_written:
         os.remove(file_path)
-    
+
     return file_written
 
-assert(parse(39081)) == True
-assert(parse(24873)) == False # discontinued
 
+assert (parse(39081)) == True
+assert (parse(24873)) == False  # discontinued
 
 
 def scrape_files():
@@ -112,9 +125,13 @@ def scrape_files():
     max_page = max([int(f.split("_")[0]) for f in files] + [1])
 
     # files to ignore, don't correspond to addgene parts
-    addgeneignore = set([int(f.strip()) for f in open(".addgeneignore", "r").readlines()])
+    addgeneignore = set(
+        [int(f.strip()) for f in open(".addgeneignore", "r").readlines()]
+    )
 
-    page_indicies = [i for i in range(1, INDEX_LIMIT) if i > max_page and i not in addgeneignore]
+    page_indicies = [
+        i for i in range(1, INDEX_LIMIT) if i > max_page and i not in addgeneignore
+    ]
 
     futures = []
     with ThreadPoolExecutor(max_workers=multiprocessing.cpu_count()) as executor:
@@ -126,13 +143,16 @@ def scrape_files():
     wait(futures)
 
     # recalculate the seen indicies and save to the fs so we don't scan again in future
-    seen_indices = set([int(f.split("_")[0]) for f in os.listdir(".") if "_" in f and f is not ".DS"])
+    seen_indices = set(
+        [int(f.split("_")[0]) for f in os.listdir(".") if "_" in f and f is not ".DS"]
+    )
     empty_indices = [i for i in range(1, INDEX_LIMIT) if i not in seen_indices]
     with open(".addgeneignore", "w") as f:
         for ind in empty_indices:
             f.write(str(ind) + "\n")
 
-    print "max page index: ", max(seen_indices)
+    print("max page index: ", max(seen_indices))
+
 
 def combine():
     # combine all the FASTA files into one

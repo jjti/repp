@@ -15,12 +15,14 @@ def clean_file():
 
 clean_file()
 
-# split up into separate parts. each a tuple with (BBa_name, seq, circular: bool)
-def get_parts():
+# split up into separate parts. each a tuple with (BBa_name, seq, circular: bool, year: int)
+def get_parts(log_composites=True):
     # create element tree object
     parts_string = open("xml_parts.parsed.xml", "r").read()
 
     seen_names = set()
+
+    composites = []
 
     parts = []  # list of name, seq, circular tuples
     for row in parts_string.split("<row>"):
@@ -30,6 +32,7 @@ def get_parts():
         name = ""
         type = ""
         seq = ""
+        year = ""
 
         # get the name match
         name_match = re.search(r"<field name=\"part_name\">(\w*)</field>", row)
@@ -39,17 +42,28 @@ def get_parts():
         # get the part type
         type_match = re.search(r"<field name=\"part_type\">(\w*)</field>", row)
         if type_match:
-            type = type_match[1]
+            type = type_match[1].lower()
 
         # get the seq
         seq_match = re.search(r"<field name=\"sequence\">(\w*)</field>", row)
         if seq_match:
             seq = seq_match[1]
 
-        if name and type and seq and len(seq) > 10 and name not in seen_names:
-            is_circular = "backbone" in type.lower() or "plasmid" in type.lower()
-            parts.append((name, seq, is_circular))
+        # get the creation year
+        year_match = re.search(r"<field name=\"creation_date\">(\d*)-.*</field>", row)
+        if year_match:
+            year = year_match[1]
+
+        if name and type and seq and len(seq) > 10 and name not in seen_names and year:
+            is_circular = "backbone" in type or "plasmid" in type
+            parts.append((name, seq, is_circular, year, type))
             seen_names.add(name)
+
+        if log_composites and "composite" in type:
+            composites.append(name)
+
+    print(" ".join(composites))
+
     return parts
 
 
@@ -58,11 +72,31 @@ def write_parts(parts):
 
     # write to the local filesystem
     with open("igem", "w") as output_parts:
-        for (name, seq, circular) in parts:
+        for (name, seq, circular, year, type) in parts:
             if circular:
-                output_parts.write(">gnl|igem|" + name + " circular fwd\n" + seq + "\n")
+                output_parts.write(
+                    ">gnl|igem|"
+                    + name
+                    + " circular fwd "
+                    + year
+                    + " "
+                    + type
+                    + "\n"
+                    + seq
+                    + "\n"
+                )
             else:
-                output_parts.write(">gnl|igem|" + name + " linear fwd\n" + seq + "\n")
+                output_parts.write(
+                    ">gnl|igem|"
+                    + name
+                    + " linear fwd "
+                    + year
+                    + " "
+                    + type
+                    + "\n"
+                    + seq
+                    + "\n"
+                )
 
 
 write_parts(get_parts())

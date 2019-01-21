@@ -12,7 +12,7 @@ var EnzymesCmd = &cobra.Command{
 	Short: "List enzymes available to linearize a backbone",
 	Long: `Lists out all the enzymes in defrag by name along with their recognition sequence.
 
-	<Name>: <Recognition sequence>`,
+<Name>: <Recognition sequence>`,
 	Run: defrag.Enzymes,
 }
 
