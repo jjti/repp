@@ -354,6 +354,7 @@ func sortMatches(matches []match) {
 
 // seqMismatch queries for any mismatching primer locations in the parent sequence
 // unlike parentMismatch, it doesn't first find the parent fragment from the db it came from
+// the sequence is passed directly as parentSeq
 func seqMismatch(primers []Primer, parentID, parentSeq string, conf *config.Config) (wasMismatch bool, m match, err error) {
 	parentFile, err := ioutil.TempFile(blastnDir, parentID+".parent-*")
 	if err != nil {
@@ -368,7 +369,7 @@ func seqMismatch(primers []Primer, parentID, parentSeq string, conf *config.Conf
 
 	// check each primer for mismatches
 	for _, primer := range primers {
-		wasMismatch, m, err = mismatch(primer.Seq, parentFile, conf)
+		wasMismatch, m, err = mismatch(primer.Seq, parentFile, false, conf)
 		if wasMismatch || err != nil {
 			return
 		}
@@ -379,7 +380,7 @@ func seqMismatch(primers []Primer, parentID, parentSeq string, conf *config.Conf
 
 // parentMismatch both searches for a the parent fragment in its source DB and queries for
 // any mismatches in the seq before returning
-func parentMismatch(primers []Primer, parent, db string, conf *config.Config) (wasMismatch bool, m match, err error) {
+func parentMismatch(primers []Primer, parent, db string, circular bool, conf *config.Config) (wasMismatch bool, m match, err error) {
 	// try and query for the parent in the source DB and write to a file
 	parentFile, err := blastdbcmd(parent, db, conf)
 
@@ -400,7 +401,7 @@ func parentMismatch(primers []Primer, parent, db string, conf *config.Config) (w
 		defer os.Remove(parentFile.Name())
 
 		for _, primer := range primers {
-			wasMismatch, m, err = mismatch(primer.Seq, parentFile, conf)
+			wasMismatch, m, err = mismatch(primer.Seq, parentFile, circular, conf)
 			if wasMismatch || err != nil {
 				return
 			}
@@ -410,7 +411,8 @@ func parentMismatch(primers []Primer, parent, db string, conf *config.Config) (w
 	return
 }
 
-// blastdbcmd queries a fragment/vector by its FASTA entry name (entry) from a BLAST db (db)
+// blastdbcmd queries a fragment/vector by its FASTA entry name (entry) and writes the
+// results to a temporary file (to be BLAST'ed against)
 //
 // entry here is the ID that's associated with the fragment in its source DB (db)
 func blastdbcmd(entry, db string, conf *config.Config) (output *os.File, err error) {
@@ -464,7 +466,7 @@ func blastdbcmd(entry, db string, conf *config.Config) (output *os.File, err err
 //
 // The fragment to query against is stored in a file ".parent"
 // db is passed as the path to the db we're blasting against
-func mismatch(primer string, parentFile *os.File, c *config.Config) (wasMismatch bool, m match, err error) {
+func mismatch(primer string, parentFile *os.File, circular bool, c *config.Config) (wasMismatch bool, m match, err error) {
 	// path to the entry batch file to hold the entry accession
 	in, err := ioutil.TempFile(blastnDir, ".primer.in")
 	if err != nil {
@@ -504,9 +506,9 @@ func mismatch(primer string, parentFile *os.File, c *config.Config) (wasMismatch
 	}
 
 	// parse the results and check whether any are cause for concern (by Tm)
-	primerCount := 1 // times we expect to see the primer itself
+	primerCount := 1 // number of times we expect to see the primer itself
 	for i, m := range matches {
-		if i == 0 && m.circular {
+		if i == 0 && circular {
 			// if the match is against a circular fragment, we might expect to see
 			// the primer's sequence twice, rather than just once
 			primerCount++
@@ -514,7 +516,7 @@ func mismatch(primer string, parentFile *os.File, c *config.Config) (wasMismatch
 
 		// one of the matches will, of course, be against the primer itself
 		// and we don't want to double count it
-		if primerCount > 0 && strings.Contains(primer, m.seq) {
+		if primerCount > 0 && strings.Contains(strings.ToUpper(primer), strings.ToUpper(m.seq)) {
 			primerCount--
 			continue
 		} else if isMismatch(m, c) {

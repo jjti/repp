@@ -115,8 +115,8 @@ func (a *assembly) fill(seq string, conf *config.Config) (frags []Frag, err erro
 
 	// check for and error out if there are duplicate ends between fragments
 	// ie unintended junctions between fragments that shouldn't be annealing
-	if hasDuplicate, duplicateSeq := a.duplicates(a.frags, minHomology, maxHomology); hasDuplicate {
-		return nil, fmt.Errorf("cannot fill, has duplicate junction sequence %s", duplicateSeq)
+	if hasDuplicate, left, right, dupSeq := a.duplicates(a.frags, minHomology, maxHomology); hasDuplicate {
+		return nil, fmt.Errorf("failed to fill: duplicate junction sequence in %s and %s: %s", left, right, dupSeq)
 	}
 
 	// edge case where a single Frag fills the whole target vector. Return just a single
@@ -187,7 +187,7 @@ func (a *assembly) fill(seq string, conf *config.Config) (frags []Frag, err erro
 		// the last and next nodes, we don't have to add anything to it (PCR it)
 		if f.fullSeq == "" || (distLeft < -minHomology && distRight < -minHomology) {
 			if err := f.setPrimers(last, next, seq, conf); err != nil || len(f.Primers) < 2 {
-				return nil, fmt.Errorf("failed to fill %s: %v", f.ID, err)
+				return nil, fmt.Errorf("failed to pcr %s: %v", f.ID, err)
 			}
 			f.Type = pcr // is now a pcr type
 		} else {
@@ -221,14 +221,20 @@ func (a *assembly) fill(seq string, conf *config.Config) (frags []Frag, err erro
 // them have unintended homology, or "duplicate homology"
 // Need to cheack each Frag's junction() with nodes other than the one after it
 // (which it's supposed to anneal to)
-func (a *assembly) duplicates(nodes []*Frag, minHomology, maxHomology int) (bool, string) {
+func (a *assembly) duplicates(nodes []*Frag, minHomology, maxHomology int) (isDup bool, first, second, dup string) {
+	if len(nodes) > 1 && nodes[0].uniqueID == nodes[len(nodes)-1].uniqueID {
+		nodes = nodes[:len(nodes)-1] // do not include the circularizing fragment
+	}
+
 	c := len(nodes) // Frag count
+
 	for i, f := range nodes {
 		for j := 2; j <= c; j++ { // skip next Frag, this is supposed to anneal to that
-			if junc := f.junction(nodes[(j+i)%c], minHomology, maxHomology); junc != "" {
-				return true, junc
+			junc := f.junction(nodes[(j+i)%c], minHomology, maxHomology)
+			if junc != "" && f.uniqueID != nodes[(j+i)%c].uniqueID {
+				return true, f.ID, nodes[(j+i)%c].ID, junc
 			}
 		}
 	}
-	return false, ""
+	return false, "", "", ""
 }
