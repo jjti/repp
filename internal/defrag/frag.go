@@ -133,13 +133,25 @@ func (f *Frag) distTo(other *Frag) (bpDist int) {
 	return other.start - f.end
 }
 
+// overlapsViaPCR returns whether this Frag could overlap the other Frag through homology
+// created via PCR
+func (f *Frag) overlapsViaPCR(other *Frag) bool {
+	return f.distTo(other) <= f.conf.PCR.MaxEmbedLength
+}
+
+// overlapsViaHomology returns whether this Frag already has sufficient overlap with the
+// other Frag, without any preparation like PCR
+func (f *Frag) overlapsViaHomology(other *Frag) bool {
+	return f.distTo(other) < -(f.conf.Fragments.MinHomology)
+}
+
 // synthDist returns the number of synthesized fragments that would need to be created
 // between one Frag and another if the two were to be joined, with no existing
 // fragments/nodes in-between, in an assembly
 func (f *Frag) synthDist(other *Frag) (synthCount int) {
 	dist := f.distTo(other)
 
-	if dist <= f.conf.PCR.MaxEmbedLength {
+	if f.overlapsViaPCR(other) {
 		// if the dist is <MaxEmbedLength, we can PCR our way there
 		// and add the mutated bp between the nodes with PCR
 		return 0
@@ -167,8 +179,8 @@ func (f *Frag) synthDist(other *Frag) (synthCount int) {
 func (f *Frag) costTo(other *Frag) (cost float64) {
 	dist := f.distTo(other)
 
-	if dist <= f.conf.PCR.MaxEmbedLength {
-		if dist < -(f.conf.Fragments.MinHomology) {
+	if f.overlapsViaPCR(other) {
+		if f.overlapsViaHomology(other) {
 			// there's already enough overlap between this Frag and the one being tested
 			// estimating two primers, 20bp each
 			return 46 * f.conf.PCR.BPCost
@@ -200,8 +212,8 @@ func (f *Frag) reach(nodes []*Frag, i, synthCount int) (reachable []int) {
 			return reachable
 		}
 
-		// these nodes overlap by enough for assembly without PCR
-		if f.distTo(nodes[i]) <= f.conf.PCR.MaxEmbedLength {
+		// these nodes overlap by enough (via PCR or existing homology)
+		if f.overlapsViaPCR(nodes[i]) {
 			reachable = append(reachable, i)
 		} else if synthCount > 0 {
 			// there's not enough existing overlap, but we can synthesize to it
