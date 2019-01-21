@@ -54,6 +54,20 @@ func (m *match) length() int {
 	return m.end - m.start + 1 // it's inclusive
 }
 
+// copyWith returns a new match with the new start, end
+func (m *match) copyWith(start, end int) match {
+	return match{
+		entry:       m.entry,
+		seq:         m.seq,
+		start:       start,
+		end:         end,
+		db:          m.db,
+		circular:    m.circular,
+		mismatching: m.mismatching,
+		internal:    m.internal,
+	}
+}
+
 // blastExec is a small utility object for executing BLAST
 type blastExec struct {
 	// the fragment we're BLASTing
@@ -135,12 +149,19 @@ func blast(f *Frag, dbs []string, minLength int) (matches []match, err error) {
 	}
 
 	// keep only "proper" arcs (non-self-contained)
-	matches = filter(matches, minLength)
+	matches = filter(matches, len(f.Seq), minLength)
 	if len(matches) < 1 {
 		return nil, fmt.Errorf("did not find any matches for %s", f.ID)
 	}
 
-	return matches, err
+	fmt.Printf("%d matches after filtering\n", len(matches))
+
+	fmt.Println(len(f.Seq))
+	for _, m := range matches {
+		fmt.Printf("%s %d %d\n", m.entry, m.start, m.end)
+	}
+
+	return matches, nil
 }
 
 // input creates an input file for BLAST
@@ -271,7 +292,7 @@ func (b *blastExec) parse() (matches []match, err error) {
 // Circular-arc graph: https://en.wikipedia.org/wiki/Circular-arc_graph
 //
 // also remove small fragments here that are too small to be useful during assembly
-func filter(matches []match, minSize int) (properized []match) {
+func filter(matches []match, seqL, minSize int) (properized []match) {
 	properized = []match{}
 
 	// remove fragments that are shorter the minimum cut off size
@@ -290,19 +311,46 @@ func filter(matches []match, minSize int) (properized []match) {
 		}
 	}
 
-	return append(properize(internal), properize(external)...)
+	// create properized matches (non-self contained)
+	properized = append(properize(internal), properize(external)...)
+
+	// because we properized the matches, we may have removed a match from the
+	// start or the end. right now, a match showing up twice in the vector
+	// is how we circularize, so have to add back matches to the start or end
+	matchCount := make(map[string]int)
+	for _, m := range properized {
+		if _, counted := matchCount[m.entry]; counted {
+			matchCount[m.entry]++
+		} else {
+			matchCount[m.entry] = 1
+		}
+	}
+
+	// add back copied matches for those that only show up once
+	copiedMatches := []match{}
+	for _, m := range properized {
+		if count := matchCount[m.entry]; count == 2 {
+			continue
+		}
+
+		// first half of the queried seq range (2 seq lengths)
+		if m.end < seqL {
+			copiedMatches = append(copiedMatches, m.copyWith(m.start+seqL, m.end+seqL))
+		} else if m.start > seqL {
+			copiedMatches = append(copiedMatches, m.copyWith(m.start-seqL, m.end-seqL))
+		}
+	}
+	properized = append(properized, copiedMatches...)
+
+	// sort again now that they're properized
+	sortMatches(properized)
+
+	return properized
 }
 
 // properize remove matches that are entirely contained within others
 func properize(matches []match) (properized []match) {
-	// sort matches by their start index
-	// for fragments with equivelant starting indexes, put the larger one first
-	sort.Slice(matches, func(i, j int) bool {
-		if matches[i].start != matches[j].start {
-			return matches[i].start < matches[j].start
-		}
-		return matches[i].length() > matches[j].length()
-	})
+	sortMatches(matches)
 
 	// only include those that aren't encompassed by the one before it
 	for _, m := range matches {
@@ -312,6 +360,17 @@ func properize(matches []match) (properized []match) {
 		}
 	}
 	return
+}
+
+// sortMatches sorts matches by their start index
+// for fragments with equivelant starting indexes, put the larger one first
+func sortMatches(matches []match) {
+	sort.Slice(matches, func(i, j int) bool {
+		if matches[i].start != matches[j].start {
+			return matches[i].start < matches[j].start
+		}
+		return matches[i].length() > matches[j].length()
+	})
 }
 
 // parentMismatch both searches for a the parent fragment in its source DB and queries for
