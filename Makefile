@@ -8,7 +8,7 @@ GOGET=$(GOCMD) get
 DEFRAGBIN=/usr/local/bin/defrag
 DEFRAGETC=/etc/defrag
 
-PLATFORM := $(shell uname)
+PLATFORM:=$(shell uname)
 
 # copy settings file, going to add to it during install
 SETTINGS=./settings.yaml
@@ -18,7 +18,7 @@ ifeq ($(OS),Windows_NT)
 	$(error "defrag" does not support Windows)
 endif
 
-install:
+install: build
 	mkdir -p $(DEFRAGETC)
 	cp $(SETTINGS) $(TEMPSETTINGS)
 
@@ -44,6 +44,7 @@ ifeq (, $(shell which primer3_core))
 	# install primer3
 	brew install primer3
 endif
+
 	echo "\nprimer3_config-path: /usr/local/share/primer3/primer3_config/" >> $(TEMPSETTINGS)
 
 	cp ./bin/darwin $(DEFRAGBIN)
@@ -52,14 +53,12 @@ endif
 	# install config file to /etc/defrag
 	mv $(TEMPSETTINGS) $(DEFRAGETC)/settings.yaml
 
-	# unzip BLAST databases
-ifeq (,$(wildcard ./addgene.zip))
-		unzip -jo ./addgene.zip -d $(DEFRAGETC) 
-		unzip -jo ./igem.zip -d $(DEFRAGETC) 
-endif
+	# copy BLAST databases
+	cp -r ./assets/addgene/db/** $(DEFRAGETC) 
+	cp -r ./assets/igem/db/** $(DEFRAGETC)
 	
 build:
-	# build for all operating systems
+	# build for supported operating systems
 	env GOOS=linux $(GOBUILD) -o ./bin/linux -v
 	env GOOS=darwin $(GOBUILD) -o ./bin/darwin -v
 

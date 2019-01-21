@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"log"
-	"path"
 	"path/filepath"
 
 	"github.com/spf13/cobra"
@@ -18,13 +17,11 @@ var rootCmd = &cobra.Command{
 
 // backboneHelp is the help message for the backbone CLI argument
 var backboneHelp = `Backbone to insert the fragments into. Can either be an entry 
-	in one of the dbs or a FASTA file on the local filesystem. An enzyme must also
-	be chosen to linearize the backbone. Pre-linearized backbones are not yet
-	supported`
+in one of the dbs or a FASTA file on the local filesystem. An enzyme must also
+be chosen to linearize the backbone.`
 
 var enzymeHelp = `Enzyme to linearize the backbone with (backbone must be specified).
-	The enzyme's name must be recognizable by defrag. Use 'defrag enzymes' for a list
-	of recognized enzyme names and their recognition sequences`
+The enzyme's name must be recognizable by defrag. Use 'defrag enzymes' for a list.`
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
@@ -35,11 +32,12 @@ func Execute() {
 }
 
 func init() {
-	settings, _ := filepath.Abs(path.Join("..", "config"))
+	sep := string(filepath.Separator)
+	settingsDir := sep + "etc" + sep + "defrag"
 
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
-	rootCmd.PersistentFlags().StringP("config", "c", settings, "config file")
+	rootCmd.PersistentFlags().StringP("config", "c", settingsDir, "config file")
 	viper.BindPFlag("config", rootCmd.PersistentFlags().Lookup("config"))
 }

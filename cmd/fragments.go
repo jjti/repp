@@ -11,8 +11,8 @@ var FragmentsCmd = &cobra.Command{
 	Use:   "fragments",
 	Short: "Assemble a list of fragments via Gibson Assembly",
 	Long: `Prepare a list of fragments into a vector via Gibson Assembly. Fragments are
-	checked for existing homology with their neighbors (in the multi-FASTA input file).
-	Fragments lacking the requisite homology are prepared for assembly with PCR.`,
+checked for existing homology with their neighbors (in the multi-FASTA input file).
+Fragments lacking the requisite homology are prepared for assembly with PCR.`,
 	Run: defrag.FragmentsCmd,
 }
 
