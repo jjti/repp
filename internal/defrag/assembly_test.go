@@ -7,9 +7,6 @@ import (
 	"github.com/jjtimmons/defrag/config"
 )
 
-// create t
-var ()
-
 func Test_assembly_add(t *testing.T) {
 	c := config.New()
 
@@ -458,7 +455,7 @@ func Test_assembly_duplicates(t *testing.T) {
 				cost:   tt.fields.cost,
 				synths: tt.fields.synths,
 			}
-			isDuplicate, duplicateSeq := a.duplicates(tt.args.nodes, tt.args.minHomology, tt.args.maxHomology)
+			isDuplicate, _, _, duplicateSeq := a.duplicates(tt.args.nodes, tt.args.minHomology, tt.args.maxHomology)
 
 			if isDuplicate != tt.want {
 				t.Errorf("assembly.duplicates() = %v, want %v", isDuplicate, tt.want)

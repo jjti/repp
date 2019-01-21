@@ -140,7 +140,7 @@ func (f *Frag) setPrimers(last, next *Frag, seq string, conf *config.Config) (er
 		mismatchExists, mm, err = seqMismatch(f.Primers, f.ID, f.fullSeq, conf)
 	} else {
 		// otherwise, query the fragment from the DB (try to find it) and then check for mismatches
-		mismatchExists, mm, err = parentMismatch(f.Primers, f.ID, f.db, conf)
+		mismatchExists, mm, err = parentMismatch(f.Primers, f.ID, f.db, f.circular, conf)
 	}
 
 	if err != nil {
@@ -242,7 +242,7 @@ func (p *p3Exec) input(minHomology, maxHomology, maxEmbedLength, minLength int) 
 	rightBuffer := p.buffer(p.f.distTo(p.next), minHomology, maxEmbedLength)
 
 	// create the settings map from all instructions
-	file := p.settings(
+	file, err := p.settings(
 		p.seq,
 		p.p3Conf,
 		start,
@@ -253,6 +253,9 @@ func (p *p3Exec) input(minHomology, maxHomology, maxEmbedLength, minLength int) 
 		leftBuffer,
 		rightBuffer,
 	)
+	if err != nil {
+		return 0, 0, err
+	}
 
 	if _, err := p.in.Write(file); err != nil {
 		return 0, 0, fmt.Errorf("failed to write primer3 input file %v: ", err)
@@ -344,8 +347,7 @@ func (p *p3Exec) buffer(dist, minHomology, maxEmbedLength int) (buffer int) {
 func (p *p3Exec) settings(
 	seq, p3conf string,
 	start, length, primerMin, primerOpt, primerMax int,
-	leftBuffer, rightBuffer int) (file []byte) {
-
+	leftBuffer, rightBuffer int) (file []byte, err error) {
 	// see primer3 manual or /vendor/primer3-2.4.0/settings_files/p3_th_settings.txt
 	settings := map[string]string{
 		"SEQUENCE_ID":                          p.f.ID,
@@ -378,6 +380,10 @@ func (p *p3Exec) settings(
 		settings["PRIMER_MAX_TM"] = "67.0" // defaults to 63.0
 
 		if excludeLength >= 0 {
+			if excludeLength < primerMax {
+				return nil, fmt.Errorf("pcr minimum size, %d, smaller than max primer size, %d", excludeLength, primerMax)
+			}
+
 			// ugly undoing of the above in case only one side has buffer
 			if leftBuffer == 0 {
 				settings["SEQUENCE_FORCE_LEFT_START"] = strconv.Itoa(start)
@@ -389,10 +395,11 @@ func (p *p3Exec) settings(
 		}
 	}
 
-	if _, rangeSet := settings["SEQUENCE_PRIMER_PAIR_OK_REGION_LIST"]; !rangeSet {
+	if settings["SEQUENCE_PRIMER_PAIR_OK_REGION_LIST"] == "" {
 		// otherwise force the start and end of the PCR range
 		settings["PRIMER_TASK"] = "pick_cloning_primers"
 		settings["SEQUENCE_INCLUDED_REGION"] = fmt.Sprintf("%d,%d", start, length)
+		settings["PRIMER_PRODUCT_SIZE_RANGE"] = fmt.Sprintf("%d-%d", length-1, length)
 	}
 
 	var fileBuffer bytes.Buffer
@@ -401,7 +408,7 @@ func (p *p3Exec) settings(
 	}
 	fileBuffer.WriteString("=") // required at file's end
 
-	return fileBuffer.Bytes()
+	return fileBuffer.Bytes(), nil
 }
 
 // run the primer3 executable against the input file
