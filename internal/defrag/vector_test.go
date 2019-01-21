@@ -82,7 +82,6 @@ func Test_vector_single_vector(t *testing.T) {
 // assemble an iGEM vector with a backbone
 func Test_vector_igem(t *testing.T) {
 	c := config.New()
-
 	out := path.Join("..", "..", "test", "output", "BBa_I5310.output.json")
 
 	fs := testFlags(
@@ -108,10 +107,30 @@ func Test_vector_igem(t *testing.T) {
 		ID: "BBa_I5310",
 	}, assemblies)
 
-	t.Fail()
+	t.Fatal("fail (dev)")
 }
 
 func Test_countMaps(t *testing.T) {
+	c := config.New()
+	n1 := &Frag{
+		uniqueID: "1",
+		start:    0,
+		end:      50,
+		conf:     c,
+	}
+	n2 := &Frag{
+		uniqueID: "2",
+		start:    20,
+		end:      80,
+		conf:     c,
+	}
+	n3 := &Frag{
+		uniqueID: "3",
+		start:    60,
+		end:      100,
+		conf:     c,
+	}
+
 	a1 := assembly{
 		frags: []*Frag{
 			n1, n1,
@@ -270,7 +289,7 @@ func Test_build(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assemblies := build(tt.args.nodes, c.Fragments.MaxCount, seq)
+			assemblies := createAssemblies(tt.args.nodes, c.Fragments.MaxCount, seq)
 
 			// concatenate Frag ids together
 			actualIds := getNodeSet(assemblies)

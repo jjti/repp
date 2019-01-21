@@ -506,18 +506,18 @@ func (p *p3Exec) parse(input string) (err error) {
 //
 // returning Frag for testing
 func mutateNodePrimers(f *Frag, seq string, addLeft, addRight int) (mutated *Frag) {
-	template := seq + seq + seq
+	template := strings.ToUpper(seq + seq + seq)
 
 	// add bp to the left/FWD primer to match the fragment to the left
 	if addLeft > 0 {
-		oldStart := f.Primers[0].Range.start
+		oldStart := f.Primers[0].Range.start + len(seq)
 		f.Primers[0].Seq = template[oldStart-addLeft:oldStart] + f.Primers[0].Seq
 		f.Primers[0].Range.start -= addLeft
 	}
 
 	// add bp to the right/REV primer to match the fragment to the right
 	if addRight > 0 {
-		oldEnd := f.Primers[1].Range.end
+		oldEnd := f.Primers[1].Range.end + len(seq)
 		f.Primers[1].Seq = revComp(template[oldEnd+1:oldEnd+addRight+1]) + f.Primers[1].Seq
 		f.Primers[1].Range.end += addRight
 	}
@@ -528,7 +528,7 @@ func mutateNodePrimers(f *Frag, seq string, addLeft, addRight int) (mutated *Fra
 	f.end = f.Primers[1].Range.end
 
 	// update the Frag's seq to reflect that change
-	f.Seq = template[f.start : f.end+1]
+	f.Seq = template[f.start+len(seq) : f.end+len(seq)+1]
 
 	return f
 }
