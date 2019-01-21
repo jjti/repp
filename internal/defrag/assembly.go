@@ -92,7 +92,7 @@ func (a *assembly) len() int {
 func (a *assembly) log() string {
 	logString := ""
 	if len(a.frags) >= 1 {
-		for _, f := range a.frags[:len(a.frags)-1] {
+		for _, f := range a.frags {
 			logString += f.ID + " "
 		}
 	}

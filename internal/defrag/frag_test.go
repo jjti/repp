@@ -81,6 +81,8 @@ func Test_Frag_distTo(t *testing.T) {
 
 func Test_Frag_synthDist(t *testing.T) {
 	c := config.New()
+
+	c.PCR.MaxEmbedLength = 0
 	c.Synthesis.MaxLength = 100
 
 	type fields struct {
@@ -156,6 +158,13 @@ func Test_Frag_costTo(t *testing.T) {
 			Fixed:   false,
 			Dollars: 0.05,
 		},
+	}
+
+	n1 := &Frag{
+		uniqueID: "1",
+		start:    0,
+		end:      50,
+		conf:     c,
 	}
 
 	type fields struct {

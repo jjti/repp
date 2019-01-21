@@ -8,37 +8,38 @@ import (
 )
 
 // create t
-var (
-	c = config.New()
-
-	n1 = &Frag{
-		uniqueID: "1",
-		start:    0,
-		end:      50,
-		conf:     c,
-	}
-	n2 = &Frag{
-		uniqueID: "2",
-		start:    20,
-		end:      80,
-		conf:     c,
-	}
-	n3 = &Frag{
-		uniqueID: "3",
-		start:    60,
-		end:      100,
-		conf:     c,
-	}
-)
+var ()
 
 func Test_assembly_add(t *testing.T) {
+	c := config.New()
+
 	c.Fragments.MaxCount = 5
+	c.PCR.MaxEmbedLength = 0
 	c.Synthesis.MaxLength = 100
 	c.Synthesis.Cost = map[int]config.SynthCost{
 		100000: {
 			Fixed:   true,
 			Dollars: 0.0,
 		},
+	}
+
+	n1 := &Frag{
+		uniqueID: "1",
+		start:    0,
+		end:      50,
+		conf:     c,
+	}
+	n2 := &Frag{
+		uniqueID: "2",
+		start:    20,
+		end:      80,
+		conf:     c,
+	}
+	n3 := &Frag{
+		uniqueID: "3",
+		start:    60,
+		end:      100,
+		conf:     c,
 	}
 
 	// create the nodes for testing
@@ -176,6 +177,21 @@ func Test_assembly_add(t *testing.T) {
 	}
 }
 func Test_assembly_len(t *testing.T) {
+	c := config.New()
+
+	n1 := &Frag{
+		uniqueID: "1",
+		start:    0,
+		end:      50,
+		conf:     c,
+	}
+	n2 := &Frag{
+		uniqueID: "2",
+		start:    20,
+		end:      80,
+		conf:     c,
+	}
+
 	type fields struct {
 		nodes    []*Frag
 		cost     float64

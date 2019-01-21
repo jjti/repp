@@ -552,7 +552,7 @@ func (b *blastExec) runAgainst() (err error) {
 // The equation used for the melting temperature is:
 // Tm = 81.5 + 0.41(%GC) - 675/N - % mismatch, where N = total number of bases.
 func isMismatch(m match, c *config.Config) bool {
-	primer := strings.ToLower(m.seq)
+	primer := strings.ToUpper(m.seq)
 	primerL := float64(len(primer))
 
 	noA := strings.Replace(primer, "a", "", -1)

@@ -121,7 +121,7 @@ func buildVector(matches []match, seq string, conf *config.Config) [][]Frag {
 
 	// build up a slice of assemblies that could, within the upper-limit on
 	// fragment count, be assembled to make the target vector
-	assemblies := build(nodes, conf.Fragments.MaxCount, seq)
+	assemblies := createAssemblies(nodes, conf.Fragments.MaxCount, seq)
 
 	// build up a map from fragment count to a sorted list of assemblies with that number
 	groupedAssemblies := groupAssemblies(assemblies)
@@ -147,10 +147,11 @@ func buildVector(matches []match, seq string, conf *config.Config) [][]Frag {
 				break
 			}
 
+			fmt.Println(singleAssembly.log())
 			filledFragments, err := singleAssembly.fill(seq, conf)
 			if err != nil {
 				// write the console for debugging, continue looking
-				// fmt.Println(err)
+				fmt.Println(err)
 				continue
 			}
 
@@ -185,17 +186,17 @@ func buildVector(matches []match, seq string, conf *config.Config) [][]Frag {
 	return found
 }
 
-// build builds up circular assemblies with less fragments than the build limit
+// createAssemblies builds up circular assemblies with less fragments than the createAssemblies limit
 //
 // maxNodes is the maximum number of frags in a single assembly
-// seq is the target sequence we're trying to build up
+// seq is the target sequence we're trying to createAssemblies up
 //
 // It is created by traversing a DAG in forward order:
 // 	foreach thisFragment (sorted in increasing start index order):
 // 	  foreach otherFragment that thisFragment overlaps with + synthCount more:
 //	 	foreach assembly on thisFragment:
 //    	    add otherFragment to the assembly to create a new assembly, store on otherFragment
-func build(frags []*Frag, maxNodes int, seq string) (assemblies []assembly) {
+func createAssemblies(frags []*Frag, maxNodes int, seq string) (assemblies []assembly) {
 	// number of additional frags try synthesizing to, in addition to those that
 	// already have enough homology for overlap without any modifications for each Frag
 	synthCount := int(math.Max(5, 0.05*float64(len(frags)))) // 5 of 5%, whichever is greater
@@ -224,22 +225,22 @@ func build(frags []*Frag, maxNodes int, seq string) (assemblies []assembly) {
 
 	// for every Frag in the list of increasing start index frags
 	for i, f := range frags {
-		if f.ID == "gnl|igem|BBa_I5310" {
-			reachable := []string{}
-			for _, j := range f.reach(frags, i, synthCount) {
-				reachable = append(reachable, frags[j].ID)
-			}
-			fmt.Println(f.uniqueID + " reaches: " + strings.Join(reachable, ", "))
-		}
+		// if f.ID == "gnl|igem|BBa_I5310" {
+		// 	reachable := []string{}
+		// 	for _, j := range f.reach(frags, i, synthCount) {
+		// 		reachable = append(reachable, frags[j].ID)
+		// 	}
+		// 	fmt.Println(f.uniqueID + " reaches: " + strings.Join(reachable, ", "))
+		// }
 
 		// for every overlapping fragment + synthCount more
 		for _, j := range f.reach(frags, i, synthCount) {
 			// for every assembly on the reaching fragment
 			for _, a := range f.assemblies {
 				newAssembly, created, complete := a.add(frags[j], maxNodes)
-				if f.ID == "gnl|igem|BBa_I5310" && frags[j].ID == "gnl|igem|pSB1A3" && created {
-					fmt.Printf("%s, %t, %t \n", newAssembly.log(), created, complete)
-				}
+				// if f.ID == "gnl|igem|pSB1A3" && frags[j].ID == "gnl|igem|BBa_I5310" {
+				// 	fmt.Printf("%s, %t, %t \n", newAssembly.log(), created, complete)
+				// }
 
 				// see if we can create a new assembly with this Frag included
 				if created {
