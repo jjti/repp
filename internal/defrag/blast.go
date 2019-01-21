@@ -156,7 +156,6 @@ func blast(f *Frag, dbs []string, minLength int) (matches []match, err error) {
 
 	fmt.Printf("%d matches after filtering\n", len(matches))
 
-	fmt.Println(len(f.Seq))
 	for _, m := range matches {
 		fmt.Printf("%s %d %d\n", m.entry, m.start, m.end)
 	}
@@ -204,26 +203,6 @@ func (b *blastExec) run() (err error) {
 	return
 }
 
-// runs blast on the query file against another subject file (rather than blastdb)
-func (b *blastExec) runAgainst() (err error) {
-	// create the blast command
-	// https://www.ncbi.nlm.nih.gov/books/NBK279682/
-	blastCmd := exec.Command(
-		"blastn",
-		"-task", "blastn",
-		"-query", b.in.Name(),
-		"-subject", b.subject,
-		"-out", b.out.Name(),
-		"-outfmt", "7 sseqid qstart qend sstart send sseq mismatch",
-	)
-
-	// execute BLAST and wait on it to finish
-	if output, err := blastCmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("failed to execute blastn against %s: %v: %s", b.subject, err, string(output))
-	}
-	return
-}
-
 // parse reads the output file into Matches on the Frag
 // returns a slice of Matches for the blasted fragment
 func (b *blastExec) parse() (matches []match, err error) {
@@ -248,8 +227,8 @@ func (b *blastExec) parse() (matches []match, err error) {
 			continue
 		}
 
-		// the full ID of the entry in the db
-		ID := strings.Replace(cols[0], ">", "", -1)
+		// the full entry line, (id, direction, etc)
+		entry := strings.Replace(cols[0], ">", "", -1)
 
 		start, _ := strconv.Atoi(cols[1])
 		end, _ := strconv.Atoi(cols[2])
@@ -264,13 +243,13 @@ func (b *blastExec) parse() (matches []match, err error) {
 		// create and append the new match
 		ms = append(ms, match{
 			// for later querying when checking for off-targets
-			entry: ID,
+			entry: entry,
 			seq:   strings.Replace(seq, "-", "", -1),
 			// convert 1-based numbers to 0-based
 			start: start - 1,
 			end:   end - 1,
-			// brittle, but checking for circular in entry's ID
-			circular:    strings.Contains(ID, "(circular)"),
+			// brittle, but checking for circular in entry's entry
+			circular:    strings.Contains(entry, "circular"),
 			mismatching: mismatch,
 			internal:    b.internal,
 			db:          b.db, // store for checking off-targets later
@@ -373,6 +352,31 @@ func sortMatches(matches []match) {
 	})
 }
 
+// seqMismatch queries for any mismatching primer locations in the parent sequence
+// unlike parentMismatch, it doesn't first find the parent fragment from the db it came from
+func seqMismatch(primers []Primer, parentID, parentSeq string, conf *config.Config) (wasMismatch bool, m match, err error) {
+	parentFile, err := ioutil.TempFile(blastnDir, parentID+".parent-*")
+	if err != nil {
+		return false, match{}, err
+	}
+	defer os.Remove(parentFile.Name())
+
+	inContent := fmt.Sprintf(">%s\n%s\n", parentID, parentSeq)
+	if _, err = parentFile.WriteString(inContent); err != nil {
+		return false, m, fmt.Errorf("failed to write primer sequence to query FASTA file: %v", err)
+	}
+
+	// check each primer for mismatches
+	for _, primer := range primers {
+		wasMismatch, m, err = mismatch(primer.Seq, parentFile, conf)
+		if wasMismatch || err != nil {
+			return
+		}
+	}
+
+	return false, match{}, nil
+}
+
 // parentMismatch both searches for a the parent fragment in its source DB and queries for
 // any mismatches in the seq before returning
 func parentMismatch(primers []Primer, parent, db string, conf *config.Config) (wasMismatch bool, m match, err error) {
@@ -455,31 +459,6 @@ func blastdbcmd(entry, db string, conf *config.Config) (output *os.File, err err
 	return nil, fmt.Errorf("warning: failed to query %s from %s", entry, db)
 }
 
-// seqMismatch queries for any mismatching primer locations in the parent sequence
-// unlike parentMismatch, it doesn't first find the parent fragment from the db it came from
-func seqMismatch(primers []Primer, parentID, parentSeq string, conf *config.Config) (wasMismatch bool, m match, err error) {
-	parentFile, err := ioutil.TempFile(blastnDir, parentID+".parent-*")
-	if err != nil {
-		return false, match{}, err
-	}
-	defer os.Remove(parentFile.Name())
-
-	inContent := fmt.Sprintf(">%s\n%s\n", parentID, parentSeq)
-	if _, err = parentFile.WriteString(inContent); err != nil {
-		return false, m, fmt.Errorf("failed to write primer sequence to query FASTA file: %v", err)
-	}
-
-	// check each primer for mismatches
-	for _, primer := range primers {
-		wasMismatch, m, err = mismatch(primer.Seq, parentFile, conf)
-		if wasMismatch || err != nil {
-			return
-		}
-	}
-
-	return false, match{}, nil
-}
-
 // mismatch finds mismatching sequences between the query sequence and
 // the parent sequence (in the parent file)
 //
@@ -535,7 +514,7 @@ func mismatch(primer string, parentFile *os.File, c *config.Config) (wasMismatch
 
 		// one of the matches will, of course, be against the primer itself
 		// and we don't want to double count it
-		if primerCount > 0 && m.seq == primer {
+		if primerCount > 0 && strings.Contains(primer, m.seq) {
 			primerCount--
 			continue
 		} else if isMismatch(m, c) {
@@ -543,6 +522,26 @@ func mismatch(primer string, parentFile *os.File, c *config.Config) (wasMismatch
 		}
 	}
 	return false, match{}, nil
+}
+
+// runs blast on the query file against another subject file (rather than blastdb)
+func (b *blastExec) runAgainst() (err error) {
+	// create the blast command
+	// https://www.ncbi.nlm.nih.gov/books/NBK279682/
+	blastCmd := exec.Command(
+		"blastn",
+		"-task", "blastn",
+		"-query", b.in.Name(),
+		"-subject", b.subject,
+		"-out", b.out.Name(),
+		"-outfmt", "7 sseqid qstart qend sstart send sseq mismatch",
+	)
+
+	// execute BLAST and wait on it to finish
+	if output, err := blastCmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("failed to execute blastn against %s: %v: %s", b.subject, err, string(output))
+	}
+	return
 }
 
 // isMismatch reutns whether the match constitutes a mismatch

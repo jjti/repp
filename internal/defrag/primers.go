@@ -149,10 +149,10 @@ func (f *Frag) setPrimers(last, next *Frag, seq string, conf *config.Config) (er
 	}
 	if mismatchExists {
 		err = fmt.Errorf(
-			"found a mismatching sequence, %s, against primers: %s, %s",
+			"found a mismatching sequence %s for primers: %s, %s",
 			mm.seq,
 			f.Primers[0].Seq,
-			revComp(f.Primers[1].Seq),
+			f.Primers[1].Seq,
 		)
 		f.Primers = nil
 		return err

@@ -15,14 +15,14 @@ pcr:
   bp-cost: 0.09
 
   # Minimum length of a PCR fragment
-  min-length: 100
+  min-length: 85
 
   # Max primer3 pair penalty score
   primer3-penalty-max: 15.0
 
   # Max embedded length. The most bp to include upstream of a annealing portion
   # of a primer but not annealing/creating a junction with a downstream part
-  primer-max-embed-length: 25
+  primer-max-embed-length: 60
 
   # Max off-target primer binding site Tm, above which a PCR is abandoned
   primer-max-offtarget-tm: 40.0
@@ -60,4 +60,4 @@ synthesis:
 addgene-vector-cost: 65.0
 
 # cost of a single igem part
-igem-part-cost: 15.0
+igem-part-cost: 0.0

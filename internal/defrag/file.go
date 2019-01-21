@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -83,11 +84,12 @@ func write(filename string, target Frag, assemblies [][]Frag) (output []byte, er
 		assemblyCost := 0.0
 		for _, f := range assembly {
 			assemblyCost += f.Cost
+			f.Cost = roundCost(f.Cost)
 		}
 
 		solutions = append(solutions, Solution{
 			Count:     len(assembly),
-			Cost:      assemblyCost,
+			Cost:      roundCost(assemblyCost),
 			Fragments: assembly,
 		})
 	}
@@ -110,4 +112,11 @@ func write(filename string, target Frag, assemblies [][]Frag) (output []byte, er
 		return output, fmt.Errorf("failed to write the output: %v", err)
 	}
 	return output, nil
+}
+
+// roundCost returns a float for cost to 2 decimal places
+func roundCost(cost float64) float64 {
+	roundedString := fmt.Sprintf("%.2f", cost)
+	result, _ := strconv.ParseFloat(roundedString, 64)
+	return result
 }

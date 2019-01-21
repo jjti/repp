@@ -88,9 +88,8 @@ func Test_filter(t *testing.T) {
 
 	newMatches := filter(matches, 72, 3) // keep all fragments larger than 3bp (all of them)
 
-	// make sure they're gone
-	if len(newMatches) != 3 {
-		t.Errorf("%d filtered matches found on test fragment, 3 expected: %v", len(newMatches), newMatches)
+	if len(newMatches) != 5 {
+		t.Errorf("%d filtered matches found on test fragment, 5 expected: %v", len(newMatches), newMatches)
 	}
 
 	// make sure m2 has been removed
