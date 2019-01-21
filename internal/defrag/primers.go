@@ -296,18 +296,26 @@ func (p *p3Exec) shrink(last, f, next *Frag, maxHomology int, minLength int) *Fr
 
 // bpToAdd calculates the number of bp to add the end of a left Frag to create a junction
 // with the rightmost Frag
-func (p *p3Exec) bpToAdd(left, right *Frag, minHomology int) (bpToAdd int) {
-	if synthDist := left.synthDist(right); synthDist == 0 {
-		// we're not going to synth our way here, check that there's already enough homology
-		if bpDist := left.distTo(right); bpDist > -minHomology {
-			// this Frag will add half the homology to the last fragment
-			// ex: 5 bp distance leads to 2.5bp + ~10bp additonal
-			// ex: -10bp distance leads to ~0 bp additional:
-			// 		other Frag is responsible for all of it
-			bpToAdd = bpDist + (minHomology / 2)
-		}
+func (p *p3Exec) bpToAdd(left, right *Frag, minHomology int) int {
+	if left.overlapsViaHomology(right) {
+		return 0 // there is already enough overlap via PCR
 	}
-	return
+
+	if left.synthDist(right) > 0 {
+		return 0 // we're going to synthesize there, don't add bp via PCR
+	}
+
+	// we're not going to synth our way here, check that there's already enough homology
+	if bpDist := left.distTo(right); bpDist > -minHomology {
+		// this Frag will add half the homology to the last fragment
+		// ex: 5 bp distance leads to 2.5bp + ~10bp additonal
+		// ex: -10bp distance leads to ~0 bp additional:
+		// 		other Frag is responsible for all of it
+		return bpDist + (minHomology / 2)
+	}
+
+	log.Fatal("unexpected distance between fragments")
+	return 0
 }
 
 // buffer takes the dist from a one fragment to another and
