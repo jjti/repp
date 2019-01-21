@@ -83,22 +83,21 @@ func (a *assembly) add(f *Frag, maxCount int) (newAssembly assembly, created, co
 	}, created, false
 }
 
-// contains returns if the ID of the Frag has already been seen in this assembly
-func (a *assembly) contains(f Frag) (hasNode bool) {
-	for _, otherN := range a.frags {
-		// they're the same if they have the same ID and start index
-		// ID isn't enough by itself because there may be multiple with the same
-		// entry ID in the BLAST db
-		if otherN.uniqueID == f.uniqueID {
-			return true
-		}
-	}
-	return false
-}
-
 // len returns len(assembly.nodes) + the synthesis fragment count
 func (a *assembly) len() int {
 	return len(a.frags) + a.synths
+}
+
+// log returns a description of the assembly (the entires in it and its cost)
+func (a *assembly) log() string {
+	logString := ""
+	if len(a.frags) >= 1 {
+		for _, f := range a.frags[:len(a.frags)-1] {
+			logString += f.ID + " "
+		}
+	}
+
+	return fmt.Sprintf("%s- $%.2f", logString, a.cost)
 }
 
 // fill traverses the nodes in an assembly and converts them into fragments
@@ -121,17 +120,16 @@ func (a *assembly) fill(seq string, conf *config.Config) (frags []Frag, err erro
 	}
 
 	// edge case where a single Frag fills the whole target vector. Return just a single
-	// "fragment" (of Vector type... misnomer) that matches the target sequence 100%
+	// "fragment" (of Vector type... it is misnomer) that matches the target sequence 100%
 	if a.len() == 1 && len(a.frags[0].Seq) >= len(seq) {
 		f := a.frags[0]
 		return []Frag{
 			Frag{
-				ID:    f.ID,
-				Seq:   strings.ToUpper(f.Seq)[0:len(seq)], // it may be longer
-				Entry: f.ID,
-				Type:  circular,
-				URL:   f.URL,
-				Cost:  f.Cost, // only the ordering cost, no PCR/Synth etc
+				ID:   f.ID,
+				Seq:  strings.ToUpper(f.Seq)[0:len(seq)], // it may be longer
+				Type: circular,
+				URL:  f.URL,
+				Cost: f.Cost, // only the ordering cost, no PCR/Synth etc
 			},
 		}, nil
 	}

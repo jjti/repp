@@ -32,10 +32,6 @@ type Frag struct {
 	// ID is a unique identifier for this fragment
 	ID string `json:"-"`
 
-	// uniqueID of a match, the start index % seq-length + ID
-	// used identified that catches nodes that cross the zero-index
-	uniqueID string
-
 	// URL, eg link to a vector's addgene page
 	URL string `json:"url,omitempty"`
 
@@ -44,6 +40,16 @@ type Frag struct {
 
 	// fragment's sequence (linear)
 	Seq string `json:"seq,omitempty"`
+
+	// primers necessary to create this (if pcr fragment)
+	Primers []Primer `json:"primers,omitempty"`
+
+	// Type of this fragment. pcr | vector | synthetic
+	Type Type `json:"-"`
+
+	// uniqueID of a match, the start index % seq-length + ID
+	// used identified that catches nodes that cross the zero-index
+	uniqueID string
 
 	// fullSeq is the entire seq of the Frag/fragment as it was read in (for forward engineering)
 	fullSeq string
@@ -62,16 +68,6 @@ type Frag struct {
 
 	// assemblies that span from this Frag to the end of the vector
 	assemblies []assembly
-
-	// primers necessary to create this (if pcr fragment)
-	Primers []Primer `json:"primers,omitempty"`
-
-	// Entry of this fragment In the DB that it came from
-	// Used to look for off-targets
-	Entry string `json:"-"`
-
-	// Type of this fragment
-	Type Type `json:"-"`
 
 	// Assembly configuration
 	conf *config.Config
@@ -205,7 +201,7 @@ func (f *Frag) reach(nodes []*Frag, i, synthCount int) (reachable []int) {
 		}
 
 		// these nodes overlap by enough for assembly without PCR
-		if f.distTo(nodes[i]) <= -(f.conf.Fragments.MinHomology) {
+		if f.distTo(nodes[i]) <= f.conf.PCR.MaxEmbedLength {
 			reachable = append(reachable, i)
 		} else if synthCount > 0 {
 			// there's not enough existing overlap, but we can synthesize to it

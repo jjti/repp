@@ -82,9 +82,12 @@ func Test_vector_single_vector(t *testing.T) {
 // assemble an iGEM vector with a backbone
 func Test_vector_igem(t *testing.T) {
 	c := config.New()
+
+	out := path.Join("..", "..", "test", "output", "BBa_I5310.output.json")
+
 	fs := testFlags(
 		path.Join("..", "..", "test", "BBa_I5310.fa"),
-		path.Join("..", "..", "test", "output", "BBa_I5310.output.json"),
+		out,
 		"pSB1A3",
 		"EcoRI",
 		[]string{},
@@ -162,7 +165,7 @@ func Test_countMaps(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if gotParetoSet := countMap(tt.args.assemblies); !reflect.DeepEqual(gotParetoSet, tt.wantParetoSet) {
+			if gotParetoSet := groupAssemblies(tt.args.assemblies); !reflect.DeepEqual(gotParetoSet, tt.wantParetoSet) {
 				t.Errorf("pareto() = %v, want %v", gotParetoSet, tt.wantParetoSet)
 			}
 		})

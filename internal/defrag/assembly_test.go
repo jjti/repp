@@ -175,68 +175,6 @@ func Test_assembly_add(t *testing.T) {
 		})
 	}
 }
-
-func Test_assembly_contains(t *testing.T) {
-	type fields struct {
-		nodes    []*Frag
-		cost     float64
-		synths   int
-		maxCount int
-	}
-	type args struct {
-		n Frag
-	}
-	tests := []struct {
-		name            string
-		fields          fields
-		args            args
-		wantIsContained bool
-	}{
-		{
-			"contains Frag",
-			fields{
-				[]*Frag{n1, n2},
-				0.0,
-				0,
-				5,
-			},
-			args{
-				Frag{
-					uniqueID: "1",
-				},
-			},
-			true,
-		},
-		{
-			"doesn't contain Frag",
-			fields{
-				[]*Frag{n1, n2},
-				0.0,
-				0,
-				5,
-			},
-			args{
-				Frag{
-					uniqueID: "3",
-				},
-			},
-			false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			a := &assembly{
-				frags:  tt.fields.nodes,
-				cost:   tt.fields.cost,
-				synths: tt.fields.synths,
-			}
-			if gotIsContained := a.contains(tt.args.n); gotIsContained != tt.wantIsContained {
-				t.Errorf("assembly.contains() = %v, want %v", gotIsContained, tt.wantIsContained)
-			}
-		})
-	}
-}
-
 func Test_assembly_len(t *testing.T) {
 	type fields struct {
 		nodes    []*Frag
@@ -284,6 +222,7 @@ func Test_assembly_fill(t *testing.T) {
 	c := config.New()
 	c.Fragments.MinHomology = 5
 	c.Fragments.MaxHomology = 50
+	c.PCR.MinLength = 50
 	c.Synthesis.MaxLength = 1000
 	c.PCR.P3MaxPenalty = 40.0
 

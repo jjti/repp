@@ -124,12 +124,12 @@ func buildVector(matches []match, seq string, conf *config.Config) [][]Frag {
 	assemblies := build(nodes, conf.Fragments.MaxCount, seq)
 
 	// build up a map from fragment count to a sorted list of assemblies with that number
-	sortedAssemblies := countMap(assemblies)
+	groupedAssemblies := groupAssemblies(assemblies)
 
 	// sort the keys of the assemblies (their fragment count). Start with the smaller
 	// assemblies first and work out way up
 	assemblyCounts := []int{}
-	for count := range sortedAssemblies {
+	for count := range groupedAssemblies {
 		assemblyCounts = append(assemblyCounts, count)
 	}
 	sort.Ints(assemblyCounts)
@@ -140,7 +140,7 @@ func buildVector(matches []match, seq string, conf *config.Config) [][]Frag {
 	filled := make(map[int][]Frag)
 	for _, count := range assemblyCounts {
 		// get the first assembly that fills properly (cheapest workable solution)
-		for _, singleAssembly := range sortedAssemblies[count] {
+		for _, singleAssembly := range groupedAssemblies[count] {
 			if singleAssembly.cost > minCostAssembly {
 				// skip this and the rest with this count, there's another
 				// cheaper option with fewer fragments
@@ -149,7 +149,9 @@ func buildVector(matches []match, seq string, conf *config.Config) [][]Frag {
 
 			filledFragments, err := singleAssembly.fill(seq, conf)
 			if err != nil {
-				log.Fatal(err)
+				// write the console for debugging, continue looking
+				// fmt.Println(err)
+				continue
 			}
 
 			// if a Frag in the assembly fails to be prepared,
@@ -164,11 +166,11 @@ func buildVector(matches []match, seq string, conf *config.Config) [][]Frag {
 					continue // wasn't actually cheaper, keep trying
 				}
 
-				// add this list of fragments to the list of such
-				filled[len(filledFragments)] = filledFragments
-
 				// store this as the new cheapest assembly
 				minCostAssembly = assemblyCost
+
+				// add this list of fragments to the list of such
+				filled[len(filledFragments)] = filledFragments
 
 				// break, don't look at other possible assemblies because this one worked
 				break
@@ -189,19 +191,14 @@ func buildVector(matches []match, seq string, conf *config.Config) [][]Frag {
 // seq is the target sequence we're trying to build up
 //
 // It is created by traversing a DAG in forward order:
-// 	foreach this.Frag (sorted in forward order):
-// 	  foreach that.Frag that this Frag overlaps with + synthCount:
-//	 	foreach assembly on that.Frag:
-//    	    add this.Frag to the assembly to create a new assembly, store on this.Frag
+// 	foreach thisFragment (sorted in increasing start index order):
+// 	  foreach otherFragment that thisFragment overlaps with + synthCount more:
+//	 	foreach assembly on thisFragment:
+//    	    add otherFragment to the assembly to create a new assembly, store on otherFragment
 func build(frags []*Frag, maxNodes int, seq string) (assemblies []assembly) {
 	// number of additional frags try synthesizing to, in addition to those that
 	// already have enough homology for overlap without any modifications for each Frag
 	synthCount := int(math.Max(5, 0.05*float64(len(frags)))) // 5 of 5%, whichever is greater
-
-	// sort with increasing start index
-	sort.Slice(frags, func(i, j int) bool {
-		return frags[i].start < frags[j].start
-	})
 
 	// create a starting assembly on each Frag including just itself
 	for i, f := range frags {
@@ -227,19 +224,32 @@ func build(frags []*Frag, maxNodes int, seq string) (assemblies []assembly) {
 
 	// for every Frag in the list of increasing start index frags
 	for i, f := range frags {
+		if f.ID == "gnl|igem|BBa_I5310" {
+			reachable := []string{}
+			for _, j := range f.reach(frags, i, synthCount) {
+				reachable = append(reachable, frags[j].ID)
+			}
+			fmt.Println(f.uniqueID + " reaches: " + strings.Join(reachable, ", "))
+		}
+
 		// for every overlapping fragment + synthCount more
 		for _, j := range f.reach(frags, i, synthCount) {
 			// for every assembly on the reaching fragment
-			for _, a := range frags[i].assemblies {
+			for _, a := range f.assemblies {
+				newAssembly, created, complete := a.add(frags[j], maxNodes)
+				if f.ID == "gnl|igem|BBa_I5310" && frags[j].ID == "gnl|igem|pSB1A3" && created {
+					fmt.Printf("%s, %t, %t \n", newAssembly.log(), created, complete)
+				}
+
 				// see if we can create a new assembly with this Frag included
-				if newAssembly, created, complete := a.add(frags[j], maxNodes); created {
+				if created {
 					if complete {
 						// we've completed a circlular plasmid assembly
 						// it has wrapped back onto itself
 						assemblies = append(assemblies, newAssembly)
 						// TODO: check if we can break here
 					} else {
-						// add to this Frag's list of assemblies
+						// add to the other fragment's list of assemblies
 						frags[j].assemblies = append(frags[j].assemblies, newAssembly)
 					}
 				}
@@ -250,15 +260,9 @@ func build(frags []*Frag, maxNodes int, seq string) (assemblies []assembly) {
 	return
 }
 
-// countMap returns a map from the number of fragments in a build
+// groupAssemblies returns a map from the number of fragments in a build
 // to a slice of builds with that number of fragments, sorted by their cost
-//
-// It also removes builds that cost more and have more fragments than
-// cheaper assemblies with fewer fragments (hence name).
-// So if it's $50 to make a vector with 2 fragments, this will prune out
-// the $75 vector with 3 fragments. It's not worth making an assembly with 3
-// fragments at $75, because it would be cheaper (and better) to do it with 2
-func countMap(assemblies []assembly) map[int][]assembly {
+func groupAssemblies(assemblies []assembly) map[int][]assembly {
 	countToAssemblies := make(map[int][]assembly)
 	for _, a := range assemblies {
 		// The "-1"s here are because the assemblies are circular and
