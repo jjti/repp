@@ -87,7 +87,7 @@ func vector(input *flags, conf *config.Config) (Frag, [][]Frag, error) {
 	}
 
 	// get all the matches against the fragment
-	matches, err := blast(&targetFrag, input.dbs, conf.Fragments.MinHomology)
+	matches, err := blast(&targetFrag, input.dbs, conf.PCR.MinLength)
 	if err != nil {
 		fmt.Printf("%+v", input.dbs)
 		dbMessage := strings.Join(input.dbs, ", ")

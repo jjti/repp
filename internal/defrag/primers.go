@@ -91,7 +91,8 @@ func (f *Frag) setPrimers(last, next *Frag, seq string, conf *config.Config) (er
 	minHomology := conf.Fragments.MinHomology
 	maxHomology := conf.Fragments.MaxHomology
 	maxEmbedLength := conf.PCR.MaxEmbedLength
-	addLeft, addRight, err := psExec.input(minHomology, maxHomology, maxEmbedLength)
+	minLength := conf.PCR.MinLength
+	addLeft, addRight, err := psExec.input(minHomology, maxHomology, maxEmbedLength, minLength)
 	if err != nil {
 		return
 	}
@@ -106,6 +107,16 @@ func (f *Frag) setPrimers(last, next *Frag, seq string, conf *config.Config) (er
 
 	// update Frag's range, and add additional bp to the left and right primer if it wasn't included in the primer3 output
 	mutateNodePrimers(f, seq, addLeft, addRight)
+
+	// make sure the fragment's length is still long enough for PCR
+	if f.end-f.start < conf.PCR.MinLength {
+		return fmt.Errorf(
+			"failed to execute primer3: %s is %dbp, needs to be > %dbp",
+			f.ID,
+			f.end-f.start,
+			conf.PCR.MinLength,
+		)
+	}
 
 	// 1. check for whether the primers have too have a pair penalty score
 	if f.Primers[0].PairPenalty > conf.PCR.P3MaxPenalty {
@@ -137,11 +148,14 @@ func (f *Frag) setPrimers(last, next *Frag, seq string, conf *config.Config) (er
 		return err
 	}
 	if mismatchExists {
-		f.Primers = nil
-		return fmt.Errorf(
-			"found a mismatching sequence, %s, against the primer",
+		err = fmt.Errorf(
+			"found a mismatching sequence, %s, against primers: %s, %s",
 			mm.seq,
+			f.Primers[0].Seq,
+			revComp(f.Primers[1].Seq),
 		)
+		f.Primers = nil
+		return err
 	}
 
 	os.Remove(psExec.in.Name()) // delete the input and output files
@@ -174,10 +188,10 @@ func newP3Exec(last, this, next *Frag, seq string, conf *config.Config) p3Exec {
 // existing homology to begin with (the two nodes should share ~50/50)
 //
 // returning settings for unit testing only
-func (p *p3Exec) input(minHomology, maxHomology, maxEmbedLength int) (bpAddLeft, bpAddRight int, err error) {
+func (p *p3Exec) input(minHomology, maxHomology, maxEmbedLength, minLength int) (bpAddLeft, bpAddRight int, err error) {
 	// adjust the Frag's start and end index in the event that there's too much homology
 	// with the neighboring fragment
-	p.shrink(p.last, p.f, p.next, maxHomology) // could skip passing as a param, but this is a bit easier to test imo
+	p.shrink(p.last, p.f, p.next, maxHomology, minLength) // could skip passing as a param, but this is a bit easier to test imo
 
 	// calc the bps to add on the left and right side of this Frag
 	addLeft := p.bpToAdd(p.last, p.f, minHomology)
@@ -251,7 +265,7 @@ func (p *p3Exec) input(minHomology, maxHomology, maxEmbedLength int) (bpAddLeft,
 // 700bp of overlap, this will trim it back so we just PCR a subselection of
 // the Frag and keep the overlap beneath the upper limit
 // TODO: consider giving minLength for PCR fragments precedent, this may subvert that rule
-func (p *p3Exec) shrink(last, f, next *Frag, maxHomology int) *Frag {
+func (p *p3Exec) shrink(last, f, next *Frag, maxHomology int, minLength int) *Frag {
 	var shiftInLeft int
 	var shiftInRight int
 
@@ -265,12 +279,16 @@ func (p *p3Exec) shrink(last, f, next *Frag, maxHomology int) *Frag {
 		shiftInRight = (-distRight) - maxHomology
 	}
 
-	// update the seq to slice for the new modified range
-	f.start += shiftInLeft
-	f.end -= shiftInRight
+	// make sure the fragment doesn't become less than the minimum length
+	if (f.end-shiftInRight)-(f.start+shiftInLeft) > minLength {
 
-	if f.Seq != "" {
-		f.Seq = f.Seq[shiftInLeft : len(f.Seq)-shiftInRight-shiftInLeft]
+		// update the seq to slice for the new modified range
+		f.start += shiftInLeft
+		f.end -= shiftInRight
+
+		if f.Seq != "" {
+			f.Seq = f.Seq[shiftInLeft : len(f.Seq)-shiftInRight]
+		}
 	}
 
 	return f
@@ -322,6 +340,7 @@ func (p *p3Exec) settings(
 
 	// see primer3 manual or /vendor/primer3-2.4.0/settings_files/p3_th_settings.txt
 	settings := map[string]string{
+		"SEQUENCE_ID":                          p.f.ID,
 		"PRIMER_THERMODYNAMIC_PARAMETERS_PATH": p3conf,
 		"PRIMER_NUM_RETURN":                    "1",
 		"PRIMER_PICK_ANYWAY":                   "1",
@@ -332,14 +351,15 @@ func (p *p3Exec) settings(
 		"PRIMER_EXPLAIN_FLAG":                  "1",
 	}
 
+	start += len(seq) // move to one seq length further in the vector seq (get off left edge)
+
 	// if there is room to optimize, we let primer3 pick the best primers available in the space
 	// http://primer3.sourceforge.net/primer3_manual.htm#SEQUENCE_PRIMER_PAIR_OK_REGION_LIST
 	if leftBuffer > 0 || rightBuffer > 0 {
 		// V-ls  v-le               v-rs   v-re
 		// ---------------------------------
-		leftStart := start + len(seq)
-		leftEnd := start + len(seq) + primerMax + leftBuffer
-		rightStart := start + len(seq) + length - rightBuffer - primerMax
+		leftEnd := start + leftBuffer + primerMax
+		rightStart := start + length - rightBuffer - primerMax
 		excludeLength := rightStart - leftEnd
 
 		settings["PRIMER_TASK"] = "generic"
@@ -352,19 +372,19 @@ func (p *p3Exec) settings(
 		if excludeLength >= 0 {
 			// ugly undoing of the above in case only one side has buffer
 			if leftBuffer == 0 {
-				settings["SEQUENCE_FORCE_LEFT_START"] = strconv.Itoa(leftStart)
+				settings["SEQUENCE_FORCE_LEFT_START"] = strconv.Itoa(start)
 			} else if rightBuffer == 0 {
-				settings["SEQUENCE_FORCE_RIGHT_START"] = strconv.Itoa(rightStart)
+				settings["SEQUENCE_FORCE_RIGHT_START"] = strconv.Itoa(start + length - 1)
 			}
 			settings["PRIMER_PRODUCT_SIZE_RANGE"] = fmt.Sprintf("%d-%d", excludeLength, length)
-			settings["SEQUENCE_PRIMER_PAIR_OK_REGION_LIST"] = fmt.Sprintf("%d,%d,%d,%d", leftStart, leftBuffer+primerMax, rightStart, rightBuffer+primerMax)
+			settings["SEQUENCE_PRIMER_PAIR_OK_REGION_LIST"] = fmt.Sprintf("%d,%d,%d,%d", start, leftBuffer+primerMax, rightStart, rightBuffer+primerMax)
 		}
 	}
 
 	if _, rangeSet := settings["SEQUENCE_PRIMER_PAIR_OK_REGION_LIST"]; !rangeSet {
 		// otherwise force the start and end of the PCR range
 		settings["PRIMER_TASK"] = "pick_cloning_primers"
-		settings["SEQUENCE_INCLUDED_REGION"] = fmt.Sprintf("%d,%d", start+len(seq), length)
+		settings["SEQUENCE_INCLUDED_REGION"] = fmt.Sprintf("%d,%d", start, length)
 	}
 
 	var fileBuffer bytes.Buffer
@@ -397,15 +417,15 @@ func (p *p3Exec) run() (err error) {
 // input is the target sequence we're building for. We need it to modulo
 // the primer ranges
 func (p *p3Exec) parse(input string) (err error) {
-	file, err := ioutil.ReadFile(p.out.Name())
+	fileBytes, err := ioutil.ReadFile(p.out.Name())
 	if err != nil {
 		return
 	}
-	fileContents := string(file)
+	file := string(fileBytes)
 
 	// read in results into map, they're all 1:1
 	results := make(map[string]string)
-	for _, line := range strings.Split(fileContents, "\n") {
+	for _, line := range strings.Split(file, "\n") {
 		keyVal := strings.Split(line, "=")
 		if len(keyVal) > 1 {
 			results[strings.TrimSpace(keyVal[0])] = strings.TrimSpace(keyVal[1])
@@ -413,14 +433,16 @@ func (p *p3Exec) parse(input string) (err error) {
 	}
 
 	if p3Warnings := results["PRIMER_WARNING"]; p3Warnings != "" {
-		return fmt.Errorf("Primer3 generated warnings: %s", p3Warnings)
+		return fmt.Errorf("warnings executing primer3: %s", p3Warnings)
 	}
 
 	if p3Error := results["PRIMER_ERROR"]; p3Error != "" {
+		fmt.Println(file)
 		return fmt.Errorf("failed to execute primer3: %s", p3Error)
 	}
 
 	if numPairs := results["PRIMER_PAIR_NUM_RETURNED"]; numPairs == "0" {
+		fmt.Println(file)
 		return fmt.Errorf("failed to create primers")
 	}
 

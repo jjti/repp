@@ -282,6 +282,7 @@ func Test_p3Exec_shrink(t *testing.T) {
 		n           *Frag
 		next        *Frag
 		maxHomology int
+		minLength   int
 	}
 	tests := []struct {
 		name   string
@@ -306,10 +307,11 @@ func Test_p3Exec_shrink(t *testing.T) {
 					start: 250,
 					end:   500,
 				},
-				maxHomology: 10, // much less than normal
+				maxHomology: 10, // much less than normal,
+				minLength:   20,
 			},
 			&Frag{
-				Seq:   "GCGAGGGTCGTGATGTCGGTTCCTTCAAAGGTTAAAGAACAAAGGCTTACTGTGCGCAGAGGAACGCCCATTTAGCGGCTGGCGTCTTGAATCCTCGGTCCCCCTTGTCTTTCCAGATTAATCCATTTCC",
+				Seq:   "GCGAGGGTCGTGATGTCGGTTCCTTCAAAGGTTAAAGAACAAAGGCTTACTGTGCGCAGAGGAACGCCCATTTAGCGGCTGGCGTCTTGAATCCTCGGTCCCCCTTGTCTTTCCAGATTAATCCATTTCCCTCATTCACGAGCTTACCAAGTCAACATTGGTATATGAAT",
 				start: 90,
 				end:   260,
 			},
@@ -328,7 +330,7 @@ func Test_p3Exec_shrink(t *testing.T) {
 				p3Conf: tt.fields.p3Conf,
 				p3Dir:  tt.fields.p3Dir,
 			}
-			if got := p.shrink(tt.args.last, tt.args.n, tt.args.next, tt.args.maxHomology); !reflect.DeepEqual(got, tt.want) {
+			if got := p.shrink(tt.args.last, tt.args.n, tt.args.next, tt.args.maxHomology, tt.args.minLength); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("p3Exec.shrink() = %v, want %v", got, tt.want)
 			}
 		})

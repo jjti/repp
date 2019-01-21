@@ -85,7 +85,7 @@ func Test_vector_igem(t *testing.T) {
 	fs := testFlags(
 		path.Join("..", "..", "test", "BBa_I5310.fa"),
 		path.Join("..", "..", "test", "output", "BBa_I5310.output.json"),
-		"pSB1C3",
+		"pSB1A3",
 		"EcoRI",
 		[]string{},
 		false,
@@ -100,6 +100,12 @@ func Test_vector_igem(t *testing.T) {
 	if len(assemblies) < 1 {
 		t.Error()
 	}
+
+	write(fs.out, Frag{
+		ID: "BBa_I5310",
+	}, assemblies)
+
+	t.Fail()
 }
 
 func Test_countMaps(t *testing.T) {

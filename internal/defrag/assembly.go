@@ -28,6 +28,7 @@ type assembly struct {
 func (a *assembly) add(f *Frag, maxCount int) (newAssembly assembly, created, complete bool) {
 	// check if we could complete an assembly with this new Frag
 	complete = f.uniqueID == a.frags[0].uniqueID
+
 	// calc the number of synthesis fragments needed to get to this next Frag
 	synths := a.frags[len(a.frags)-1].synthDist(f)
 

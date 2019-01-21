@@ -86,7 +86,7 @@ func Test_filter(t *testing.T) {
 		},
 	}
 
-	newMatches := filter(matches, 3) // keep all fragments larger than 3bp (all of them)
+	newMatches := filter(matches, 72, 3) // keep all fragments larger than 3bp (all of them)
 
 	// make sure they're gone
 	if len(newMatches) != 3 {

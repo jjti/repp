@@ -7,7 +7,7 @@ fragments:
   min-homology: 20
 
   # Maximum homology length between fragments
-  max-homology: 80
+  max-homology: 120
 
 # PCR settings
 pcr:
@@ -15,14 +15,14 @@ pcr:
   bp-cost: 0.09
 
   # Minimum length of a PCR fragment
-  min-length: 120
+  min-length: 100
 
   # Max primer3 pair penalty score
   primer3-penalty-max: 15.0
 
   # Max embedded length. The most bp to include upstream of a annealing portion
   # of a primer but not annealing/creating a junction with a downstream part
-  primer-max-embed-length: 8
+  primer-max-embed-length: 25
 
   # Max off-target primer binding site Tm, above which a PCR is abandoned
   primer-max-offtarget-tm: 40.0
