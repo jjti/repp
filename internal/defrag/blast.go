@@ -128,7 +128,7 @@ func blast(f *Frag, dbs []string, minLength int) (matches []match, err error) {
 			return nil, fmt.Errorf("failed to parse BLAST output: %v", err)
 		}
 
-		log.Printf("%d matches in %s\n", len(dbMatches), db)
+		fmt.Printf("%d matches in %s\n", len(dbMatches), db)
 
 		// add these matches against the growing list of matches
 		matches = append(matches, dbMatches...)

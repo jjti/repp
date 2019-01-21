@@ -91,7 +91,7 @@ func newFrag(m match, seqL int, conf *config.Config) *Frag {
 	}
 	if strings.Contains(m.entry, "gnl|igem") {
 		// create a source to the source iGEM page
-		re := regexp.MustCompile("^.*igem\\|(\\[^ ]*)")
+		re := regexp.MustCompile("^.*igem\\|(\\w*)")
 		match := re.FindStringSubmatch(m.entry)
 
 		cost = conf.IGEMPartCost // cost of igem part procurement

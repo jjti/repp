@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"path"
 	"path/filepath"
@@ -34,45 +35,56 @@ type flags struct {
 type inputParser struct{}
 
 // testFlags makes a new flags object out of the in, out, dbs passed
-func testFlags(in, out string, dbs []string, addgene bool) *flags {
-	dbPaths := dbs
+func testFlags(in, out, backbone, enzymeName string, dbs []string, addgene, igem bool) *flags {
+	c := config.New()
 
 	sep := string(os.PathSeparator)
-	addgenePath := sep + "etc" + sep + "defrag" + sep + "addgene"
 	if addgene {
-		dbPaths = append(dbPaths, addgenePath)
+		addgenePath := sep + "etc" + sep + "defrag" + sep + "addgene"
+		dbs = append(dbs, addgenePath)
+	}
+	if igem {
+		igemPath := sep + "etc" + sep + "defrag" + sep + "igem"
+		dbs = append(dbs, igemPath)
+	}
+
+	p := inputParser{}
+	parsedBB, err := p.parseBackbone(backbone, enzymeName, dbs, c)
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	return &flags{
-		in:  in,
-		out: out,
-		dbs: dbPaths,
+		in:       in,
+		out:      out,
+		dbs:      dbs,
+		backbone: parsedBB,
 	}
 }
 
 // parseCmdFlags gathers the in path, out path, etc from the cobra cmd object
-func parseCmdFlags(cmd *cobra.Command, conf *config.Config) (parsedFlags *flags, err error) {
-	parsedFlags = &flags{}
+func parseCmdFlags(cmd *cobra.Command, conf *config.Config) (fs *flags, err error) {
+	fs = &flags{} // parsed flags
 	p := inputParser{}
 
-	if parsedFlags.in, err = cmd.Flags().GetString("in"); err != nil {
+	if fs.in, err = cmd.Flags().GetString("in"); err != nil {
 		// check whether an input fail was specified
-		if parsedFlags.in, err = p.guessInput(); err != nil {
+		if fs.in, err = p.guessInput(); err != nil {
 			// try to guess at the input file the user wanted to use
 			return
 		}
 	}
 
-	if parsedFlags.out, err = cmd.Flags().GetString("out"); err != nil {
-		parsedFlags.out = p.guessOutput(parsedFlags.in)
+	if fs.out, err = cmd.Flags().GetString("out"); err != nil {
+		fs.out = p.guessOutput(fs.in) // guess at an output name
 	}
 
-	addgene, err := cmd.Flags().GetBool("addgene")
+	addgene, err := cmd.Flags().GetBool("addgene") // use addgene db?
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse addgene flag: %v", err)
 	}
 
-	igem, err := cmd.Flags().GetBool("igem")
+	igem, err := cmd.Flags().GetBool("igem") // use igem db?
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse igem flag: %v", err)
 	}
@@ -83,7 +95,7 @@ func parseCmdFlags(cmd *cobra.Command, conf *config.Config) (parsedFlags *flags,
 	}
 
 	// read in the BLAST DB paths
-	if parsedFlags.dbs, err = p.parseDBs(dbString, addgene, igem); err != nil || len(parsedFlags.dbs) == 0 {
+	if fs.dbs, err = p.parseDBs(dbString, addgene, igem); err != nil || len(fs.dbs) == 0 {
 		return nil, fmt.Errorf("failed to find any fragment databases: %v", err)
 	}
 
@@ -94,26 +106,9 @@ func parseCmdFlags(cmd *cobra.Command, conf *config.Config) (parsedFlags *flags,
 	enzymeName, _ := cmd.Flags().GetString("enzyme")
 
 	// try to digest the backbone with the enzyme
-	if backbone != "" {
-		if enzymeName == "" {
-			return nil, fmt.Errorf("backbone passed, %s, without an enzyme to digest it", backbone)
-		}
-
-		// confirm that the backbone exists in one of the dbs (or local fs) gather it as a Frag if it does
-		backbone, err := p.getBackbone(backbone, parsedFlags.dbs, conf)
-		if err != nil {
-			return nil, err
-		}
-
-		// gather the enzyme by name, err if it's unknown
-		enzyme, err := p.getEnzyme(enzymeName)
-		if err != nil {
-			return nil, err
-		}
-
-		if parsedFlags.backbone, err = digest(backbone, enzyme); err != nil {
-			return nil, err
-		}
+	fs.backbone, err = p.parseBackbone(backbone, enzymeName, fs.dbs, conf)
+	if err != nil {
+		return nil, err
 	}
 
 	return
@@ -122,61 +117,42 @@ func parseCmdFlags(cmd *cobra.Command, conf *config.Config) (parsedFlags *flags,
 // parseJSONFlags parses a JSON payload into flags usable by defrag
 //
 // it's distinct from parseCmdFlags because we want to write the io files ourselves
-func parseJSONFlags(payload []byte, conf *config.Config) (parsedFlags *flags, err error) {
-	parsedFlags = &flags{}
-	parser := inputParser{}
+func parseJSONFlags(data []byte, conf *config.Config) (fs *flags, err error) {
+	fs = &flags{} // parsed flags
 
-	inputPayload := &Payload{}
-	if err := json.Unmarshal(payload, inputPayload); err != nil {
+	payload := &Payload{}
+	if err := json.Unmarshal(data, payload); err != nil {
 		return nil, err // failed to demarshal
 	}
 
 	// write the input file to the local file system as a temp file
 	in, _ := ioutil.TempFile("", "json-input-*")
-	if inputPayload.Target != "" {
-		in.WriteString(fmt.Sprintf(">target_json\n%s\n", inputPayload.Target))
-	} else if inputPayload.Fragments != nil {
-		for _, frag := range inputPayload.Fragments {
+	if payload.Target != "" {
+		in.WriteString(fmt.Sprintf(">target_json\n%s\n", payload.Target))
+	} else if payload.Fragments != nil {
+		for _, frag := range payload.Fragments {
 			in.WriteString(fmt.Sprintf(">%s\n%s\n", frag.ID, frag.Seq))
 		}
 	} else {
 		return nil, fmt.Errorf("no input vector or fragments passed")
 	}
-	parsedFlags.in = in.Name() // store path to this new temporary file
+	fs.in = in.Name() // store path to this new temporary file
 
 	// ditto
 	out, _ := ioutil.TempFile("", "json-output-*")
-	parsedFlags.out = out.Name()
+	fs.out = out.Name()
 
 	// get the db paths. from JSON, this is just for getting the path
 	// to addgene and iGEM
-	dbs, err := parser.parseDBs("", inputPayload.Addgene, inputPayload.IGEM)
+	p := inputParser{}
+	fs.dbs, err = p.parseDBs("", payload.Addgene, payload.IGEM)
 	if err != nil {
 		return nil, err
 	}
-	parsedFlags.dbs = dbs
 
-	// try to digest the backbone with the enzyme
-	if inputPayload.Backbone != "" {
-		if inputPayload.Enzyme == "" {
-			return nil, fmt.Errorf("backbone passed, %s, without an enzyme to digest it", inputPayload.Backbone)
-		}
-
-		// confirm that the backbone exists in one of the dbs (or local fs) gather it as a Frag if it does
-		backbone, err := parser.getBackbone(inputPayload.Backbone, parsedFlags.dbs, conf)
-		if err != nil {
-			return nil, err
-		}
-
-		// gather the enzyme by name, err if it's unknown
-		enzyme, err := parser.getEnzyme(inputPayload.Enzyme)
-		if err != nil {
-			return nil, err
-		}
-
-		if parsedFlags.backbone, err = digest(backbone, enzyme); err != nil {
-			return nil, err
-		}
+	fs.backbone, err = p.parseBackbone(payload.Backbone, payload.Enzyme, fs.dbs, conf)
+	if err != nil {
+		return nil, err
 	}
 
 	return
@@ -256,6 +232,38 @@ func (p *inputParser) dbPaths(dbList string) (paths []string, err error) {
 	return
 }
 
+// parseBackbone takes a backbone, referenced by its id, and an enzyme to cleave the
+// backbone, and returns the linearized backbone as a Frag
+func (p *inputParser) parseBackbone(backbone, enzyme string, dbs []string, c *config.Config) (f Frag, err error) {
+	// if no backbone was specified, return an empty Frag
+	if backbone == "" {
+		return Frag{}, nil
+	}
+
+	// try to digest the backbone with the enzyme
+	if enzyme == "" {
+		return Frag{}, fmt.Errorf("backbone passed, %s, without an enzyme to digest it", backbone)
+	}
+
+	// confirm that the backbone exists in one of the dbs (or local fs) gather it as a Frag if it does
+	bbFrag, err := p.getBackbone(backbone, dbs, c)
+	if err != nil {
+		return Frag{}, err
+	}
+
+	// gather the enzyme by name, err if it's unknown
+	enz, err := p.getEnzyme(enzyme)
+	if err != nil {
+		return Frag{}, err
+	}
+
+	if f, err = digest(bbFrag, enz); err != nil {
+		return Frag{}, err
+	}
+
+	return
+}
+
 // getBackbone is for finding the backbone in one of the available databases
 // non-existent backbones will throw an error
 //
@@ -288,6 +296,8 @@ func (p *inputParser) getEnzyme(enzymeName string) (enzyme, error) {
 		return e, nil
 	}
 
-	return enzyme{}, fmt.Errorf(`failed to find enzyme with name %s
-use "defrag enzymes" for a list of recognized enzymes`, enzymeName)
+	return enzyme{}, fmt.Errorf(
+		`failed to find enzyme with name %s use "defrag enzymes" for a list of recognized enzymes`,
+		enzymeName,
+	)
 }

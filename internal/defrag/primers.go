@@ -109,11 +109,13 @@ func (f *Frag) setPrimers(last, next *Frag, seq string, conf *config.Config) (er
 
 	// 1. check for whether the primers have too have a pair penalty score
 	if f.Primers[0].PairPenalty > conf.PCR.P3MaxPenalty {
-		errMessage := fmt.Sprintf("primers have pair primer3 penalty score of %f, should be less than %f:\f%+v\f%+v",
+		errMessage := fmt.Sprintf(
+			"primers have pair primer3 penalty score of %f, should be less than %f:\f%+v\f%+v",
 			f.Primers[0].PairPenalty,
 			conf.PCR.P3MaxPenalty,
 			f.Primers[0],
-			f.Primers[1])
+			f.Primers[1],
+		)
 		f.Primers = nil
 		return fmt.Errorf(errMessage)
 	}
@@ -422,8 +424,6 @@ func (p *p3Exec) parse(input string) (err error) {
 		return fmt.Errorf("failed to create primers")
 	}
 
-	fmt.Println(p.in)
-
 	// read in a single primer from the output string file
 	// side is either "LEFT" or "RIGHT"
 	parsePrimer := func(side string) Primer {
@@ -439,7 +439,6 @@ func (p *p3Exec) parse(input string) (err error) {
 		pairfloat, _ := strconv.ParseFloat(pairPenalty, 64)
 
 		primerRange := results[fmt.Sprintf("PRIMER_%s_0", side)]
-		fmt.Printf("%+v", strings.Split(primerRange, ","))
 		primerStart, _ := strconv.Atoi(strings.Split(primerRange, ",")[0])
 		primerStart -= len(input)
 		primerEnd := primerStart + len(seq)

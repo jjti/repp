@@ -54,9 +54,13 @@ func Test_vector_single_vector(t *testing.T) {
 	fs := testFlags(
 		path.Join("..", "..", "test", "109049.addgene.fa"),
 		path.Join("..", "..", "test", "output", "109049.output.json"),
+		"",
+		"",
 		[]string{},
 		true,
+		false,
 	)
+
 	_, assemblies, err := vector(fs, c) // use addgene database
 	if err != nil {
 		t.Error(err)
@@ -72,6 +76,29 @@ func Test_vector_single_vector(t *testing.T) {
 
 	if assemblies[0][0].Type != circular {
 		t.Fatalf("failed to recognize 109049 as a Type.Vector, was %d", assemblies[0][0].Type)
+	}
+}
+
+// assemble an iGEM vector with a backbone
+func Test_vector_igem(t *testing.T) {
+	c := config.New()
+	fs := testFlags(
+		path.Join("..", "..", "test", "BBa_I5310.fa"),
+		path.Join("..", "..", "test", "output", "BBa_I5310.output.json"),
+		"pSB1C3",
+		"EcoRI",
+		[]string{},
+		false,
+		true,
+	)
+
+	_, assemblies, err := vector(fs, c) // use addgene database
+	if err != nil {
+		t.Error(err)
+	}
+
+	if len(assemblies) < 1 {
+		t.Error()
 	}
 }
 
