@@ -192,7 +192,7 @@ func Test_parentMismatch(t *testing.T) {
 				Primer{
 					Seq: tt.args.primer,
 				},
-			}, tt.args.parent, testDB, false, conf)
+			}, tt.args.parent, testDB, conf)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("parentMismatch() error = %v, wantErr %v", err, tt.wantErr)
 				return

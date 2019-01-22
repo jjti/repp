@@ -89,7 +89,6 @@ func vector(input *flags, conf *config.Config) (Frag, [][]Frag, error) {
 	// get all the matches against the fragment
 	matches, err := blast(&targetFrag, input.dbs, conf.PCR.MinLength)
 	if err != nil {
-		fmt.Printf("%+v", input.dbs)
 		dbMessage := strings.Join(input.dbs, ", ")
 		return Frag{}, nil, fmt.Errorf("failed to blast %s against the dbs %s: %v", targetFrag.ID, dbMessage, err)
 	}
@@ -147,11 +146,9 @@ func buildVector(matches []match, seq string, conf *config.Config) [][]Frag {
 				break
 			}
 
-			fmt.Println(singleAssembly.log())
 			filledFragments, err := singleAssembly.fill(seq, conf)
 			if err != nil {
 				// write the console for debugging, continue looking
-				fmt.Println(err)
 				continue
 			}
 
@@ -225,14 +222,6 @@ func createAssemblies(frags []*Frag, maxNodes int, seq string) (assemblies []ass
 
 	// for every Frag in the list of increasing start index frags
 	for i, f := range frags {
-		// if f.ID == "gnl|igem|BBa_I5310" {
-		// 	reachable := []string{}
-		// 	for _, j := range f.reach(frags, i, synthCount) {
-		// 		reachable = append(reachable, frags[j].ID)
-		// 	}
-		// 	fmt.Println(f.uniqueID + " reaches: " + strings.Join(reachable, ", "))
-		// }
-
 		// for every overlapping fragment + synthCount more
 		for _, j := range f.reach(frags, i, synthCount) {
 			// for every assembly on the reaching fragment
