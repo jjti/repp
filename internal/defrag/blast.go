@@ -127,7 +127,7 @@ func blast(f *Frag, dbs []string, minLength int) (matches []match, err error) {
 		}
 
 		// create the input file
-		if err := b.create(); err != nil {
+		if err := b.input(); err != nil {
 			return nil, fmt.Errorf("failed to write a BLAST input file at %s: %v", b.in.Name(), err)
 		}
 
@@ -156,16 +156,16 @@ func blast(f *Frag, dbs []string, minLength int) (matches []match, err error) {
 
 	fmt.Printf("%d matches after filtering\n", len(matches))
 
-	for _, m := range matches {
-		fmt.Printf("%s %d %d\n", m.entry, m.start, m.end)
-	}
+	// for _, m := range matches {
+	// 	fmt.Printf("%s %d %d\n", m.entry, m.start, m.end)
+	// }
 
 	return matches, nil
 }
 
 // input creates an input file for BLAST
 // return the path to the file and an error if there was one
-func (b *blastExec) create() error {
+func (b *blastExec) input() error {
 	// create the query sequence file.
 	// add the sequence to itself because it's circular
 	// and we want to find matches across the zero-index.
@@ -233,7 +233,7 @@ func (b *blastExec) parse() (matches []match, err error) {
 		start, _ := strconv.Atoi(cols[1])
 		end, _ := strconv.Atoi(cols[2])
 		seq := cols[5]
-		mismatch, _ := strconv.Atoi(cols[6])
+		mm, _ := strconv.Atoi(cols[6])
 
 		// direction not guarenteed
 		if start > end {
@@ -250,11 +250,14 @@ func (b *blastExec) parse() (matches []match, err error) {
 			end:   end - 1,
 			// brittle, but checking for circular in entry's entry
 			circular:    strings.Contains(entry, "circular"),
-			mismatching: mismatch,
+			mismatching: mm,
 			internal:    b.internal,
 			db:          b.db, // store for checking off-targets later
 		})
 	}
+
+	// sort by start index, then remove those with duplicate start indexes
+
 	return ms, nil
 }
 
@@ -369,7 +372,7 @@ func seqMismatch(primers []Primer, parentID, parentSeq string, conf *config.Conf
 
 	// check each primer for mismatches
 	for _, primer := range primers {
-		wasMismatch, m, err = mismatch(primer.Seq, parentFile, false, conf)
+		wasMismatch, m, err = mismatch(primer.Seq, parentFile, conf)
 		if wasMismatch || err != nil {
 			return
 		}
@@ -380,7 +383,7 @@ func seqMismatch(primers []Primer, parentID, parentSeq string, conf *config.Conf
 
 // parentMismatch both searches for a the parent fragment in its source DB and queries for
 // any mismatches in the seq before returning
-func parentMismatch(primers []Primer, parent, db string, circular bool, conf *config.Config) (wasMismatch bool, m match, err error) {
+func parentMismatch(primers []Primer, parent, db string, conf *config.Config) (wasMismatch bool, m match, err error) {
 	// try and query for the parent in the source DB and write to a file
 	parentFile, err := blastdbcmd(parent, db, conf)
 
@@ -401,7 +404,7 @@ func parentMismatch(primers []Primer, parent, db string, circular bool, conf *co
 		defer os.Remove(parentFile.Name())
 
 		for _, primer := range primers {
-			wasMismatch, m, err = mismatch(primer.Seq, parentFile, circular, conf)
+			wasMismatch, m, err = mismatch(primer.Seq, parentFile, conf)
 			if wasMismatch || err != nil {
 				return
 			}
@@ -464,9 +467,8 @@ func blastdbcmd(entry, db string, conf *config.Config) (output *os.File, err err
 // mismatch finds mismatching sequences between the query sequence and
 // the parent sequence (in the parent file)
 //
-// The fragment to query against is stored in a file ".parent"
-// db is passed as the path to the db we're blasting against
-func mismatch(primer string, parentFile *os.File, circular bool, c *config.Config) (wasMismatch bool, m match, err error) {
+// The fragment to query against is stored in parentFile
+func mismatch(primer string, parentFile *os.File, c *config.Config) (wasMismatch bool, m match, err error) {
 	// path to the entry batch file to hold the entry accession
 	in, err := ioutil.TempFile(blastnDir, ".primer.in")
 	if err != nil {
@@ -507,22 +509,28 @@ func mismatch(primer string, parentFile *os.File, circular bool, c *config.Confi
 
 	// parse the results and check whether any are cause for concern (by Tm)
 	primerCount := 1 // number of times we expect to see the primer itself
-	for i, m := range matches {
-		if i == 0 && circular {
-			// if the match is against a circular fragment, we might expect to see
-			// the primer's sequence twice, rather than just once
-			primerCount++
+	parentFileContents, err := ioutil.ReadFile(parentFile.Name())
+	if err != nil {
+		return false, match{}, err
+	}
+
+	if strings.Contains(string(parentFileContents), "circular") {
+		// if the match is against a circular fragment, more than likely we expect to see
+		// the primer's sequence twice, rather than just once
+		// TODO: one exception here is if the primer is on a range that crosses the zero index
+		primerCount++
+	}
+
+	for _, m := range matches {
+		if strings.Contains(primer, m.seq) || isMismatch(m, c) {
+			primerCount--
 		}
 
-		// one of the matches will, of course, be against the primer itself
-		// and we don't want to double count it
-		if primerCount > 0 && strings.Contains(strings.ToUpper(primer), strings.ToUpper(m.seq)) {
-			primerCount--
-			continue
-		} else if isMismatch(m, c) {
+		if primerCount < 0 {
 			return true, m, nil
 		}
 	}
+
 	return false, match{}, nil
 }
 

@@ -75,7 +75,13 @@ def parse(page_index):
             seq = "".join(seq)
             seq = "".join(seq.split())
             f.write(
-                ">gnl|addgene|" + str(page_index) + " " + name + " circular fwd\n" + seq
+                ">gnl|addgene|"
+                + str(page_index)
+                + " "
+                + name
+                + " circular fwd\n"
+                + seq  # double the sequence so it's circular
+                + seq
             )
             file_written = True
         else:

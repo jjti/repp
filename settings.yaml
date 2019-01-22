@@ -25,7 +25,7 @@ pcr:
   primer-max-embed-length: 20
 
   # Max off-target primer binding site Tm, above which a PCR is abandoned
-  primer-max-offtarget-tm: 40.0
+  primer-max-offtarget-tm: 45.0
 
 # Synthesis settings
 synthesis:

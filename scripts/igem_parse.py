@@ -83,6 +83,7 @@ def write_parts(parts):
                     + type
                     + "\n"
                     + seq
+                    + seq  # double the seq because it's circular
                     + "\n"
                 )
             else:

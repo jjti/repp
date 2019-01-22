@@ -140,7 +140,7 @@ func (f *Frag) setPrimers(last, next *Frag, seq string, conf *config.Config) (er
 		mismatchExists, mm, err = seqMismatch(f.Primers, f.ID, f.fullSeq, conf)
 	} else {
 		// otherwise, query the fragment from the DB (try to find it) and then check for mismatches
-		mismatchExists, mm, err = parentMismatch(f.Primers, f.ID, f.db, f.circular, conf)
+		mismatchExists, mm, err = parentMismatch(f.Primers, f.ID, f.db, conf)
 	}
 
 	if err != nil {
@@ -194,8 +194,8 @@ func (p *p3Exec) input(minHomology, maxHomology, maxEmbedLength, minLength int) 
 	p.shrink(p.last, p.f, p.next, maxHomology, minLength) // could skip passing as a param, but this is a bit easier to test imo
 
 	// calc the bps to add on the left and right side of this Frag
-	addLeft := p.bpToAdd(p.last, p.f, minHomology)
-	addRight := p.bpToAdd(p.f, p.next, minHomology)
+	addLeft := p.bpToAdd(p.last, p.f)
+	addRight := p.bpToAdd(p.f, p.next)
 	growPrimers := addLeft
 	if growPrimers < addRight {
 		growPrimers = addRight
@@ -299,16 +299,17 @@ func (p *p3Exec) shrink(last, f, next *Frag, maxHomology int, minLength int) *Fr
 
 // bpToAdd calculates the number of bp to add the end of a left Frag to create a junction
 // with the rightmost Frag
-func (p *p3Exec) bpToAdd(left, right *Frag, minHomology int) int {
+func (p *p3Exec) bpToAdd(left, right *Frag) int {
+	if !left.overlapsViaPCR(right) {
+		return 0 // we're going to synthesize there, don't add bp via PCR
+	}
+
 	if left.overlapsViaHomology(right) {
 		return 0 // there is already enough overlap via PCR
 	}
 
-	if left.synthDist(right) > 0 {
-		return 0 // we're going to synthesize there, don't add bp via PCR
-	}
-
 	// we're not going to synth our way here, check that there's already enough homology
+	minHomology := left.conf.Fragments.MinHomology
 	if bpDist := left.distTo(right); bpDist > -minHomology {
 		// this Frag will add half the homology to the last fragment
 		// ex: 5 bp distance leads to 2.5bp + ~10bp additonal
@@ -317,7 +318,6 @@ func (p *p3Exec) bpToAdd(left, right *Frag, minHomology int) int {
 		return bpDist + (minHomology / 2)
 	}
 
-	log.Fatal("unexpected distance between fragments")
 	return 0
 }
 

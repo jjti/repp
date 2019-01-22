@@ -339,12 +339,14 @@ func Test_p3Exec_shrink(t *testing.T) {
 
 func Test_bpToAdd(t *testing.T) {
 	c := config.New()
+	c.PCR.MaxEmbedLength = 20
+	c.Fragments.MinHomology = 10
+
 	p := p3Exec{}
 
 	type args struct {
-		left        *Frag
-		right       *Frag
-		minHomology int
+		left  *Frag
+		right *Frag
 	}
 	tests := []struct {
 		name        string
@@ -364,7 +366,6 @@ func Test_bpToAdd(t *testing.T) {
 					end:   30,
 					conf:  c,
 				},
-				minHomology: 10,
 			},
 			0,
 		},
@@ -381,7 +382,6 @@ func Test_bpToAdd(t *testing.T) {
 					end:   30,
 					conf:  c,
 				},
-				minHomology: 10,
 			},
 			0,
 		},
@@ -398,9 +398,8 @@ func Test_bpToAdd(t *testing.T) {
 					end:   30,
 					conf:  c,
 				},
-				minHomology: 3,
 			},
-			7,
+			11,
 		},
 		{
 			"correct bp to share when negative",
@@ -415,15 +414,14 @@ func Test_bpToAdd(t *testing.T) {
 					end:   1050,
 					conf:  c,
 				},
-				minHomology: 20,
 			},
 			0,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if gotBpToAdd := p.bpToAdd(tt.args.left, tt.args.right, tt.args.minHomology); gotBpToAdd != tt.wantBpToAdd {
-				t.Errorf("bpToShare() = %v, want %v", gotBpToAdd, tt.wantBpToAdd)
+			if gotBpToAdd := p.bpToAdd(tt.args.left, tt.args.right); gotBpToAdd != tt.wantBpToAdd {
+				t.Errorf("bpToAdd() = %v, want %v", gotBpToAdd, tt.wantBpToAdd)
 			}
 		})
 	}
