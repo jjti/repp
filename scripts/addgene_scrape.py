@@ -44,7 +44,7 @@ def parse(page_index):
     get a page from addgene and save its fragments/vectors if it's a defined id
     """
     page = requests.get("https://www.addgene.org/" + str(page_index))
-    if "Discontinued" in page.content:
+    if "Discontinued" in str(page.content):
         # avoid discontinued sequences
         return False
 
@@ -119,8 +119,8 @@ def parse(page_index):
     return file_written
 
 
-assert (parse(39081)) == True
-assert (parse(24873)) == False  # discontinued
+assert parse(39081) == True
+assert parse(24873) == False  # discontinued
 
 
 def scrape_files():
@@ -174,5 +174,5 @@ def combine():
             combined_fasta.write(open(f, "r").read().strip() + "\n")
 
 
-scrape_files()
+# scrape_files()
 combine()

@@ -9,14 +9,18 @@ import (
 	"path/filepath"
 	"sort"
 
+	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/viper"
 )
 
 var (
-	sep = string(filepath.Separator)
+	home, _ = homedir.Dir()
+
+	// BaseDir is the root directory where defrag settings and database files live
+	BaseDir = filepath.Join(home, ".defrag")
 
 	// BaseSettingsFile is the default settings file path for the config package
-	BaseSettingsFile = sep + "etc" + sep + "defrag" + sep + "config.yaml"
+	BaseSettingsFile = filepath.Join(BaseDir, "config.yaml")
 )
 
 // SynthCost is meta about the cost of synthesizing DNA up to a certain
@@ -91,14 +95,14 @@ func New() *Config {
 		log.Fatal(err)
 	}
 
-	if userSettingsFile := viper.GetString("settings"); userSettingsFile != "" && userSettingsFile != BaseSettingsFile {
-		viper.SetConfigFile(userSettingsFile) // user has specified a new path for a settings file
+	if userSettings := viper.GetString("settings"); userSettings != "" && userSettings != BaseSettingsFile {
+		viper.SetConfigFile(userSettings) // user has specified a new path for a settings file
 
 		// read in user defined settings file
 		if err := viper.MergeInConfig(); err == nil {
 			fmt.Println("Using config file: ", viper.ConfigFileUsed())
 		} else {
-			log.Fatalf("%v", err)
+			log.Fatal(err)
 		}
 	}
 
@@ -118,7 +122,7 @@ func New() *Config {
 	// build Config
 	config := &Config{}
 	if err := viper.Unmarshal(&config); err != nil {
-		log.Fatalf("Failed to decode settings file %s: %v", viper.ConfigFileUsed(), err)
+		log.Fatalf("failed to decode settings file %s: %v", viper.ConfigFileUsed(), err)
 	}
 	return config
 }
@@ -151,5 +155,6 @@ func (c Config) SynthCost(fragLength int) float64 {
 	if synthCost.Fixed {
 		return synthCost.Dollars
 	}
+
 	return float64(fragLength) * synthCost.Dollars
 }
