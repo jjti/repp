@@ -87,8 +87,8 @@ func assembleFragments(inputFragments []Frag, conf *config.Config) (targetVector
 	// set the start, end, and vector sequence based on that
 	//
 	// add all of each frags seq to the vector sequence, minus the region overlapping the next
-	minHomology := conf.Fragments.MinHomology
-	maxHomology := conf.Fragments.MaxHomology
+	minHomology := conf.FragmentsMinHomology
+	maxHomology := conf.FragmentsMaxHomology
 	junction := frags[len(frags)-1].junction(frags[0], minHomology, maxHomology)
 	var vectorSeq strings.Builder
 	for i, n := range frags {

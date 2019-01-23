@@ -9,8 +9,8 @@ import (
 
 func Test_assembleFragments(t *testing.T) {
 	c := config.New()
-	c.Fragments.MinHomology = 8
-	c.Fragments.MaxHomology = 20
+	c.FragmentsMinHomology = 8
+	c.FragmentsMaxHomology = 20
 
 	type args struct {
 		inputFragments []Frag

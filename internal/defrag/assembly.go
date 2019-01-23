@@ -110,8 +110,8 @@ func (a *assembly) log() string {
 //
 // It can fail. For example, a PCR Frag may have off-targets in the parent vector
 func (a *assembly) fill(seq string, conf *config.Config) (frags []Frag, err error) {
-	minHomology := conf.Fragments.MinHomology
-	maxHomology := conf.Fragments.MaxHomology
+	minHomology := conf.FragmentsMinHomology
+	maxHomology := conf.FragmentsMaxHomology
 
 	// check for and error out if there are duplicate ends between fragments
 	// ie unintended junctions between fragments that shouldn't be annealing

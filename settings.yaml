@@ -1,60 +1,50 @@
-# Building fragment settings
-fragments:
-  # Maximum number of building fragments in final assembly
-  max-count: 5
+# Maximum number of building fragments in final assembly
+fragments-max-count: 5
 
-  # Minimum homology length between fragments
-  min-homology: 20
+# Minimum homology length between fragments
+fragments-min-homology: 20
 
-  # Maximum homology length between fragments
-  max-homology: 120
+# Maximum homology length between fragments
+fragments-max-homology: 120
 
-# PCR settings
-pcr:
-  # Cost per bp of PCR primer
-  bp-cost: 0.09
+# Cost per bp of PCR primer
+pcr-bp-cost: 0.09
 
-  # Minimum length of a PCR fragment
-  min-length: 85
+# Minimum length of a PCR fragment
+pcr-min-length: 85
 
-  # Max primer3 pair penalty score
-  primer3-penalty-max: 20.0
+# Max primer3 pair penalty score
+pcr-primer3-penalty-max: 20.0
 
-  # Max embedded length. The most bp to include upstream of a annealing portion
-  # of a primer to create or extend a junction with another part
-  primer-max-embed-length: 20
+# Max embedded length. The most bp to include upstream of a annealing portion
+# of a primer to create or extend a junction with another part
+pcr-primer-max-embed-length: 20
 
-  # Max off-target primer binding site Tm, above which a PCR is abandoned
-  primer-max-offtarget-tm: 45.0
+# Max off-target primer binding site Tm, above which a PCR is abandoned
+pcr-primer-max-offtarget-tm: 45.0
 
-# Synthesis settings
-synthesis:
-  # Cost of synthesis (step-function)
-  cost:
-    # up to 500 == $160 (fixed)
-    500:
-      fixed: true
-      dollars: 160
+# Cost of synthesis (step-function)
+synthesis-cost:
+  # up to 500 == $160 (fixed)
+  500:
+    fixed: true
+    dollars: 160
 
-    # up to 3kbp == $0.035/bp
-    3000:
-      fixed: false
-      dollars: 0.035
+  # up to 3kbp == $0.035/bp
+  3000:
+    fixed: false
+    dollars: 0.035
 
-    # anything larger == $0.6/bp
-    10000000:
-      fixed: false
-      dollars: 0.6
+  # anything larger == $0.6/bp
+  10000000:
+    fixed: false
+    dollars: 0.6
 
-  ###
-  # Synthesis Complexities
-  ###
+# Minimum length of a synthesized building fragment
+synthesis-min-length: 1
 
-  # Minimum length of a synthesized building fragment
-  min-length: 1
-
-  # Maximum length of a synthesized building fragment
-  max-length: 3000
+# Maximum length of a synthesized building fragment
+synthesis-max-length: 3000
 
 # cost of a single addgene vector
 addgene-vector-cost: 65.0

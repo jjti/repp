@@ -571,7 +571,7 @@ func isMismatch(m match, c *config.Config) bool {
 	tmNoMismatch := 81.5 + 0.41*gcPerc - 675/float64(len(primer))
 	tmWithMismatch := tmNoMismatch - float64(m.mismatching)/primerL
 
-	return tmWithMismatch > c.PCR.MaxOfftargetTm
+	return tmWithMismatch > c.PCRMaxOfftargetTm
 }
 
 func init() {

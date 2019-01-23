@@ -87,7 +87,7 @@ func vector(input *flags, conf *config.Config) (Frag, [][]Frag, error) {
 	}
 
 	// get all the matches against the fragment
-	matches, err := blast(&targetFrag, input.dbs, conf.PCR.MinLength)
+	matches, err := blast(&targetFrag, input.dbs, conf.PCRMinLength)
 	if err != nil {
 		dbMessage := strings.Join(input.dbs, ", ")
 		return Frag{}, nil, fmt.Errorf("failed to blast %s against the dbs %s: %v", targetFrag.ID, dbMessage, err)
@@ -120,7 +120,7 @@ func buildVector(matches []match, seq string, conf *config.Config) [][]Frag {
 
 	// build up a slice of assemblies that could, within the upper-limit on
 	// fragment count, be assembled to make the target vector
-	assemblies := createAssemblies(nodes, conf.Fragments.MaxCount, seq)
+	assemblies := createAssemblies(nodes, conf.FragmentsMaxCount, seq)
 
 	// build up a map from fragment count to a sorted list of assemblies with that number
 	groupedAssemblies := groupAssemblies(assemblies)

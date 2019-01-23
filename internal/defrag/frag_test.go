@@ -82,8 +82,8 @@ func Test_Frag_distTo(t *testing.T) {
 func Test_Frag_synthDist(t *testing.T) {
 	c := config.New()
 
-	c.PCR.MaxEmbedLength = 0
-	c.Synthesis.MaxLength = 100
+	c.PCRMaxEmbedLength = 0
+	c.SynthesisMaxLength = 100
 
 	type fields struct {
 		ID         string
@@ -151,9 +151,9 @@ func Test_Frag_synthDist(t *testing.T) {
 
 func Test_Frag_costTo(t *testing.T) {
 	c := config.New()
-	c.Fragments.MinHomology = 20
-	c.PCR.BPCost = 0.03
-	c.Synthesis.Cost = map[int]config.SynthCost{
+	c.FragmentsMinHomology = 20
+	c.PCRBPCost = 0.03
+	c.SynthesisCost = map[int]config.SynthCost{
 		100000: {
 			Fixed:   false,
 			Dollars: 0.05,
@@ -245,7 +245,7 @@ func Test_Frag_costTo(t *testing.T) {
 func Test_Frag_reach(t *testing.T) {
 	c := config.New()
 
-	c.Fragments.MinHomology = 2
+	c.FragmentsMinHomology = 2
 
 	n11 := &Frag{
 		start: 0,
@@ -350,9 +350,9 @@ func Test_Frag_reach(t *testing.T) {
 
 func Test_Frag_synthTo(t *testing.T) {
 	c := config.New()
-	c.Fragments.MinHomology = 2
-	c.Synthesis.MinLength = 4
-	c.Synthesis.MaxLength = 100
+	c.FragmentsMinHomology = 2
+	c.SynthesisMinLength = 4
+	c.SynthesisMaxLength = 100
 
 	type fields struct {
 		ID         string
