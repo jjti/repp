@@ -227,9 +227,6 @@ func createAssemblies(frags []*Frag, maxNodes int, seq string) (assemblies []ass
 			// for every assembly on the reaching fragment
 			for _, a := range f.assemblies {
 				newAssembly, created, complete := a.add(frags[j], maxNodes)
-				// if f.ID == "gnl|igem|pSB1A3" && frags[j].ID == "gnl|igem|BBa_I5310" {
-				// 	fmt.Printf("%s, %t, %t \n", newAssembly.log(), created, complete)
-				// }
 
 				// see if we can create a new assembly with this Frag included
 				if created {

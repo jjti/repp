@@ -11,8 +11,8 @@ DEFRAGETC=/etc/defrag
 PLATFORM:=$(shell uname)
 
 # copy settings file, going to add to it during install
-SETTINGS=./settings.yaml
-TEMPSETTINGS=./settings.temp
+SETTINGS=./config/defrag.conf
+TEMPSETTINGS=./defrag.temp.conf
 
 ifeq ($(OS),Windows_NT)
 	$(error "defrag" does not support Windows)
@@ -51,7 +51,7 @@ endif
 endif
 
 	# install config file to /etc/defrag
-	mv $(TEMPSETTINGS) $(DEFRAGETC)/settings.yaml
+	mv $(TEMPSETTINGS) $(DEFRAGETC)/defrag.conf
 
 	# copy BLAST databases
 	cp -r ./assets/addgene/db/** $(DEFRAGETC) 

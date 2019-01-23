@@ -10,7 +10,7 @@ import (
 var VectorCmd = &cobra.Command{
 	Use:   "vector",
 	Short: "Build a target vector from local and/or remote fragments",
-	Long: `Build up a vector, by its sequence, from the best combination of existing
+	Long: `Build up a vector, by its sequence, from some combination of existing
 and synthesized fragments.
 
 Combinations of fragments matching the target sequence are checked to find the
