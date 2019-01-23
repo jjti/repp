@@ -10,10 +10,10 @@ import (
 func Test_assembly_add(t *testing.T) {
 	c := config.New()
 
-	c.Fragments.MaxCount = 5
-	c.PCR.MaxEmbedLength = 0
-	c.Synthesis.MaxLength = 100
-	c.Synthesis.Cost = map[int]config.SynthCost{
+	c.FragmentsMaxCount = 5
+	c.PCRMaxEmbedLength = 0
+	c.SynthesisMaxLength = 100
+	c.SynthesisCost = map[int]config.SynthCost{
 		100000: {
 			Fixed:   true,
 			Dollars: 0.0,
@@ -122,15 +122,15 @@ func Test_assembly_add(t *testing.T) {
 				// a Frag that's too far away for straightforward annealing
 				n: &Frag{
 					uniqueID: n1.uniqueID,
-					start:    n3.start + c.Synthesis.MaxLength,
-					end:      n3.end + c.Synthesis.MaxLength,
+					start:    n3.start + c.SynthesisMaxLength,
+					end:      n3.end + c.SynthesisMaxLength,
 				},
 			},
 			assembly{
 				frags: []*Frag{n1, n2, n3, &Frag{
 					uniqueID: n1.uniqueID,
-					start:    n3.start + c.Synthesis.MaxLength,
-					end:      n3.end + c.Synthesis.MaxLength,
+					start:    n3.start + c.SynthesisMaxLength,
+					end:      n3.end + c.SynthesisMaxLength,
 				}},
 				cost:   16.4,
 				synths: 1,
@@ -233,11 +233,11 @@ func Test_assembly_len(t *testing.T) {
 
 func Test_assembly_fill(t *testing.T) {
 	c := config.New()
-	c.Fragments.MinHomology = 5
-	c.Fragments.MaxHomology = 50
-	c.PCR.MinLength = 50
-	c.Synthesis.MaxLength = 1000
-	c.PCR.P3MaxPenalty = 40.0
+	c.FragmentsMinHomology = 5
+	c.FragmentsMaxHomology = 50
+	c.PCRMinLength = 50
+	c.SynthesisMaxLength = 1000
+	c.PCRP3MaxPenalty = 40.0
 
 	// All of these ids correspond to entires in the test BLAST db
 	f1 := &Frag{

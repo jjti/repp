@@ -129,7 +129,7 @@ func parseJSONFlags(data []byte, conf *config.Config) (fs *flags, err error) {
 	in, _ := ioutil.TempFile("", "json-input-*")
 	if payload.Target != "" {
 		in.WriteString(fmt.Sprintf(">target_json\n%s\n", payload.Target))
-	} else if payload.Fragments != nil {
+	} else if payload != nil {
 		for _, frag := range payload.Fragments {
 			in.WriteString(fmt.Sprintf(">%s\n%s\n", frag.ID, frag.Seq))
 		}

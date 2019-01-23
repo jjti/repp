@@ -1,6 +1,7 @@
 package defrag
 
 import (
+	"fmt"
 	"path"
 	"path/filepath"
 	"reflect"
@@ -82,6 +83,7 @@ func Test_vector_single_vector(t *testing.T) {
 // assemble an iGEM vector with a backbone
 func Test_vector_igem(t *testing.T) {
 	c := config.New()
+	fmt.Printf("%+v", c)
 	out := path.Join("..", "..", "test", "output", "BBa_I5310.output.json")
 
 	fs := testFlags(
@@ -195,13 +197,13 @@ func Test_build(t *testing.T) {
 	seq := "GTCGACGGATCGGGAGATCTCCCGATCCCCTATGGTGCACTCTCAGTACAATCTGCTCTGATGCCGCATAGTCGACGGATCGGGAGATCTCCCGATCCCCTATGGTGCACTCTCAGTACAATCTGCTCTGATGCCGCATA"
 	c := config.New()
 
-	c.Synthesis.MaxLength = 5
-	c.Fragments.MinHomology = 1
-	c.Fragments.MaxCount = 3
+	c.SynthesisMaxLength = 5
+	c.FragmentsMinHomology = 1
+	c.FragmentsMaxCount = 3
 
 	// ignore cost for now
-	c.PCR.BPCost = 0
-	c.Synthesis.Cost = map[int]config.SynthCost{
+	c.PCRBPCost = 0
+	c.SynthesisCost = map[int]config.SynthCost{
 		100000: {
 			Fixed:   true,
 			Dollars: 0.0,
@@ -289,7 +291,7 @@ func Test_build(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assemblies := createAssemblies(tt.args.nodes, c.Fragments.MaxCount, seq)
+			assemblies := createAssemblies(tt.args.nodes, c.FragmentsMaxCount, seq)
 
 			// concatenate Frag ids together
 			actualIds := getNodeSet(assemblies)

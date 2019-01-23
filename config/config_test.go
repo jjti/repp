@@ -8,39 +8,27 @@ import (
 
 func TestConfig_SynthCost(t *testing.T) {
 	type fields struct {
-		DBs       string
-		Fragments FragmentConfig
-		PCR       PCRConfig
-		Synthesis SynthesisConfig
-		filled    bool
+		SynthesisCost map[int]SynthCost
 	}
 	type args struct {
 		fragLength int
 	}
 
 	configFields := fields{
-		DBs:       "",
-		Fragments: FragmentConfig{},
-		PCR:       PCRConfig{},
-		Synthesis: SynthesisConfig{
-			Cost: map[int]SynthCost{
-				50: SynthCost{
-					Fixed:   true,
-					Dollars: 5,
-				},
-				200: SynthCost{
-					Fixed:   false,
-					Dollars: 0.1,
-				},
-				10000: SynthCost{
-					Fixed:   false,
-					Dollars: 0.50,
-				},
+		SynthesisCost: map[int]SynthCost{
+			50: SynthCost{
+				Fixed:   true,
+				Dollars: 5,
 			},
-			MaxLength: 1000,
-			MinLength: 20,
+			200: SynthCost{
+				Fixed:   false,
+				Dollars: 0.1,
+			},
+			10000: SynthCost{
+				Fixed:   false,
+				Dollars: 0.50,
+			},
 		},
-		filled: true,
 	}
 
 	tests := []struct {
@@ -77,11 +65,7 @@ func TestConfig_SynthCost(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := Config{
-				DBs:       tt.fields.DBs,
-				Fragments: tt.fields.Fragments,
-				PCR:       tt.fields.PCR,
-				Synthesis: tt.fields.Synthesis,
-				filled:    tt.fields.filled,
+				SynthesisCost: tt.fields.SynthesisCost,
 			}
 			if got := c.SynthCost(tt.args.fragLength); got != tt.want {
 				t.Errorf("Config.SynthCost() = %v, want %v", got, tt.want)

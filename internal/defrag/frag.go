@@ -136,13 +136,13 @@ func (f *Frag) distTo(other *Frag) (bpDist int) {
 // overlapsViaPCR returns whether this Frag could overlap the other Frag through homology
 // created via PCR
 func (f *Frag) overlapsViaPCR(other *Frag) bool {
-	return f.distTo(other) <= f.conf.PCR.MaxEmbedLength
+	return f.distTo(other) <= f.conf.PCRMaxEmbedLength
 }
 
 // overlapsViaHomology returns whether this Frag already has sufficient overlap with the
 // other Frag, without any preparation like PCR
 func (f *Frag) overlapsViaHomology(other *Frag) bool {
-	return f.distTo(other) < -(f.conf.Fragments.MinHomology)
+	return f.distTo(other) < -(f.conf.FragmentsMinHomology)
 }
 
 // synthDist returns the number of synthesized fragments that would need to be created
@@ -162,7 +162,7 @@ func (f *Frag) synthDist(other *Frag) (synthCount int) {
 	floatDist := math.Max(1.0, float64(dist))
 
 	// split up the distance between them by the max synthesized fragment size
-	return int(math.Ceil(floatDist / float64(f.conf.Synthesis.MaxLength)))
+	return int(math.Ceil(floatDist / float64(f.conf.SynthesisMaxLength)))
 }
 
 // costTo calculates the $ amount needed to get from this fragment
@@ -183,18 +183,18 @@ func (f *Frag) costTo(other *Frag) (cost float64) {
 		if f.overlapsViaHomology(other) {
 			// there's already enough overlap between this Frag and the one being tested
 			// estimating two primers, 20bp each
-			return 46 * f.conf.PCR.BPCost
+			return 46 * f.conf.PCRBPCost
 		}
 
 		// we have to create some additional primer sequence to reach the next fragment
 		// guessing 46bp (2x primer3 target primer length) plus half MinHomology on each primer
-		return float64(46+f.conf.Fragments.MinHomology) * f.conf.PCR.BPCost
+		return float64(46+f.conf.FragmentsMinHomology) * f.conf.PCRBPCost
 	}
 
 	// we need to create a new synthetic fragment to get from this fragment to the next
 	// to account for both the bps between them as well as the additional bps we need to add
 	// for homology between the two
-	fragLength := f.conf.Fragments.MinHomology + dist
+	fragLength := f.conf.FragmentsMinHomology + dist
 	return f.conf.SynthCost(fragLength)
 }
 
@@ -280,22 +280,22 @@ func (f *Frag) synthTo(next *Frag, seq string) (synthedFrags []Frag) {
 
 	// length of each synthesized fragment
 	fragL := f.distTo(next) / fragC
-	if f.conf.Synthesis.MinLength > fragL {
+	if f.conf.SynthesisMinLength > fragL {
 		// need to synthesize at least Synthesis.MinLength bps
-		fragL = f.conf.Synthesis.MinLength
+		fragL = f.conf.SynthesisMinLength
 	}
 
 	// account for homology on either end of each synthetic fragment
-	fragL += f.conf.Fragments.MinHomology * 2
+	fragL += f.conf.FragmentsMinHomology * 2
 	seq += seq // double to account for sequence across the zero-index
 
 	// slide along the range of sequence to create synthetic fragments
 	// and create one at each point, each w/ MinHomology for the fragment
 	// before and after it
 	for fragIndex := 0; fragIndex < int(fragC); fragIndex++ {
-		start := f.end - f.conf.Fragments.MinHomology // start w/ homology
-		start += fragIndex * fragL                    // slide along the range to cover
-		end := start + fragL + f.conf.Fragments.MinHomology
+		start := f.end - f.conf.FragmentsMinHomology // start w/ homology
+		start += fragIndex * fragL                   // slide along the range to cover
+		end := start + fragL + f.conf.FragmentsMinHomology
 
 		sFrag := Frag{
 			ID:   fmt.Sprintf("%s-synthetic-%d", f.ID, fragIndex+1),

@@ -88,10 +88,10 @@ func (f *Frag) setPrimers(last, next *Frag, seq string, conf *config.Config) (er
 	// make input file and write to the fs
 	// find how many bp of additional sequence need to be added
 	// to the left and right primers (too large for primer3_core)
-	minHomology := conf.Fragments.MinHomology
-	maxHomology := conf.Fragments.MaxHomology
-	maxEmbedLength := conf.PCR.MaxEmbedLength
-	minLength := conf.PCR.MinLength
+	minHomology := conf.FragmentsMinHomology
+	maxHomology := conf.FragmentsMaxHomology
+	maxEmbedLength := conf.PCRMaxEmbedLength
+	minLength := conf.PCRMinLength
 	addLeft, addRight, err := psExec.input(minHomology, maxHomology, maxEmbedLength, minLength)
 	if err != nil {
 		return
@@ -109,21 +109,21 @@ func (f *Frag) setPrimers(last, next *Frag, seq string, conf *config.Config) (er
 	mutateNodePrimers(f, seq, addLeft, addRight)
 
 	// make sure the fragment's length is still long enough for PCR
-	if f.end-f.start < conf.PCR.MinLength {
+	if f.end-f.start < conf.PCRMinLength {
 		return fmt.Errorf(
 			"failed to execute primer3: %s is %dbp, needs to be > %dbp",
 			f.ID,
 			f.end-f.start,
-			conf.PCR.MinLength,
+			conf.PCRMinLength,
 		)
 	}
 
 	// 1. check for whether the primers have too have a pair penalty score
-	if f.Primers[0].PairPenalty > conf.PCR.P3MaxPenalty {
+	if f.Primers[0].PairPenalty > conf.PCRP3MaxPenalty {
 		errMessage := fmt.Sprintf(
 			"primers have pair primer3 penalty score of %f, should be less than %f:\f%+v\f%+v",
 			f.Primers[0].PairPenalty,
-			conf.PCR.P3MaxPenalty,
+			conf.PCRP3MaxPenalty,
 			f.Primers[0],
 			f.Primers[1],
 		)
@@ -309,7 +309,7 @@ func (p *p3Exec) bpToAdd(left, right *Frag) int {
 	}
 
 	// we're not going to synth our way here, check that there's already enough homology
-	minHomology := left.conf.Fragments.MinHomology
+	minHomology := left.conf.FragmentsMinHomology
 	if bpDist := left.distTo(right); bpDist > -minHomology {
 		// this Frag will add half the homology to the last fragment
 		// ex: 5 bp distance leads to 2.5bp + ~10bp additonal

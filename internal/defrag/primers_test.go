@@ -14,10 +14,10 @@ import (
 func Test_setPrimers(t *testing.T) {
 	c := config.New()
 
-	c.Fragments.MinHomology = 20
-	c.Fragments.MaxHomology = 80
-	c.PCR.P3MaxPenalty = 50.0
-	c.PCR.MaxEmbedLength = 10
+	c.FragmentsMinHomology = 20
+	c.FragmentsMaxHomology = 80
+	c.PCRP3MaxPenalty = 50.0
+	c.PCRMaxEmbedLength = 10
 	db := path.Join("..", "..", "test", "db", "db")
 
 	type args struct {
@@ -339,8 +339,8 @@ func Test_p3Exec_shrink(t *testing.T) {
 
 func Test_bpToAdd(t *testing.T) {
 	c := config.New()
-	c.PCR.MaxEmbedLength = 20
-	c.Fragments.MinHomology = 10
+	c.PCRMaxEmbedLength = 20
+	c.FragmentsMinHomology = 10
 
 	p := p3Exec{}
 
