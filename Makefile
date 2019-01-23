@@ -12,7 +12,7 @@ PLATFORM:=$(shell uname)
 
 # copy settings file, going to add to it during install
 SETTINGS=./config/config.yaml
-TEMPSETTINGS=./defrag.temp.yaml
+TEMPSETTINGS=./config.temp.yaml
 
 ifeq ($(OS),Windows_NT)
 	$(error "defrag" does not support Windows)

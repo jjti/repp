@@ -191,12 +191,11 @@ func (p *inputParser) guessOutput(in string) (out string) {
 
 // parseDBs returns a list of absolute paths to BLAST databases
 func (p *inputParser) parseDBs(dbs string, addgene, igem bool) (paths []string, err error) {
-	root := string(filepath.Separator) + "etc" + string(filepath.Separator) + "defrag"
 	if addgene {
-		dbs += "," + path.Join(root, "addgene")
+		dbs += "," + path.Join(config.BaseDir, "addgene")
 	}
 	if igem {
-		dbs += "," + path.Join(root, "igem")
+		dbs += "," + path.Join(config.BaseDir, "igem")
 	}
 
 	if paths, err = p.dbPaths(dbs); err != nil {
@@ -209,6 +208,7 @@ func (p *inputParser) parseDBs(dbs string, addgene, igem bool) (paths []string, 
 			return nil, fmt.Errorf("failed to find a BLAST database at %s", path)
 		}
 	}
+
 	return paths, nil
 }
 
