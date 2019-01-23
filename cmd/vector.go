@@ -8,14 +8,15 @@ import (
 // VectorCmd is for assembling a vector (single circular sequence) after finding
 // building fragments to piece it together efficiently
 var VectorCmd = &cobra.Command{
-	Use:   "vector",
-	Short: "Build a target vector from local and/or remote fragments",
-	Long: `Build up a vector, by its sequence, from some combination of existing
-and synthesized fragments.
+	Use:                        "vector",
+	Short:                      "Build a target vector from local and/or remote fragments",
+	Run:                        defrag.VectorCmd,
+	SuggestionsMinimumDistance: 4,
+	Long: `Build up a vector, by its sequence, from some combination of existing and
+synthesized fragments.
 
 Combinations of fragments matching the target sequence are checked to find the
 one with the fewest fragments and lowest overall assembly cost.`,
-	Run: defrag.VectorCmd,
 }
 
 // set flags

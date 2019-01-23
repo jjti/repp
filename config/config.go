@@ -12,6 +12,13 @@ import (
 	"github.com/spf13/viper"
 )
 
+var (
+	sep = string(filepath.Separator)
+
+	// BaseSettingsFile is the default settings file path for the config package
+	BaseSettingsFile = sep + "etc" + sep + "defrag" + sep + "config.yaml"
+)
+
 // SynthCost is meta about the cost of synthesizing DNA up to a certain
 // size. Can be fixed (ie everything beneath that limit is the same amount)
 // or not (pay by the bp)
@@ -24,7 +31,7 @@ type SynthCost struct {
 }
 
 // Config is the Root-level settings struct and is a mix
-// of settings available in defrag.yaml and those
+// of settings available in config.yaml and those
 // available from the command line
 type Config struct {
 	// the cost of a single Addgene vector
@@ -72,24 +79,27 @@ type Config struct {
 }
 
 // New returns a new Config struct populated by settings from
-// defrag.yaml, in the repo, or some other settings file the user
+// config.yaml, in the repo, or some other settings file the user
 // points to with the "--config" command
 //
 // TODO: check for and error out on nonsense config values
 // TODO: add back the config file path setting
 func New() *Config {
-	if userConfigPath := viper.GetString("config"); userConfigPath != "" {
-		viper.AddConfigPath(userConfigPath) // user has specified a path to a settings file
-	} else {
-		viper.AddConfigPath(string(filepath.Separator) + "etc" + string(filepath.Separator) + "defrag") // settings are /etc/defrag
+	// read in the default/base settings file first
+	viper.SetConfigFile(BaseSettingsFile)
+	if err := viper.ReadInConfig(); err != nil {
+		log.Fatal(err)
 	}
-	viper.SetConfigName("settings") // no yaml needed, just a config file called settings
 
-	// read in intialization files
-	if err := viper.ReadInConfig(); err == nil {
-		fmt.Println("Using config file: ", viper.ConfigFileUsed())
-	} else {
-		log.Fatalf("%v", err)
+	if userSettingsFile := viper.GetString("settings"); userSettingsFile != "" && userSettingsFile != BaseSettingsFile {
+		viper.SetConfigFile(userSettingsFile) // user has specified a new path for a settings file
+
+		// read in user defined settings file
+		if err := viper.MergeInConfig(); err == nil {
+			fmt.Println("Using config file: ", viper.ConfigFileUsed())
+		} else {
+			log.Fatalf("%v", err)
+		}
 	}
 
 	// make sure all depedencies are available (may belong elsewhere)
@@ -105,7 +115,7 @@ func New() *Config {
 		log.Fatal("no primer3_core executable available in PATH, try `make install`")
 	}
 
-	// move into the singleton Config struct
+	// build Config
 	config := &Config{}
 	if err := viper.Unmarshal(&config); err != nil {
 		log.Fatalf("Failed to decode settings file %s: %v", viper.ConfigFileUsed(), err)

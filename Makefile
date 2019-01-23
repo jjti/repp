@@ -6,12 +6,12 @@ GOTEST=$(GOCMD) test
 GOGET=$(GOCMD) get
 
 DEFRAGBIN=/usr/local/bin/defrag
-DEFRAGETC=/etc/defrag
+DEFRAGCONF=$${HOME}/.defrag
 
 PLATFORM:=$(shell uname)
 
 # copy settings file, going to add to it during install
-SETTINGS=./config/defrag.yaml
+SETTINGS=./config/config.yaml
 TEMPSETTINGS=./defrag.temp.yaml
 
 ifeq ($(OS),Windows_NT)
@@ -19,15 +19,13 @@ ifeq ($(OS),Windows_NT)
 endif
 
 install: build
-	mkdir -p $(DEFRAGETC)
+	mkdir -p $(DEFRAGCONF)
 	cp $(SETTINGS) $(TEMPSETTINGS)
 
 # install outside dependencies, copy binary to /usr/local/bin
 ifeq ($(PLATFORM),Linux)
 	apt-get install ncbi-blast+ primer3
-
 	echo "\nprimer3_config-path: /etc/primer3_config/" >> $(TEMPSETTINGS)
-
 	cp ./bin/linux $(DEFRAGBIN)
 endif
 
@@ -37,25 +35,21 @@ ifeq (, $(shell which brew))
 	/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 endif
 ifeq (, $(shell which blastn))
-	# install BLAST
-	brew install blast
+	brew install blast # install BLAST
 endif
 ifeq (, $(shell which primer3_core))
-	# install primer3
-	brew install primer3
+	brew install primer3 # install primer3
 endif
-
 	echo "\nprimer3_config-path: /usr/local/share/primer3/primer3_config/" >> $(TEMPSETTINGS)
-
 	cp ./bin/darwin $(DEFRAGBIN)
 endif
 
-	# install config file to /etc/defrag
-	mv $(TEMPSETTINGS) $(DEFRAGETC)/defrag.yaml
+	# copy config file to /etc/defrag
+	mv $(TEMPSETTINGS) $(DEFRAGCONF)/config.yaml
 
 	# copy BLAST databases
-	cp -r ./assets/addgene/db/** $(DEFRAGETC) 
-	cp -r ./assets/igem/db/** $(DEFRAGETC)
+	cp -r ./assets/addgene/db/** $(DEFRAGCONF) 
+	cp -r ./assets/igem/db/** $(DEFRAGCONF)
 	
 build:
 	# build for supported operating systems
@@ -65,6 +59,4 @@ build:
 uninstall:
 	# removing defrag from filesystem
 	rm $(DEFRAGBIN)
-	rm -rf $(DEFRAGETC)
-
-
+	rm -rf $(DEFRAGCONF)
