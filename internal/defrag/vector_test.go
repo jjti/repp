@@ -1,7 +1,6 @@
 package defrag
 
 import (
-	"fmt"
 	"path"
 	"path/filepath"
 	"reflect"
@@ -83,7 +82,6 @@ func Test_vector_single_vector(t *testing.T) {
 // assemble an iGEM vector with a backbone
 func Test_vector_igem(t *testing.T) {
 	c := config.New()
-	fmt.Printf("%+v", c)
 	out := path.Join("..", "..", "test", "output", "BBa_I5310.output.json")
 
 	fs := testFlags(

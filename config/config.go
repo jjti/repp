@@ -24,7 +24,7 @@ type SynthCost struct {
 }
 
 // Config is the Root-level settings struct and is a mix
-// of settings available in settings.yaml and those
+// of settings available in defrag.conf and those
 // available from the command line
 type Config struct {
 	// the cost of a single Addgene vector
@@ -72,7 +72,7 @@ type Config struct {
 }
 
 // New returns a new Config struct populated by settings from
-// settings.yaml, in the repo, or some other settings file the user
+// defrag.conf, in the repo, or some other settings file the user
 // points to with the "--config" command
 //
 // TODO: check for and error out on nonsense config values
