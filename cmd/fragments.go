@@ -8,12 +8,13 @@ import (
 // FragmentsCmd is for piecing together a list of input fragments into a vector
 // and preparing the fragments to assemble into that vector
 var FragmentsCmd = &cobra.Command{
-	Use:   "fragments",
-	Short: "Assemble a list of fragments via Gibson Assembly",
+	Use:                        "fragments",
+	Short:                      "Assemble a list of fragments via Gibson Assembly",
+	Run:                        defrag.FragmentsCmd,
+	SuggestionsMinimumDistance: 4,
 	Long: `Prepare a list of fragments into a vector via Gibson Assembly. Fragments are
 checked for existing homology with their neighbors (in the multi-FASTA input file).
 Fragments lacking the requisite homology are prepared for assembly with PCR.`,
-	Run: defrag.FragmentsCmd,
 }
 
 // set flags

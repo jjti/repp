@@ -2,8 +2,8 @@ package cmd
 
 import (
 	"log"
-	"path/filepath"
 
+	"github.com/jjtimmons/defrag/config"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -32,12 +32,7 @@ func Execute() {
 }
 
 func init() {
-	sep := string(filepath.Separator)
-	settingsDir := sep + "etc" + sep + "defrag"
-
-	// Here you will define your flags and configuration settings.
-	// Cobra supports persistent flags, which, if defined here,
-	// will be global for your application.
-	rootCmd.PersistentFlags().StringP("config", "c", settingsDir, "config file")
-	viper.BindPFlag("config", rootCmd.PersistentFlags().Lookup("config"))
+	// settings is an optional parameter for a settings file (that overrides the fields in BaseSettingsFile)
+	rootCmd.PersistentFlags().StringP("settings", "s", config.BaseSettingsFile, "base settings file")
+	viper.BindPFlag("settings", rootCmd.PersistentFlags().Lookup("settings"))
 }
