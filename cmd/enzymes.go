@@ -20,7 +20,4 @@ var EnzymesCmd = &cobra.Command{
 // set flags
 func init() {
 	rootCmd.AddCommand(EnzymesCmd)
-
-	// No flags our input, just for listing all the enzymes available. If the user fails on a digest
-	// this will let them know which enzymes are and are not available
 }

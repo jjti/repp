@@ -31,4 +31,5 @@ func init() {
 	VectorCmd.Flags().BoolP("igem", "g", false, "Whether to use the iGEM repository as a source of building fragments")
 	VectorCmd.Flags().StringP("backbone", "b", "", backboneHelp)
 	VectorCmd.Flags().StringP("enzyme", "e", "", enzymeHelp)
+	VectorCmd.Flags().StringP("filter", "f", "", "Comma separated list of building fragments to avoid")
 }

@@ -94,7 +94,7 @@ type blastExec struct {
 //
 // Accepts a fragment to BLAST against, a list of dbs to BLAST it against,
 // a minLength for a match, and settings around blastn location, output dir, etc
-func blast(f *Frag, dbs []string, minLength int) (matches []match, err error) {
+func blast(f *Frag, dbs, filters []string, minLength int) (matches []match, err error) {
 	in, err := ioutil.TempFile(blastnDir, f.ID+"in-*")
 	if err != nil {
 		return nil, err
@@ -137,7 +137,7 @@ func blast(f *Frag, dbs []string, minLength int) (matches []match, err error) {
 		}
 
 		// parse the output file to Matches against the Frag
-		dbMatches, err := b.parse()
+		dbMatches, err := b.parse(filters)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse BLAST output: %v", err)
 		}
@@ -191,7 +191,7 @@ func (b *blastExec) run() (err error) {
 		"-db", b.db,
 		"-query", b.in.Name(),
 		"-out", b.out.Name(),
-		"-outfmt", "7 sseqid qstart qend sstart send sseq mismatch",
+		"-outfmt", "7 sseqid qstart qend sstart send sseq mismatch salltitles",
 		"-perc_identity", "100",
 		"-num_threads", strconv.Itoa(threads),
 	)
@@ -205,7 +205,7 @@ func (b *blastExec) run() (err error) {
 
 // parse reads the output file into Matches on the Frag
 // returns a slice of Matches for the blasted fragment
-func (b *blastExec) parse() (matches []match, err error) {
+func (b *blastExec) parse(filters []string) (matches []match, err error) {
 	// read in the results
 	file, err := ioutil.ReadFile(b.out.Name())
 	if err != nil {
@@ -229,34 +229,41 @@ func (b *blastExec) parse() (matches []match, err error) {
 
 		// the full entry line, (id, direction, etc)
 		entry := strings.Replace(cols[0], ">", "", -1)
-
 		start, _ := strconv.Atoi(cols[1])
 		end, _ := strconv.Atoi(cols[2])
 		seq := cols[5]
 		mm, _ := strconv.Atoi(cols[6])
+		titles := strings.ToLower(cols[7]) // salltitles
 
 		// direction not guarenteed
 		if start > end {
 			start, end = end, start
 		}
 
+		// filter on titles
+		matchesFilter := false
+		for _, filterFlag := range filters {
+			if strings.Contains(titles, filterFlag) {
+				matchesFilter = true
+				break
+			}
+		}
+		if matchesFilter {
+			continue // has been filtered out because of "filter" CLI flag
+		}
+
 		// create and append the new match
 		ms = append(ms, match{
-			// for later querying when checking for off-targets
-			entry: entry,
-			seq:   strings.Replace(seq, "-", "", -1),
-			// convert 1-based numbers to 0-based
-			start: start - 1,
-			end:   end - 1,
-			// brittle, but checking for circular in entry's entry
-			circular:    strings.Contains(entry, "circular"),
+			entry:       entry,
+			seq:         strings.Replace(seq, "-", "", -1),
+			start:       start - 1, // convert 1-based numbers to 0-based
+			end:         end - 1,
+			circular:    strings.Contains(titles, "circular"),
 			mismatching: mm,
 			internal:    b.internal,
 			db:          b.db, // store for checking off-targets later
 		})
 	}
-
-	// sort by start index, then remove those with duplicate start indexes
 
 	return ms, nil
 }
@@ -284,12 +291,14 @@ func filter(matches []match, seqL, minSize int) (properized []match) {
 	var internal []match
 	var external []match
 	for _, m := range matches {
-		if m.length() > minSize {
-			if m.internal {
-				internal = append(internal, m)
-			} else {
-				external = append(external, m)
-			}
+		if m.length() < minSize {
+			continue // too short
+		}
+
+		if m.internal {
+			internal = append(internal, m)
+		} else {
+			external = append(external, m)
 		}
 	}
 
@@ -308,22 +317,6 @@ func filter(matches []match, seqL, minSize int) (properized []match) {
 		}
 	}
 
-	// add back copied matches for those that only show up once
-	copiedMatches := []match{}
-	for _, m := range properized {
-		if count := matchCount[m.entry]; count == 2 {
-			continue
-		}
-
-		// first half of the queried seq range (2 seq lengths)
-		if m.end < seqL {
-			copiedMatches = append(copiedMatches, m.copyWith(m.start+seqL, m.end+seqL))
-		} else if m.start > seqL {
-			copiedMatches = append(copiedMatches, m.copyWith(m.start-seqL, m.end-seqL))
-		}
-	}
-	properized = append(properized, copiedMatches...)
-
 	// sort again now that they're properized
 	sortMatches(properized)
 
@@ -341,6 +334,7 @@ func properize(matches []match) (properized []match) {
 			properized = append(properized, m)
 		}
 	}
+
 	return
 }
 
@@ -502,7 +496,7 @@ func mismatch(primer string, parentFile *os.File, c *config.Config) (wasMismatch
 	}
 
 	// get the BLAST matches
-	matches, err := b.parse()
+	matches, err := b.parse([]string{})
 	if err != nil {
 		return false, match{}, fmt.Errorf("failed to parse matches from %s: %v", out.Name(), err)
 	}
@@ -522,7 +516,7 @@ func mismatch(primer string, parentFile *os.File, c *config.Config) (wasMismatch
 	}
 
 	for _, m := range matches {
-		if strings.Contains(primer, m.seq) || isMismatch(m, c) {
+		if isMismatch(m, c) {
 			primerCount--
 		}
 
@@ -544,13 +538,14 @@ func (b *blastExec) runAgainst() (err error) {
 		"-query", b.in.Name(),
 		"-subject", b.subject,
 		"-out", b.out.Name(),
-		"-outfmt", "7 sseqid qstart qend sstart send sseq mismatch",
+		"-outfmt", "7 sseqid qstart qend sstart send sseq mismatch salltitles",
 	)
 
 	// execute BLAST and wait on it to finish
 	if output, err := blastCmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("failed to execute blastn against %s: %v: %s", b.subject, err, string(output))
 	}
+
 	return
 }
 
