@@ -87,7 +87,7 @@ func vector(input *flags, conf *config.Config) (Frag, [][]Frag, error) {
 	}
 
 	// get all the matches against the fragment
-	matches, err := blast(&targetFrag, input.dbs, conf.PCRMinLength)
+	matches, err := blast(&targetFrag, input.dbs, input.filters, conf.PCRMinLength)
 	if err != nil {
 		dbMessage := strings.Join(input.dbs, ", ")
 		return Frag{}, nil, fmt.Errorf("failed to blast %s against the dbs %s: %v", targetFrag.ID, dbMessage, err)
@@ -139,16 +139,18 @@ func buildVector(matches []match, seq string, conf *config.Config) [][]Frag {
 	filled := make(map[int][]Frag)
 	for _, count := range assemblyCounts {
 		// get the first assembly that fills properly (cheapest workable solution)
-		for _, singleAssembly := range groupedAssemblies[count] {
-			if singleAssembly.cost > minCostAssembly {
+		for _, testAssembly := range groupedAssemblies[count] {
+			if testAssembly.cost > minCostAssembly {
 				// skip this and the rest with this count, there's another
 				// cheaper option with fewer fragments
 				break
 			}
 
-			filledFragments, err := singleAssembly.fill(seq, conf)
+			// fmt.Println(testAssembly.log())
+			filledFragments, err := testAssembly.fill(seq, conf)
 			if err != nil {
 				// write the console for debugging, continue looking
+				// fmt.Println(err.Error())
 				continue
 			}
 

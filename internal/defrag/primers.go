@@ -158,6 +158,9 @@ func (f *Frag) setPrimers(last, next *Frag, seq string, conf *config.Config) (er
 		return err
 	}
 
+	// update the fragment's cost with those of the primers
+	f.Cost += float64(len(f.Primers[0].Seq)+len(f.Primers[1].Seq)) * conf.PCRBPCost
+
 	os.Remove(psExec.in.Name()) // delete the input and output files
 	os.Remove(psExec.out.Name())
 
@@ -331,12 +334,14 @@ func (p *p3Exec) buffer(dist, minHomology, maxEmbedLength int) (buffer int) {
 		// we'll synthesize because the gap is so large, add 100bp of buffer
 		return 100 // TODO: move "100" to settings
 	}
+
 	if dist < -minHomology {
 		// there's enough additonal overlap that we can move this FWD primer inwards
 		// but only enough to ensure that there's still minHomology bp overlap
 		// and only enough so we leave the neighbor space for primer optimization too
 		return (-dist - minHomology) / 2
 	}
+
 	return 0
 }
 
@@ -424,6 +429,7 @@ func (p *p3Exec) run() (err error) {
 	if output, err := p3Cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("failed to execute primer3 on input file %s: %s: %v", p.in.Name(), string(output), err)
 	}
+
 	return
 }
 
@@ -502,6 +508,7 @@ func (p *p3Exec) parse(input string) (err error) {
 		parsePrimer("LEFT"),
 		parsePrimer("RIGHT"),
 	}
+
 	return
 }
 
@@ -561,6 +568,7 @@ func revComp(seq string) string {
 		j := len(revCompBytes) - i - 1
 		revCompBytes[i], revCompBytes[j] = revCompBytes[j], revCompBytes[i]
 	}
+
 	return string(revCompBytes)
 }
 

@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"unicode"
 
 	"github.com/jjtimmons/defrag/config"
 	"github.com/spf13/cobra"
@@ -29,6 +30,9 @@ type flags struct {
 
 	// the backbone (optional) to insert the pieces into
 	backbone Frag
+
+	// slice of strings to weed out fragments from BLAST matches
+	filters []string
 }
 
 // inputParser contains methods for parsing flags from the input &cobra.Command
@@ -38,13 +42,12 @@ type inputParser struct{}
 func testFlags(in, out, backbone, enzymeName string, dbs []string, addgene, igem bool) *flags {
 	c := config.New()
 
-	sep := string(os.PathSeparator)
 	if addgene {
-		addgenePath := sep + "etc" + sep + "defrag" + sep + "addgene"
+		addgenePath := filepath.Join(config.BaseDir, "addgene")
 		dbs = append(dbs, addgenePath)
 	}
 	if igem {
-		igemPath := sep + "etc" + sep + "defrag" + sep + "igem"
+		igemPath := filepath.Join(config.BaseDir, "igem")
 		dbs = append(dbs, igemPath)
 	}
 
@@ -59,6 +62,7 @@ func testFlags(in, out, backbone, enzymeName string, dbs []string, addgene, igem
 		out:      out,
 		dbs:      dbs,
 		backbone: parsedBB,
+		filters:  []string{},
 	}
 }
 
@@ -94,6 +98,11 @@ func parseCmdFlags(cmd *cobra.Command, conf *config.Config) (fs *flags, err erro
 		return nil, fmt.Errorf("failed to parse building fragments: %v", err)
 	}
 
+	filters, err := cmd.Flags().GetString("filter")
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse filters: %v", err)
+	}
+
 	// read in the BLAST DB paths
 	if fs.dbs, err = p.parseDBs(dbString, addgene, igem); err != nil || len(fs.dbs) == 0 {
 		return nil, fmt.Errorf("failed to find any fragment databases: %v", err)
@@ -110,6 +119,9 @@ func parseCmdFlags(cmd *cobra.Command, conf *config.Config) (fs *flags, err erro
 	if err != nil {
 		return nil, err
 	}
+
+	// try to split the filter fields into a list
+	fs.filters = p.getFilters(filters)
 
 	return
 }
@@ -154,6 +166,9 @@ func parseJSONFlags(data []byte, conf *config.Config) (fs *flags, err error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// try to split the filter fields into a list
+	fs.filters = []string{} // not supported in JSON payload yet
 
 	return
 }
@@ -300,4 +315,14 @@ func (p *inputParser) getEnzyme(enzymeName string) (enzyme, error) {
 		`failed to find enzyme with name %s use "defrag enzymes" for a list of recognized enzymes`,
 		enzymeName,
 	)
+}
+
+// getFilters takes an input string and returns a list of strings to run against matches
+// when filtering out possible building fragments
+func (p *inputParser) getFilters(filterFlag string) []string {
+	splitFunc := func(c rune) bool {
+		return !unicode.IsLetter(c) && !unicode.IsNumber(c)
+	}
+
+	return strings.FieldsFunc(strings.ToLower(filterFlag), splitFunc)
 }

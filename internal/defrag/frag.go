@@ -247,7 +247,7 @@ func (f *Frag) junction(other *Frag, minHomology, maxHomology int) (junction str
 		// traverse from that index to the end of the seq
 		j := 0
 		for k := i; k < len(thisSeq); k++ {
-			if thisSeq[k] != otherSeq[j] {
+			if j == len(otherSeq) || thisSeq[k] != otherSeq[j] {
 				break
 			} else {
 				j++

@@ -115,5 +115,6 @@ func assembleFragments(inputFragments []Frag, conf *config.Config) (targetVector
 	if err != nil {
 		return Frag{}, nil, fmt.Errorf("failed to fill in the frags: %+v", err)
 	}
+
 	return targetVector, fragments, nil
 }
