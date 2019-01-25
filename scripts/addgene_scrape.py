@@ -1,5 +1,4 @@
 
-import concurrent.futures
 import multiprocessing
 import os
 import string
@@ -17,8 +16,7 @@ VALID_CHARS = "-_.() %s%s" % (string.ascii_letters, string.digits)
 
 
 def clean_name(addgene_name):
-    """
-    convert an addgene name to one that's file name compliant
+    """convert an addgene name to one that's file name compliant
     """
     return "".join([c for c in addgene_name if c in VALID_CHARS])
 
@@ -31,89 +29,74 @@ AddGene pages are all indexed by the vector's id like: https://www.addgene.org/8
 create FASTA files for each in test/data/addgene
 
 if Addgene has full sequence information (prefered):
-    save it as ">gnl|addgene|<addgene id> circular fwd" in the fasta file
+    save it as ">gnl|addgene|<addgene id> name-circular" in the fasta file
 else:
-    save it as ">gnl|addgene|<addgene id> linear fwd" in the fasta file
+    save it as ">gnl|addgene|<addgene id>.<linear index> name-linear" in the fasta file
 
 save the file as <vector_id>_<addgene id>.fa
 """
 
 
 def parse(page_index):
+    """get a page from addgene and save its fragments/vectors if it's a defined id
     """
-    get a page from addgene and save its fragments/vectors if it's a defined id
-    """
+    title = '//*[@id="page-body"]/main/div/h1/span/text()'
+    sequence_text_area = '//*[@id="addgene-full"]/ul/li/div/div/div[2]/textarea/text()'
+    partial_sequence = '//*[@id="addgene-partial"]/ul/li/div/div/div[2]/textarea/text()'
+
     page = requests.get("https://www.addgene.org/" + str(page_index))
     if "Discontinued" in str(page.content):
         # avoid discontinued sequences
         return False
-
     page = requests.get("https://www.addgene.org/" + str(page_index) + "/sequences/")
-
     tree = html.fromstring(page.content)
 
     # XPath to the title
-    name = tree.xpath('//*[@id="page-body"]/main/div/h1/span/text()')
-    if not name:
-        # many ids are unused/not on the site
+
+    name = tree.xpath(title)
+    if not name:  # many ids are unused/not on the site
         return
     name = clean_name(name[0])
 
     # XPath to a seq block for full sequence information
-    full_seq_blocks = tree.xpath(
-        '//*[@id="addgene-full"]/ul/li/div/div/div[2]/textarea/text()'
-    )
+    seq_blocks = tree.xpath(sequence_text_area)
 
     # create the file, we'll delete if afterwards if there was only
     # partial DNA available (had N's in it)
     file_path = os.path.join("files", str(page_index) + "_" + name + ".fa")
     file_written = False
     with open(file_path, "w") as f:
-        if full_seq_blocks:
+        index = str(page_index)
+
+        if seq_blocks:
             # full seq information available, write that
-            seq = full_seq_blocks[0].split("\n")[1:]
-            seq = "".join(seq)
-            seq = "".join(seq.split())
-            f.write(
-                ">gnl|addgene|"
-                + str(page_index)
-                + " "
-                + name
-                + " circular fwd\n"
-                + seq  # double the sequence so it's circular
-                + seq
-            )
+            seq = seq_blocks[0].split("\n")[1:]
+            seq = "".join("".join(seq).split())
+
+            out = ">gnl|addgene|{} {}-circular\n{}\n".format(index, name, seq + seq)
+            f.write(out)
             file_written = True
         else:
             # partial seq information available, write that
-            partial_seq_blocks = tree.xpath(
-                '//*[@id="addgene-partial"]/ul/li/div/div/div[2]/textarea/text()'
-            )
+            partial_seq_blocks = tree.xpath(partial_sequence)
 
             count = 1
             for partial_seq in partial_seq_blocks:
                 seq = partial_seq.split("\n")[1:]
-                seq = "".join(seq)
-                seq = "".join(seq.split())
+                seq = "".join("".join(seq).split())
+                frag_count = str(count)
 
                 # don't save files with unknown basepairs
-                if "N" not in seq:
-                    f.write(
-                        ">gnl|addgene|"
-                        + str(page_index)
-                        + "."
-                        + str(count)
-                        + " "
-                        + name
-                        + " linear fwd\n"
-                        + seq
-                        + "\n"
-                    )
-                    count += 1
-                    file_written = True
+                if "N" in seq:
+                    continue
 
-    # was all partial data
-    if not file_written:
+                out = ">gnl|addgene|{}.{} {}-linear\n{}\n".format(
+                    index, frag_count, name, seq
+                )
+                count += 1
+                file_written = True
+
+    if not file_written:  # was all partial data, remove
         os.remove(file_path)
 
     return file_written
@@ -141,8 +124,7 @@ def scrape_files():
 
     futures = []
     with ThreadPoolExecutor(max_workers=multiprocessing.cpu_count()) as executor:
-        """
-        try and scrape with all available CPUs
+        """try to scrape with all available CPUs
         """
         for page in page_indicies:
             futures.append(executor.submit(parse, page))
@@ -166,13 +148,11 @@ def combine():
 
     # open a single FASTA for a combined db
     with open("addgene", "w") as combined_fasta:
-        # move into repo full of files
         os.chdir(os.path.join("..", "files"))
 
-        # read in all the addgene fasta files and combine into one that makeblastdb can act on
         for f in os.listdir("."):
             combined_fasta.write(open(f, "r").read().strip() + "\n")
 
 
-# scrape_files()
+scrape_files()
 combine()

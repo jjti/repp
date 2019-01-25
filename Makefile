@@ -56,6 +56,11 @@ build:
 	env GOOS=linux $(GOBUILD) -o ./bin/linux -v
 	env GOOS=darwin $(GOBUILD) -o ./bin/darwin -v
 
+dbs:
+	cd assets && sh makeblastdbs.sh
+
+all: dbs install
+
 uninstall:
 	# removing defrag from filesystem
 	rm $(DEFRAGBIN)

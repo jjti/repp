@@ -39,6 +39,9 @@ type match struct {
 	// the db that was BLASTed against (used later for checking off-targets in parents)
 	db string
 
+	// titles from the db. ex: year it was created
+	title string
+
 	// circular if it's a circular fragment (vector, plasmid, etc)
 	circular bool
 
@@ -156,9 +159,9 @@ func blast(f *Frag, dbs, filters []string, minLength int) (matches []match, err 
 
 	fmt.Printf("%d matches after filtering\n", len(matches))
 
-	// for _, m := range matches {
-	// 	fmt.Printf("%s %d %d\n", m.entry, m.start, m.end)
-	// }
+	for _, m := range matches {
+		fmt.Printf("%s %d %d %s\n", m.entry, m.start, m.end, m.title)
+	}
 
 	return matches, nil
 }
@@ -191,7 +194,7 @@ func (b *blastExec) run() (err error) {
 		"-db", b.db,
 		"-query", b.in.Name(),
 		"-out", b.out.Name(),
-		"-outfmt", "7 sseqid qstart qend sstart send sseq mismatch salltitles",
+		"-outfmt", "7 sseqid qstart qend sstart send sseq mismatch stitle",
 		"-perc_identity", "100",
 		"-num_threads", strconv.Itoa(threads),
 	)
@@ -213,6 +216,8 @@ func (b *blastExec) parse(filters []string) (matches []match, err error) {
 	}
 	fileS := string(file)
 
+	// fmt.Printf("%+v", filters)
+
 	// read it into Matches
 	var ms []match
 	for _, line := range strings.Split(fileS, "\n") {
@@ -233,7 +238,7 @@ func (b *blastExec) parse(filters []string) (matches []match, err error) {
 		end, _ := strconv.Atoi(cols[2])
 		seq := cols[5]
 		mm, _ := strconv.Atoi(cols[6])
-		titles := strings.ToLower(cols[7]) // salltitles
+		titles := cols[7] // salltitles, ex: "fwd terminator 2011"
 
 		// direction not guarenteed
 		if start > end {
@@ -242,8 +247,9 @@ func (b *blastExec) parse(filters []string) (matches []match, err error) {
 
 		// filter on titles
 		matchesFilter := false
-		for _, filterFlag := range filters {
-			if strings.Contains(titles, filterFlag) {
+		search := strings.ToLower(entry + titles)
+		for _, f := range filters {
+			if strings.Contains(search, f) {
 				matchesFilter = true
 				break
 			}
@@ -262,6 +268,7 @@ func (b *blastExec) parse(filters []string) (matches []match, err error) {
 			mismatching: mm,
 			internal:    b.internal,
 			db:          b.db, // store for checking off-targets later
+			title:       titles,
 		})
 	}
 

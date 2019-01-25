@@ -118,3 +118,40 @@ func Test_inputParser_getInput(t *testing.T) {
 		})
 	}
 }
+
+func Test_inputParser_getFilters(t *testing.T) {
+	type args struct {
+		filterFlag string
+	}
+	tests := []struct {
+		name string
+		p    *inputParser
+		args args
+		want []string
+	}{
+		{
+			"biobrick separated from year by commans",
+			&inputParser{},
+			args{
+				filterFlag: "tests,BBa_k222000,2004",
+			},
+			[]string{"tests", "bba_k222000", "2004"},
+		},
+		{
+			"single year",
+			&inputParser{},
+			args{
+				filterFlag: "2004",
+			},
+			[]string{"2004"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &inputParser{}
+			if got := p.getFilters(tt.args.filterFlag); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("inputParser.getFilters() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
