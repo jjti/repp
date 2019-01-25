@@ -17,9 +17,12 @@ vendor/*/**
 # mac
 *.DS_Store
 
-# test output files
-test/output/**
+# bins
+bin/**
 
 # addgene raw FASTA files, too many, ignore them (saving only addgene/repo.zip instead)
 assets/addgene/**
 assets/igem/**
+
+# test output files
+test/output/**

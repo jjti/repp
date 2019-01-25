@@ -129,7 +129,7 @@ func buildVector(matches []match, seq string, conf *config.Config) [][]*Frag {
 	groupedAssemblies := groupAssemblies(assemblies)
 
 	// sort the keys of the assemblies (their fragment count). Start with the smaller
-	// assemblies first and work out way up
+	// assemblies first and work our way up
 	assemblyCounts := []int{}
 	for count := range groupedAssemblies {
 		assemblyCounts = append(assemblyCounts, count)
@@ -150,7 +150,7 @@ func buildVector(matches []match, seq string, conf *config.Config) [][]*Frag {
 			}
 
 			filledFragments, err := testAssembly.fill(seq, conf)
-			if err != nil {
+			if err != nil || filledFragments == nil {
 				// write the console for debugging, continue looking
 				// fmt.Println(err.Error())
 				continue
@@ -158,25 +158,39 @@ func buildVector(matches []match, seq string, conf *config.Config) [][]*Frag {
 
 			// if a Frag in the assembly fails to be prepared,
 			// remove all assemblies with the Frag and try again
-			if filledFragments != nil {
-				assemblyCost := 0.0
-				for _, f := range filledFragments {
-					assemblyCost += f.Cost
-				}
-
-				if assemblyCost > minCostAssembly {
-					continue // wasn't actually cheaper, keep trying
-				}
-
-				// store this as the new cheapest assembly
-				minCostAssembly = assemblyCost
-
-				// add this list of fragments to the list of such
-				filled[len(filledFragments)] = filledFragments
-
-				// break, don't look at other possible assemblies because this one worked
-				break
+			newAssemblyCost := 0.0
+			for _, f := range filledFragments {
+				newAssemblyCost += f.Cost
 			}
+
+			if newAssemblyCost > minCostAssembly {
+				continue // wasn't actually cheaper, keep trying
+			}
+
+			// store this as the new cheapest assembly
+			minCostAssembly = newAssemblyCost
+
+			// add this list of fragments to the list of such
+			filled[len(filledFragments)] = filledFragments
+
+			// delete all assemblies with more fragments that cost more
+			for filledCount, existingFilledFragments := range filled {
+				if filledCount <= len(filledFragments) {
+					continue
+				}
+
+				filledAssemblyCost := 0.0
+				for _, f := range existingFilledFragments {
+					filledAssemblyCost += f.Cost
+				}
+
+				if filledAssemblyCost >= newAssemblyCost {
+					delete(filled, filledCount)
+				}
+			}
+
+			// break, don't look at other possible assemblies because this one worked
+			break
 		}
 	}
 
