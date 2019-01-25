@@ -291,7 +291,6 @@ func (p *inputParser) getBackbone(backbone string, dbs []string, c *config.Confi
 
 	// move through each db and see if it contains the backbone
 	for _, db := range dbs {
-		fmt.Println(db)
 		// if outFile is defined here we managed to query it from the db
 		outFile, err := blastdbcmd(backbone, db, c)
 		if err == nil && outFile.Name() != "" {
