@@ -223,6 +223,7 @@ func (f *Frag) reach(nodes []*Frag, i, synthCount int) (reachable []int) {
 			break
 		}
 	}
+
 	return
 }
 
@@ -259,6 +260,7 @@ func (f *Frag) junction(other *Frag, minHomology, maxHomology int) (junction str
 			}
 		}
 	}
+
 	return
 }
 
@@ -305,5 +307,6 @@ func (f *Frag) synthTo(next *Frag, seq string) (synthedFrags []Frag) {
 		}
 		synthedFrags = append(synthedFrags, sFrag)
 	}
+
 	return
 }

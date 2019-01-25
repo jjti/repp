@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"unicode"
 
 	"github.com/jjtimmons/defrag/config"
 	"github.com/spf13/cobra"
@@ -39,7 +38,7 @@ type flags struct {
 type inputParser struct{}
 
 // testFlags makes a new flags object out of the in, out, dbs passed
-func testFlags(in, out, backbone, enzymeName string, dbs []string, addgene, igem bool) *flags {
+func testFlags(in, out, backbone, enzymeName, filter string, dbs []string, addgene, igem bool) *flags {
 	c := config.New()
 
 	if addgene {
@@ -62,7 +61,7 @@ func testFlags(in, out, backbone, enzymeName string, dbs []string, addgene, igem
 		out:      out,
 		dbs:      dbs,
 		backbone: parsedBB,
-		filters:  []string{},
+		filters:  p.getFilters(filter),
 	}
 }
 
@@ -292,8 +291,10 @@ func (p *inputParser) getBackbone(backbone string, dbs []string, c *config.Confi
 
 	// move through each db and see if it contains the backbone
 	for _, db := range dbs {
+		fmt.Println(db)
 		// if outFile is defined here we managed to query it from the db
-		if outFile, _ := blastdbcmd(backbone, db, c); outFile.Name() != "" {
+		outFile, err := blastdbcmd(backbone, db, c)
+		if err == nil && outFile.Name() != "" {
 			defer os.Remove(outFile.Name())
 			frags, err := read(outFile.Name())
 			frags[0].Type = circular // assume its circular here, used as backbone
@@ -321,7 +322,7 @@ func (p *inputParser) getEnzyme(enzymeName string) (enzyme, error) {
 // when filtering out possible building fragments
 func (p *inputParser) getFilters(filterFlag string) []string {
 	splitFunc := func(c rune) bool {
-		return !unicode.IsLetter(c) && !unicode.IsNumber(c)
+		return c == ' ' || c == ',' // space or comma separated
 	}
 
 	return strings.FieldsFunc(strings.ToLower(filterFlag), splitFunc)

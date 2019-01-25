@@ -13,17 +13,14 @@ def clean_file():
             part_file.write(parsed)
 
 
-clean_file()
+# clean_file()
 
 # split up into separate parts. each a tuple with (BBa_name, seq, circular: bool, year: int)
 def get_parts(log_composites=True):
     # create element tree object
     parts_string = open("xml_parts.parsed.xml", "r").read()
-
     seen_names = set()
-
     composites = []
-
     parts = []  # list of name, seq, circular tuples
     for row in parts_string.split("<row>"):
         if '"discontinued">1<' in row or '"sample_status">Not in stock' in row:
@@ -62,8 +59,7 @@ def get_parts(log_composites=True):
         if log_composites and "composite" in type:
             composites.append(name)
 
-    print(" ".join(composites))
-
+    # print(" ".join(composites))
     return parts
 
 
@@ -71,33 +67,14 @@ def write_parts(parts):
     os.chdir(os.path.join("db"))
 
     # write to the local filesystem
-    with open("igem", "w") as output_parts:
+    with open("igem", "w") as out_file:
         for (name, seq, circular, year, type) in parts:
-            if circular:
-                output_parts.write(
-                    ">gnl|igem|"
-                    + name
-                    + " circular fwd "
-                    + year
-                    + " "
-                    + type
-                    + "\n"
-                    + seq
-                    + seq  # double the seq because it's circular
-                    + "\n"
-                )
-            else:
-                output_parts.write(
-                    ">gnl|igem|"
-                    + name
-                    + " linear fwd "
-                    + year
-                    + " "
-                    + type
-                    + "\n"
-                    + seq
-                    + "\n"
-                )
+            topo = "circular" if circular else "linear"
+            out_seq = seq + seq if circular else seq
+
+            out_file.write(
+                ">gnl|igem|{} {}-{}-{}\n{}\n".format(name, topo, year, type, out_seq)
+            )
 
 
 write_parts(get_parts())

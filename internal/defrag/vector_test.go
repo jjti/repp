@@ -56,6 +56,7 @@ func Test_vector_single_vector(t *testing.T) {
 		path.Join("..", "..", "test", "output", "109049.output.json"),
 		"",
 		"",
+		"",
 		[]string{},
 		true,
 		false,
@@ -89,6 +90,7 @@ func Test_vector_igem(t *testing.T) {
 		out,
 		"pSB1A3",
 		"EcoRI",
+		"2017",
 		[]string{},
 		false,
 		true,
@@ -100,7 +102,7 @@ func Test_vector_igem(t *testing.T) {
 	}
 
 	if len(assemblies) < 1 {
-		t.Error()
+		t.Error("No assemblies built")
 	}
 
 	write(fs.out, Frag{
