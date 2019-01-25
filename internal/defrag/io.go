@@ -30,7 +30,7 @@ type Solution struct {
 	Cost float64 `json:"costDollars"`
 
 	// Fragments used to build this solution
-	Fragments []Frag `json:"fragments"`
+	Fragments []*Frag `json:"fragments"`
 }
 
 // Output is a struct containing design results for the assembly

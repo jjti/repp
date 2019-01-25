@@ -90,7 +90,7 @@ func Test_vector_igem(t *testing.T) {
 		out,
 		"pSB1A3",
 		"EcoRI",
-		"2017",
+		"pSB1A3",
 		[]string{},
 		false,
 		true,
@@ -108,6 +108,31 @@ func Test_vector_igem(t *testing.T) {
 	write(fs.out, Frag{
 		ID: "BBa_I5310",
 	}, assemblies)
+
+	t.Fatal("fail (dev)")
+}
+
+func Test_vector_igem_fitlering(t *testing.T) {
+	c := config.New()
+	out := path.Join("..", "..", "test", "output", "BBa_E0610.output.json")
+
+	fs := testFlags(
+		path.Join("..", "..", "test", "BBa_E0610.fa"),
+		out,
+		"pSB1C3",
+		"EcoRI",
+		"2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,BBa_E0610",
+		[]string{},
+		false,
+		true,
+	)
+
+	target, results, err := vector(fs, c)
+	if err != nil {
+		t.Error(err)
+	}
+
+	write(fs.out, target, results)
 
 	t.Fatal("fail (dev)")
 }
@@ -291,7 +316,7 @@ func Test_build(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assemblies := createAssemblies(tt.args.nodes, c.FragmentsMaxCount, seq)
+			assemblies := createAssemblies(tt.args.nodes, c.FragmentsMaxCount, seq, c)
 
 			// concatenate Frag ids together
 			actualIds := getNodeSet(assemblies)

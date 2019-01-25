@@ -32,6 +32,8 @@ func VectorCmd(cmd *cobra.Command, args []string) {
 		log.Fatalln(err)
 	}
 
+	fmt.Println()
+
 	os.Exit(0)
 }
 
@@ -63,7 +65,7 @@ func VectorJSON(json []byte) (output []byte, err error) {
 // 	4. no inverted repeats in the junctions
 // 	5. no off-target binding sites in the parent vectors
 //	6. low primer3 penalty scores
-func vector(input *flags, conf *config.Config) (Frag, [][]Frag, error) {
+func vector(input *flags, conf *config.Config) (Frag, [][]*Frag, error) {
 	// read the target sequence (the first in the slice is used)
 	fragments, err := read(input.in)
 	if err != nil {
@@ -80,6 +82,7 @@ func vector(input *flags, conf *config.Config) (Frag, [][]Frag, error) {
 		)
 	}
 	targetFrag := fragments[0]
+	fmt.Printf("Building %s\n", targetFrag.ID)
 
 	// if a backbone was specified, add it to the sequence of the target frag
 	if input.backbone.ID != "" {
@@ -111,7 +114,7 @@ func vector(input *flags, conf *config.Config) (Frag, [][]Frag, error) {
 // "fill-in" the nodes. Create primers on the Frag if it's a PCR Frag
 // or create a sequence to be synthesized if it's a synthetic fragment.
 // Error out and repeat the build stage if a Frag fails to be filled
-func buildVector(matches []match, seq string, conf *config.Config) [][]Frag {
+func buildVector(matches []match, seq string, conf *config.Config) [][]*Frag {
 	// map fragment Matches to nodes
 	var nodes []*Frag
 	for _, m := range matches {
@@ -120,7 +123,7 @@ func buildVector(matches []match, seq string, conf *config.Config) [][]Frag {
 
 	// build up a slice of assemblies that could, within the upper-limit on
 	// fragment count, be assembled to make the target vector
-	assemblies := createAssemblies(nodes, conf.FragmentsMaxCount, seq)
+	assemblies := createAssemblies(nodes, conf.FragmentsMaxCount, seq, conf)
 
 	// build up a map from fragment count to a sorted list of assemblies with that number
 	groupedAssemblies := groupAssemblies(assemblies)
@@ -136,7 +139,7 @@ func buildVector(matches []match, seq string, conf *config.Config) [][]Frag {
 	// "fill-in" the fragments (create synthetic fragments and primers)
 	// skip assemblies that wouldn't be less than the current cheapest assembly
 	minCostAssembly := math.MaxFloat64
-	filled := make(map[int][]Frag)
+	filled := make(map[int][]*Frag)
 	for _, count := range assemblyCounts {
 		// get the first assembly that fills properly (cheapest workable solution)
 		for _, testAssembly := range groupedAssemblies[count] {
@@ -146,7 +149,6 @@ func buildVector(matches []match, seq string, conf *config.Config) [][]Frag {
 				break
 			}
 
-			// fmt.Println(testAssembly.log())
 			filledFragments, err := testAssembly.fill(seq, conf)
 			if err != nil {
 				// write the console for debugging, continue looking
@@ -178,10 +180,11 @@ func buildVector(matches []match, seq string, conf *config.Config) [][]Frag {
 		}
 	}
 
-	var found [][]Frag
+	var found [][]*Frag
 	for _, frags := range filled {
 		found = append(found, frags)
 	}
+
 	return found
 }
 
@@ -195,7 +198,7 @@ func buildVector(matches []match, seq string, conf *config.Config) [][]Frag {
 // 	  foreach otherFragment that thisFragment overlaps with + synthCount more:
 //	 	foreach assembly on thisFragment:
 //    	    add otherFragment to the assembly to create a new assembly, store on otherFragment
-func createAssemblies(frags []*Frag, maxNodes int, seq string) (assemblies []assembly) {
+func createAssemblies(frags []*Frag, maxNodes int, seq string, conf *config.Config) (assemblies []assembly) {
 	// number of additional frags try synthesizing to, in addition to those that
 	// already have enough homology for overlap without any modifications for each Frag
 	synthCount := int(math.Max(5, 0.05*float64(len(frags)))) // 5 of 5%, whichever is greater
@@ -245,6 +248,16 @@ func createAssemblies(frags []*Frag, maxNodes int, seq string) (assemblies []ass
 			}
 		}
 	}
+
+	// create and add an assembly where we synthesize the full stretch
+	sSynth := &Frag{start: 0, end: 0, conf: conf}
+	eSynth := &Frag{start: len(seq), end: len(seq), conf: conf}
+	synthAssembly := assembly{
+		frags: []*Frag{sSynth, eSynth},
+		cost:  conf.SynthCost(len(seq)),
+	}
+
+	assemblies = append(assemblies, synthAssembly)
 
 	return
 }

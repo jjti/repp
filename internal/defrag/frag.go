@@ -269,7 +269,9 @@ func (f *Frag) junction(other *Frag, minHomology, maxHomology int) (junction str
 // one another and are within the upper and lower synthesis bounds.
 // seq is the vector's sequence. We need it to build up the target
 // vector's sequence
-func (f *Frag) synthTo(next *Frag, seq string) (synthedFrags []Frag) {
+func (f *Frag) synthTo(next *Frag, seq string) (synthedFrags []*Frag) {
+	seqL := len(seq)
+
 	// check whether we need to make synthetic fragments to get
 	// to the next fragment in the assembly
 	fragC := f.synthDist(next)
@@ -278,7 +280,7 @@ func (f *Frag) synthTo(next *Frag, seq string) (synthedFrags []Frag) {
 	}
 
 	// make the slice
-	synthedFrags = []Frag{}
+	synthedFrags = []*Frag{}
 
 	// length of each synthesized fragment
 	fragL := f.distTo(next) / fragC
@@ -289,7 +291,8 @@ func (f *Frag) synthTo(next *Frag, seq string) (synthedFrags []Frag) {
 
 	// account for homology on either end of each synthetic fragment
 	fragL += f.conf.FragmentsMinHomology * 2
-	seq += seq // double to account for sequence across the zero-index
+	seq += seq + seq // triple to account for sequence across the zero-index
+	seq = strings.ToUpper(seq)
 
 	// slide along the range of sequence to create synthetic fragments
 	// and create one at each point, each w/ MinHomology for the fragment
@@ -299,13 +302,12 @@ func (f *Frag) synthTo(next *Frag, seq string) (synthedFrags []Frag) {
 		start += fragIndex * fragL                   // slide along the range to cover
 		end := start + fragL + f.conf.FragmentsMinHomology
 
-		sFrag := Frag{
+		synthedFrags = append(synthedFrags, &Frag{
 			ID:   fmt.Sprintf("%s-synthetic-%d", f.ID, fragIndex+1),
-			Seq:  strings.ToUpper(seq[start:end]),
+			Seq:  seq[start+seqL : end+seqL],
 			Cost: f.conf.SynthCost(len(f.Seq)) + f.Cost,
 			Type: synthetic,
-		}
-		synthedFrags = append(synthedFrags, sFrag)
+		})
 	}
 
 	return
