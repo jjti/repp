@@ -109,7 +109,7 @@ func (a *assembly) log() string {
 // - Synthetic fragments if there wasn't a match for a region
 //
 // It can fail. For example, a PCR Frag may have off-targets in the parent vector
-func (a *assembly) fill(seq string, conf *config.Config) (frags []Frag, err error) {
+func (a *assembly) fill(seq string, conf *config.Config) (frags []*Frag, err error) {
 	minHomology := conf.FragmentsMinHomology
 	maxHomology := conf.FragmentsMaxHomology
 
@@ -123,8 +123,8 @@ func (a *assembly) fill(seq string, conf *config.Config) (frags []Frag, err erro
 	// "fragment" (of Vector type... it is misnomer) that matches the target sequence 100%
 	if a.len() == 1 && len(a.frags[0].Seq) >= len(seq) {
 		f := a.frags[0]
-		return []Frag{
-			Frag{
+		return []*Frag{
+			&Frag{
 				ID:   f.ID,
 				Seq:  strings.ToUpper(f.Seq)[0:len(seq)], // it may be longer
 				Type: circular,
@@ -132,6 +132,9 @@ func (a *assembly) fill(seq string, conf *config.Config) (frags []Frag, err erro
 				Cost: f.Cost, // only the ordering cost, no PCR/Synth etc
 			},
 		}, nil
+	} else if a.len() == 2 && a.frags[0].uniqueID == "" && a.frags[0].end == 0 {
+		// a fragment added to synthesize the whole stretch
+		return a.frags[0].synthTo(a.frags[1], seq), nil
 	}
 
 	// do two loops. the first is to fill in primers. let each Frag create primers for
@@ -207,13 +210,14 @@ func (a *assembly) fill(seq string, conf *config.Config) (frags []Frag, err erro
 
 		// convert to a fragment from a Frag, store this to the list of building fragments
 		// cost is calculated here as the summed cost of both primers (based on length)
-		frags = append(frags, *f)
+		frags = append(frags, f)
 
 		// add synthesized fragments between this Frag and the next (if necessary)
 		if synthedFrags := f.synthTo(a.frags[(i+1)%len(a.frags)], seq); synthedFrags != nil {
 			frags = append(frags, synthedFrags...)
 		}
 	}
+
 	return
 }
 
@@ -236,5 +240,6 @@ func (a *assembly) duplicates(nodes []*Frag, minHomology, maxHomology int) (isDu
 			}
 		}
 	}
+
 	return false, "", "", ""
 }

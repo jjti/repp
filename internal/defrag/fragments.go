@@ -59,12 +59,12 @@ func fragments(input *flags, conf *config.Config) (output []byte, err error) {
 	}
 
 	// write the single list of fragments as a possible solution to the output file
-	return write(input.out, target, [][]Frag{fragments})
+	return write(input.out, target, [][]*Frag{fragments})
 }
 
 // assembleFragments takes a list of Fragments and returns the Vector we assume the user is
 // trying to build as well as the Fragments (possibly prepared via PCR)
-func assembleFragments(inputFragments []Frag, conf *config.Config) (targetVector Frag, fragments []Frag, err error) {
+func assembleFragments(inputFragments []Frag, conf *config.Config) (targetVector Frag, fragments []*Frag, err error) {
 	if len(inputFragments) < 1 {
 		return Frag{}, nil, fmt.Errorf("failed: no fragments to assemble")
 	}

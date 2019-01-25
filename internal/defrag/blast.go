@@ -159,9 +159,9 @@ func blast(f *Frag, dbs, filters []string, minLength int) (matches []match, err 
 
 	fmt.Printf("%d matches after filtering\n", len(matches))
 
-	for _, m := range matches {
-		fmt.Printf("%s %d %d %s\n", m.entry, m.start, m.end, m.title)
-	}
+	// for _, m := range matches {
+	// 	fmt.Printf("%s %d %d %s\n", m.entry, m.start, m.end, m.title)
+	// }
 
 	return matches, nil
 }
