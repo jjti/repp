@@ -196,7 +196,7 @@ func Test_Frag_costTo(t *testing.T) {
 					conf:  c,
 				},
 			},
-			1.38,
+			1.56,
 		},
 		{
 			"cost of synthesis if they don't overlap",
@@ -222,7 +222,7 @@ func Test_Frag_costTo(t *testing.T) {
 			args{
 				other: n1,
 			},
-			1.38,
+			1.56,
 		},
 	}
 	for _, tt := range tests {
@@ -353,6 +353,7 @@ func Test_Frag_synthTo(t *testing.T) {
 	c.FragmentsMinHomology = 2
 	c.SynthesisMinLength = 4
 	c.SynthesisMaxLength = 100
+	c.PCRMaxEmbedLength = 0
 
 	type fields struct {
 		ID         string
@@ -370,7 +371,7 @@ func Test_Frag_synthTo(t *testing.T) {
 		name             string
 		fields           fields
 		args             args
-		wantSynthedFrags []Frag
+		wantSynthedFrags []*Frag
 	}{
 		{
 			"return nothing when there's enough overlap",
@@ -403,8 +404,8 @@ func Test_Frag_synthTo(t *testing.T) {
 				},
 				Seq: "TGCTGACTGTGGCGGGTGAGCTTAGGGGGCCTCCGCTCCAGCTCGACACCGGGCAGCTGC",
 			},
-			[]Frag{
-				Frag{
+			[]*Frag{
+				&Frag{
 					ID:   "first-synthetic-1",
 					Seq:  "GGTGAGCTTAGGGGG",
 					Type: synthetic,

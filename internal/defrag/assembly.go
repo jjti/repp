@@ -132,9 +132,6 @@ func (a *assembly) fill(seq string, conf *config.Config) (frags []*Frag, err err
 				Cost: f.Cost, // only the ordering cost, no PCR/Synth etc
 			},
 		}, nil
-	} else if a.len() == 2 && a.frags[0].uniqueID == "" && a.frags[0].end == 0 {
-		// a fragment added to synthesize the whole stretch
-		return a.frags[0].synthTo(a.frags[1], seq), nil
 	}
 
 	// do two loops. the first is to fill in primers. let each Frag create primers for

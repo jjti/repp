@@ -123,7 +123,7 @@ def scrape_files():
     ]
 
     futures = []
-    with ThreadPoolExecutor(max_workers=multiprocessing.cpu_count()) as executor:
+    with ThreadPoolExecutor() as executor:
         """try to scrape with all available CPUs
         """
         for page in page_indicies:

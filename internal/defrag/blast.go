@@ -516,8 +516,8 @@ func mismatch(primer string, parentFile *os.File, c *config.Config) (wasMismatch
 	}
 
 	if strings.Contains(string(parentFileContents), "circular") {
-		// if the match is against a circular fragment, more than likely we expect to see
-		// the primer's sequence twice, rather than just once
+		// if the match is against a circular fragment, we expect to see the primer's binding location
+		// twice because circular fragments' sequences are doubled in the DBs
 		// TODO: one exception here is if the primer is on a range that crosses the zero index
 		primerCount++
 	}
