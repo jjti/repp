@@ -88,9 +88,9 @@ func Test_vector_igem(t *testing.T) {
 	fs := testFlags(
 		path.Join("..", "..", "test", "BBa_I5310.fa"),
 		out,
-		"pSB1A3",
+		"pSB1C3",
 		"EcoRI",
-		"pSB1A3",
+		"",
 		[]string{},
 		false,
 		true,
@@ -325,7 +325,7 @@ func Test_build(t *testing.T) {
 			wantedIds := getNodeSet(tt.wantAssemblies)
 
 			if !reflect.DeepEqual(actualIds, wantedIds) {
-				t.Errorf("build() = %v, want %v", actualIds, wantedIds)
+				t.Errorf("createAssemblies() = %v, want %v", actualIds, wantedIds)
 			}
 		})
 	}

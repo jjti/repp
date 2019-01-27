@@ -3,7 +3,6 @@
 package config
 
 import (
-	"fmt"
 	"log"
 	"os/exec"
 	"path/filepath"
@@ -100,7 +99,7 @@ func New() *Config {
 
 		// read in user defined settings file
 		if err := viper.MergeInConfig(); err == nil {
-			fmt.Println("Using config file: ", viper.ConfigFileUsed())
+			// fmt.Println("Using config file: ", viper.ConfigFileUsed())
 		} else {
 			log.Fatal(err)
 		}
@@ -124,6 +123,7 @@ func New() *Config {
 	if err := viper.Unmarshal(&config); err != nil {
 		log.Fatalf("failed to decode settings file %s: %v", viper.ConfigFileUsed(), err)
 	}
+
 	return config
 }
 
@@ -143,9 +143,9 @@ func (c Config) SynthCost(fragLength int) float64 {
 	sort.Ints(costLengthKeys)
 
 	synthCostKey := 0
-	for _, costLength := range costLengthKeys {
-		if costLength > fragLength {
-			synthCostKey = costLength
+	for _, keyLength := range costLengthKeys {
+		if keyLength > fragLength {
+			synthCostKey = keyLength
 			break
 		}
 	}

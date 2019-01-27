@@ -1,5 +1,5 @@
 # Maximum number of building fragments in final assembly
-fragments-max-count: 5
+fragments-max-count: 7
 
 # Minimum homology length between fragments
 fragments-min-homology: 20
@@ -8,7 +8,7 @@ fragments-min-homology: 20
 fragments-max-homology: 120
 
 # Cost per bp of PCR primer
-pcr-bp-cost: 0.09
+pcr-bp-cost: 0.6
 
 # Minimum length of a PCR fragment
 pcr-min-length: 85
@@ -21,22 +21,66 @@ pcr-primer3-penalty-max: 20.0
 pcr-primer-max-embed-length: 20
 
 # Max off-target primer binding site Tm, above which a PCR is abandoned
-pcr-primer-max-offtarget-tm: 45.0
+pcr-primer-max-offtarget-tm: 55.0
 
 # Cost of synthesis (step-function)
 synthesis-cost:
-  # up to 500 == $160 (fixed)
+  # IDT: 4 nmole Ultramer® DNA Oligo
+  200:
+    fixed: false
+    dollars: 0.8
+
+  # IDT: gBlocks: https://www.idtdna.com/pages/products/genes-and-gene-fragments/gblocks-gene-fragments
+  250:
+    fixed: true
+    dollars: 89
+
   500:
     fixed: true
-    dollars: 160
+    dollars: 89.0
 
-  # up to 3kbp == $0.035/bp
+  750:
+    fixed: true
+    dollars: 129.0
+
+  1000:
+    fixed: true
+    dollars: 149.0
+
+  1250:
+    fixed: true
+    dollars: 209.0
+
+  1500:
+    fixed: true
+    dollars: 249.0
+
+  1750:
+    fixed: true
+    dollars: 289.0
+
+  2000:
+    fixed: true
+    dollars: 329.0
+
+  2250:
+    fixed: true
+    dollars: 399.0
+
+  2500:
+    fixed: true
+    dollars: 449.0
+
+  2750:
+    fixed: true
+    dollars: 499.0
+
   3000:
-    fixed: false
-    dollars: 0.035
+    fixed: true
+    dollars: 549.0
 
-  # anything larger == $0.6/bp
-  10000000:
+  # IDT: Gene synthesis: https://www.idtdna.com/pages/products/genes-and-gene-fragments/custom-gene-synthesis
+  1000000000:
     fixed: false
     dollars: 0.6
 

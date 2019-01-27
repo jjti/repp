@@ -165,7 +165,7 @@ func (f *Frag) synthDist(other *Frag) (synthCount int) {
 	return int(math.Ceil(floatDist / float64(f.conf.SynthesisMaxLength)))
 }
 
-// costTo calculates the $ amount needed to get from this fragment
+// costTo estimates the $ amount needed to get from this fragment
 // to the other Frag passed, either by PCR or synthesis
 //
 // PCR is, of course, preferred if we can add homology between this and
@@ -182,13 +182,13 @@ func (f *Frag) costTo(other *Frag) (cost float64) {
 	if f.overlapsViaPCR(other) {
 		if f.overlapsViaHomology(other) {
 			// there's already enough overlap between this Frag and the one being tested
-			// estimating two primers, 20bp each
-			return 46 * f.conf.PCRBPCost
+			// estimating two primers, max primer length
+			return 52 * f.conf.PCRBPCost
 		}
 
 		// we have to create some additional primer sequence to reach the next fragment
-		// guessing 46bp (2x primer3 target primer length) plus half MinHomology on each primer
-		return float64(46+f.conf.FragmentsMinHomology) * f.conf.PCRBPCost
+		// estimating here that we'll add the min homology via PCR to both sides
+		return float64(52+2*f.conf.FragmentsMinHomology) * f.conf.PCRBPCost
 	}
 
 	// we need to create a new synthetic fragment to get from this fragment to the next
@@ -305,10 +305,18 @@ func (f *Frag) synthTo(next *Frag, seq string) (synthedFrags []*Frag) {
 		synthedFrags = append(synthedFrags, &Frag{
 			ID:   fmt.Sprintf("%s-synthetic-%d", f.ID, fragIndex+1),
 			Seq:  seq[start+seqL : end+seqL],
-			Cost: f.conf.SynthCost(len(f.Seq)) + f.Cost,
+			Cost: f.conf.SynthCost(end-start) + f.Cost,
 			Type: synthetic,
 		})
 	}
 
 	return
+}
+
+// fragsCost returns the total cost of a slice of frags. Just the summation of their costs
+func fragsCost(frags []*Frag) (cost float64) {
+	for _, f := range frags {
+		cost += f.Cost
+	}
+	return cost
 }
