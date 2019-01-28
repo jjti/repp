@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/jinzhu/copier"
 	"github.com/jjtimmons/defrag/config"
 )
 
@@ -36,7 +37,7 @@ type Frag struct {
 	URL string `json:"url,omitempty"`
 
 	// Cost to make the fragment
-	Cost float64 `json:"costDollars"`
+	Dollars float64 `json:"dollars"`
 
 	// fragment's sequence (linear)
 	Seq string `json:"seq,omitempty"`
@@ -75,22 +76,19 @@ type Frag struct {
 
 // newFrag creates a Frag from a match
 func newFrag(m match, seqL int, conf *config.Config) *Frag {
-	cost := 0.0
 	url := ""
+
 	if strings.Contains(m.entry, "gnl|addgene") {
 		// create a link to the source Addgene page
 		re := regexp.MustCompile("^.*addgene\\|(\\d*)")
 		match := re.FindStringSubmatch(m.entry)
-
-		cost = conf.AddGeneVectorCost // cost of addgene procurement
 		url = fmt.Sprintf("https://www.addgene.org/%s/", match[1])
 	}
+
 	if strings.Contains(m.entry, "gnl|igem") {
 		// create a source to the source iGEM page
 		re := regexp.MustCompile("^.*igem\\|(\\w*)")
 		match := re.FindStringSubmatch(m.entry)
-
-		cost = conf.IGEMPartCost // cost of igem part procurement
 		url = fmt.Sprintf("http://parts.igem.org/Part:%s", match[1])
 	}
 
@@ -102,7 +100,6 @@ func newFrag(m match, seqL int, conf *config.Config) *Frag {
 		start:    m.start,
 		end:      m.end,
 		db:       m.db,
-		Cost:     cost,
 		URL:      url,
 		conf:     conf,
 	}
@@ -111,19 +108,27 @@ func newFrag(m match, seqL int, conf *config.Config) *Frag {
 // copy returns a deep dopy of a Frag. used because nodes are mutated
 // during assembly filling, and we don't want primers being shared between
 // nodes in different assemblies
-func (f *Frag) copy() *Frag {
-	return &Frag{
-		ID:       f.ID,
-		Seq:      f.Seq,
-		uniqueID: f.uniqueID,
-		start:    f.start,
-		end:      f.end,
-		db:       f.db,
-		conf:     f.conf,
-		Cost:     f.Cost,
-		URL:      f.URL,
-		Type:     f.Type,
+func (f *Frag) copy() (newFrag *Frag) {
+	newFrag = &Frag{}
+	copier.Copy(newFrag, f)
+	return
+}
+
+// cost returns the estimated cost of a fragment. Combination of source and preparation
+func (f *Frag) cost() (c float64) {
+	if strings.Contains(f.URL, "addgene") {
+		c += f.conf.AddGeneVectorCost
+	} else if strings.Contains(f.URL, "igem") {
+		c += f.conf.IGEMPartCost
 	}
+
+	if f.Type == pcr {
+		c += float64(len(f.Primers[0].Seq)+len(f.Primers[1].Seq)) * f.conf.PCRBPCost
+	} else if f.Type == synthetic {
+		c += f.conf.SynthCost(len(f.Seq))
+	}
+
+	return
 }
 
 // distTo returns the distance between the start of this Frag and the end of the other.
@@ -305,8 +310,8 @@ func (f *Frag) synthTo(next *Frag, seq string) (synthedFrags []*Frag) {
 		synthedFrags = append(synthedFrags, &Frag{
 			ID:   fmt.Sprintf("%s-synthetic-%d", f.ID, fragIndex+1),
 			Seq:  seq[start+seqL : end+seqL],
-			Cost: f.conf.SynthCost(end-start) + f.Cost,
 			Type: synthetic,
+			conf: f.conf,
 		})
 	}
 
@@ -316,7 +321,7 @@ func (f *Frag) synthTo(next *Frag, seq string) (synthedFrags []*Frag) {
 // fragsCost returns the total cost of a slice of frags. Just the summation of their costs
 func fragsCost(frags []*Frag) (cost float64) {
 	for _, f := range frags {
-		cost += f.Cost
+		cost += f.cost()
 	}
 	return cost
 }

@@ -83,7 +83,7 @@ func Test_vector_single_vector(t *testing.T) {
 // assemble an iGEM vector with a backbone
 func Test_vector_igem(t *testing.T) {
 	c := config.New()
-	out := path.Join("..", "..", "test", "output", "BBa_I5310.output.json")
+	out := path.Join("..", "..", "test", "output", "BBa_I5310.json")
 
 	fs := testFlags(
 		path.Join("..", "..", "test", "BBa_I5310.fa"),
@@ -106,6 +106,37 @@ func Test_vector_igem(t *testing.T) {
 	}
 
 	target := Frag{ID: "BBa_I5310"}
+	write(fs.out, target, assemblies, 0, c)
+
+	t.Fatal("fail (dev)")
+}
+
+// assemble an iGEM vector with a backbone
+func Test_vector_BBa_K2602025(t *testing.T) {
+	c := config.New()
+	out := path.Join("..", "..", "test", "output", "BBa_K2602025.json")
+
+	fs := testFlags(
+		path.Join("..", "..", "test", "BBa_K2602025.fa"),
+		out,
+		"pSB1A3",
+		"PstI",
+		"",
+		[]string{},
+		false,
+		true,
+	)
+
+	_, assemblies, err := vector(fs, c) // use addgene database
+	if err != nil {
+		t.Error(err)
+	}
+
+	if len(assemblies) < 1 {
+		t.Error("No assemblies built")
+	}
+
+	target := Frag{ID: "BBa_K2602025"}
 	write(fs.out, target, assemblies, 0, c)
 
 	t.Fatal("fail (dev)")

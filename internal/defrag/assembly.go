@@ -60,7 +60,7 @@ func (a *assembly) add(f *Frag, maxCount int) (newAssembly assembly, created, co
 
 	if !nodeContained {
 		// add the cost of procuring this Frag to the total assembly cost
-		annealCost += f.Cost
+		annealCost += f.cost()
 	}
 
 	if complete {
@@ -129,7 +129,6 @@ func (a *assembly) fill(seq string, conf *config.Config) (frags []*Frag, err err
 				Seq:  strings.ToUpper(f.Seq)[0:len(seq)], // it may be longer
 				Type: circular,
 				URL:  f.URL,
-				Cost: f.Cost, // only the ordering cost, no PCR/Synth etc
 			},
 		}, nil
 	}

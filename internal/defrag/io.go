@@ -27,7 +27,7 @@ type Solution struct {
 	Count int `json:"count"`
 
 	// Cost estimated from the primer and sequence lengths
-	Cost float64 `json:"costDollars"`
+	Cost float64 `json:"dollars"`
 
 	// Fragments used to build this solution
 	Fragments []*Frag `json:"fragments"`
