@@ -64,6 +64,32 @@ func VectorJSON(json []byte) (output []byte, err error) {
 	return write(input.out, target, builds, 0, conf)
 }
 
+// VectorFlags is for running an end to end vector design using pre-built flags
+func VectorFlags(flags *Flags, conf *config.Config) {
+	start := time.Now()
+
+	target, builds, err := vector(flags, conf)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	// write the results to the filesystem at the out location
+	fragments, err := read(flags.in)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	insertLength := len(fragments[0].Seq)
+
+	if _, err := write(flags.out, target, builds, insertLength, conf); err != nil {
+		log.Fatalln(err)
+	}
+
+	elapsed := time.Since(start)
+	fmt.Printf("%s\n\n", elapsed)
+
+	os.Exit(0)
+}
+
 // vector builds a vector using reverse engineering
 //
 // the goal is to find an "optimal" assembly vector with:
@@ -87,7 +113,7 @@ func VectorJSON(json []byte) (output []byte, err error) {
 // "fill-in" the nodes. Create primers on the Frag if it's a PCR Frag
 // or create a sequence to be synthesized if it's a synthetic fragment.
 // Error out and repeat the build stage if a Frag fails to be filled
-func vector(input *flags, conf *config.Config) (Frag, [][]*Frag, error) {
+func vector(input *Flags, conf *config.Config) (Frag, [][]*Frag, error) {
 	// read the target sequence (the first in the slice is used)
 	fragments, err := read(input.in)
 	if err != nil {
@@ -232,7 +258,7 @@ func createAssemblies(frags []*Frag, maxNodes int, seq string, conf *config.Conf
 		// it is the target vector. just return that as the assembly
 		if len(f.Seq) >= len(seq) {
 			assemblies = append(assemblies, assembly{
-				frags:  []*Frag{f}, // just self
+				frags:  []*Frag{f.copy()}, // just self
 				synths: 0,
 			})
 			break // can't top that
@@ -240,9 +266,9 @@ func createAssemblies(frags []*Frag, maxNodes int, seq string, conf *config.Conf
 
 		frags[i].assemblies = []assembly{
 			assembly{
-				frags:  []*Frag{f},  // just self
-				cost:   f.costTo(f), // just PCR,
-				synths: 0,           // no synthetic frags at start
+				frags:  []*Frag{f.copy()}, // just self
+				cost:   f.costTo(f),       // just PCR,
+				synths: 0,                 // no synthetic frags at start
 			},
 		}
 	}

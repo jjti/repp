@@ -63,21 +63,28 @@ func (a *assembly) add(f *Frag, maxCount int) (newAssembly assembly, created, co
 		annealCost += f.cost()
 	}
 
+	newFrags := make([]*Frag, len(a.frags)+1)
+	for i, frag := range a.frags {
+		newFrags[i] = frag.copy()
+	}
+	newFrags[len(newFrags)-1] = f.copy()
+
 	if complete {
 		if synths < 1 {
 			// costs nothing to anneal Frag to self, already been PCR'ed
+			// this assumes that we're circularizing here at the end
 			annealCost = 0
 		}
 
 		return assembly{
-			frags:  append(a.frags, f.copy()),
+			frags:  newFrags,
 			cost:   a.cost + annealCost,
 			synths: a.synths + synths,
 		}, created, complete
 	}
 
 	return assembly{
-		frags:  append(a.frags, f.copy()),
+		frags:  newFrags,
 		cost:   a.cost + annealCost,
 		synths: a.synths + synths,
 	}, created, false
@@ -129,6 +136,7 @@ func (a *assembly) fill(seq string, conf *config.Config) (frags []*Frag, err err
 				Seq:  strings.ToUpper(f.Seq)[0:len(seq)], // it may be longer
 				Type: circular,
 				URL:  f.URL,
+				conf: conf,
 			},
 		}, nil
 	}

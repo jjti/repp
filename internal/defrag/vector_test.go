@@ -2,56 +2,19 @@ package defrag
 
 import (
 	"path"
-	"path/filepath"
 	"reflect"
 	"sort"
 	"strings"
 	"testing"
 
 	"github.com/jjtimmons/defrag/config"
-	"github.com/spf13/cobra"
 )
-
-func Test_vector(t *testing.T) {
-	in, _ := filepath.Abs(path.Join("..", "..", "test", "109049.addgene.fa"))
-	out, _ := filepath.Abs(path.Join("..", "..", "test", "output", "109049.addgene.json"))
-	dbs, _ := filepath.Abs(path.Join("..", "..", "test", "db", "db"))
-
-	// https://stackoverflow.com/a/50880663
-	cmd := &cobra.Command{}
-	cmd.Flags().String("in", in, "")
-	cmd.Flags().String("out", out, "")
-	cmd.Flags().String("dbs", dbs, "")
-	cmd.Flags().Bool("addgene", true, "")
-	cmd.Flags().Bool("igem", true, "")
-
-	type args struct {
-		cmd  *cobra.Command
-		args []string
-	}
-	tests := []struct {
-		name string
-		args args
-	}{
-		{
-			"end to end design of a test vector",
-			args{
-				cmd: cmd,
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			VectorCmd(tt.args.cmd, tt.args.args)
-		})
-	}
-}
 
 // if an input fragment being built is exactly the same as one in a DB, it should be used
 // as is and without PCR or any preparation
 func Test_vector_single_vector(t *testing.T) {
 	c := config.New()
-	fs := testFlags(
+	fs := NewFlags(
 		path.Join("..", "..", "test", "109049.addgene.fa"),
 		path.Join("..", "..", "test", "output", "109049.output.json"),
 		"",
@@ -78,93 +41,6 @@ func Test_vector_single_vector(t *testing.T) {
 	if assemblies[0][0].Type != circular {
 		t.Fatalf("failed to recognize 109049 as a Type.Vector, was %d", assemblies[0][0].Type)
 	}
-}
-
-// assemble an iGEM vector with a backbone
-func Test_vector_igem(t *testing.T) {
-	c := config.New()
-	out := path.Join("..", "..", "test", "output", "BBa_I5310.json")
-
-	fs := testFlags(
-		path.Join("..", "..", "test", "BBa_I5310.fa"),
-		out,
-		"pSB1C3",
-		"EcoRI",
-		"",
-		[]string{},
-		false,
-		true,
-	)
-
-	_, assemblies, err := vector(fs, c) // use addgene database
-	if err != nil {
-		t.Error(err)
-	}
-
-	if len(assemblies) < 1 {
-		t.Error("No assemblies built")
-	}
-
-	target := Frag{ID: "BBa_I5310"}
-	write(fs.out, target, assemblies, 0, c)
-
-	t.Fatal("fail (dev)")
-}
-
-// assemble an iGEM vector with a backbone
-func Test_vector_BBa_K2602025(t *testing.T) {
-	c := config.New()
-	out := path.Join("..", "..", "test", "output", "BBa_K2602025.json")
-
-	fs := testFlags(
-		path.Join("..", "..", "test", "BBa_K2602025.fa"),
-		out,
-		"pSB1A3",
-		"PstI",
-		"",
-		[]string{},
-		false,
-		true,
-	)
-
-	_, assemblies, err := vector(fs, c) // use addgene database
-	if err != nil {
-		t.Error(err)
-	}
-
-	if len(assemblies) < 1 {
-		t.Error("No assemblies built")
-	}
-
-	target := Frag{ID: "BBa_K2602025"}
-	write(fs.out, target, assemblies, 0, c)
-
-	t.Fatal("fail (dev)")
-}
-
-func Test_vector_igem_fitlering(t *testing.T) {
-	c := config.New()
-	out := path.Join("..", "..", "test", "output", "BBa_E0610.output.json")
-
-	fs := testFlags(
-		path.Join("..", "..", "test", "BBa_E0610.fa"),
-		out,
-		"pSB1C3",
-		"EcoRI",
-		"2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,BBa_E0610",
-		[]string{},
-		false,
-		true,
-	)
-
-	target, results, err := vector(fs, c)
-	if err != nil {
-		t.Error(err)
-	}
-
-	write(fs.out, target, results, 0, c)
-
-	t.Fatal("fail (dev)")
 }
 
 func Test_countMaps(t *testing.T) {
