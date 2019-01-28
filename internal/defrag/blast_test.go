@@ -88,7 +88,7 @@ func Test_filter(t *testing.T) {
 
 	newMatches := filter(matches, 72, 3) // keep all fragments larger than 3bp (all of them)
 
-	if len(newMatches) != 5 {
+	if len(newMatches) != 3 {
 		t.Errorf("%d filtered matches found on test fragment, 5 expected: %v", len(newMatches), newMatches)
 	}
 
@@ -102,6 +102,7 @@ func Test_filter(t *testing.T) {
 
 func Test_isMismatch(t *testing.T) {
 	c := config.New()
+	c.PCRMaxOfftargetTm = 40.0
 
 	type args struct {
 		match match
@@ -145,6 +146,7 @@ func Test_parentMismatch(t *testing.T) {
 	testDB, _ := filepath.Abs(path.Join("..", "..", "test", "db", "db"))
 
 	conf := config.New()
+	conf.PCRMaxOfftargetTm = 40.0
 
 	type args struct {
 		primer string

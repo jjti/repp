@@ -1,5 +1,5 @@
 # Maximum number of building fragments in final assembly
-fragments-max-count: 7
+fragments-max-count: 6
 
 # Minimum homology length between fragments
 fragments-min-homology: 20
@@ -80,6 +80,10 @@ synthesis-cost:
     dollars: 549.0
 
   # IDT: Gene synthesis: https://www.idtdna.com/pages/products/genes-and-gene-fragments/custom-gene-synthesis
+  5000:
+    fixed: false
+    dollars: 0.35
+
   1000000000:
     fixed: false
     dollars: 0.6

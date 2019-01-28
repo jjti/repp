@@ -45,4 +45,7 @@ type Output struct {
 
 	// Solutions builds
 	Solutions []Solution `json:"solutions"`
+
+	// SynthInsertCost cost of a full synthesis
+	SynthInsertCost float64 `json:"synthInsertCost"`
 }

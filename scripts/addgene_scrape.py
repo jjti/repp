@@ -124,7 +124,7 @@ def scrape_files():
 
     futures = []
     with ThreadPoolExecutor() as executor:
-        """try to scrape with all available CPUs
+        """try to scrape with all available CPUs (it's x5 off that since it's IO dependent)
         """
         for page in page_indicies:
             futures.append(executor.submit(parse, page))
@@ -139,8 +139,6 @@ def scrape_files():
         for ind in empty_indices:
             f.write(str(ind) + "\n")
 
-    print("max page index: ", max(seen_indices))
-
 
 def combine():
     # combine all the FASTA files into one
@@ -151,8 +149,9 @@ def combine():
         os.chdir(os.path.join("..", "files"))
 
         for f in os.listdir("."):
-            combined_fasta.write(open(f, "r").read().strip() + "\n")
+            file_contents = open(f, "r").read().strip() + "\n"
+            combined_fasta.write(file_contents)
 
 
-scrape_files()
-combine()
+# scrape_files()
+# combine()

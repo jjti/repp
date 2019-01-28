@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/jjtimmons/defrag/config"
 )
 
 // read a FASTA file (by its path on local FS) to a slice of Fragments
@@ -77,7 +79,7 @@ func read(path string) (fragments []Frag, err error) {
 // filename is the output file to write to
 // target is the vector we tried to assemble
 // assemblies are the solutions that can build up the target vector
-func write(filename string, target Frag, assemblies [][]*Frag) (output []byte, err error) {
+func write(filename string, target Frag, assemblies [][]*Frag, insertSeqLength int, conf *config.Config) (output []byte, err error) {
 	// calculate final cost of the assembly and fragment count
 	solutions := []Solution{}
 	for _, assembly := range assemblies {
@@ -98,9 +100,10 @@ func write(filename string, target Frag, assemblies [][]*Frag) (output []byte, e
 		return solutions[i].Count < solutions[j].Count
 	})
 	out := Output{
-		Time:      time.Now().String(),
-		Target:    strings.ToUpper(target.Seq),
-		Solutions: solutions,
+		Time:            time.Now().String(),
+		Target:          strings.ToUpper(target.Seq),
+		Solutions:       solutions,
+		SynthInsertCost: conf.SynthCost(insertSeqLength),
 	}
 
 	output, err = json.MarshalIndent(out, "", "  ")

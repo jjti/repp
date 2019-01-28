@@ -105,9 +105,8 @@ func Test_vector_igem(t *testing.T) {
 		t.Error("No assemblies built")
 	}
 
-	write(fs.out, Frag{
-		ID: "BBa_I5310",
-	}, assemblies)
+	target := Frag{ID: "BBa_I5310"}
+	write(fs.out, target, assemblies, 0, c)
 
 	t.Fatal("fail (dev)")
 }
@@ -132,7 +131,7 @@ func Test_vector_igem_fitlering(t *testing.T) {
 		t.Error(err)
 	}
 
-	write(fs.out, target, results)
+	write(fs.out, target, results, 0, c)
 
 	t.Fatal("fail (dev)")
 }
