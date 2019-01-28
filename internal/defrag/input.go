@@ -15,9 +15,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// flags conatins parsed cobra flags like "in", "out", "dbs", etc that
+// Flags conatins parsed cobra Flags like "in", "out", "dbs", etc that
 // are used by multiple commands
-type flags struct {
+type Flags struct {
 	// the name of the file to write the input to
 	in string
 
@@ -37,8 +37,8 @@ type flags struct {
 // inputParser contains methods for parsing flags from the input &cobra.Command
 type inputParser struct{}
 
-// testFlags makes a new flags object out of the in, out, dbs passed
-func testFlags(in, out, backbone, enzymeName, filter string, dbs []string, addgene, igem bool) *flags {
+// NewFlags makes a new flags object out of the in, out, dbs passed
+func NewFlags(in, out, backbone, enzymeName, filter string, dbs []string, addgene, igem bool) *Flags {
 	c := config.New()
 
 	if addgene {
@@ -56,7 +56,7 @@ func testFlags(in, out, backbone, enzymeName, filter string, dbs []string, addge
 		log.Fatal(err)
 	}
 
-	return &flags{
+	return &Flags{
 		in:       in,
 		out:      out,
 		dbs:      dbs,
@@ -66,8 +66,8 @@ func testFlags(in, out, backbone, enzymeName, filter string, dbs []string, addge
 }
 
 // parseCmdFlags gathers the in path, out path, etc from the cobra cmd object
-func parseCmdFlags(cmd *cobra.Command, conf *config.Config) (fs *flags, err error) {
-	fs = &flags{} // parsed flags
+func parseCmdFlags(cmd *cobra.Command, conf *config.Config) (fs *Flags, err error) {
+	fs = &Flags{} // parsed flags
 	p := inputParser{}
 
 	if fs.in, err = cmd.Flags().GetString("in"); err != nil {
@@ -128,8 +128,8 @@ func parseCmdFlags(cmd *cobra.Command, conf *config.Config) (fs *flags, err erro
 // parseJSONFlags parses a JSON payload into flags usable by defrag
 //
 // it's distinct from parseCmdFlags because we want to write the io files ourselves
-func parseJSONFlags(data []byte, conf *config.Config) (fs *flags, err error) {
-	fs = &flags{} // parsed flags
+func parseJSONFlags(data []byte, conf *config.Config) (fs *Flags, err error) {
+	fs = &Flags{} // parsed flags
 
 	payload := &Payload{}
 	if err := json.Unmarshal(data, payload); err != nil {

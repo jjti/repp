@@ -40,7 +40,7 @@ func FragmentsJSON(json []byte) (output []byte, err error) {
 
 // fragments pieces together a list of fragments into a single vector
 // with the fragments in the order and orientation specified
-func fragments(input *flags, conf *config.Config) (output []byte, err error) {
+func fragments(input *Flags, conf *config.Config) (output []byte, err error) {
 	// read in the constituent fragments
 	inputFragments, err := read(input.in)
 	if err != nil {
