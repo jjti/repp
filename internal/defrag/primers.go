@@ -92,6 +92,7 @@ func (f *Frag) setPrimers(last, next *Frag, seq string, conf *config.Config) (er
 	maxHomology := conf.FragmentsMaxHomology
 	maxEmbedLength := conf.PCRMaxEmbedLength
 	minLength := conf.PCRMinLength
+
 	addLeft, addRight, err := psExec.input(minHomology, maxHomology, maxEmbedLength, minLength)
 	if err != nil {
 		return
@@ -157,9 +158,6 @@ func (f *Frag) setPrimers(last, next *Frag, seq string, conf *config.Config) (er
 		f.Primers = nil
 		return err
 	}
-
-	// update the fragment's cost with those of the primers
-	f.Cost += float64(len(f.Primers[0].Seq)+len(f.Primers[1].Seq)) * conf.PCRBPCost
 
 	os.Remove(psExec.in.Name()) // delete the input and output files
 	os.Remove(psExec.out.Name())
@@ -545,7 +543,7 @@ func mutateNodePrimers(f *Frag, seq string, addLeft, addRight int) (mutated *Fra
 	f.end = f.Primers[1].Range.end
 
 	// update the Frag's seq to reflect that change
-	f.Seq = template[f.start+len(seq) : f.end+len(seq)+1]
+	// f.Seq = template[f.start+len(seq) : f.end+len(seq)+1]
 
 	return f
 }

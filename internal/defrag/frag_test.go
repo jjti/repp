@@ -470,7 +470,6 @@ func Test_Frag_junction(t *testing.T) {
 				end:        tt.fields.end,
 				db:         tt.fields.db,
 				assemblies: tt.fields.assemblies,
-				Cost:       tt.fields.cost,
 				URL:        tt.fields.url,
 				Primers:    tt.fields.primers,
 				conf:       tt.fields.conf,

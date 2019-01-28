@@ -233,7 +233,6 @@ func createAssemblies(frags []*Frag, maxNodes int, seq string, conf *config.Conf
 		if len(f.Seq) >= len(seq) {
 			assemblies = append(assemblies, assembly{
 				frags:  []*Frag{f}, // just self
-				cost:   f.Cost,     // just cost of procurement
 				synths: 0,
 			})
 			break // can't top that
