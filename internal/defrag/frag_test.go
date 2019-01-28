@@ -246,6 +246,7 @@ func Test_Frag_reach(t *testing.T) {
 	c := config.New()
 
 	c.FragmentsMinHomology = 2
+	c.PCRMaxEmbedLength = 0
 
 	n11 := &Frag{
 		start: 0,
@@ -310,7 +311,7 @@ func Test_Frag_reach(t *testing.T) {
 			args{
 				[]*Frag{n11, n12, n13, n14, n15, n16, n17},
 				0,
-				2, // limit to 3 "synthable" nodes
+				2, // limit to 2 "synthable" nodes
 			},
 			// get all the over-lappable nodes plus two more that
 			// can be synthesized to
@@ -343,90 +344,6 @@ func Test_Frag_reach(t *testing.T) {
 			}
 			if gotReachable := n.reach(tt.args.nodes, tt.args.i, tt.args.synthCount); !reflect.DeepEqual(gotReachable, tt.wantReachable) {
 				t.Errorf("Frag.reach() = %v, want %v", gotReachable, tt.wantReachable)
-			}
-		})
-	}
-}
-
-func Test_Frag_synthTo(t *testing.T) {
-	c := config.New()
-	c.FragmentsMinHomology = 2
-	c.SynthesisMinLength = 4
-	c.SynthesisMaxLength = 100
-	c.PCRMaxEmbedLength = 0
-
-	type fields struct {
-		ID         string
-		seq        string
-		uniqueID   string
-		start      int
-		end        int
-		assemblies []assembly
-	}
-	type args struct {
-		next *Frag
-		Seq  string
-	}
-	tests := []struct {
-		name             string
-		fields           fields
-		args             args
-		wantSynthedFrags []*Frag
-	}{
-		{
-			"return nothing when there's enough overlap",
-			fields{
-				start: 10,
-				end:   16,
-			},
-			args{
-				next: &Frag{
-					start: 13,
-					end:   20,
-					conf:  c,
-				},
-			},
-			nil,
-		},
-		{
-			"return synthetic fragments when there's no overlap",
-			fields{
-				ID:    "first",
-				start: 10,
-				end:   16,
-			},
-			args{
-				next: &Frag{
-					ID:    "second",
-					start: 25,
-					end:   30,
-					conf:  c,
-				},
-				Seq: "TGCTGACTGTGGCGGGTGAGCTTAGGGGGCCTCCGCTCCAGCTCGACACCGGGCAGCTGC",
-			},
-			[]*Frag{
-				&Frag{
-					ID:   "first-synthetic-1",
-					Seq:  "GGTGAGCTTAGGGGG",
-					Type: synthetic,
-					Cost: 160,
-				},
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			n := &Frag{
-				ID:         tt.fields.ID,
-				Seq:        tt.fields.seq,
-				uniqueID:   tt.fields.uniqueID,
-				start:      tt.fields.start,
-				end:        tt.fields.end,
-				assemblies: tt.fields.assemblies,
-				conf:       c,
-			}
-			if gotSynthedFrags := n.synthTo(tt.args.next, tt.args.Seq); !reflect.DeepEqual(gotSynthedFrags, tt.wantSynthedFrags) {
-				t.Errorf("Frag.synthTo() = %v, want %v", gotSynthedFrags, tt.wantSynthedFrags)
 			}
 		})
 	}

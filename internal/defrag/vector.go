@@ -30,7 +30,13 @@ func VectorCmd(cmd *cobra.Command, args []string) {
 	}
 
 	// write the results to the filesystem at the out location
-	if _, err := write(input.out, target, builds); err != nil {
+	fragments, err := read(input.in)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	insertLength := len(fragments[0].Seq)
+
+	if _, err := write(input.out, target, builds, insertLength, conf); err != nil {
 		log.Fatalln(err)
 	}
 
@@ -55,7 +61,7 @@ func VectorJSON(json []byte) (output []byte, err error) {
 	target, builds, err := vector(input, conf)
 
 	// write the results to a JSON formatted []byte slice, return
-	return write(input.out, target, builds)
+	return write(input.out, target, builds, 0, conf)
 }
 
 // vector builds a vector using reverse engineering
@@ -161,7 +167,7 @@ func vector(input *flags, conf *config.Config) (Frag, [][]*Frag, error) {
 			// remove all assemblies with the Frag and try again
 			newAssemblyCost := fragsCost(filledFragments)
 
-			if newAssemblyCost > minCostAssembly {
+			if newAssemblyCost >= minCostAssembly {
 				continue // wasn't actually cheaper, keep trying
 			}
 
@@ -194,7 +200,7 @@ func vector(input *flags, conf *config.Config) (Frag, [][]*Frag, error) {
 		}
 	}
 
-	// append a fully synthetic solution if it's cheaper than alternative at that length
+	// append a fully synthetic solution if it's cheaper than alternatives
 	addFullySyntheticVector(filled, targetFrag.Seq, conf)
 
 	var found [][]*Frag

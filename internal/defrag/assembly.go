@@ -223,14 +223,13 @@ func (a *assembly) fill(seq string, conf *config.Config) (frags []*Frag, err err
 // Need to cheack each Frag's junction() with nodes other than the one after it
 // (which it's supposed to anneal to)
 func (a *assembly) duplicates(nodes []*Frag, minHomology, maxHomology int) (isDup bool, first, second, dup string) {
-	if len(nodes) > 1 && nodes[0].uniqueID == nodes[len(nodes)-1].uniqueID {
+	if len(nodes) > 1 && nodes[0].uniqueID != "" && nodes[0].uniqueID == nodes[len(nodes)-1].uniqueID {
 		nodes = nodes[:len(nodes)-1] // do not include the circularizing fragment
 	}
 
 	c := len(nodes) // Frag count
-
 	for i, f := range nodes {
-		for j := 2; j <= c; j++ { // skip next Frag, this is supposed to anneal to that
+		for j := 2; j <= c; j++ { // skip next Frag, i+1 is supposed to anneal to i
 			junc := f.junction(nodes[(j+i)%c], minHomology, maxHomology)
 			if junc != "" && f.uniqueID != nodes[(j+i)%c].uniqueID {
 				return true, f.ID, nodes[(j+i)%c].ID, junc

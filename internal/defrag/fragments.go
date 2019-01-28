@@ -59,7 +59,7 @@ func fragments(input *flags, conf *config.Config) (output []byte, err error) {
 	}
 
 	// write the single list of fragments as a possible solution to the output file
-	return write(input.out, target, [][]*Frag{fragments})
+	return write(input.out, target, [][]*Frag{fragments}, len(target.Seq), conf)
 }
 
 // assembleFragments takes a list of Fragments and returns the Vector we assume the user is

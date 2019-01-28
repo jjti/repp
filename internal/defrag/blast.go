@@ -312,18 +312,6 @@ func filter(matches []match, seqL, minSize int) (properized []match) {
 	// create properized matches (non-self contained)
 	properized = append(properize(internal), properize(external)...)
 
-	// because we properized the matches, we may have removed a match from the
-	// start or the end. right now, a match showing up twice in the vector
-	// is how we circularize, so have to add back matches to the start or end
-	matchCount := make(map[string]int)
-	for _, m := range properized {
-		if _, counted := matchCount[m.entry]; counted {
-			matchCount[m.entry]++
-		} else {
-			matchCount[m.entry] = 1
-		}
-	}
-
 	// sort again now that they're properized
 	sortMatches(properized)
 

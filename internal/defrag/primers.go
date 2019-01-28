@@ -364,8 +364,11 @@ func (p *p3Exec) settings(
 		"PRIMER_OPT_SIZE":                      strconv.Itoa(primerOpt),
 		"PRIMER_MAX_SIZE":                      strconv.Itoa(primerMax),
 		"PRIMER_EXPLAIN_FLAG":                  "1",
-		"PRIMER_MIN_TM":                        "50.0", // defaults to 57.0
-		"PRIMER_MAX_TM":                        "70.0", // defaults to 63.0
+		"PRIMER_MIN_TM":                        "47.0", // defaults to 57.0
+		"PRIMER_MAX_TM":                        "73.0", // defaults to 63.0
+		"PRIMER_MAX_HAIRPIN_TH":                "57.0", // defaults to 47.0
+		"PRIMER_MAX_POLY_X":                    "7",    // defaults to 5
+		"PRIMER_PAIR_MAX_COMPL_ANY":            "13.0", // defaults to 8.00
 	}
 
 	start += len(seq) // move to one seq length further in the vector seq (get off left edge)
