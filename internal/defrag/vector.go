@@ -86,8 +86,6 @@ func VectorFlags(flags *Flags, conf *config.Config) {
 
 	elapsed := time.Since(start)
 	fmt.Printf("%s\n\n", elapsed)
-
-	os.Exit(0)
 }
 
 // vector builds a vector using reverse engineering
@@ -325,10 +323,9 @@ func groupAssemblies(assemblies []assembly) map[int][]assembly {
 	return countToAssemblies
 }
 
-// addFullySyntheticVector adds a new fully synthetic vector to the built map, if it's cheaper
-// that any other solution of that length
+// addFullySyntheticVector adds a new fully synthetic vector to the built map if it's cheaper
+// that any other solution of that many fragments
 func addFullySyntheticVector(built map[int][]*Frag, seq string, conf *config.Config) {
-	// create and add an assembly where we synthesize the full stretch
 	start := &Frag{start: 0, end: 0, conf: conf}
 	end := &Frag{start: len(seq), end: len(seq), conf: conf}
 
