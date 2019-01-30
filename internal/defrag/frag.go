@@ -275,8 +275,6 @@ func (f *Frag) junction(other *Frag, minHomology, maxHomology int) (junction str
 // seq is the vector's sequence. We need it to build up the target
 // vector's sequence
 func (f *Frag) synthTo(next *Frag, seq string) (synthedFrags []*Frag) {
-	seqL := len(seq)
-
 	// check whether we need to make synthetic fragments to get
 	// to the next fragment in the assembly
 	fragC := f.synthDist(next)
@@ -284,24 +282,24 @@ func (f *Frag) synthTo(next *Frag, seq string) (synthedFrags []*Frag) {
 		return nil
 	}
 
-	// make the slice
-	synthedFrags = []*Frag{}
-
 	// length of each synthesized fragment
 	fragL := f.distTo(next) / fragC
+	// account for homology on either end of each synthetic fragment
+	fragL += f.conf.FragmentsMinHomology * 2
+
 	if f.conf.SynthesisMinLength > fragL {
 		// need to synthesize at least Synthesis.MinLength bps
 		fragL = f.conf.SynthesisMinLength
 	}
 
-	// account for homology on either end of each synthetic fragment
-	fragL += f.conf.FragmentsMinHomology * 2
-	seq += seq + seq // triple to account for sequence across the zero-index
-	seq = strings.ToUpper(seq)
+	seqL := len(seq)
+	seq = strings.ToUpper(seq + seq + seq) // triple to account for sequence across the zero-index (when sequence subselecting)
 
 	// slide along the range of sequence to create synthetic fragments
 	// and create one at each point, each w/ MinHomology for the fragment
 	// before and after it
+
+	synthedFrags = []*Frag{}
 	for fragIndex := 0; fragIndex < int(fragC); fragIndex++ {
 		start := f.end - f.conf.FragmentsMinHomology // start w/ homology
 		start += fragIndex * fragL                   // slide along the range to cover
