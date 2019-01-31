@@ -215,7 +215,7 @@ func Test_build(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assemblies := createAssemblies(tt.args.nodes, c.FragmentsMaxCount, seq, c)
+			assemblies := createAssemblies(tt.args.nodes, seq, c)
 
 			// concatenate Frag ids together
 			actualIds := getNodeSet(assemblies)

@@ -85,6 +85,7 @@ func VectorFlags(flags *Flags, conf *config.Config) {
 	}
 
 	elapsed := time.Since(start)
+
 	fmt.Printf("%s\n\n", elapsed)
 }
 
@@ -136,7 +137,7 @@ func vector(input *Flags, conf *config.Config) (Frag, [][]*Frag, error) {
 	}
 
 	// get all the matches against the fragment
-	matches, err := blast(&targetFrag, input.dbs, input.filters, conf.PCRMinLength, 100)
+	matches, err := blast(&targetFrag, input.dbs, input.filters, conf.PCRMinLength, 100, targetFrag.Seq)
 	if err != nil {
 		dbMessage := strings.Join(input.dbs, ", ")
 		return Frag{}, nil, fmt.Errorf("failed to blast %s against the dbs %s: %v", targetFrag.ID, dbMessage, err)
@@ -154,9 +155,9 @@ func vector(input *Flags, conf *config.Config) (Frag, [][]*Frag, error) {
 
 	// build up a slice of assemblies that could, within the upper-limit on
 	// fragment count, be assembled to make the target vector
-	assemblies := createAssemblies(nodes, conf.FragmentsMaxCount, targetFrag.Seq, conf)
+	assemblies := createAssemblies(nodes, targetFrag.Seq, conf)
 
-	fmt.Printf("created %d assemblies\n", len(assemblies))
+	fmt.Printf("%d assemblies created\n", len(assemblies))
 
 	// build up a map from fragment count to a sorted list of assemblies with that number
 	groupedAssemblies := groupAssemblies(assemblies)
@@ -239,33 +240,36 @@ func vector(input *Flags, conf *config.Config) (Frag, [][]*Frag, error) {
 	return targetFrag, found, nil
 }
 
-// createAssemblies builds up circular assemblies with less fragments than the createAssemblies limit
+// createAssemblies builds up circular assemblies (unfilled lists of fragments that should be combinable)
 //
-// maxNodes is the maximum number of frags in a single assembly
-// seq is the target sequence we're trying to createAssemblies up
+// maxNodes is the maximum number of fragments in a single assembly
+// target is the target sequence we're trying to createAssemblies up
 //
 // It is created by traversing a DAG in forward order:
 // 	foreach thisFragment (sorted in increasing start index order):
 // 	  foreach otherFragment that thisFragment overlaps with + synthCount more:
 //	 	foreach assembly on thisFragment:
 //    	    add otherFragment to the assembly to create a new assembly, store on otherFragment
-func createAssemblies(frags []*Frag, maxNodes int, seq string, conf *config.Config) (assemblies []assembly) {
+func createAssemblies(frags []*Frag, target string, conf *config.Config) (assemblies []assembly) {
 	// number of additional frags try synthesizing to, in addition to those that
 	// already have enough homology for overlap without any modifications for each Frag
+	maxNodes := conf.FragmentsMaxCount
 	synthCount := int(math.Max(5, 0.05*float64(len(frags)))) // 5 of 5%, whichever is greater
 
 	// create a starting assembly on each Frag including just itself
 	for i, f := range frags {
 		// edge case where the Frag spans the entire target vector... 100% match
 		// it is the target vector. just return that as the assembly
-		if len(f.Seq) >= len(seq) {
-			assemblies = append(assemblies, assembly{
-				frags:  []*Frag{f.copy()}, // just self
-				synths: 0,
-			})
-			break // can't top that
+		if len(f.Seq) >= len(target) {
+			return []assembly{
+				assembly{
+					frags:  []*Frag{f.copy()},
+					synths: 0,
+				},
+			}
 		}
 
+		// create a starting assembly for each fragment just containing it
 		frags[i].assemblies = []assembly{
 			assembly{
 				frags:  []*Frag{f.copy()}, // just self
@@ -281,19 +285,19 @@ func createAssemblies(frags []*Frag, maxNodes int, seq string, conf *config.Conf
 		for _, j := range f.reach(frags, i, synthCount) {
 			// for every assembly on the reaching fragment
 			for _, a := range f.assemblies {
-				newAssembly, created, complete := a.add(frags[j], maxNodes)
+				newAssembly, created, circularized := a.add(frags[j], maxNodes)
 
-				// see if we can create a new assembly with this Frag included
-				if created {
-					if complete {
-						// we've completed a circlular plasmid assembly
-						// it has wrapped back onto itself
-						assemblies = append(assemblies, newAssembly)
-						// TODO: check if we can break here
-					} else {
-						// add to the other fragment's list of assemblies
-						frags[j].assemblies = append(frags[j].assemblies, newAssembly)
-					}
+				// if a new assembly wasn't created, move on
+				if !created {
+					continue
+				}
+
+				if circularized {
+					// we've circularized a plasmid assembly, it's ready for filling
+					assemblies = append(assemblies, newAssembly)
+				} else {
+					// add to the other fragment's list of assemblies
+					frags[j].assemblies = append(frags[j].assemblies, newAssembly)
 				}
 			}
 		}
@@ -347,7 +351,7 @@ func addFullySyntheticVector(built map[int][]*Frag, seq string, conf *config.Con
 
 		return syntheticCost // return the total cost of synthesis
 	}
-
 	built[fCount] = syntheticFrags
+
 	return fragsCost(syntheticFrags)
 }

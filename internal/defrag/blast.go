@@ -27,6 +27,9 @@ type match struct {
 	// entry of the matched fragment in the database
 	entry string
 
+	// unique id for the match (entry name + start index % seqL). also used by fragments
+	uniqueID string
+
 	// seq of the match on the target vector
 	seq string
 
@@ -100,7 +103,7 @@ type blastExec struct {
 //
 // Accepts a fragment to BLAST against, a list of dbs to BLAST it against,
 // a minLength for a match, and settings around blastn location, output dir, etc
-func blast(f *Frag, dbs, filters []string, minLength int, identity float64) (matches []match, err error) {
+func blast(f *Frag, dbs, filters []string, minLength int, identity float64, target string) (matches []match, err error) {
 	in, err := ioutil.TempFile(blastnDir, f.ID+"in-*")
 	if err != nil {
 		return nil, err
@@ -144,7 +147,7 @@ func blast(f *Frag, dbs, filters []string, minLength int, identity float64) (mat
 		}
 
 		// parse the output file to Matches against the Frag
-		dbMatches, err := b.parse(filters)
+		dbMatches, err := b.parse(filters, len(target))
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse BLAST output: %v", err)
 		}
@@ -213,7 +216,7 @@ func (b *blastExec) run() (err error) {
 
 // parse reads the output file into Matches on the Frag
 // returns a slice of Matches for the blasted fragment
-func (b *blastExec) parse(filters []string) (matches []match, err error) {
+func (b *blastExec) parse(filters []string, targetLength int) (matches []match, err error) {
 	// read in the results
 	file, err := ioutil.ReadFile(b.out.Name())
 	if err != nil {
@@ -266,6 +269,7 @@ func (b *blastExec) parse(filters []string) (matches []match, err error) {
 		// create and append the new match
 		ms = append(ms, match{
 			entry:       entry,
+			uniqueID:    entry + strconv.Itoa(start%targetLength),
 			seq:         strings.Replace(seq, "-", "", -1),
 			start:       start - 1, // convert 1-based numbers to 0-based
 			end:         end - 1,
@@ -322,17 +326,17 @@ func filter(matches []match, targetLength, minSize int) (properized []match) {
 	// is how we circularize, so have to add back matches to the start or end
 	matchCount := make(map[string]int)
 	for _, m := range properized {
-		if _, counted := matchCount[m.entry]; counted {
-			matchCount[m.entry]++
+		if _, counted := matchCount[m.uniqueID]; counted {
+			matchCount[m.uniqueID]++
 		} else {
-			matchCount[m.entry] = 1
+			matchCount[m.uniqueID] = 1
 		}
 	}
 
 	// add back copied matches for those that only show up once
 	copiedMatches := []match{}
 	for _, m := range properized {
-		if count := matchCount[m.entry]; count == 2 {
+		if count := matchCount[m.uniqueID]; count == 2 {
 			continue
 		}
 
@@ -526,7 +530,7 @@ func mismatch(primer string, parentFile *os.File, c *config.Config) (wasMismatch
 	}
 
 	// get the BLAST matches
-	matches, err := b.parse([]string{})
+	matches, err := b.parse([]string{}, 1)
 	if err != nil {
 		return false, match{}, fmt.Errorf("failed to parse matches from %s: %v", out.Name(), err)
 	}

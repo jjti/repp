@@ -20,9 +20,9 @@ type assembly struct {
 	synths int
 }
 
-// add a Frag to the start of this assembly.
+// add a Frag to the end of this assembly.
 //
-// Update the cost of the assembly to include the link between the new first Frag and the one after it.
+// Update the cost of the assembly for what it would be with this new fragment.
 // Store the Frag's ID in the list of Frag ids.
 // Complete  an assembly if a Frag has matched up onto itself across the zero-index.
 func (a *assembly) add(f *Frag, maxCount int) (newAssembly assembly, created, circularized bool) {

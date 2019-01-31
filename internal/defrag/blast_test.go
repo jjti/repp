@@ -24,7 +24,7 @@ func Test_BLAST(t *testing.T) {
 	}
 
 	// run blast
-	matches, err := blast(&f, []string{testDB}, []string{}, 10, 100) // any match over 10 bp
+	matches, err := blast(&f, []string{testDB}, []string{}, 10, 100, f.Seq) // any match over 10 bp
 
 	// check if it fails
 	if err != nil {
