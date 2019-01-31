@@ -58,7 +58,7 @@ func digest(frag Frag, enz enzyme) (digested Frag, err error) {
 		return Frag{}, fmt.Errorf("%s is too short for digestion", frag.ID)
 	}
 
-	if frag.Type == circular {
+	if frag.fragType == circular {
 		// double check that it's circular, first 20 bp should show up at least twice
 		firstBpsRegex := regexp.MustCompile(frag.Seq[:20])
 		firstBpsCount := firstBpsRegex.FindAllStringIndex(frag.Seq, -1)

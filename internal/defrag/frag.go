@@ -32,11 +32,14 @@ type Frag struct {
 	// ID is a unique identifier for this fragment
 	ID string `json:"-"`
 
-	// URL, eg link to a vector's addgene page
-	URL string `json:"url,omitempty"`
+	// type of the fragment in string representation for export
+	Type string `json:"type"`
 
 	// Cost to make the fragment
 	Cost float64 `json:"cost"`
+
+	// URL, eg link to a vector's addgene page
+	URL string `json:"url,omitempty"`
 
 	// fragment's sequence (linear)
 	Seq string `json:"seq,omitempty"`
@@ -44,8 +47,8 @@ type Frag struct {
 	// primers necessary to create this (if pcr fragment)
 	Primers []Primer `json:"primers,omitempty"`
 
-	// Type of this fragment. pcr | vector | synthetic
-	Type Type `json:"type"`
+	// fragType of this fragment. pcr | vector | synthetic
+	fragType Type
 
 	// uniqueID of a match, ID + the start index % seq-length
 	// used identified that catches nodes that cross the zero-index
@@ -121,9 +124,9 @@ func (f *Frag) cost() (c float64) {
 		c += f.conf.IGEMPartCost
 	}
 
-	if f.Type == pcr {
+	if f.fragType == pcr {
 		c += float64(len(f.Primers[0].Seq)+len(f.Primers[1].Seq)) * f.conf.PCRBPCost
-	} else if f.Type == synthetic {
+	} else if f.fragType == synthetic {
 		c += f.conf.SynthCost(len(f.Seq))
 	}
 
@@ -305,10 +308,10 @@ func (f *Frag) synthTo(next *Frag, seq string) (synthedFrags []*Frag) {
 		end := start + fragL + f.conf.FragmentsMinHomology
 
 		synthedFrags = append(synthedFrags, &Frag{
-			ID:   fmt.Sprintf("%s-synthetic-%d", f.ID, fragIndex+1),
-			Seq:  seq[start+seqL : end+seqL],
-			Type: synthetic,
-			conf: f.conf,
+			ID:       fmt.Sprintf("%s-synthetic-%d", f.ID, fragIndex+1),
+			Seq:      seq[start+seqL : end+seqL],
+			fragType: synthetic,
+			conf:     f.conf,
 		})
 	}
 

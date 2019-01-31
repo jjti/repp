@@ -132,11 +132,11 @@ func (a *assembly) fill(seq string, conf *config.Config) (frags []*Frag, err err
 		f := a.frags[0]
 		return []*Frag{
 			&Frag{
-				ID:   f.ID,
-				Seq:  strings.ToUpper(f.Seq)[0:len(seq)], // it may be longer
-				Type: circular,
-				URL:  f.URL,
-				conf: conf,
+				ID:       f.ID,
+				Seq:      strings.ToUpper(f.Seq)[0:len(seq)], // it may be longer
+				fragType: circular,
+				URL:      f.URL,
+				conf:     conf,
 			},
 		}, nil
 	}
@@ -196,9 +196,9 @@ func (a *assembly) fill(seq string, conf *config.Config) (frags []*Frag, err err
 			if err := f.setPrimers(last, next, seq, conf); err != nil || len(f.Primers) < 2 {
 				return nil, fmt.Errorf("failed to pcr %s: %v", f.ID, err)
 			}
-			f.Type = pcr // is now a pcr type
+			f.fragType = pcr // is now a pcr type
 		} else {
-			f.Type = existing // no change needed
+			f.fragType = existing // no change needed
 		}
 	}
 

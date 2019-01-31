@@ -73,13 +73,13 @@ func assembleFragments(inputFragments []Frag, conf *config.Config) (targetVector
 	frags := make([]*Frag, len(inputFragments))
 	for i, f := range inputFragments {
 		frags[i] = &Frag{
-			ID:      f.ID,
-			Seq:     f.Seq,
-			fullSeq: f.Seq,
-			conf:    conf,
-			start:   0,
-			end:     0,
-			Type:    existing,
+			ID:       f.ID,
+			Seq:      f.Seq,
+			fullSeq:  f.Seq,
+			conf:     conf,
+			start:    0,
+			end:      0,
+			fragType: existing,
 		}
 	}
 
@@ -105,8 +105,8 @@ func assembleFragments(inputFragments []Frag, conf *config.Config) (targetVector
 
 	// create the assumed vector object
 	targetVector = Frag{
-		Seq:  vectorSeq.String(),
-		Type: circular,
+		Seq:      vectorSeq.String(),
+		fragType: circular,
 	}
 
 	// create an assembly out of the frags (to fill/convert to fragments with primers)

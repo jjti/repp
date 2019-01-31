@@ -308,7 +308,7 @@ func (p *inputParser) getBackbone(backbone string, dbs []string, c *config.Confi
 		if err == nil && outFile.Name() != "" {
 			defer os.Remove(outFile.Name())
 			frags, err := read(outFile.Name())
-			frags[0].Type = circular // assume its circular here, used as backbone
+			frags[0].fragType = circular // assume its circular here, used as backbone
 			return frags[0], err
 		}
 	}
