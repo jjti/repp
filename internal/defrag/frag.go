@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math"
 	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/jinzhu/copier"
@@ -16,16 +15,16 @@ type Type int
 
 const (
 	// circular is a circular sequence of DNA, e.g.: many of Addgene's plasmids
-	circular Type = 0
+	circular Type = iota
 
 	// pcr fragments are those prepared by pcr, often a subselection of their parent vector
-	pcr Type = 1
+	pcr
 
 	// synthetic fragments are those that will be fully synthesized (ex: gBlocks)
-	synthetic Type = 2
+	synthetic
 
 	// linear fragment, ie the type of a fragment as it was uploaded submitted and without PCR/synthesis
-	existing Type = 3
+	existing
 )
 
 // Frag is a single building block stretch of DNA for assembly
@@ -37,7 +36,7 @@ type Frag struct {
 	URL string `json:"url,omitempty"`
 
 	// Cost to make the fragment
-	Dollars float64 `json:"dollars"`
+	Cost float64 `json:"cost"`
 
 	// fragment's sequence (linear)
 	Seq string `json:"seq,omitempty"`
@@ -46,9 +45,9 @@ type Frag struct {
 	Primers []Primer `json:"primers,omitempty"`
 
 	// Type of this fragment. pcr | vector | synthetic
-	Type Type `json:"-"`
+	Type Type `json:"type"`
 
-	// uniqueID of a match, the start index % seq-length + ID
+	// uniqueID of a match, ID + the start index % seq-length
 	// used identified that catches nodes that cross the zero-index
 	uniqueID string
 
@@ -94,7 +93,7 @@ func newFrag(m match, seqL int, conf *config.Config) *Frag {
 
 	return &Frag{
 		ID:       m.entry,
-		uniqueID: strconv.Itoa(m.start%seqL) + m.entry,
+		uniqueID: m.uniqueID,
 		Seq:      strings.ToUpper(m.seq),
 		circular: m.circular,
 		start:    m.start,
@@ -314,6 +313,11 @@ func (f *Frag) synthTo(next *Frag, seq string) (synthedFrags []*Frag) {
 	}
 
 	return
+}
+
+// ToString returns a string representation of a fragment's type
+func (t Type) String() string {
+	return []string{"vector", "pcr", "synthetic", "existing"}[t]
 }
 
 // fragsCost returns the total cost of a slice of frags. Just the summation of their costs

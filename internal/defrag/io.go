@@ -111,9 +111,9 @@ func read(path string) (fragments []Frag, err error) {
 	}
 
 	// build and return the new fragments
-	for i, ID := range ids {
+	for i, id := range ids {
 		fragments = append(fragments, Frag{
-			ID:  ID,
+			ID:  id,
 			Seq: seqs[i],
 		})
 	}
@@ -142,11 +142,11 @@ func write(filename string, target Frag, assemblies [][]*Frag, insertSeqLength i
 		assemblyCost := 0.0
 		for _, f := range assembly {
 			// round to two decimal places
-			f.Dollars, err = roundCost(f.cost())
+			f.Cost, err = roundCost(f.cost())
 			if err != nil {
 				return nil, err
 			}
-			assemblyCost += f.Dollars
+			assemblyCost += f.Cost
 		}
 
 		solutionCost, err := roundCost(assemblyCost)
