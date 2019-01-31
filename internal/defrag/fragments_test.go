@@ -43,18 +43,18 @@ func Test_assembleFragments(t *testing.T) {
 			},
 			[]Frag{
 				Frag{
-					Seq:   "ACGTGCTAGCTACATCGATCGTAGCTAGCTAGCATCG",
-					Type:  existing,
-					start: -14,
-					end:   22,
+					Seq:      "ACGTGCTAGCTACATCGATCGTAGCTAGCTAGCATCG",
+					fragType: existing,
+					start:    -14,
+					end:      22,
 				},
 				Frag{
-					Seq:  "AGCTAGCATCGACTGATCACTAGCATCGACTAGCTAG",
-					Type: existing,
+					Seq:      "AGCTAGCATCGACTGATCACTAGCATCGACTAGCTAG",
+					fragType: existing,
 				},
 				Frag{
-					Seq:  "TCGACTAGCTAGAACTGATCTAGACGTGCTAGCTACA",
-					Type: existing,
+					Seq:      "TCGACTAGCTAGAACTGATCTAGACGTGCTAGCTACA",
+					fragType: existing,
 				},
 			},
 		},
@@ -72,8 +72,8 @@ func Test_assembleFragments(t *testing.T) {
 					t.Errorf("assembleFWD() gotFragment.Seq = %v, want %v", gotFragments[i].Seq, wantF.Seq)
 				}
 
-				if wantF.Type != gotFragments[i].Type {
-					t.Errorf("assembleFWD() gotFragment.Type = %v, want %v", gotFragments[i].Type, wantF.Type)
+				if wantF.fragType != gotFragments[i].fragType {
+					t.Errorf("assembleFWD() gotFragment.Type = %v, want %v", gotFragments[i].fragType, wantF.fragType)
 				}
 			}
 		})

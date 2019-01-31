@@ -141,11 +141,16 @@ func write(filename string, target Frag, assemblies [][]*Frag, insertSeqLength i
 	for _, assembly := range assemblies {
 		assemblyCost := 0.0
 		for _, f := range assembly {
+			// freeze fragment type
+			f.Type = f.fragType.String()
+
 			// round to two decimal places
 			f.Cost, err = roundCost(f.cost())
 			if err != nil {
 				return nil, err
 			}
+
+			// add to actual assembly cost
 			assemblyCost += f.Cost
 		}
 
