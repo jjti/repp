@@ -136,11 +136,15 @@ func vector(input *Flags, conf *config.Config) (Frag, [][]*Frag, error) {
 	}
 
 	// get all the matches against the fragment
-	matches, err := blast(&targetFrag, input.dbs, input.filters, conf.PCRMinLength)
+	matches, err := blast(&targetFrag, input.dbs, input.filters, conf.PCRMinLength, 100)
 	if err != nil {
 		dbMessage := strings.Join(input.dbs, ", ")
 		return Frag{}, nil, fmt.Errorf("failed to blast %s against the dbs %s: %v", targetFrag.ID, dbMessage, err)
 	}
+
+	// for _, m := range matches {
+	// 	fmt.Println(m.entry, m.start, m.end)
+	// }
 
 	// map fragment Matches to nodes
 	var nodes []*Frag
@@ -167,8 +171,11 @@ func vector(input *Flags, conf *config.Config) (Frag, [][]*Frag, error) {
 
 	// "fill-in" the fragments (create synthetic fragments and primers)
 	// skip assemblies that wouldn't be less than the current cheapest assembly
-	minCostAssembly := math.MaxFloat64
 	filled := make(map[int][]*Frag)
+
+	// append a fully synthetic solution at first, nothing added should cost more than this
+	minCostAssembly := addFullySyntheticVector(filled, targetFrag.Seq, conf)
+
 	for _, count := range assemblyCounts {
 		// get the first assembly that fills properly (cheapest workable solution)
 		for _, testAssembly := range groupedAssemblies[count] {
@@ -223,9 +230,6 @@ func vector(input *Flags, conf *config.Config) (Frag, [][]*Frag, error) {
 			break
 		}
 	}
-
-	// append a fully synthetic solution if it's cheaper than alternatives
-	addFullySyntheticVector(filled, targetFrag.Seq, conf)
 
 	var found [][]*Frag
 	for _, frags := range filled {
@@ -324,8 +328,9 @@ func groupAssemblies(assemblies []assembly) map[int][]assembly {
 }
 
 // addFullySyntheticVector adds a new fully synthetic vector to the built map if it's cheaper
-// that any other solution of that many fragments
-func addFullySyntheticVector(built map[int][]*Frag, seq string, conf *config.Config) {
+// that any other solution of that many fragments.
+// Returns the cost of synthesis for the fragments
+func addFullySyntheticVector(built map[int][]*Frag, seq string, conf *config.Config) float64 {
 	start := &Frag{start: 0, end: 0, conf: conf}
 	end := &Frag{start: len(seq), end: len(seq), conf: conf}
 
@@ -339,7 +344,10 @@ func addFullySyntheticVector(built map[int][]*Frag, seq string, conf *config.Con
 		if syntheticCost < existingCost {
 			built[fCount] = syntheticFrags
 		}
-	} else {
-		built[fCount] = syntheticFrags
+
+		return syntheticCost // return the total cost of synthesis
 	}
+
+	built[fCount] = syntheticFrags
+	return fragsCost(syntheticFrags)
 }

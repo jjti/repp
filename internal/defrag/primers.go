@@ -159,7 +159,7 @@ func (f *Frag) setPrimers(last, next *Frag, seq string, conf *config.Config) (er
 		return err
 	}
 
-	os.Remove(psExec.in.Name()) // delete the input and output files
+	os.Remove(psExec.in.Name()) // delete the temporary input and output files
 	os.Remove(psExec.out.Name())
 
 	return
@@ -436,9 +436,8 @@ func (p *p3Exec) run() (err error) {
 
 // parse the output into primers
 //
-// input is the target sequence we're building for. We need it to modulo
-// the primer ranges
-func (p *p3Exec) parse(input string) (err error) {
+// target is the target sequence we're building for. We need it to modulo the primer ranges
+func (p *p3Exec) parse(target string) (err error) {
 	fileBytes, err := ioutil.ReadFile(p.out.Name())
 	if err != nil {
 		return
@@ -484,7 +483,7 @@ func (p *p3Exec) parse(input string) (err error) {
 
 		primerRange := results[fmt.Sprintf("PRIMER_%s_0", side)]
 		primerStart, _ := strconv.Atoi(strings.Split(primerRange, ",")[0])
-		primerStart -= len(input)
+		primerStart -= len(target)
 		primerEnd := primerStart + len(seq)
 		if side == "RIGHT" {
 			primerStart -= len(seq)

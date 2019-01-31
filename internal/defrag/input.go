@@ -32,6 +32,9 @@ type Flags struct {
 
 	// slice of strings to weed out fragments from BLAST matches
 	filters []string
+
+	// percentage identity for finding building fragments in BLAST databases
+	identity float64
 }
 
 // inputParser contains methods for parsing flags from the input &cobra.Command
@@ -62,6 +65,7 @@ func NewFlags(in, out, backbone, enzymeName, filter string, dbs []string, addgen
 		dbs:      dbs,
 		backbone: parsedBB,
 		filters:  p.getFilters(filter),
+		identity: 100,
 	}
 }
 
@@ -102,6 +106,11 @@ func parseCmdFlags(cmd *cobra.Command, conf *config.Config) (fs *Flags, err erro
 		return nil, fmt.Errorf("failed to parse filters: %v", err)
 	}
 
+	identity, err := cmd.Flags().GetFloat64("identity")
+	if err != nil {
+		identity = 100 // might be something other than `defrag vector`
+	}
+
 	// read in the BLAST DB paths
 	if fs.dbs, err = p.parseDBs(dbString, addgene, igem); err != nil || len(fs.dbs) == 0 {
 		return nil, fmt.Errorf("failed to find any fragment databases: %v", err)
@@ -121,6 +130,9 @@ func parseCmdFlags(cmd *cobra.Command, conf *config.Config) (fs *Flags, err erro
 
 	// try to split the filter fields into a list
 	fs.filters = p.getFilters(filters)
+
+	// set identity for blastn searching
+	fs.identity = identity
 
 	return
 }

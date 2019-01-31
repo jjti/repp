@@ -74,6 +74,16 @@ func Test_E2E(t *testing.T) {
 			false,
 			true,
 		},
+		testFlags{
+			path.Join("BBa_K2779020.fa"),
+			path.Join("output", "BBa_K2779020.json"),
+			"pSB1A3",
+			"PstI",
+			"BBa_K277", // no year filters needed
+			[]string{},
+			false,
+			true,
+		},
 	}
 
 	for _, t := range tests {
