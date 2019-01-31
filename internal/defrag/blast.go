@@ -90,6 +90,9 @@ type blastExec struct {
 
 	// internal if the db is a local/user owned list of fragments (ie free)
 	internal bool
+
+	// the percentage identity for BLAST queries
+	identity float64
 }
 
 // blast the passed Frag against a set from the command line and create
@@ -97,7 +100,7 @@ type blastExec struct {
 //
 // Accepts a fragment to BLAST against, a list of dbs to BLAST it against,
 // a minLength for a match, and settings around blastn location, output dir, etc
-func blast(f *Frag, dbs, filters []string, minLength int) (matches []match, err error) {
+func blast(f *Frag, dbs, filters []string, minLength int, identity float64) (matches []match, err error) {
 	in, err := ioutil.TempFile(blastnDir, f.ID+"in-*")
 	if err != nil {
 		return nil, err
@@ -122,6 +125,7 @@ func blast(f *Frag, dbs, filters []string, minLength int) (matches []match, err 
 			in:       in,
 			out:      out,
 			internal: internal,
+			identity: identity,
 		}
 
 		// make sure the db exists
@@ -195,8 +199,9 @@ func (b *blastExec) run() (err error) {
 		"-query", b.in.Name(),
 		"-out", b.out.Name(),
 		"-outfmt", "7 sseqid qstart qend sstart send sseq mismatch stitle",
-		"-perc_identity", "100",
+		"-perc_identity", fmt.Sprintf("%f", b.identity),
 		"-num_threads", strconv.Itoa(threads),
+		"-max_target_seqs", "1000", // default is 500
 	)
 
 	// execute BLAST and wait on it to finish
@@ -288,7 +293,7 @@ func (b *blastExec) parse(filters []string) (matches []match, err error) {
 // Circular-arc graph: https://en.wikipedia.org/wiki/Circular-arc_graph
 //
 // also remove small fragments here that are too small to be useful during assembly
-func filter(matches []match, seqL, minSize int) (properized []match) {
+func filter(matches []match, targetLength, minSize int) (properized []match) {
 	properized = []match{}
 
 	// remove fragments that are shorter the minimum cut off size
@@ -312,7 +317,35 @@ func filter(matches []match, seqL, minSize int) (properized []match) {
 	// create properized matches (non-self contained)
 	properized = append(properize(internal), properize(external)...)
 
-	// sort again now that they're properized
+	// because we properized the matches, we may have removed a match from the
+	// start or the end. right now, a match showing up twice in the vector
+	// is how we circularize, so have to add back matches to the start or end
+	matchCount := make(map[string]int)
+	for _, m := range properized {
+		if _, counted := matchCount[m.entry]; counted {
+			matchCount[m.entry]++
+		} else {
+			matchCount[m.entry] = 1
+		}
+	}
+
+	// add back copied matches for those that only show up once
+	copiedMatches := []match{}
+	for _, m := range properized {
+		if count := matchCount[m.entry]; count == 2 {
+			continue
+		}
+
+		// first half of the queried seq range (2 seq lengths)
+		if m.end < targetLength {
+			copiedMatches = append(copiedMatches, m.copyWith(m.start+targetLength, m.end+targetLength))
+		} else if m.start > targetLength {
+			copiedMatches = append(copiedMatches, m.copyWith(m.start-targetLength, m.end-targetLength))
+		}
+	}
+
+	// sort again now that we added copied matches
+	properized = append(properized, copiedMatches...)
 	sortMatches(properized)
 
 	return properized
@@ -339,8 +372,10 @@ func sortMatches(matches []match) {
 	sort.Slice(matches, func(i, j int) bool {
 		if matches[i].start != matches[j].start {
 			return matches[i].start < matches[j].start
+		} else if matches[i].length() != matches[j].length() {
+			return matches[i].length() > matches[j].length()
 		}
-		return matches[i].length() > matches[j].length()
+		return matches[i].entry > matches[j].entry
 	})
 }
 
@@ -436,12 +471,12 @@ func blastdbcmd(entry, db string, conf *config.Config) (output *os.File, err err
 		"-dbtype", "nucl",
 		"-entry_batch", entryFile.Name(),
 		"-out", output.Name(),
-		"-outfmt", "%f", // fasta format
+		"-outfmt", "%f ", // fasta format
 	)
 
 	// execute
 	if _, err := queryCmd.CombinedOutput(); err != nil {
-		return nil, fmt.Errorf("warning: failed to query %s from %s", entry, db)
+		return nil, fmt.Errorf("warning: failed to query %s from %s\n\t%s", entry, db, err.Error())
 	}
 
 	// read in the results as a fragment and return just the seq

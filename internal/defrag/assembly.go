@@ -25,16 +25,15 @@ type assembly struct {
 // Update the cost of the assembly to include the link between the new first Frag and the one after it.
 // Store the Frag's ID in the list of Frag ids.
 // Complete  an assembly if a Frag has matched up onto itself across the zero-index.
-func (a *assembly) add(f *Frag, maxCount int) (newAssembly assembly, created, complete bool) {
+func (a *assembly) add(f *Frag, maxCount int) (newAssembly assembly, created, circularized bool) {
 	// check if we could complete an assembly with this new Frag
-	complete = f.uniqueID == a.frags[0].uniqueID
+	circularized = f.uniqueID == a.frags[0].uniqueID // if its the same unique fragment, it's circularized
 
 	// calc the number of synthesis fragments needed to get to this next Frag
 	synths := a.frags[len(a.frags)-1].synthDist(f)
-
 	newCount := a.len() + synths
-	if !complete {
-		// only adding a new Frag if not annealing to starting Frag
+	if !circularized {
+		// only adding a new Frag to total count if it isn't the same as the starting one (circularizing)
 		newCount++
 	}
 
@@ -43,7 +42,7 @@ func (a *assembly) add(f *Frag, maxCount int) (newAssembly assembly, created, co
 		return assembly{}, false, false
 	}
 
-	// we will create a new assembly
+	// we will create a new assembly with this added fragment
 	created = true
 
 	// calc the estimated dollar cost of getting to the next Frag
@@ -63,13 +62,14 @@ func (a *assembly) add(f *Frag, maxCount int) (newAssembly assembly, created, co
 		annealCost += f.cost()
 	}
 
+	// copy over all the fragments, need to avoid referncing same frags
 	newFrags := make([]*Frag, len(a.frags)+1)
 	for i, frag := range a.frags {
 		newFrags[i] = frag.copy()
 	}
 	newFrags[len(newFrags)-1] = f.copy()
 
-	if complete {
+	if circularized {
 		if synths < 1 {
 			// costs nothing to anneal Frag to self, already been PCR'ed
 			// this assumes that we're circularizing here at the end
@@ -80,7 +80,7 @@ func (a *assembly) add(f *Frag, maxCount int) (newAssembly assembly, created, co
 			frags:  newFrags,
 			cost:   a.cost + annealCost,
 			synths: a.synths + synths,
-		}, created, complete
+		}, created, circularized
 	}
 
 	return assembly{
@@ -107,7 +107,7 @@ func (a *assembly) log() string {
 	return fmt.Sprintf("%s- $%.2f", logString, a.cost)
 }
 
-// fill traverses the nodes in an assembly and converts them into fragments
+// fill traverses frags in an assembly and adds primers or makes syntheic fragments where necessary
 //
 // - Vector fragments if a Frag spans the whole target range (entirely contains it)
 //

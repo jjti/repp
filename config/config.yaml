@@ -33,7 +33,7 @@ synthesis-cost:
   # IDT: gBlocks: https://www.idtdna.com/pages/products/genes-and-gene-fragments/gblocks-gene-fragments
   250:
     fixed: true
-    dollars: 89
+    dollars: 89.0
 
   500:
     fixed: true
