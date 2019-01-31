@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -40,7 +41,7 @@ type Solution struct {
 	Count int `json:"count"`
 
 	// Cost estimated from the primer and sequence lengths
-	Cost float64 `json:"dollars"`
+	Cost float64 `json:"cost"`
 
 	// Fragments used to build this solution
 	Fragments []*Frag `json:"fragments"`
@@ -48,19 +49,21 @@ type Solution struct {
 
 // Output is a struct containing design results for the assembly
 type Output struct {
+	// Target's name. In >example_CDS FASTA its "example_CDS"
+	Target string `json:"target"`
+
+	// Target's sequence
+	TargetSeq string `json:"seq"`
+
 	// Time, ex:
-	// "2006-01-02 15:04:05.999999999 -0700 MST"
-	// https://golang.org/pkg/time/#Time.String
+	// "2018-01-01 20:41:00"
 	Time string `json:"time"`
 
-	// Target sequence
-	Target string `json:"target"`
+	// FullSynthesisCost cost of a full synthesis
+	FullSynthesisCost float64 `json:"fullSynthesisCost"`
 
 	// Solutions builds
 	Solutions []Solution `json:"solutions"`
-
-	// SynthInsertCost cost of a full synthesis
-	SynthInsertCost float64 `json:"synthInsertCost"`
 }
 
 // read a FASTA file (by its path on local FS) to a slice of Fragments
@@ -129,30 +132,52 @@ func read(path string) (fragments []Frag, err error) {
 // target is the vector we tried to assemble
 // assemblies are the solutions that can build up the target vector
 func write(filename string, target Frag, assemblies [][]*Frag, insertSeqLength int, conf *config.Config) (output []byte, err error) {
+	// store save time, using same format as log.Println https://golang.org/pkg/log/#Println
+	t := time.Now() // https://gobyexample.com/time-formatting-parsing
+	time := fmt.Sprintf("%d/%02d/%02d %02d:%02d:%02d", t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
+
 	// calculate final cost of the assembly and fragment count
 	solutions := []Solution{}
 	for _, assembly := range assemblies {
 		assemblyCost := 0.0
 		for _, f := range assembly {
-			f.Dollars = f.cost()
+			// round to two decimal places
+			f.Dollars, err = roundCost(f.cost())
+			if err != nil {
+				return nil, err
+			}
 			assemblyCost += f.Dollars
+		}
+
+		solutionCost, err := roundCost(assemblyCost)
+		if err != nil {
+			return nil, err
 		}
 
 		solutions = append(solutions, Solution{
 			Count:     len(assembly),
-			Cost:      roundCost(assemblyCost),
+			Cost:      solutionCost,
 			Fragments: assembly,
 		})
 	}
+
 	// sort solutions in increasing fragment count order
 	sort.Slice(solutions, func(i, j int) bool {
 		return solutions[i].Count < solutions[j].Count
 	})
+
+	// get the cost of full synthesis
+	fullSynthCost, err := roundCost(conf.SynthCost(insertSeqLength))
+	if err != nil {
+		return nil, err
+	}
+
 	out := Output{
-		Time:            time.Now().String(),
-		Target:          strings.ToUpper(target.Seq),
-		Solutions:       solutions,
-		SynthInsertCost: conf.SynthCost(insertSeqLength),
+		Time:              time,
+		Target:            target.ID,
+		TargetSeq:         strings.ToUpper(target.Seq),
+		Solutions:         solutions,
+		FullSynthesisCost: fullSynthCost,
 	}
 
 	output, err = json.MarshalIndent(out, "", "  ")
@@ -167,8 +192,7 @@ func write(filename string, target Frag, assemblies [][]*Frag, insertSeqLength i
 }
 
 // roundCost returns a float for cost to 2 decimal places
-func roundCost(cost float64) float64 {
-	// roundedString := fmt.Sprintf("%.2f", cost)
-	// result, _ := strconv.ParseFloat(roundedString, 64)
-	return cost
+func roundCost(cost float64) (float64, error) {
+	roundedString := fmt.Sprintf("%.2f", cost)
+	return strconv.ParseFloat(roundedString, 64)
 }
