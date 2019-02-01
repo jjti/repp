@@ -4,6 +4,7 @@ package config
 
 import (
 	"log"
+	"math"
 	"os/exec"
 	"path/filepath"
 	"sort"
@@ -136,7 +137,12 @@ func New() *Config {
 // 60 cents up to 2000bp. So, for a 750bp sequence, we want to use
 // the 2000bp price
 func (c Config) SynthCost(fragLength int) float64 {
-	costLengthKeys := []int{}
+	// by default, we try to synthesize the whole thing in one piece
+	// we may optionally need to split it into multiple and this checks for that
+	fragCount := math.Ceil(float64(fragLength) / float64(c.SynthesisMaxLength))
+	fragLength = int(math.Floor(float64(fragLength) / float64(fragCount)))
+
+	costLengthKeys := make([]int, len(c.SynthesisCost))
 	for key := range c.SynthesisCost {
 		costLengthKeys = append(costLengthKeys, key)
 	}
@@ -153,8 +159,8 @@ func (c Config) SynthCost(fragLength int) float64 {
 	// find whether this fragment has a fixed or variable cost
 	synthCost := c.SynthesisCost[synthCostKey]
 	if synthCost.Fixed {
-		return synthCost.Dollars
+		return fragCount * synthCost.Dollars
 	}
 
-	return float64(fragLength) * synthCost.Dollars
+	return fragCount * float64(fragLength) * synthCost.Dollars
 }

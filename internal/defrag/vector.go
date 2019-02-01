@@ -157,7 +157,7 @@ func vector(input *Flags, conf *config.Config) (Frag, [][]*Frag, error) {
 	// fragment count, be assembled to make the target vector
 	assemblies := createAssemblies(nodes, targetFrag.Seq, conf)
 
-	fmt.Printf("%d assemblies created\n", len(assemblies))
+	fmt.Printf("%d assemblies made\n", len(assemblies))
 
 	// build up a map from fragment count to a sorted list of assemblies with that number
 	groupedAssemblies := groupAssemblies(assemblies)
