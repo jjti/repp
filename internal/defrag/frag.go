@@ -10,12 +10,12 @@ import (
 	"github.com/jjtimmons/defrag/config"
 )
 
-// Type is the Frag building type to be used in the assembly
-type Type int
+// fragType is the Frag building type to be used in the assembly
+type fragType int
 
 const (
 	// circular is a circular sequence of DNA, e.g.: many of Addgene's plasmids
-	circular Type = iota
+	circular fragType = iota
 
 	// pcr fragments are those prepared by pcr, often a subselection of their parent vector
 	pcr
@@ -48,7 +48,7 @@ type Frag struct {
 	Primers []Primer `json:"primers,omitempty"`
 
 	// fragType of this fragment. pcr | vector | synthetic
-	fragType Type
+	fragType fragType
 
 	// uniqueID of a match, ID + the start index % seq-length
 	// used identified that catches nodes that cross the zero-index
@@ -274,9 +274,9 @@ func (f *Frag) junction(other *Frag, minHomology, maxHomology int) (junction str
 // synthTo returns synthetic fragments to get this Frag to the next.
 // It creates a slice of building fragments that have homology against
 // one another and are within the upper and lower synthesis bounds.
-// seq is the vector's sequence. We need it to build up the target
+// target is the vector's full sequence. We need it to build up the target
 // vector's sequence
-func (f *Frag) synthTo(next *Frag, seq string) (synthedFrags []*Frag) {
+func (f *Frag) synthTo(next *Frag, target string) (synthedFrags []*Frag) {
 	// check whether we need to make synthetic fragments to get
 	// to the next fragment in the assembly
 	fragC := f.synthDist(next)
@@ -294,13 +294,13 @@ func (f *Frag) synthTo(next *Frag, seq string) (synthedFrags []*Frag) {
 		fragL = f.conf.SynthesisMinLength
 	}
 
-	seqL := len(seq)
-	seq = strings.ToUpper(seq + seq + seq) // triple to account for sequence across the zero-index (when sequence subselecting)
+	targetLength := len(target)
+	// triple to account for sequence across the zero-index (when sequence subselecting)
+	target = strings.ToUpper(target + target + target + target)
 
 	// slide along the range of sequence to create synthetic fragments
 	// and create one at each point, each w/ MinHomology for the fragment
 	// before and after it
-
 	synthedFrags = []*Frag{}
 	for fragIndex := 0; fragIndex < int(fragC); fragIndex++ {
 		start := f.end - f.conf.FragmentsMinHomology // start w/ homology
@@ -309,7 +309,7 @@ func (f *Frag) synthTo(next *Frag, seq string) (synthedFrags []*Frag) {
 
 		synthedFrags = append(synthedFrags, &Frag{
 			ID:       fmt.Sprintf("%s-synthetic-%d", f.ID, fragIndex+1),
-			Seq:      seq[start+seqL : end+seqL],
+			Seq:      target[start+targetLength : end+targetLength],
 			fragType: synthetic,
 			conf:     f.conf,
 		})
@@ -319,7 +319,7 @@ func (f *Frag) synthTo(next *Frag, seq string) (synthedFrags []*Frag) {
 }
 
 // ToString returns a string representation of a fragment's type
-func (t Type) String() string {
+func (t fragType) String() string {
 	return []string{"vector", "pcr", "synthetic", "existing"}[t]
 }
 
