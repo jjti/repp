@@ -161,7 +161,7 @@ func (f *Frag) cost() (c float64) {
 	if f.fragType == pcr {
 		c += float64(len(f.Primers[0].Seq)+len(f.Primers[1].Seq)) * f.conf.PCRBPCost
 	} else if f.fragType == synthetic {
-		c += f.conf.SynthCost(len(f.Seq))
+		c += f.conf.SynthFragmentCost(len(f.Seq))
 	}
 
 	return
@@ -236,7 +236,7 @@ func (f *Frag) costTo(other *Frag) (cost float64) {
 	// to account for both the bps between them as well as the additional bps we need to add
 	// for homology between the two
 	fragLength := f.conf.FragmentsMinHomology + dist
-	return f.conf.SynthCost(fragLength)
+	return f.conf.SynthFragmentCost(fragLength)
 }
 
 // reach returns a slice of Frag indexes that overlap with, or are the first synth_count nodes
@@ -339,18 +339,9 @@ func (f *Frag) synthTo(next *Frag, target string) (synths []*Frag) {
 	synths = []*Frag{}
 	start := f.end - minHomology // start w/ homology, move left
 	for len(synths) < int(fragCount) {
-		// isHairpin checks whether there's a hairpin in the end of the
-		// synthetic sequence. should be avoided
-		isHairpin := func(seq string, conf *config.Config) bool {
-			if len(synths) < int(fragCount)-1 {
-				return false
-			}
-			return hairpin(seq[len(seq)-minHomology:], conf) > 40
-		}
-
 		end := start + fragLength + minHomology
 		seq := target[start+targetLength : end+targetLength]
-		for isHairpin(seq, f.conf) {
+		for hairpin(seq[len(seq)-minHomology:], f.conf) > 40 {
 			end += minHomology / 2
 			seq = target[start+targetLength : end+targetLength]
 		}

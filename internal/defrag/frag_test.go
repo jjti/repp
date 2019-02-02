@@ -155,10 +155,10 @@ func Test_Frag_costTo(t *testing.T) {
 	c := config.New()
 	c.FragmentsMinHomology = 20
 	c.PCRBPCost = 0.03
-	c.SynthesisCost = map[int]config.SynthCost{
+	c.SynthesisFragmentCost = map[int]config.SynthCost{
 		100000: {
-			Fixed:   false,
-			Dollars: 0.05,
+			Fixed: false,
+			Cost:  0.05,
 		},
 	}
 

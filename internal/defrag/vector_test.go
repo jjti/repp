@@ -127,10 +127,10 @@ func Test_build(t *testing.T) {
 
 	// ignore cost for now
 	c.PCRBPCost = 0
-	c.SynthesisCost = map[int]config.SynthCost{
+	c.SynthesisFragmentCost = map[int]config.SynthCost{
 		100000: {
-			Fixed:   true,
-			Dollars: 0.0,
+			Fixed: true,
+			Cost:  0.0,
 		},
 	}
 
