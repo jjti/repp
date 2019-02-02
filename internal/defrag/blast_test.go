@@ -88,7 +88,7 @@ func Test_filter(t *testing.T) {
 
 	newMatches := filter(matches, 72, 3) // keep all fragments larger than 3bp (all of them)
 
-	if len(newMatches) != 3 {
+	if len(newMatches) != 5 {
 		t.Errorf("%d filtered matches found on test fragment, 5 expected: %v", len(newMatches), newMatches)
 	}
 
@@ -179,6 +179,7 @@ func Test_parentMismatch(t *testing.T) {
 			true,
 			match{
 				entry:       "addgene:107006(circular)",
+				uniqueID:    "addgene:107006(circular)0",
 				seq:         "AGTATAGTAGGTAGTCATTCTT",
 				start:       0,
 				end:         23,
@@ -196,14 +197,14 @@ func Test_parentMismatch(t *testing.T) {
 				},
 			}, tt.args.parent, testDB, conf)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("parentMismatch() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("parentMismatch() error = %+v, wantErr %+v", err, tt.wantErr)
 				return
 			}
 			if gotMismatch != tt.wantMismatch {
-				t.Errorf("parentMismatch() gotMismatch = %v, want %v", gotMismatch, tt.wantMismatch)
+				t.Errorf("parentMismatch() gotMismatch = %+v, want %+v", gotMismatch, tt.wantMismatch)
 			}
 			if !reflect.DeepEqual(gotMatch, tt.wantMatch) {
-				t.Errorf("parentMismatch() gotMatch = %v, want %v", gotMatch, tt.wantMatch)
+				t.Errorf("parentMismatch() gotMatch = %+v, want %+v", gotMatch, tt.wantMatch)
 			}
 		})
 	}

@@ -1,7 +1,9 @@
 package defrag
 
 import (
+	"path"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/jjtimmons/defrag/config"
@@ -365,10 +367,11 @@ func Test_new(t *testing.T) {
 			"create a Frag from a match",
 			args{
 				m: match{
-					entry: "testMatch",
-					seq:   "atgctagctagtg",
-					start: 0,
-					end:   12,
+					entry:    "testMatch",
+					uniqueID: "0testMatch",
+					seq:      "atgctagctagtg",
+					start:    0,
+					end:      12,
 				},
 				seqL: 50,
 			},
@@ -476,6 +479,232 @@ func Test_Frag_junction(t *testing.T) {
 			}
 			if gotJunction := n.junction(tt.args.other, tt.args.minHomology, tt.args.maxHomology); gotJunction != tt.wantJunction {
 				t.Errorf("Frag.junction() = %v, want %v", gotJunction, tt.wantJunction)
+			}
+		})
+	}
+}
+
+// this is little more than a deprecation test right now
+func Test_setPrimers(t *testing.T) {
+	c := config.New()
+
+	c.FragmentsMinHomology = 20
+	c.FragmentsMaxHomology = 80
+	c.PCRP3MaxPenalty = 50.0
+	c.PCRMaxEmbedLength = 10
+	db := path.Join("..", "..", "test", "db", "db")
+
+	type args struct {
+		last *Frag
+		next *Frag
+		Seq  string
+	}
+	tests := []struct {
+		name        string
+		n           Frag
+		args        args
+		wantPrimers []string // two primers seqs, first is fwd, second is rev
+		wantErr     bool
+		wantStart   int
+		wantEnd     int
+	}{
+		{
+			"create without added homology",
+			Frag{
+				ID:    "gnl|addgene|85039.2",
+				start: 0,
+				end:   1050,
+				conf:  c,
+				db:    db,
+			},
+			args{
+				last: &Frag{ // close enough that no homology should be added
+					ID:    "last|fragment",
+					start: -50,
+					end:   20,
+					conf:  c,
+				},
+				next: &Frag{
+					ID:    "next|fragment",
+					start: 1030,
+					end:   1090,
+					conf:  c,
+				},
+				Seq: "CAGTCAATCTTTCACAAATTTTGTaATCCAGAGGTTGATTATCGATAAGCTTGATATCGAATTCATAACttCgTATAGCATACATTATACGAAGTTATTCTTTGCACCATTCTAAAGAATAACAGTGATAATTTCTGGGTTAAGGCAAATAACTTCGTATAGGATACTTTATACGAAGTTATGCTAGCGCCACCATGTCTAGACTGGACAAGAGCAAAGTCATAAACTCTGCTCTGGAATTACTCAATGAAGTCGGTATCGAAGGCCTGACGACAAGGAAACTCGCTCAAAAGCTGGGAGTTGAGCAGCCTACCCTGTACTGGCACGTGAAGAACAAGCGGGCCCTGCTCGATGCCCTGGCAATCGAGATGCTGGACAGGCATCATACCCACTTCTGCCCCCTGGAAGGCGAGTCATGGCAAGACTTTCTGCGGAACAACGCCAAGTCATTCCGCTGTGCTCTCCTCTCACATCGCGACGGGGCTAAAGTGCATCTCGGCACCCGCCCAACAGAGAAACAGTACGAAACCCTGGAAAATCAGCTCGCGTTCCTGTGTCAGCAAGGCTTCTCCCTGGAGAACGCACTGTACGCTCTGTCCGCCGTGGGCCACTTTACACTGGGCTGCGTATTGGAGGATCAGGAGCATCAAGTAGCAAAAGAGGAAAGAGAGACACCTACCACCGATTCTATGCCCCCACTTCTGAGACAAGCAATTGAGCTGTTCGACCATCAGGGAGCCGAACCTGCCTTCCTTTTCGGCCTGGAACTAATCATATGTGGCCTGGAGAAACAGCTAAAGTGCGAAAGCGGCGGGCCGGCCGACGCCCTTGACGATTTTGACTTAGACATGCTCCCAGCCGATGCCCTTGACGACTTTGACCTTGATATGCTGCCTGCTGACGCTCTTGACGATTTtGACCTTGACATGCTCCCCGGGGGATCCGGAAGCGGAGCTACTAACTTCAGCCTGCTGAAGCAGGCTGGAgACGTGGAGGAGAACCCTGGACCTATGAGCGAGCTGATCAAGGAGAACATGCACATGAAGCTGTACATGGAgggc",
+			},
+			[]string{
+				"CAGTCAATCTTTCACAAATTTTGT",
+				"ACAGCTTCATGTGCATGTTCTC", // rev-comp: ACATGAAGCTGTACATGGAGGG
+			},
+			false,
+			0,
+			1049,
+		},
+		{
+			"create with added homology",
+			Frag{
+				ID:    "add_homology",
+				start: 500,
+				end:   800,
+				conf:  c,
+				db:    db,
+			},
+			args{
+				last: &Frag{
+					ID:    "last",
+					start: 200,
+					end:   500,
+					conf:  c,
+				},
+				next: &Frag{
+					ID:    "next",
+					start: 795,
+					end:   900,
+					conf:  c,
+				},
+				Seq: "TGCTGACTGTGGCGGGTGAGCTTAGGGGGCCTCCGCTCCAGCTCGACACCGGGCAGCTGCTGAAGATCGCGAAGAGAGGGGGAGTAACAGCGGTAGAGGCAGTGCACGCCTGGCGCAATGCGCTCACCGGGGCCCCCTTGAACCTGACCCCAGACCAGGTAGTCGCAATCGCGAACAATAATGGGGGAAAGCAAGCCCTGGAAACCGTGCAAAGGTTGTTGCCGGTCCTTTGTCAAGACCACGGCCTTACACCGGAGCAAGTCGTGGCCATTGCAAGCAATGGGGGTGGCAAACAGGCTCTTGAGACGGTTCAGAGACTTCTCCCAGTTCTCTGTCAAGCCCACGGGCTGACTCCCGATCAAGTTGTAGCGATTGCGTCGCATGACGGAGGGAAACAAGCATTGGAGACTGTCCAACGGCTCCTTCCCGTGTTGTGTCAAGCCCACGGTTTGACGCCTGCACAAGTGGTCGCCATCGCCAGCCATGATGGCGGTAAGCAGGCGCTGGAAACAGTACAGCGCCTGCTGCCTGTACTGTGCCAGGATCATGGACTGACCCCAGACCAGGTAGTCGCAATCGCGAACAATAATGGGGGAAAGCAAGCCCTGGAAACCGTGCAAAGGTTGTTGCCGGTCCTTTGTCAAGACCACGGCCTTACACCGGAGCAAGTCGTGGCCATTGCAAATAATAACGGTGGCAAACAGGCTCTTGAGACGGTTCAGAGACTTCTCCCAGTTCTCTGTCAAGCCCACGGGCTGACTCCCGATCAAGTTGTAGCGATTGCGTCGCATGACGGAGGGAAACAAGCATTGGAGACTGTCCAACGGCTCCTTCCCGTGTTGTGTCAAGCCCACGGTTTGACGCCTGCACAAGTGGTCGCCATCGCCAACAACAACGGCGGTAAGCAGGCGCTGGAAACAGTACAGCGCCTGCTGCCTGTACTGTGCCAGGATCATGGACTGACCCCAGACCAGGTAGTCGCAATCGCGTCGAACATTGGGGGAAAGCAAGCCCTGGAAACCG",
+			},
+			[]string{
+				"CGGTAAGCAGGCGCTGGAAACAGTACAG",
+				"TGTTTCCCTCCGTCATGCGACGCAATCG",
+			},
+			false,
+			490,
+			804,
+		},
+		{
+			"embed additional sequence between fragments",
+			Frag{
+				ID:    "embedded_primer_seq",
+				start: 50,
+				end:   350,
+				conf:  c,
+				db:    db,
+			},
+			args{
+				last: &Frag{
+					ID:    "last",
+					start: 0,
+					end:   45,
+					conf:  c,
+				},
+				next: &Frag{
+					ID:    "next",
+					start: 355,
+					end:   400,
+					conf:  c,
+				},
+				Seq: "GTAAATCCTGGGATCATTCAGTAGTAACCACAAACTTACGCTGGGGCTTCTTTGGCGGATTTTTACAGATACTAACCAGGTGATTTGAAGTAAATTAGTTGAGGATTTAGCCGCGCTATCCGGTAATCTCCAAATTAAAACATACCGTTCCATGAGGGCTAGAATTACTTACCGGCCTTCACCATGCCTGCGCTATACGCGCCCACTCTCCCGTTTATCCGTCCAAGCGGATGCAATGCGATCCTCCGCTAAGATATTCTTACGTGTAACGTAGCTATGTATTTTACAGAGCTGGCGTACGCGTTGAACACTTCACAGATGATAGGGATTCGGGTAAAGAGCGTGTTATTGGGGACTTACACAGGCGTAGACTACAATGGGCCCAACTCAATCACAGCTC",
+			},
+			[]string{
+				"TTACGCTGGGGCTTCTTTGGCGGATTTTTACAGATACT",
+				"CCTGTGTAAGTCCCCAATAACACGCTCTTTACCCGA", // rev comp is TCGGGTAAAGAGCGTGTTATTGGGGGACTTACACAGGC
+			},
+			false,
+			35,
+			364,
+		},
+		{
+			"optimize when synthesizing neighbors",
+			Frag{
+				ID:    "optimize_synth",
+				start: 125,
+				end:   700,
+				conf:  c,
+				db:    db,
+			},
+			args{
+				last: &Frag{
+					ID:    "last",
+					start: 0,
+					end:   85,
+					conf:  c,
+				},
+				next: &Frag{
+					ID:    "next",
+					start: 820,
+					end:   900,
+					conf:  c,
+				},
+				Seq: "CaGTCAaTCTTTCaCAAaTTTTGTaATCCAGAGGTTGATTATCGATAAGCTTGATATCGAATTCATAACttCgTATAGCATACATTATACGAAGTTATTCTTTGCACCATTCTAAAGAATAACAGTGATAATTTCTGGGTTAAGGCAAATAACTTCGTATAGGATACTTTATACGAAGTTATGCTAGCGCCACCATGTCTAGACTGGACAAGAGCAAAGTCATAAACTCTGCTCTGGAATTACTCAATGAAGTCGGTATCGAAGGCCTGACGACAAGGAAACTCGCTCAAAAGCTGGGAGTTGAGCAGCCTACCCTGTACTGGCACGTGAAGAACAAGCGGGCCCTGCTCGATGCCCTGGCAATCGAGATGCTGGACAGGCATCATACCCACTTCTGCCCCCTGGAAGGCGAGTCATGGCAAGACTTTCTGCGGAACAACGCCAAGTCATTCCGCTGTGCTCTCCTCTCACATCGCGACGGGGCTAAAGTGCATCTCGGCACCCGCCCAACAGAGAAACAGTACGAAACCCTGGAAAATCAGCTCGCGTTCCTGTGTCAGCAAGGCTTCTCCCTGGAGAACGCACTGTACGCTCTGTCCGCCGTGGGCCACTTTACACTGGGCTGCGTATTGGAGGATCAGGAGCATCAAGTAGCAAAAGAGGAAAGAGAGACACCTACCACCGATTCTATGCCCCCACTTCTGAGACAAGCAATTGAGCTGTTCGACCATCAGGGAGCCGAACCTGCCTTCCTTTTCGGCCTGGAACTAATCATATGTGGCCTGGAGAAACAGCTAAAGTGCGAAAGCGGCGGGCCGGCCGACGCCCTTGACGATTTTGACTTAGACATGCTCCCAGCCGATGCCCTTGACGACTTTGACCTTGATATGCTGCCTGCTGACGCTCTTGACGATTTtGACCTTGACATGCTCCCCGGGGGATCCGGAAGCGGAGCTACTAACTTCAGCCTGCTGAAGCAGGCTGGAgACGTGGAGGAGAACCCTGGACCTATGAGCGAGCTGATCAAGGAGAACATGCACATGAAGCTGTACATGGAgggc",
+			},
+			[]string{
+				"ACGAAGTTATGCTAGCGCCA", // rev comp is TGATCCTCCAATACGCAGCC
+				"TGATCCTCCAATACGCAGCC", // rev comp is GGCTGCGTATTGGAGGATCA
+			},
+			false,
+			172, // deprecation test only, got this from the output and confirmed it made sense
+			639,
+		},
+		{
+			"optimize when there are large overlaps with neighbors",
+			Frag{
+				ID:    "optimize_overlaps",
+				start: 50,
+				end:   350,
+				conf:  c,
+				db:    db,
+			},
+			args{
+				last: &Frag{
+					ID:    "last",
+					start: 0,
+					end:   150,
+					conf:  c,
+				},
+				next: &Frag{
+					ID:    "next",
+					start: 250,
+					end:   400,
+					conf:  c,
+				},
+				Seq: "GTAAATCCTGGGATCATTCAGTAGTAACCACAAACTTACGCTGGGGCTTCTTTGGCGGATTTTTACAGATACTAACCAGGTGATTTGAAGTAAATTAGTTGAGGATTTAGCCGCGCTATCCGGTAATCTCCAAATTAAAACATACCGTTCCATGAGGGCTAGAATTACTTACCGGCCTTCACCATGCCTGCGCTATACGCGCCCACTCTCCCGTTTATCCGTCCAAGCGGATGCAATGCGATCCTCCGCTAAGATATTCTTACGTGTAACGTAGCTATGTATTTTACAGAGCTGGCGTACGCGTTGAACACTTCACAGATGATAGGGATTCGGGTAAAGAGCGTGTTATTGGGGACTTACACAGGCGTAGACTACAATGGGCCCAACTCAATCACAGCTC",
+			},
+			[]string{
+				"AGGATTTAGCCGCGCTATCC",
+				"GAAGTGTTCAACGCGTACGC", // rev comp is TCGGGTAAAGAGCGTGTTATTGGGGGACTTACACAGGC
+			},
+			false,
+			101, // deprecation test only, got this from the output and confirmed it made sense
+			313,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.n.setPrimers(tt.args.last, tt.args.next, tt.args.Seq, c)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("setPrimers() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if !tt.wantErr && len(tt.n.Primers) < 2 {
+				t.Errorf("setPrimers() failed to set primers on %s", tt.n.ID)
+			}
+
+			if len(tt.wantPrimers) != len(tt.n.Primers) {
+				t.Errorf("setPrimers() on %s, got %d primers wanted %d", tt.n.ID, len(tt.n.Primers), len(tt.wantPrimers))
+			}
+
+			for _, primer := range tt.n.Primers {
+				if primer.Strand && !strings.Contains(strings.ToUpper(tt.args.Seq), primer.Seq) {
+					t.Errorf("setPrimers() FWD primer not contained in the args's Seq: %s", primer.Seq)
+				}
+
+				if !primer.Strand && !strings.Contains(strings.ToUpper(tt.args.Seq), revComp(primer.Seq)) {
+					t.Errorf("setPrimers() REV primer not contained in the args's Seq: %s", revComp(primer.Seq))
+				}
+
+				if primer.Strand && primer.Seq != tt.wantPrimers[0] {
+					t.Errorf("setPrimers() FWD primer = %s, want %s", primer.Seq, tt.wantPrimers[0])
+				}
+
+				if !primer.Strand && primer.Seq != tt.wantPrimers[1] {
+					t.Errorf("setPrimers() REV primer = %s, want %s", primer.Seq, tt.wantPrimers[1])
+				}
+			}
+
+			if !tt.wantErr && (tt.wantStart != tt.n.start || tt.wantEnd != tt.n.end) {
+				t.Errorf("wrong range for setPrimers() on %s, want %d-%d, got %d-%d", tt.n.ID, tt.wantStart, tt.wantEnd, tt.n.start, tt.n.end)
 			}
 		})
 	}
