@@ -13,10 +13,10 @@ func Test_assembly_add(t *testing.T) {
 	c.FragmentsMaxCount = 5
 	c.PCRMaxEmbedLength = 0
 	c.SynthesisMaxLength = 100
-	c.SynthesisCost = map[int]config.SynthCost{
+	c.SynthesisFragmentCost = map[int]config.SynthCost{
 		100000: {
-			Fixed:   true,
-			Dollars: 0.0,
+			Fixed: true,
+			Cost:  0.0,
 		},
 	}
 

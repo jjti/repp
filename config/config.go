@@ -23,7 +23,7 @@ var (
 	BaseSettingsFile = filepath.Join(BaseDir, "config.yaml")
 )
 
-// SynthCost is meta about the cost of synthesizing DNA up to a certain
+// SynthCost contains data of the cost of synthesizing DNA up to a certain
 // size. Can be fixed (ie everything beneath that limit is the same amount)
 // or not (pay by the bp)
 type SynthCost struct {
@@ -31,7 +31,7 @@ type SynthCost struct {
 	Fixed bool `mapstructure:"fixed"`
 
 	// the cost (either per bp or for the whole stretch)
-	Dollars float64 `mapstructure:"dollars"`
+	Cost float64 `mapstructure:"cost"`
 }
 
 // Config is the Root-level settings struct and is a mix
@@ -72,8 +72,11 @@ type Config struct {
 	// PCRMaxOfftargetTm is the maximum tm of an offtarget, above which PCR is abandoned
 	PCRMaxOfftargetTm float64 `mapstructure:"pcr-primer-max-offtarget-tm"`
 
-	// the cost per bp of synthesized DNA (as a step function)
-	SynthesisCost map[int]SynthCost `mapstructure:"synthesis-cost"`
+	// the cost per bp of synthesized DNA as a fragment (as a step function)
+	SynthesisFragmentCost map[int]SynthCost `mapstructure:"synthesis-fragment-cost"`
+
+	// the cost per bp of synthesized clonal DNA  (delivered in a vector)
+	SynthesisVectorCost map[int]SynthCost `mapstructure:"synthesis-gene-cost"`
 
 	// maximum length of a synthesized piece of DNA
 	SynthesisMaxLength int `mapstructure:"synthesis-max-length"`
@@ -128,39 +131,54 @@ func New() *Config {
 	return config
 }
 
-// SynthCost returns the cost of synthesizing a stretch of DNA
-// of the length passed. It's a stand alone function because
-// it's highly dependent on the synth cost settings map
+// SynthFragmentCost returns the cost of synthesizing a linear stretch of DNA
+func (c Config) SynthFragmentCost(fragLength int) float64 {
+	// by default, we try to synthesize the whole thing in one piece
+	// we may optionally need to split it into multiple
+	fragCount := math.Ceil(float64(fragLength) / float64(c.SynthesisMaxLength))
+	fragLength = int(math.Floor(float64(fragLength) / float64(fragCount)))
+
+	cost := synthCost(fragLength, c.SynthesisFragmentCost)
+	if cost.Fixed {
+		return fragCount * cost.Cost
+	}
+
+	return fragCount * float64(fragLength) * cost.Cost
+}
+
+// SynthGeneCost returns the cost of synthesizing the insert and having it delivered in a vector
+func (c Config) SynthGeneCost(insertLength int) float64 {
+	cost := synthCost(insertLength, c.SynthesisVectorCost)
+	if cost.Fixed {
+		return cost.Cost
+	}
+
+	return float64(insertLength) * cost.Cost
+}
+
+// synthCost returns the cost of synthesizing the piece of DNA,
+// either linear or circular
 //
 // find the smallest synth length greater than fragLength
 // Ex: a synthesis provider may say it's 32 cents up to 500bp and
 // 60 cents up to 2000bp. So, for a 750bp sequence, we want to use
 // the 2000bp price
-func (c Config) SynthCost(fragLength int) float64 {
-	// by default, we try to synthesize the whole thing in one piece
-	// we may optionally need to split it into multiple and this checks for that
-	fragCount := math.Ceil(float64(fragLength) / float64(c.SynthesisMaxLength))
-	fragLength = int(math.Floor(float64(fragLength) / float64(fragCount)))
-
-	costLengthKeys := make([]int, len(c.SynthesisCost))
-	for key := range c.SynthesisCost {
+//
+// TODO: add error here for if there's no cost for seqLength (too large)
+func synthCost(seqLength int, costs map[int]SynthCost) SynthCost {
+	costLengthKeys := make([]int, len(costs))
+	for key := range costs {
 		costLengthKeys = append(costLengthKeys, key)
 	}
 	sort.Ints(costLengthKeys)
 
 	synthCostKey := 0
 	for _, keyLength := range costLengthKeys {
-		if keyLength > fragLength {
+		if keyLength > seqLength {
 			synthCostKey = keyLength
 			break
 		}
 	}
 
-	// find whether this fragment has a fixed or variable cost
-	synthCost := c.SynthesisCost[synthCostKey]
-	if synthCost.Fixed {
-		return fragCount * synthCost.Dollars
-	}
-
-	return fragCount * float64(fragLength) * synthCost.Dollars
+	return costs[synthCostKey]
 }

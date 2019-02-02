@@ -172,7 +172,7 @@ func write(filename string, target Frag, assemblies [][]*Frag, insertSeqLength i
 	})
 
 	// get the cost of full synthesis
-	fullSynthCost, err := roundCost(conf.SynthCost(insertSeqLength))
+	fullSynthCost, err := roundCost(conf.SynthGeneCost(insertSeqLength))
 	if err != nil {
 		return nil, err
 	}

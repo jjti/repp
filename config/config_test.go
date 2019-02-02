@@ -17,16 +17,16 @@ func TestConfig_SynthCost(t *testing.T) {
 	configFields := fields{
 		SynthesisCost: map[int]SynthCost{
 			50: SynthCost{
-				Fixed:   true,
-				Dollars: 5,
+				Fixed: true,
+				Cost:  5,
 			},
 			200: SynthCost{
-				Fixed:   false,
-				Dollars: 0.1,
+				Fixed: false,
+				Cost:  0.1,
 			},
 			10000: SynthCost{
-				Fixed:   false,
-				Dollars: 0.50,
+				Fixed: false,
+				Cost:  0.50,
 			},
 		},
 	}
@@ -65,9 +65,9 @@ func TestConfig_SynthCost(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := Config{
-				SynthesisCost: tt.fields.SynthesisCost,
+				SynthesisFragmentCost: tt.fields.SynthesisCost,
 			}
-			if got := c.SynthCost(tt.args.fragLength); got != tt.want {
+			if got := c.SynthFragmentCost(tt.args.fragLength); got != tt.want {
 				t.Errorf("Config.SynthCost() = %v, want %v", got, tt.want)
 			}
 		})

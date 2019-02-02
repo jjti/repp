@@ -24,69 +24,70 @@ pcr-primer-max-embed-length: 20
 pcr-primer-max-offtarget-tm: 55.0
 
 # Cost of synthesis (step-function)
-synthesis-cost:
-  # IDT: 4 nmole Ultramer® DNA Oligo
-  200:
-    fixed: false
-    dollars: 0.8
-
+synthesis-fragment-cost:
   # IDT: gBlocks: https://www.idtdna.com/pages/products/genes-and-gene-fragments/gblocks-gene-fragments
   250:
     fixed: true
-    dollars: 89.0
+    cost: 89.0
 
   500:
     fixed: true
-    dollars: 89.0
+    cost: 89.0
 
   750:
     fixed: true
-    dollars: 129.0
+    cost: 129.0
 
   1000:
     fixed: true
-    dollars: 149.0
+    cost: 149.0
 
   1250:
     fixed: true
-    dollars: 209.0
+    cost: 209.0
 
   1500:
     fixed: true
-    dollars: 249.0
+    cost: 249.0
 
   1750:
     fixed: true
-    dollars: 289.0
+    cost: 289.0
 
   2000:
     fixed: true
-    dollars: 329.0
+    cost: 329.0
 
   2250:
     fixed: true
-    dollars: 399.0
+    cost: 399.0
 
   2500:
     fixed: true
-    dollars: 449.0
+    cost: 449.0
 
   2750:
     fixed: true
-    dollars: 499.0
+    cost: 499.0
 
   3000:
     fixed: true
-    dollars: 549.0
+    cost: 549.0
 
-  # IDT: Gene synthesis: https://www.idtdna.com/pages/products/genes-and-gene-fragments/custom-gene-synthesis
-  5000:
-    fixed: false
-    dollars: 0.35
+# Cost of synthesis and delivery in a vector
+# IDT: Gene synthesis: https://www.idtdna.com/pages/products/genes-and-gene-fragments/custom-gene-synthesis
+synthesis-gene-cost:
+  500:
+    fixed: true
+    cost: 160
 
-  1000000000:
+  3000:
     fixed: false
-    dollars: 0.6
+    cost: 0.35
+
+  30000:
+    fixed: false
+    cost: 0.6
 
 # Minimum length of a synthesized building fragment
 synthesis-min-length: 1
