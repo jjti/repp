@@ -46,7 +46,7 @@ type Config struct {
 
 	// primer3 config folder, needed for thermodynamic calculations
 	// created in the settings file during `make install`
-	Primer3config string `mapstructure:"primer3_config-path"`
+	Primer3Config string `mapstructure:"primer3_config-path"`
 
 	// the maximum number of fragments in the final assembly
 	FragmentsMaxCount int `mapstructure:"fragments-max-count"`

@@ -3,6 +3,7 @@ package defrag
 import (
 	"fmt"
 	"math"
+	"os"
 	"regexp"
 	"strings"
 
@@ -74,6 +75,39 @@ type Frag struct {
 
 	// Assembly configuration
 	conf *config.Config
+}
+
+// ranged: a stretch that a primer spans relative to the target sequence
+type ranged struct {
+	// start of the primer's range
+	start int
+
+	// end of the primer's range
+	end int
+}
+
+// Primer is a single Primer used to create a PCR fragment
+type Primer struct {
+	// Seq of the primer (In 5' to 3' direction)
+	Seq string `json:"seq"`
+
+	// Strand of the primer; true if template, false if complement
+	Strand bool `json:"strand"`
+
+	// Penalty score
+	Penalty float64 `json:"penalty"`
+
+	// PairPenalty score from primer3
+	PairPenalty float64 `json:"pairPenalty"`
+
+	// Tm of the primer
+	Tm float64 `json:"tm"`
+
+	// GC % max
+	GC float64 `json:"gc"`
+
+	// Range that the primer spans on the
+	Range ranged `json:"-"`
 }
 
 // newFrag creates a Frag from a match
@@ -276,46 +310,182 @@ func (f *Frag) junction(other *Frag, minHomology, maxHomology int) (junction str
 // one another and are within the upper and lower synthesis bounds.
 // target is the vector's full sequence. We need it to build up the target
 // vector's sequence
-func (f *Frag) synthTo(next *Frag, target string) (synthedFrags []*Frag) {
+func (f *Frag) synthTo(next *Frag, target string) (synths []*Frag) {
+	minHomology := f.conf.FragmentsMinHomology
+
 	// check whether we need to make synthetic fragments to get
 	// to the next fragment in the assembly
-	fragC := f.synthDist(next)
-	if fragC == 0 {
+	fragCount := f.synthDist(next)
+	if fragCount == 0 {
 		return nil
 	}
 
 	// length of each synthesized fragment
-	fragL := f.distTo(next) / fragC
+	fragLength := f.distTo(next) / fragCount
 	// account for homology on either end of each synthetic fragment
-	fragL += f.conf.FragmentsMinHomology * 2
-
-	if f.conf.SynthesisMinLength > fragL {
+	fragLength += minHomology * 2
+	if f.conf.SynthesisMinLength > fragLength {
 		// need to synthesize at least Synthesis.MinLength bps
-		fragL = f.conf.SynthesisMinLength
+		fragLength = f.conf.SynthesisMinLength
 	}
 
+	// add to self to account for sequence across the zero-index (when sequence subselecting)
 	targetLength := len(target)
-	// triple to account for sequence across the zero-index (when sequence subselecting)
 	target = strings.ToUpper(target + target + target + target)
 
 	// slide along the range of sequence to create synthetic fragments
 	// and create one at each point, each w/ MinHomology for the fragment
 	// before and after it
-	synthedFrags = []*Frag{}
-	for fragIndex := 0; fragIndex < int(fragC); fragIndex++ {
-		start := f.end - f.conf.FragmentsMinHomology // start w/ homology
-		start += fragIndex * fragL                   // slide along the range to cover
-		end := start + fragL + f.conf.FragmentsMinHomology
+	synths = []*Frag{}
+	start := f.end - minHomology // start w/ homology, move left
+	for len(synths) < int(fragCount) {
+		// isHairpin checks whether there's a hairpin in the end of the
+		// synthetic sequence. should be avoided
+		isHairpin := func(seq string, conf *config.Config) bool {
+			if len(synths) < int(fragCount)-1 {
+				return false
+			}
+			return hairpin(seq[len(seq)-minHomology:], conf) > 40
+		}
 
-		synthedFrags = append(synthedFrags, &Frag{
-			ID:       fmt.Sprintf("%s-synthetic-%d", f.ID, fragIndex+1),
-			Seq:      target[start+targetLength : end+targetLength],
+		end := start + fragLength + minHomology
+		seq := target[start+targetLength : end+targetLength]
+		for isHairpin(seq, f.conf) {
+			end += minHomology / 2
+			seq = target[start+targetLength : end+targetLength]
+		}
+
+		synths = append(synths, &Frag{
+			ID:       fmt.Sprintf("%s-synthetic-%d", f.ID, len(synths)+1),
+			Seq:      seq,
 			fragType: synthetic,
 			conf:     f.conf,
 		})
+
+		start += fragLength
 	}
 
 	return
+}
+
+// setPrimers creates primers against a Frag and returns an error if:
+//	1. the primers have an unacceptably high primer3 penalty score
+//	2. the primers have off-targets in their source vector/fragment
+func (f *Frag) setPrimers(last, next *Frag, seq string, conf *config.Config) (err error) {
+	psExec := newPrimer3(last, f, next, seq, conf)
+
+	// make input file and write to the fs
+	// find how many bp of additional sequence need to be added
+	// to the left and right primers (too large for primer3_core)
+	addLeft, addRight, err := psExec.input(
+		conf.FragmentsMinHomology,
+		conf.FragmentsMaxHomology,
+		conf.PCRMaxEmbedLength,
+		conf.PCRMinLength)
+	if err != nil {
+		return
+	}
+
+	if err = psExec.run(); err != nil {
+		return
+	}
+
+	if err = psExec.parse(seq); err != nil {
+		return
+	}
+
+	// update Frag's range, and add additional bp to the left and right primer if it wasn't included in the primer3 output
+	mutateNodePrimers(f, seq, addLeft, addRight)
+
+	// make sure the fragment's length is still long enough for PCR
+	if f.end-f.start < conf.PCRMinLength {
+		return fmt.Errorf(
+			"failed to execute primer3: %s is %dbp, needs to be > %dbp",
+			f.ID,
+			f.end-f.start,
+			conf.PCRMinLength,
+		)
+	}
+
+	// 1. check for whether the primers have too have a pair penalty score
+	if f.Primers[0].PairPenalty > conf.PCRP3MaxPenalty {
+		errMessage := fmt.Sprintf(
+			"primers have pair primer3 penalty score of %f, should be less than %f:\f%+v\f%+v",
+			f.Primers[0].PairPenalty,
+			conf.PCRP3MaxPenalty,
+			f.Primers[0],
+			f.Primers[1],
+		)
+		f.Primers = nil
+		return fmt.Errorf(errMessage)
+	}
+
+	// 2. check for whether either of the primers have an off-target/mismatch
+	var mismatchExists bool
+	var mm match
+
+	if f.fullSeq != "" {
+		// we have the full sequence (it was included in the forward design)
+		mismatchExists, mm, err = seqMismatch(f.Primers, f.ID, f.fullSeq, conf)
+	} else {
+		// otherwise, query the fragment from the DB (try to find it) and then check for mismatches
+		mismatchExists, mm, err = parentMismatch(f.Primers, f.ID, f.db, conf)
+	}
+
+	if err != nil {
+		f.Primers = nil
+		return err
+	}
+	if mismatchExists {
+		err = fmt.Errorf(
+			"found a mismatching sequence %s for primers: %s, %s",
+			mm.seq,
+			f.Primers[0].Seq,
+			f.Primers[1].Seq,
+		)
+		f.Primers = nil
+		return err
+	}
+
+	os.Remove(psExec.in.Name()) // delete the temporary input and output files
+	os.Remove(psExec.out.Name())
+
+	return
+}
+
+// mutateNodePrimers adds additional bp to the sides of a Frag
+// if there was additional homology bearing sequence that we were unable
+// to add through primer3 alone
+//
+// it also updates the range, start + end, of the Frag to match that of the primers
+//
+// returning Frag for testing
+func mutateNodePrimers(f *Frag, seq string, addLeft, addRight int) (mutated *Frag) {
+	template := strings.ToUpper(seq + seq + seq)
+
+	// add bp to the left/FWD primer to match the fragment to the left
+	if addLeft > 0 {
+		oldStart := f.Primers[0].Range.start + len(seq)
+		f.Primers[0].Seq = template[oldStart-addLeft:oldStart] + f.Primers[0].Seq
+		f.Primers[0].Range.start -= addLeft
+	}
+
+	// add bp to the right/REV primer to match the fragment to the right
+	if addRight > 0 {
+		oldEnd := f.Primers[1].Range.end + len(seq)
+		f.Primers[1].Seq = revComp(template[oldEnd+1:oldEnd+addRight+1]) + f.Primers[1].Seq
+		f.Primers[1].Range.end += addRight
+	}
+
+	// change the Frag's start and end index to match those of the start and end index
+	// of the primers, since the range may have shifted to get better primers
+	f.start = f.Primers[0].Range.start
+	f.end = f.Primers[1].Range.end
+
+	// update the Frag's seq to reflect that change
+	// f.Seq = template[f.start+len(seq) : f.end+len(seq)+1]
+
+	return f
 }
 
 // ToString returns a string representation of a fragment's type
@@ -328,5 +498,6 @@ func fragsCost(frags []*Frag) (cost float64) {
 	for _, f := range frags {
 		cost += f.cost()
 	}
-	return cost
+
+	return
 }
