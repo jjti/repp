@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"text/tabwriter"
 
 	"github.com/jjtimmons/defrag/config"
 	"github.com/spf13/cobra"
@@ -111,13 +112,17 @@ func (f *FeatureDB) Read(cmd *cobra.Command, args []string) {
 		}
 	}
 
+	// from https://golang.org/pkg/text/tabwriter/
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 1, ' ', tabwriter.TabIndent)
 	if len(containing) > 0 {
-		fmt.Println(strings.Join(containing, "\n"))
+		fmt.Fprintf(w, strings.Join(containing, "\n"))
 	} else if len(lowDistance) > 0 {
-		fmt.Println(strings.Join(lowDistance, "\n"))
+		fmt.Fprintf(w, strings.Join(lowDistance, "\n"))
 	} else {
-		fmt.Printf("failed to find any features for %s\n", name)
+		fmt.Fprintf(w, fmt.Sprintf("failed to find any features for %s", name))
 	}
+	w.Write([]byte("\n"))
+	w.Flush()
 }
 
 // Update the feature's seq in the database (or create if it isn't in the feature db)
