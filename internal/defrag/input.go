@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -198,7 +197,7 @@ func (p *inputParser) guessInput() (in string, err error) {
 			continue
 		}
 
-		ext := strings.ToLower(filepath.Ext(file.Name()))
+		ext := strings.ToUpper(filepath.Ext(file.Name()))
 		if ext == ".fa" || ext == ".fasta" {
 			return file.Name(), nil
 		}
@@ -218,10 +217,10 @@ func (p *inputParser) guessOutput(in string) (out string) {
 // parseDBs returns a list of absolute paths to BLAST databases
 func (p *inputParser) parseDBs(dbs string, addgene, igem bool) (paths []string, err error) {
 	if addgene {
-		dbs += "," + path.Join(config.BaseDir, "addgene")
+		dbs += "," + config.AddgeneDB
 	}
 	if igem {
-		dbs += "," + path.Join(config.BaseDir, "igem")
+		dbs += "," + config.IGEMDB
 	}
 
 	if paths, err = p.dbPaths(dbs); err != nil {
@@ -336,5 +335,5 @@ func (p *inputParser) getFilters(filterFlag string) []string {
 		return c == ' ' || c == ',' // space or comma separated
 	}
 
-	return strings.FieldsFunc(strings.ToLower(filterFlag), splitFunc)
+	return strings.FieldsFunc(strings.ToUpper(filterFlag), splitFunc)
 }

@@ -20,9 +20,10 @@ vendor/*/**
 # bins
 bin/**
 
-# addgene raw FASTA files, too many, ignore them (saving only addgene/repo.zip instead)
+# addgene raw FASTA files, too many, ignore them
 assets/addgene/**
 assets/igem/**
+assets/snapgene/**
 
 # test output files
 test/output/**

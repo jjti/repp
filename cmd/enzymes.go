@@ -5,9 +5,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// EnzymesCmd is for listing out all the available enzymes usable for digesting
+// enzymesCmd is for listing out all the available enzymes usable for digesting
 // a backbone. Useful for if the user doesn't know which enzymes are available
-var EnzymesCmd = &cobra.Command{
+var enzymesCmd = &cobra.Command{
 	Use:                        "enzymes",
 	Short:                      "List enzymes available to linearize a backbone",
 	Run:                        defrag.Enzymes,
@@ -17,7 +17,6 @@ var EnzymesCmd = &cobra.Command{
 <Name>: <Recognition sequence>`,
 }
 
-// set flags
 func init() {
-	rootCmd.AddCommand(EnzymesCmd)
+	rootCmd.AddCommand(enzymesCmd)
 }

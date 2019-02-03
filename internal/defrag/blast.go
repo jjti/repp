@@ -255,7 +255,7 @@ func (b *blastExec) parse(filters []string, targetLength int) (matches []match, 
 
 		// filter on titles
 		matchesFilter := false
-		search := strings.ToLower(entry + titles)
+		search := strings.ToUpper(entry + titles)
 		for _, f := range filters {
 			if strings.Contains(search, f) {
 				matchesFilter = true
