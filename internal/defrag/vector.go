@@ -2,7 +2,6 @@ package defrag
 
 import (
 	"fmt"
-	"log"
 	"math"
 	"sort"
 	"strings"
@@ -23,19 +22,19 @@ func Vector(flags *Flags, conf *config.Config) {
 
 	target, builds, err := vector(flags, conf)
 	if err != nil {
-		log.Fatalln(err)
+		stderr.Fatalln(err)
 	}
 
 	// write the results to the filesystem at the out location
 	fragments, err := read(flags.in)
 	if err != nil {
-		log.Fatalln(err)
+		stderr.Fatalln(err)
 	}
 	insertLength := len(fragments[0].Seq)
 
 	elapsed := time.Since(start)
 	if _, err := write(flags.out, target, builds, insertLength, conf, elapsed.Seconds()); err != nil {
-		log.Fatalln(err)
+		stderr.Fatalln(err)
 	}
 
 	fmt.Printf("%s\n\n", elapsed)
@@ -73,7 +72,7 @@ func vector(input *Flags, conf *config.Config) (Frag, [][]*Frag, error) {
 
 	// set target fragment
 	if len(fragments) > 1 {
-		log.Printf(
+		stderr.Printf(
 			"warning: %d fragments were in %s. Only targeting the sequence of the first: %s",
 			len(fragments),
 			input.in,
@@ -141,7 +140,7 @@ func vector(input *Flags, conf *config.Config) (Frag, [][]*Frag, error) {
 			filledFragments, err := testAssembly.fill(targetFrag.Seq, conf)
 			if err != nil || filledFragments == nil {
 				// write the console for debugging, continue looking
-				// fmt.Println(testAssembly.log(), "error", err.Error())
+				// logger.Println(testAssembly.log(), "error", err.Error())
 				continue
 			}
 

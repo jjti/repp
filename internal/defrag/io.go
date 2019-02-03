@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
+	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -13,6 +15,9 @@ import (
 
 	"github.com/jjtimmons/defrag/config"
 )
+
+// stderr is for logging to Stderr (without an annoying timestamp)
+var stderr = log.New(os.Stderr, "", 0)
 
 // Payload is the JSON shape of an input payload from the API endpoint
 type Payload struct {

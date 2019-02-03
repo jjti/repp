@@ -16,20 +16,20 @@ import (
 var (
 	home, _ = homedir.Dir()
 
-	// BaseDir is the root directory where defrag settings and database files live
-	BaseDir = filepath.Join(home, ".defrag")
+	// defragDir is the root directory where defrag settings and database files live
+	defragDir = filepath.Join(home, ".defrag")
 
-	// BaseSettingsFile is the default settings file path for the config package
-	BaseSettingsFile = filepath.Join(BaseDir, "config.yaml")
+	// RootSettingsFile is the default settings file path for the config package
+	RootSettingsFile = filepath.Join(defragDir, "config.yaml")
 
 	// IGEMDB is the path to the iGEM db
-	IGEMDB = filepath.Join(BaseDir, "igem")
+	IGEMDB = filepath.Join(defragDir, "igem")
 
 	// AddgeneDB is the path to the Addgene db
-	AddgeneDB = filepath.Join(BaseDir, "addgene")
+	AddgeneDB = filepath.Join(defragDir, "addgene")
 
 	// FeatureDB is the path to the features db
-	FeatureDB = filepath.Join(BaseDir, "features.tsv")
+	FeatureDB = filepath.Join(defragDir, "features.tsv")
 )
 
 // SynthCost contains data of the cost of synthesizing DNA up to a certain
@@ -102,12 +102,12 @@ type Config struct {
 // TODO: add back the config file path setting
 func New() *Config {
 	// read in the default/base settings file first
-	viper.SetConfigFile(BaseSettingsFile)
+	viper.SetConfigFile(RootSettingsFile)
 	if err := viper.ReadInConfig(); err != nil {
 		log.Fatal(err)
 	}
 
-	if userSettings := viper.GetString("settings"); userSettings != "" && userSettings != BaseSettingsFile {
+	if userSettings := viper.GetString("settings"); userSettings != "" && userSettings != RootSettingsFile {
 		viper.SetConfigFile(userSettings) // user has specified a new path for a settings file
 
 		// read in user defined settings file
@@ -165,16 +165,13 @@ func (c Config) SynthGeneCost(insertLength int) float64 {
 	return float64(insertLength) * cost.Cost
 }
 
-// synthCost returns the cost of synthesizing the piece of DNA,
-// either linear or circular
-//
-// find the smallest synth length greater than fragLength
-// Ex: a synthesis provider may say it's 32 cents up to 500bp and
-// 60 cents up to 2000bp. So, for a 750bp sequence, we want to use
-// the 2000bp price
-//
-// TODO: add error here for if there's no cost for seqLength (too large)
+// synthCost returns the cost of synthesizing a piece of DNA
 func synthCost(seqLength int, costs map[int]SynthCost) SynthCost {
+	// find the smallest synth length greater than fragLength
+	// Ex: a synthesis provider may say it's 32 cents up to 500bp and
+	// 60 cents up to 2000bp. So, for a 750bp sequence, we want to use
+	// the 2000bp price
+	// TODO: add error here for if there's no cost for seqLength (too large)
 	costLengthKeys := make([]int, len(costs))
 	for key := range costs {
 		costLengthKeys = append(costLengthKeys, key)

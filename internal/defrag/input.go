@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -39,23 +38,21 @@ type Flags struct {
 // inputParser contains methods for parsing flags from the input &cobra.Command
 type inputParser struct{}
 
-// NewFlags makes a new flags object out of the in, out, dbs passed
-func NewFlags(in, out, backbone, enzymeName, filter string, dbs []string, addgene, igem bool) *Flags {
+// TestFlags makes a new flags object out of the in, out, dbs passed. Strictly for testing right now
+func TestFlags(in, out, backbone, enzymeName, filter string, dbs []string, addgene, igem bool) (*Flags, *config.Config) {
 	c := config.New()
 
 	if addgene {
-		addgenePath := filepath.Join(config.BaseDir, "addgene")
-		dbs = append(dbs, addgenePath)
+		dbs = append(dbs, config.AddgeneDB)
 	}
 	if igem {
-		igemPath := filepath.Join(config.BaseDir, "igem")
-		dbs = append(dbs, igemPath)
+		dbs = append(dbs, config.IGEMDB)
 	}
 
 	p := inputParser{}
 	parsedBB, err := p.parseBackbone(backbone, enzymeName, dbs, c)
 	if err != nil {
-		log.Fatal(err)
+		stderr.Fatal(err)
 	}
 
 	return &Flags{
@@ -65,7 +62,7 @@ func NewFlags(in, out, backbone, enzymeName, filter string, dbs []string, addgen
 		backbone: parsedBB,
 		filters:  p.getFilters(filter),
 		identity: 100,
-	}
+	}, c
 }
 
 // parseCmdFlags gathers the in path, out path, etc from a cobra cmd object
@@ -76,11 +73,15 @@ func parseCmdFlags(cmd *cobra.Command, args []string) (*Flags, *config.Config) {
 	p := inputParser{}
 	c := config.New()
 
-	if fs.in, err = cmd.Flags().GetString("in"); err != nil {
+	if strings.ToLower(cmd.Name()) == "features" {
+		// with 'defrag features' the arguments are the feature names to use
+		// TODO: allow input to be a file with feature names in it, or a MULTI-FASTA with feature entries
+		fs.in = strings.Join(args, " ")
+	} else if fs.in, err = cmd.Flags().GetString("in"); err != nil {
 		// check whether an input fail was specified
 		if fs.in, err = p.guessInput(); err != nil {
 			// try to guess at the input file the user wanted to use
-			log.Fatal(err)
+			stderr.Fatal(err)
 		}
 	}
 
@@ -90,22 +91,22 @@ func parseCmdFlags(cmd *cobra.Command, args []string) (*Flags, *config.Config) {
 
 	addgene, err := cmd.Flags().GetBool("addgene") // use addgene db?
 	if err != nil {
-		log.Fatalf("failed to parse addgene flag: %v", err)
+		stderr.Fatalf("failed to parse addgene flag: %v", err)
 	}
 
 	igem, err := cmd.Flags().GetBool("igem") // use igem db?
 	if err != nil {
-		log.Fatalf("failed to parse igem flag: %v", err)
+		stderr.Fatalf("failed to parse igem flag: %v", err)
 	}
 
 	dbString, err := cmd.Flags().GetString("dbs")
 	if err != nil && !addgene {
-		log.Fatalf("failed to parse building fragments: %v", err)
+		stderr.Fatalf("failed to parse building fragments: %v", err)
 	}
 
 	filters, err := cmd.Flags().GetString("filter")
 	if err != nil {
-		log.Fatalf("failed to parse filters: %v", err)
+		stderr.Fatalf("failed to parse filters: %v", err)
 	}
 
 	identity, err := cmd.Flags().GetFloat64("identity")
@@ -113,9 +114,14 @@ func parseCmdFlags(cmd *cobra.Command, args []string) (*Flags, *config.Config) {
 		identity = 100 // might be something other than `defrag vector`
 	}
 
+	if dbString == "" && !addgene && !igem {
+		fmt.Println("no fragment databases chosen [-a -d -i], setting Addgene and iGEM to true")
+		addgene = true
+		igem = true
+	}
 	// read in the BLAST DB paths
 	if fs.dbs, err = p.parseDBs(dbString, addgene, igem); err != nil || len(fs.dbs) == 0 {
-		log.Fatalf("failed to find any fragment databases: %v", err)
+		stderr.Fatalf("failed to find any fragment databases: %v", err)
 	}
 
 	// check if user asked for a specific backbone, confirm it exists in one of the dbs
@@ -127,7 +133,7 @@ func parseCmdFlags(cmd *cobra.Command, args []string) (*Flags, *config.Config) {
 	// try to digest the backbone with the enzyme
 	fs.backbone, err = p.parseBackbone(backbone, enzymeName, fs.dbs, c)
 	if err != nil {
-		log.Fatal(err)
+		stderr.Fatal(err)
 	}
 
 	// try to split the filter fields into a list
@@ -274,10 +280,11 @@ func (p *inputParser) parseBackbone(backbone, enzyme string, dbs []string, c *co
 	}
 
 	// confirm that the backbone exists in one of the dbs (or local fs) gather it as a Frag if it does
-	bbFrag, err := p.getBackbone(backbone, dbs, c)
+	bbFrag, err := queryDatabases(backbone, dbs)
 	if err != nil {
 		return Frag{}, err
 	}
+	bbFrag.circular = true // assume it's circular here (hackish, fix)
 
 	// gather the enzyme by name, err if it's unknown
 	enz, err := p.getEnzyme(enzyme)
@@ -290,33 +297,6 @@ func (p *inputParser) parseBackbone(backbone, enzyme string, dbs []string, c *co
 	}
 
 	return
-}
-
-// getBackbone is for finding the backbone in one of the available databases
-// non-existent backbones will throw an error
-//
-// TODO: use goroutine
-// TODO: test
-func (p *inputParser) getBackbone(backbone string, dbs []string, c *config.Config) (f Frag, err error) {
-	// first try to get the backbone out of a local file
-	if frags, err := read(backbone); err == nil && len(frags) > 0 {
-		return frags[0], nil // it was a local file
-	}
-
-	// move through each db and see if it contains the backbone
-	for _, db := range dbs {
-		// if outFile is defined here we managed to query it from the db
-		outFile, err := blastdbcmd(backbone, db, c)
-		if err == nil && outFile.Name() != "" {
-			defer os.Remove(outFile.Name())
-			frags, err := read(outFile.Name())
-			frags[0].fragType = circular // assume its circular here, used as backbone
-			return frags[0], err
-		}
-	}
-
-	dbMessage := strings.Join(dbs, "\n")
-	return Frag{}, fmt.Errorf("failed to find backbone %s in any of:\n%s", backbone, dbMessage)
 }
 
 // getEnzymes return the enzyme with the name passed. errors out if there is none

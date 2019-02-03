@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"os/exec"
 	"regexp"
@@ -421,7 +420,7 @@ func hairpin(seq string, conf *config.Config) (melt int) {
 
 	ntthalOut, err := ntthalCmd.CombinedOutput()
 	if err != nil {
-		log.Fatal(err)
+		stderr.Fatal(err)
 	}
 
 	ntthalOutString := string(ntthalOut)
@@ -435,7 +434,7 @@ func hairpin(seq string, conf *config.Config) (melt int) {
 		temp, err := strconv.Atoi(tempString[0][1])
 
 		if err != nil {
-			log.Fatal(err)
+			stderr.Fatal(err)
 		}
 
 		return temp
@@ -474,6 +473,6 @@ func init() {
 
 	primer3Dir, err = ioutil.TempDir("", "primer3")
 	if err != nil {
-		log.Fatal(err)
+		stderr.Fatal(err)
 	}
 }

@@ -32,6 +32,6 @@ func Execute() {
 
 func init() {
 	// settings is an optional parameter for a settings file (that overrides the fields in BaseSettingsFile)
-	rootCmd.PersistentFlags().StringP("settings", "s", config.BaseSettingsFile, "root settings")
+	rootCmd.PersistentFlags().StringP("settings", "s", config.RootSettingsFile, "root settings")
 	viper.BindPFlag("settings", rootCmd.PersistentFlags().Lookup("settings"))
 }

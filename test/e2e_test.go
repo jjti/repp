@@ -4,14 +4,11 @@ import (
 	"path"
 	"testing"
 
-	"github.com/jjtimmons/defrag/config"
 	"github.com/jjtimmons/defrag/internal/defrag"
 )
 
 // Test_E2E is for building vectors from end to end
 func Test_E2E(t *testing.T) {
-	c := config.New()
-
 	type testFlags struct {
 		in       string
 		out      string
@@ -87,8 +84,7 @@ func Test_E2E(t *testing.T) {
 	}
 
 	for _, t := range tests {
-		flags := defrag.NewFlags(t.in, t.out, t.backbone, t.enzyme, t.filters, t.dbs, t.addgene, t.igem)
-		defrag.Vector(flags, c)
+		defrag.Vector(defrag.TestFlags(t.in, t.out, t.backbone, t.enzyme, t.filters, t.dbs, t.addgene, t.igem))
 	}
 
 	t.Fatal("fail (dev)")

@@ -79,6 +79,13 @@ func init() {
 
 	rootCmd.AddCommand(featuresCmd)
 
-	// TODO: let the user run their assembly through `defrag vector` with the passed building fragments
-	// FeaturesCmd.Flags().StringP("dbs", "d", "", "Comma separated list of BLAST databases (multi-FASTA)")
+	// Flags for specifying the paths to the input file, input fragment files, and output file
+	featuresCmd.Flags().StringP("out", "o", "", "output file name")
+	featuresCmd.Flags().StringP("dbs", "d", "", "delimited list of local fragment databases")
+	featuresCmd.Flags().BoolP("addgene", "a", false, "use the Addgene repository")
+	featuresCmd.Flags().BoolP("igem", "g", false, "use the iGEM repository")
+	featuresCmd.Flags().StringP("backbone", "b", "", backboneHelp)
+	featuresCmd.Flags().StringP("enzyme", "e", "", enzymeHelp)
+	featuresCmd.Flags().StringP("filter", "f", "", "delimited keywords for removing fragments")
+	featuresCmd.Flags().Float64P("identity", "t", 100.0, "match %-identity threshold (see 'blastn -help')")
 }

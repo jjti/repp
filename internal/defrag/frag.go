@@ -42,7 +42,7 @@ type Frag struct {
 	// URL, eg link to a vector's addgene page
 	URL string `json:"url,omitempty"`
 
-	// fragment's sequence (linear)
+	// fragment/vector's sequence
 	Seq string `json:"seq,omitempty"`
 
 	// primers necessary to create this (if pcr fragment)
