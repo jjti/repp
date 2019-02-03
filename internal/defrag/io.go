@@ -59,6 +59,9 @@ type Output struct {
 	// "2018-01-01 20:41:00"
 	Time string `json:"time"`
 
+	// Execution is the number of seconds it took to execute the command
+	Execution float64 `json:"execution"`
+
 	// VectorSynthesisCost is the cost of a full gene synthesis within a vector
 	VectorSynthesisCost float64 `json:"vectorSynthesisCost"`
 
@@ -131,7 +134,7 @@ func read(path string) (fragments []Frag, err error) {
 // filename is the output file to write to
 // target is the vector we tried to assemble
 // assemblies are the solutions that can build up the target vector
-func write(filename string, target Frag, assemblies [][]*Frag, insertSeqLength int, conf *config.Config) (output []byte, err error) {
+func write(filename string, target Frag, assemblies [][]*Frag, insertSeqLength int, conf *config.Config, seconds float64) (output []byte, err error) {
 	// store save time, using same format as log.Println https://golang.org/pkg/log/#Println
 	t := time.Now() // https://gobyexample.com/time-formatting-parsing
 	time := fmt.Sprintf("%d/%02d/%02d %02d:%02d:%02d", t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
@@ -181,6 +184,7 @@ func write(filename string, target Frag, assemblies [][]*Frag, insertSeqLength i
 		Time:                time,
 		Target:              target.ID,
 		TargetSeq:           strings.ToUpper(target.Seq),
+		Execution:           seconds,
 		Solutions:           solutions,
 		VectorSynthesisCost: fullSynthCost,
 	}
