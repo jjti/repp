@@ -94,7 +94,7 @@ type Flags struct {
 	filters []string
 
 	// percentage identity for finding building fragments in BLAST databases
-	identity float64
+	identity int
 }
 
 // inputParser contains methods for parsing flags from the input &cobra.Command
@@ -171,7 +171,7 @@ func parseCmdFlags(cmd *cobra.Command, args []string) (*Flags, *config.Config) {
 		stderr.Fatalf("failed to parse filters: %v", err)
 	}
 
-	identity, err := cmd.Flags().GetFloat64("identity")
+	identity, err := cmd.Flags().GetInt("identity")
 	if err != nil {
 		identity = 100 // might be something other than `defrag vector`
 	}

@@ -108,11 +108,11 @@ type blastExec struct {
 	internal bool
 
 	// the percentage identity for BLAST queries
-	identity float64
+	identity int
 }
 
 // blast the seq against all dbs and acculate matches
-func blast(name, seq string, circular bool, dbs, filters []string, identity float64) (matches []match, err error) {
+func blast(name, seq string, circular bool, dbs, filters []string, identity int) (matches []match, err error) {
 	in, err := ioutil.TempFile(blastnDir, name+"in-*")
 	if err != nil {
 		return nil, err
@@ -200,19 +200,33 @@ func (b *blastExec) run() (err error) {
 		threads = 1
 	}
 
-	// create the blast command
-	// https://www.ncbi.nlm.nih.gov/books/NBK279682/
-	blastCmd := exec.Command(
-		"blastn",
+	flags := []string{
 		"-task", "blastn",
 		"-db", b.db,
 		"-query", b.in.Name(),
 		"-out", b.out.Name(),
 		"-outfmt", "7 sseqid qstart qend sstart send sseq mismatch stitle",
-		"-perc_identity", fmt.Sprintf("%f", b.identity),
+		"-perc_identity", fmt.Sprintf("%d", b.identity),
+		"-culling_limit", "20", // "If the query range of a hit is enveloped by that of at least this many higher-scoring hits, delete the hit"
 		"-num_threads", strconv.Itoa(threads),
 		"-max_target_seqs", "500", // default is 500
-	)
+	}
+
+	if b.identity < 99 {
+		// It is important to choose reward/penalty values appropriate to the sequences being aligned with the (absolute) reward/penalty ratio increasing for more divergent sequences.
+		// A ratio of 0.33 (1/-3) is appropriate for sequences that are about 99% conserved; a ratio of 0.5 (1/-2) is best for sequences that are 95% conserved;
+		// a ratio of about one (1/-1) is best for sequences that are 75% conserved
+		flags = append(flags,
+			"-reward", "1",
+			"-penalty", "-2",
+			"-gapopen", "1",
+			"-gapextend", "2",
+		)
+	}
+
+	// create the blast command
+	// https://www.ncbi.nlm.nih.gov/books/NBK279682/
+	blastCmd := exec.Command("blastn", flags...)
 
 	// execute BLAST and wait on it to finish
 	if output, err := blastCmd.CombinedOutput(); err != nil {
