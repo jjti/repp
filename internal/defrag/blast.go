@@ -204,7 +204,7 @@ func (b *blastExec) run() (err error) {
 		"-outfmt", "7 sseqid qstart qend sstart send sseq mismatch stitle",
 		"-perc_identity", fmt.Sprintf("%f", b.identity),
 		"-num_threads", strconv.Itoa(threads),
-		"-max_target_seqs", "1000", // default is 500
+		"-max_target_seqs", "500", // default is 500
 	)
 
 	// execute BLAST and wait on it to finish

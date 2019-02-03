@@ -16,12 +16,11 @@ var rootCmd = &cobra.Command{
 }
 
 // backboneHelp is the help message for the backbone CLI argument
-var backboneHelp = `Backbone to insert the fragments into. Can either be an entry 
-in one of the dbs or a FASTA file on the local filesystem. An enzyme must also
-be chosen to linearize the backbone.`
+var backboneHelp = `backbone to insert the fragments into. Can either be an entry 
+in one of the dbs or a file on the local filesystem.`
 
-var enzymeHelp = `Enzyme to linearize the backbone with (backbone must be specified).
-The enzyme's name must be recognizable by defrag. Use 'defrag enzymes' for a list.`
+var enzymeHelp = `enzyme to linearize the backbone with (backbone must be specified).
+'defrag enzymes' prints a list of recognized enzymes.`
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
