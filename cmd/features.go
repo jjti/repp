@@ -24,7 +24,7 @@ var featuresCreateCmd = &cobra.Command{
 	Run:                        featureDB.Create, // TODO
 	SuggestionsMinimumDistance: 2,
 	Long:                       "",
-	Aliases:                    []string{"add", "make", "new"},
+	Aliases:                    []string{"add"},
 	Example:                    "  defrag features create \"custom terminator 3\" CTAGCATAACAAGCTTGGGCACCTGTAAACGGGTCTTGAGGGGTTCCATTTTG",
 }
 
