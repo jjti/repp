@@ -24,13 +24,13 @@ func init() {
 	rootCmd.AddCommand(vectorCmd)
 
 	// Flags for specifying the paths to the input file, input fragment files, and output file
-	vectorCmd.Flags().StringP("in", "i", "", "Input file with target vector sequence <FASTA>")
-	vectorCmd.Flags().StringP("out", "o", "", "Output file name with solutions <JSON>")
-	vectorCmd.Flags().StringP("dbs", "d", "", "Comma separated list of local building fragment databases (same machine)")
-	vectorCmd.Flags().BoolP("addgene", "a", false, "Whether to use the Addgene repository as a source of building fragments")
-	vectorCmd.Flags().BoolP("igem", "g", false, "Whether to use the iGEM repository as a source of building fragments")
+	vectorCmd.Flags().StringP("in", "i", "", "input FASTA with target sequence")
+	vectorCmd.Flags().StringP("out", "o", "", "output file name")
+	vectorCmd.Flags().StringP("dbs", "d", "", "delimited list of local fragment databases")
+	vectorCmd.Flags().BoolP("addgene", "a", false, "use the Addgene repository")
+	vectorCmd.Flags().BoolP("igem", "g", false, "use the iGEM repository")
 	vectorCmd.Flags().StringP("backbone", "b", "", backboneHelp)
 	vectorCmd.Flags().StringP("enzyme", "e", "", enzymeHelp)
-	vectorCmd.Flags().StringP("filter", "f", "", "Comma separated list of keywords to filter against building fragments")
-	vectorCmd.Flags().Float64P("identity", "t", 100, "Percentage identity threshold for identifying building fragments (see 'blastn -help')")
+	vectorCmd.Flags().StringP("filter", "f", "", "delimited keywords to remove fragments")
+	vectorCmd.Flags().Float64P("identity", "t", 100, "match %-identity threshold (see 'blastn -help')")
 }
