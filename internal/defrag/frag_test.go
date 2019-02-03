@@ -367,11 +367,11 @@ func Test_new(t *testing.T) {
 			"create a Frag from a match",
 			args{
 				m: match{
-					entry:    "testMatch",
-					uniqueID: "0testMatch",
-					seq:      "atgctagctagtg",
-					start:    0,
-					end:      12,
+					entry:      "testMatch",
+					uniqueID:   "0testMatch",
+					seq:        "atgctagctagtg",
+					queryStart: 0,
+					queryEnd:   12,
 				},
 				seqL: 50,
 			},

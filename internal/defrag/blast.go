@@ -23,7 +23,7 @@ var (
 
 // match is a blast "hit" in the blastdb
 type match struct {
-	// entry of the matched fragment in the database
+	// entry of the matched building fragment in the database
 	entry string
 
 	// unique id for the match (entry name + start index % seqL). also used by fragments
@@ -32,19 +32,25 @@ type match struct {
 	// seq of the match on the target vector
 	seq string
 
-	// start of the fragment (0-indexed)
-	start int
+	// queryStart of the queried seq match (0-indexed)
+	queryStart int
 
-	// end of the fragment (0-indexed)
-	end int
+	// queryEnd of the queried seq match (0-indexed)
+	queryEnd int
+
+	// start index of the match on the subject fragment (entry) (0-indexed)
+	subjectStart int
+
+	// end index of the match on the subject fragment (entry) (0-indexed)
+	subjectEnd int
 
 	// the db that was BLASTed against (used later for checking off-targets in parents)
 	db string
 
-	// titles from the db. ex: year it was created
+	// titles from the db. eg: year it was created
 	title string
 
-	// circular if it's a circular fragment (vector, plasmid, etc)
+	// circular if it's a circular fragment in the db (vector, plasmid, etc)
 	circular bool
 
 	// mismatching number of bps in the match (for primer off-targets)
@@ -56,27 +62,35 @@ type match struct {
 
 // length returns the length of the match on the target fragment
 func (m *match) length() int {
-	return m.end - m.start + 1 // it's inclusive
+	return m.queryEnd - m.queryStart + 1 // it's inclusive
 }
 
-// copyWith returns a new match with the new start, end
-func (m *match) copyWith(start, end int) match {
+// copyWithQueryRange returns a new match with the new start, end
+func (m *match) copyWithQueryRange(start, end int) match {
 	return match{
-		entry:       m.entry,
-		seq:         m.seq,
-		start:       start,
-		end:         end,
-		db:          m.db,
-		circular:    m.circular,
-		mismatching: m.mismatching,
-		internal:    m.internal,
+		entry:        m.entry,
+		seq:          m.seq,
+		queryStart:   start,
+		queryEnd:     end,
+		subjectStart: m.subjectStart,
+		subjectEnd:   m.subjectEnd,
+		db:           m.db,
+		circular:     m.circular,
+		mismatching:  m.mismatching,
+		internal:     m.internal,
 	}
 }
 
 // blastExec is a small utility object for executing BLAST
 type blastExec struct {
-	// the fragment we're BLASTing
-	f *Frag
+	// the name of the query
+	name string
+
+	// the sequence of the query
+	seq string
+
+	// whether to circularize the queries sequence in the input file
+	circular bool
 
 	// the path to the database we're BLASTing against
 	db string
@@ -97,19 +111,15 @@ type blastExec struct {
 	identity float64
 }
 
-// blast the passed Frag against a set from the command line and create
-// matches for those that are long enough
-//
-// Accepts a fragment to BLAST against, a list of dbs to BLAST it against,
-// a minLength for a match, and settings around blastn location, output dir, etc
-func blast(f *Frag, dbs, filters []string, minLength int, identity float64, target string) (matches []match, err error) {
-	in, err := ioutil.TempFile(blastnDir, f.ID+"in-*")
+// blast the seq against all dbs and acculate matches
+func blast(name, seq string, circular bool, dbs, filters []string, identity float64) (matches []match, err error) {
+	in, err := ioutil.TempFile(blastnDir, name+"in-*")
 	if err != nil {
 		return nil, err
 	}
 	defer os.Remove(in.Name())
 
-	out, err := ioutil.TempFile(blastnDir, f.ID+"out-*")
+	out, err := ioutil.TempFile(blastnDir, name+"out-*")
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +132,9 @@ func blast(f *Frag, dbs, filters []string, minLength int, identity float64, targ
 		}
 
 		b := &blastExec{
-			f:        f,
+			name:     name,
+			seq:      seq,
+			circular: circular,
 			db:       db,
 			in:       in,
 			out:      out,
@@ -146,7 +158,7 @@ func blast(f *Frag, dbs, filters []string, minLength int, identity float64, targ
 		}
 
 		// parse the output file to Matches against the Frag
-		dbMatches, err := b.parse(filters, len(target))
+		dbMatches, err := b.parse(filters, len(seq))
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse BLAST output: %v", err)
 		}
@@ -157,14 +169,6 @@ func blast(f *Frag, dbs, filters []string, minLength int, identity float64, targ
 		matches = append(matches, dbMatches...)
 	}
 
-	// keep only "proper" arcs (non-self-contained)
-	matches = filter(matches, len(f.Seq), minLength)
-	if len(matches) < 1 {
-		return nil, fmt.Errorf("did not find any matches for %s", f.ID)
-	}
-
-	fmt.Printf("%d matches after filtering\n", len(matches))
-
 	// for _, m := range matches {
 	// 	fmt.Printf("%s %d %d %s\n", m.entry, m.start, m.end, m.title)
 	// }
@@ -172,20 +176,24 @@ func blast(f *Frag, dbs, filters []string, minLength int, identity float64, targ
 	return matches, nil
 }
 
-// input creates an input file for BLAST
-// return the path to the file and an error if there was one
+// input creates an input query file (FASTA) for blastn
 func (b *blastExec) input() error {
 	// create the query sequence file.
-	// add the sequence to itself because it's circular
-	// and we want to find matches across the zero-index.
-	file := fmt.Sprintf(">%s\n%s\n", b.f.ID, b.f.Seq+b.f.Seq)
+	// if circular, add the sequence to itself because it's circular
+	// and we want to find matches across the zero-index
+	querySeq := b.seq
+	if b.circular {
+		querySeq += b.seq
+	}
+
+	file := fmt.Sprintf(">%s\n%s\n", b.name, querySeq)
 	if _, err := b.in.WriteString(file); err != nil {
 		return err
 	}
 	return nil
 }
 
-// run calls the external blastn binary on the input library
+// run calls the external blastn binary on the input file
 func (b *blastExec) run() (err error) {
 	threads := runtime.NumCPU() - 1
 	if threads < 1 {
@@ -213,8 +221,7 @@ func (b *blastExec) run() (err error) {
 	return
 }
 
-// parse reads the output file into Matches on the Frag
-// returns a slice of Matches for the blasted fragment
+// parse reads the output of blastn into matches
 func (b *blastExec) parse(filters []string, targetLength int) (matches []match, err error) {
 	// read in the results
 	file, err := ioutil.ReadFile(b.out.Name())
@@ -239,17 +246,18 @@ func (b *blastExec) parse(filters []string, targetLength int) (matches []match, 
 			continue
 		}
 
-		// the full entry line, (id, direction, etc)
-		entry := strings.Replace(cols[0], ">", "", -1)
-		start, _ := strconv.Atoi(cols[1])
-		end, _ := strconv.Atoi(cols[2])
+		entry := strings.Replace(cols[0], ">", "", -1) // eg: BBa_B00001
+		queryStart, _ := strconv.Atoi(cols[1])
+		queryEnd, _ := strconv.Atoi(cols[2])
+		subjectStart, _ := strconv.Atoi(cols[3])
+		subjectEnd, _ := strconv.Atoi(cols[4])
 		seq := cols[5]
 		mm, _ := strconv.Atoi(cols[6])
-		titles := cols[7] // salltitles, ex: "fwd terminator 2011"
+		titles := cols[7] // salltitles, eg: "fwd terminator 2011"
 
 		// direction not guarenteed
-		if start > end {
-			start, end = end, start
+		if queryStart > queryEnd {
+			queryStart, queryEnd = queryEnd, queryStart
 		}
 
 		// filter on titles
@@ -267,16 +275,18 @@ func (b *blastExec) parse(filters []string, targetLength int) (matches []match, 
 
 		// create and append the new match
 		ms = append(ms, match{
-			entry:       entry,
-			uniqueID:    entry + strconv.Itoa(start%targetLength),
-			seq:         strings.Replace(seq, "-", "", -1),
-			start:       start - 1, // convert 1-based numbers to 0-based
-			end:         end - 1,
-			circular:    strings.Contains(titles, "circular"),
-			mismatching: mm,
-			internal:    b.internal,
-			db:          b.db, // store for checking off-targets later
-			title:       titles,
+			entry:        entry,
+			uniqueID:     entry + strconv.Itoa(queryStart%targetLength),
+			seq:          strings.Replace(seq, "-", "", -1),
+			queryStart:   queryStart - 1, // convert 1-based numbers to 0-based
+			queryEnd:     queryEnd - 1,
+			subjectStart: subjectStart - 1,
+			subjectEnd:   subjectEnd - 1,
+			circular:     strings.Contains(titles, "circular"),
+			mismatching:  mm,
+			internal:     b.internal,
+			db:           b.db, // store for checking off-targets later
+			title:        titles,
 		})
 	}
 
@@ -340,10 +350,10 @@ func filter(matches []match, targetLength, minSize int) (properized []match) {
 		}
 
 		// first half of the queried seq range (2 seq lengths)
-		if m.end < targetLength {
-			copiedMatches = append(copiedMatches, m.copyWith(m.start+targetLength, m.end+targetLength))
-		} else if m.start > targetLength {
-			copiedMatches = append(copiedMatches, m.copyWith(m.start-targetLength, m.end-targetLength))
+		if m.queryEnd < targetLength {
+			copiedMatches = append(copiedMatches, m.copyWithQueryRange(m.queryStart+targetLength, m.queryEnd+targetLength))
+		} else if m.queryStart > targetLength {
+			copiedMatches = append(copiedMatches, m.copyWithQueryRange(m.queryStart-targetLength, m.queryEnd-targetLength))
 		}
 	}
 
@@ -361,7 +371,7 @@ func properize(matches []match) (properized []match) {
 	// only include those that aren't encompassed by the one before it
 	for _, m := range matches {
 		lastMatch := len(properized) - 1
-		if lastMatch < 0 || m.end > properized[lastMatch].end {
+		if lastMatch < 0 || m.queryEnd > properized[lastMatch].queryEnd {
 			properized = append(properized, m)
 		}
 	}
@@ -373,8 +383,8 @@ func properize(matches []match) (properized []match) {
 // for fragments with equivelant starting indexes, put the larger one first
 func sortMatches(matches []match) {
 	sort.Slice(matches, func(i, j int) bool {
-		if matches[i].start != matches[j].start {
-			return matches[i].start < matches[j].start
+		if matches[i].queryStart != matches[j].queryStart {
+			return matches[i].queryStart < matches[j].queryStart
 		} else if matches[i].length() != matches[j].length() {
 			return matches[i].length() > matches[j].length()
 		}
@@ -400,8 +410,7 @@ func queryDatabases(entry string, dbs []string) (f Frag, err error) {
 		}
 	}
 
-	dbMessage := strings.Join(dbs, "\n")
-	return Frag{}, fmt.Errorf("failed to find %s in any of:\n\t%s", entry, dbMessage)
+	return Frag{}, fmt.Errorf("failed to find %s in any of:\n\t%s", entry, strings.Join(dbs, "\n"))
 }
 
 // seqMismatch queries for any mismatching primer locations in the parent sequence

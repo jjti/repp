@@ -99,7 +99,10 @@ func (f *FeatureDB) ReadCmd(cmd *cobra.Command, args []string) {
 		name = strings.Join(args, " ")
 	}
 
-	ldCutoff := 5
+	ldCutoff := len(name) / 3
+	if 2 > ldCutoff {
+		ldCutoff = 2
+	}
 	containing := []string{}
 	lowDistance := []string{}
 
@@ -112,7 +115,11 @@ func (f *FeatureDB) ReadCmd(cmd *cobra.Command, args []string) {
 	}
 
 	// from https://golang.org/pkg/text/tabwriter/
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 1, ' ', tabwriter.TabIndent)
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', tabwriter.TabIndent)
+	if len(containing) < 3 {
+		lowDistance = append(lowDistance, containing...)
+		containing = []string{} // clear
+	}
 	if len(containing) > 0 {
 		fmt.Fprintf(w, strings.Join(containing, "\n"))
 	} else if len(lowDistance) > 0 {
@@ -233,7 +240,7 @@ func FeaturesCmd(cmd *cobra.Command, args []string) {
 	features(parseCmdFlags(cmd, args))
 }
 
-// features assembles a vector with all the features requested in a 'defrag features [feature ...]' command
+// features assembles a vector with all the features requested with the 'defrag features [feature ...]' command
 func features(flags *Flags, conf *config.Config) {
 	// validate the input features, turn each into a sequence
 	featureNames := strings.Fields(flags.in)
@@ -256,6 +263,30 @@ func features(flags *Flags, conf *config.Config) {
 				config.FeatureDB,
 				"\n  "+strings.Join(flags.dbs, "\n  "),
 			)
+		}
+	}
+
+	// add in the backbone as a "feature"
+	if flags.backbone.ID != "" {
+		targetFeatures = append(targetFeatures, []string{flags.backbone.ID, flags.backbone.Seq})
+	}
+
+	fragsToMatches := make(map[string][]match) // map from building fragments to feature matches
+	featsToFrags := make(map[int][]string)     // map from feature index to building fragments
+	for i, target := range targetFeatures {
+		matches, err := blast(target[0], target[1], false, flags.dbs, flags.filters, flags.identity)
+		if err != nil {
+			stderr.Fatalln(err)
+		}
+
+		featsToFrags[i] = []string{}
+		for _, m := range matches {
+			if _, exists := fragsToMatches[m.entry]; !exists {
+				fragsToMatches[m.entry] = []match{m}
+			} else {
+				fragsToMatches[m.entry] = append(fragsToMatches[m.entry], m)
+			}
+			featsToFrags[i] = append(featsToFrags[i], m.entry)
 		}
 	}
 

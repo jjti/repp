@@ -195,8 +195,8 @@ func (p *primer3) bpToAdd(left, right *Frag) int {
 	minHomology := left.conf.FragmentsMinHomology
 	if bpDist := left.distTo(right); bpDist > -minHomology {
 		// this Frag will add half the homology to the last fragment
-		// ex: 5 bp distance leads to 2.5bp + ~10bp additonal
-		// ex: -10bp distance leads to ~0 bp additional:
+		// eg: 5 bp distance leads to 2.5bp + ~10bp additonal
+		// eg: -10bp distance leads to ~0 bp additional:
 		// 		other Frag is responsible for all of it
 		return bpDist + (minHomology / 2)
 	}

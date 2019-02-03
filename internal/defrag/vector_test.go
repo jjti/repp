@@ -13,7 +13,7 @@ import (
 // if an input fragment being built is exactly the same as one in a DB, it should be used
 // as is and without PCR or any preparation
 func Test_vector_single_vector(t *testing.T) {
-	fs, c := TestFlags(
+	fs, c := NewFlags(
 		path.Join("..", "..", "test", "109049.addgene.fa"),
 		path.Join("..", "..", "test", "output", "109049.output.json"),
 		"",
