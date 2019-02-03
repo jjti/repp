@@ -36,11 +36,12 @@ func VectorCmd(cmd *cobra.Command, args []string) {
 	}
 	insertLength := len(fragments[0].Seq)
 
-	if _, err := write(input.out, target, builds, insertLength, conf); err != nil {
+	elapsed := time.Since(start)
+
+	if _, err := write(input.out, target, builds, insertLength, conf, elapsed.Seconds()); err != nil {
 		log.Fatalln(err)
 	}
 
-	elapsed := time.Since(start)
 	fmt.Printf("%s\n\n", elapsed)
 
 	os.Exit(0)
@@ -61,7 +62,7 @@ func VectorJSON(json []byte) (output []byte, err error) {
 	target, builds, err := vector(input, conf)
 
 	// write the results to a JSON formatted []byte slice, return
-	return write(input.out, target, builds, 0, conf)
+	return write(input.out, target, builds, 0, conf, 0)
 }
 
 // VectorFlags is for running an end to end vector design using pre-built flags
@@ -80,11 +81,10 @@ func VectorFlags(flags *Flags, conf *config.Config) {
 	}
 	insertLength := len(fragments[0].Seq)
 
-	if _, err := write(flags.out, target, builds, insertLength, conf); err != nil {
+	elapsed := time.Since(start)
+	if _, err := write(flags.out, target, builds, insertLength, conf, elapsed.Seconds()); err != nil {
 		log.Fatalln(err)
 	}
-
-	elapsed := time.Since(start)
 
 	fmt.Printf("%s\n\n", elapsed)
 }
