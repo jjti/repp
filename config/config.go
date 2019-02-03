@@ -21,6 +21,15 @@ var (
 
 	// BaseSettingsFile is the default settings file path for the config package
 	BaseSettingsFile = filepath.Join(BaseDir, "config.yaml")
+
+	// IGEMDB is the path to the iGEM db
+	IGEMDB = filepath.Join(BaseDir, "igem")
+
+	// AddgeneDB is the path to the Addgene db
+	AddgeneDB = filepath.Join(BaseDir, "addgene")
+
+	// FeatureDB is the path to the features db
+	FeatureDB = filepath.Join(BaseDir, "features.tsv")
 )
 
 // SynthCost contains data of the cost of synthesizing DNA up to a certain

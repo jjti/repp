@@ -6,7 +6,7 @@ GOTEST=$(GOCMD) test
 GOGET=$(GOCMD) get
 
 DEFRAGBIN=/usr/local/bin/defrag
-DEFRAGCONF=$${HOME}/.defrag
+DEFRAGHOME=$${HOME}/.defrag
 
 PLATFORM:=$(shell uname)
 
@@ -19,7 +19,7 @@ ifeq ($(OS),Windows_NT)
 endif
 
 install: build
-	mkdir -p $(DEFRAGCONF)
+	mkdir -p $(DEFRAGHOME)
 	cp $(SETTINGS) $(TEMPSETTINGS)
 
 # install outside dependencies, copy binary to /usr/local/bin
@@ -45,11 +45,14 @@ endif
 endif
 
 	# copy config file to /etc/defrag
-	mv $(TEMPSETTINGS) $(DEFRAGCONF)/config.yaml
+	mv $(TEMPSETTINGS) $(DEFRAGHOME)/config.yaml
 
 	# copy BLAST databases
-	cp -r ./assets/addgene/db/** $(DEFRAGCONF) 
-	cp -r ./assets/igem/db/** $(DEFRAGCONF)
+	cp -r ./assets/addgene/db/** $(DEFRAGHOME) 
+	cp -r ./assets/igem/db/** $(DEFRAGHOME)
+
+	# copy features database
+	cp ./assets/snapgene/features.tsv $(DEFRAGHOME)
 	
 build:
 	# build for supported operating systems
@@ -64,4 +67,4 @@ all: dbs install
 uninstall:
 	# removing defrag from filesystem
 	rm $(DEFRAGBIN)
-	rm -rf $(DEFRAGCONF)
+	rm -rf $(DEFRAGHOME)

@@ -59,8 +59,8 @@ type Output struct {
 	// "2018-01-01 20:41:00"
 	Time string `json:"time"`
 
-	// FullSynthesisCost cost of a full synthesis
-	FullSynthesisCost float64 `json:"fullSynthesisCost"`
+	// VectorSynthesisCost is the cost of a full gene synthesis within a vector
+	VectorSynthesisCost float64 `json:"vectorSynthesisCost"`
 
 	// Solutions builds
 	Solutions []Solution `json:"solutions"`
@@ -178,11 +178,11 @@ func write(filename string, target Frag, assemblies [][]*Frag, insertSeqLength i
 	}
 
 	out := Output{
-		Time:              time,
-		Target:            target.ID,
-		TargetSeq:         strings.ToUpper(target.Seq),
-		Solutions:         solutions,
-		FullSynthesisCost: fullSynthCost,
+		Time:                time,
+		Target:              target.ID,
+		TargetSeq:           strings.ToUpper(target.Seq),
+		Solutions:           solutions,
+		VectorSynthesisCost: fullSynthCost,
 	}
 
 	output, err = json.MarshalIndent(out, "", "  ")
