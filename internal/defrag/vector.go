@@ -67,10 +67,9 @@ func vector(input *Flags, conf *config.Config) (Frag, [][]*Frag, error) {
 	// read the target sequence (the first in the slice is used)
 	fragments, err := read(input.in)
 	if err != nil {
-		return Frag{}, nil, fmt.Errorf("failed to read in fasta files at %s: %v", input.in, err)
+		return Frag{}, nil, fmt.Errorf("failed to read fragments from %s: %v", input.in, err)
 	}
 
-	// set target fragment
 	if len(fragments) > 1 {
 		stderr.Printf(
 			"warning: %d fragments were in %s. Only targeting the sequence of the first: %s",
@@ -79,19 +78,28 @@ func vector(input *Flags, conf *config.Config) (Frag, [][]*Frag, error) {
 			fragments[0].ID,
 		)
 	}
-	targetFrag := fragments[0]
-	fmt.Printf("Building %s\n", targetFrag.ID)
+	target := fragments[0]
+	fmt.Printf("Building %s\n", target.ID)
 
 	// if a backbone was specified, add it to the sequence of the target frag
 	if input.backbone.ID != "" {
-		targetFrag.Seq += input.backbone.Seq
+		target.Seq += input.backbone.Seq
 	}
 
-	// get all the matches against the fragment
-	matches, err := blast(&targetFrag, input.dbs, input.filters, conf.PCRMinLength, 100, targetFrag.Seq)
+	// get all the matches against the target vector
+	matches, err := blast(target.ID, target.Seq, true, input.dbs, input.filters, 100)
+
+	// keep only "proper" arcs (non-self-contained)
+	matches = filter(matches, len(target.Seq), conf.PCRMinLength)
+	if len(matches) < 1 {
+		return Frag{}, nil, fmt.Errorf("did not find any matches for %s", target.ID)
+	}
+
+	fmt.Printf("%d matches after filtering\n", len(matches))
+
 	if err != nil {
 		dbMessage := strings.Join(input.dbs, ", ")
-		return Frag{}, nil, fmt.Errorf("failed to blast %s against the dbs %s: %v", targetFrag.ID, dbMessage, err)
+		return Frag{}, nil, fmt.Errorf("failed to blast %s against the dbs %s: %v", target.ID, dbMessage, err)
 	}
 
 	// for _, m := range matches {
@@ -101,12 +109,12 @@ func vector(input *Flags, conf *config.Config) (Frag, [][]*Frag, error) {
 	// map fragment Matches to nodes
 	var nodes []*Frag
 	for _, m := range matches {
-		nodes = append(nodes, newFrag(m, len(targetFrag.Seq), conf))
+		nodes = append(nodes, newFrag(m, len(target.Seq), conf))
 	}
 
 	// build up a slice of assemblies that could, within the upper-limit on
 	// fragment count, be assembled to make the target vector
-	assemblies := createAssemblies(nodes, targetFrag.Seq, conf)
+	assemblies := createAssemblies(nodes, target.Seq, conf)
 
 	fmt.Printf("%d assemblies made\n", len(assemblies))
 
@@ -126,7 +134,7 @@ func vector(input *Flags, conf *config.Config) (Frag, [][]*Frag, error) {
 	filled := make(map[int][]*Frag)
 
 	// append a fully synthetic solution at first, nothing added should cost more than this
-	minCostAssembly := addFullySyntheticVector(filled, targetFrag.Seq, conf)
+	minCostAssembly := addFullySyntheticVector(filled, target.Seq, conf)
 
 	for _, count := range assemblyCounts {
 		// get the first assembly that fills properly (cheapest workable solution)
@@ -137,7 +145,7 @@ func vector(input *Flags, conf *config.Config) (Frag, [][]*Frag, error) {
 				break
 			}
 
-			filledFragments, err := testAssembly.fill(targetFrag.Seq, conf)
+			filledFragments, err := testAssembly.fill(target.Seq, conf)
 			if err != nil || filledFragments == nil {
 				// write the console for debugging, continue looking
 				// logger.Println(testAssembly.log(), "error", err.Error())
@@ -188,7 +196,7 @@ func vector(input *Flags, conf *config.Config) (Frag, [][]*Frag, error) {
 		found = append(found, frags)
 	}
 
-	return targetFrag, found, nil
+	return target, found, nil
 }
 
 // createAssemblies builds up circular assemblies (unfilled lists of fragments that should be combinable)

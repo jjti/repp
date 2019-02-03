@@ -21,7 +21,7 @@ const (
 	// pcr fragments are those prepared by pcr, often a subselection of their parent vector
 	pcr
 
-	// synthetic fragments are those that will be fully synthesized (ex: gBlocks)
+	// synthetic fragments are those that will be fully synthesized (eg: gBlocks)
 	synthetic
 
 	// linear fragment, ie the type of a fragment as it was uploaded submitted and without PCR/synthesis
@@ -133,8 +133,8 @@ func newFrag(m match, seqL int, conf *config.Config) *Frag {
 		uniqueID: m.uniqueID,
 		Seq:      strings.ToUpper(m.seq),
 		circular: m.circular,
-		start:    m.start,
-		end:      m.end,
+		start:    m.queryStart,
+		end:      m.queryEnd,
 		db:       m.db,
 		URL:      url,
 		conf:     conf,
