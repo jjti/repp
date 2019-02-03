@@ -87,5 +87,5 @@ func init() {
 	featuresCmd.Flags().StringP("backbone", "b", "", backboneHelp)
 	featuresCmd.Flags().StringP("enzyme", "e", "", enzymeHelp)
 	featuresCmd.Flags().StringP("filter", "f", "", "delimited keywords for removing fragments")
-	featuresCmd.Flags().Float64P("identity", "t", 100.0, "match %-identity threshold (see 'blastn -help')")
+	featuresCmd.Flags().IntP("identity", "t", 100, "match %-identity threshold (see 'blastn -help')")
 }

@@ -32,5 +32,5 @@ func init() {
 	vectorCmd.Flags().StringP("backbone", "b", "", backboneHelp)
 	vectorCmd.Flags().StringP("enzyme", "e", "", enzymeHelp)
 	vectorCmd.Flags().StringP("filter", "f", "", "delimited keywords for removing fragments")
-	vectorCmd.Flags().Float64P("identity", "t", 100.0, "match %-identity threshold (see 'blastn -help')")
+	vectorCmd.Flags().IntP("identity", "t", 100, "match %-identity threshold (see 'blastn -help')")
 }
