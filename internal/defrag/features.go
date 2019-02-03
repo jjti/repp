@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"strings"
 	"text/tabwriter"
@@ -25,7 +24,7 @@ func NewFeatureDB() *FeatureDB {
 
 	featureFile, err := os.Open(config.FeatureDB)
 	if err != nil {
-		log.Fatal(err)
+		stderr.Fatal(err)
 	}
 
 	// https://golang.org/pkg/bufio/#example_Scanner_lines
@@ -36,7 +35,7 @@ func NewFeatureDB() *FeatureDB {
 	}
 
 	if err := featureFile.Close(); err != nil {
-		log.Fatal(err)
+		stderr.Fatal(err)
 	}
 
 	return &FeatureDB{features: features}
@@ -45,7 +44,7 @@ func NewFeatureDB() *FeatureDB {
 // CreateCmd adds an additional feature to the db (if it's not in it already)
 func (f *FeatureDB) CreateCmd(cmd *cobra.Command, args []string) {
 	if len(args) < 2 {
-		log.Fatalf("expecting two args: a features name and sequence. %d passed\n", len(args))
+		stderr.Fatalf("expecting two args: a features name and sequence. %d passed\n", len(args))
 	}
 
 	name := args[0]
@@ -54,7 +53,7 @@ func (f *FeatureDB) CreateCmd(cmd *cobra.Command, args []string) {
 	argNames := []string{"create", "add", "read", "find", "update", "change", "delete", "remove"}
 	for _, argName := range argNames {
 		if name == argName {
-			log.Fatalf("cannot create a feature named %s. invalid feature names: %s\n", name, strings.Join(argNames, ", "))
+			stderr.Fatalf("cannot create a feature named %s. invalid feature names: %s\n", name, strings.Join(argNames, ", "))
 		}
 	}
 
@@ -64,21 +63,21 @@ func (f *FeatureDB) CreateCmd(cmd *cobra.Command, args []string) {
 	}
 
 	if _, contained := f.features[name]; contained {
-		log.Fatalf("cannot create feature %s, already in %s. try update\n", name, config.FeatureDB)
+		stderr.Fatalf("cannot create feature %s, already in %s. try update\n", name, config.FeatureDB)
 	}
 
 	// https://golang.org/pkg/os/#example_OpenFile_append
 	featureFile, err := os.OpenFile(config.FeatureDB, os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
-		log.Fatal(err)
+		stderr.Fatal(err)
 	}
 
 	if _, err := featureFile.Write([]byte(fmt.Sprintf("%s	%s\n", name, seq))); err != nil {
-		log.Fatal(err)
+		stderr.Fatal(err)
 	}
 
 	if err := featureFile.Close(); err != nil {
-		log.Fatal(err)
+		stderr.Fatal(err)
 	}
 
 	fmt.Printf("created %s in the features database\n", name)
@@ -92,7 +91,7 @@ func (f *FeatureDB) CreateCmd(cmd *cobra.Command, args []string) {
 // otherwise a list of feature names are returned (those beneath a levenshtein distance cutoff)
 func (f *FeatureDB) ReadCmd(cmd *cobra.Command, args []string) {
 	if len(args) < 1 {
-		log.Fatalf("expecting one arg: a features name. %d passed\n", len(args))
+		stderr.Fatalf("expecting one arg: a features name. %d passed\n", len(args))
 	}
 
 	name := args[0]
@@ -128,7 +127,7 @@ func (f *FeatureDB) ReadCmd(cmd *cobra.Command, args []string) {
 // UpdateCmd the feature's seq in the database (or create if it isn't in the feature db)
 func (f *FeatureDB) UpdateCmd(cmd *cobra.Command, args []string) {
 	if len(args) < 2 {
-		log.Fatalf("expecting two args: a features name and sequence. %d passed\n", len(args))
+		stderr.Fatalf("expecting two args: a features name and sequence. %d passed\n", len(args))
 	}
 
 	name := args[0]
@@ -145,7 +144,7 @@ func (f *FeatureDB) UpdateCmd(cmd *cobra.Command, args []string) {
 
 	featureFile, err := os.Open(config.FeatureDB)
 	if err != nil {
-		log.Fatal(err)
+		stderr.Fatal(err)
 	}
 
 	// https://golang.org/pkg/bufio/#example_Scanner_lines
@@ -163,11 +162,11 @@ func (f *FeatureDB) UpdateCmd(cmd *cobra.Command, args []string) {
 	}
 
 	if err := featureFile.Close(); err != nil {
-		log.Fatal(err)
+		stderr.Fatal(err)
 	}
 
 	if err := ioutil.WriteFile(config.FeatureDB, []byte(output.String()), 0644); err != nil {
-		log.Fatal(err)
+		stderr.Fatal(err)
 	}
 
 	if updated {
@@ -181,7 +180,7 @@ func (f *FeatureDB) UpdateCmd(cmd *cobra.Command, args []string) {
 // DeleteCmd the feature from the database
 func (f *FeatureDB) DeleteCmd(cmd *cobra.Command, args []string) {
 	if len(args) < 1 {
-		log.Fatalf("expecting one arg: a features name. %d passed\n", len(args))
+		stderr.Fatalf("expecting one arg: a features name. %d passed\n", len(args))
 	}
 
 	name := args[0]
@@ -195,7 +194,7 @@ func (f *FeatureDB) DeleteCmd(cmd *cobra.Command, args []string) {
 
 	featureFile, err := os.Open(config.FeatureDB)
 	if err != nil {
-		log.Fatal(err)
+		stderr.Fatal(err)
 	}
 
 	// https://golang.org/pkg/bufio/#example_Scanner_lines
@@ -212,11 +211,11 @@ func (f *FeatureDB) DeleteCmd(cmd *cobra.Command, args []string) {
 	}
 
 	if err := featureFile.Close(); err != nil {
-		log.Fatal(err)
+		stderr.Fatal(err)
 	}
 
 	if err := ioutil.WriteFile(config.FeatureDB, []byte(output.String()), 0644); err != nil {
-		log.Fatal(err)
+		stderr.Fatal(err)
 	}
 
 	// delete from memory
@@ -234,8 +233,31 @@ func FeaturesCmd(cmd *cobra.Command, args []string) {
 	features(parseCmdFlags(cmd, args))
 }
 
-// assemble a vector with all the features requested in a 'defrag features [feature ...]' command
+// features assembles a vector with all the features requested in a 'defrag features [feature ...]' command
 func features(flags *Flags, conf *config.Config) {
+	// validate the input features, turn each into a sequence
+	featureNames := strings.Fields(flags.in)
+	if len(featureNames) < 1 {
+		stderr.Fatal("no features chosen. see 'defrag features --help'")
+	}
+
+	targetFeatures := [][]string{} // slice of tuples [feature name, feature sequence]
+	featureDB := NewFeatureDB()
+	for _, f := range featureNames {
+		if seq, contained := featureDB.features[f]; contained {
+			targetFeatures = append(targetFeatures, []string{f, seq})
+		} else if dbFrag, err := queryDatabases(f, flags.dbs); err == nil {
+			targetFeatures = append(targetFeatures, []string{f, dbFrag.Seq})
+		} else {
+			stderr.Fatalf(
+				"failed to find '%s' in the features database (%s) or any of:"+
+					"%s\ncheck features database with 'defrag features find [feature name]'",
+				f,
+				config.FeatureDB,
+				"\n  "+strings.Join(flags.dbs, "\n  "),
+			)
+		}
+	}
 
 }
 
