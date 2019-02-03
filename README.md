@@ -30,7 +30,7 @@ Checks for and avoids primer off-targets (BLAST) with an annealing temp of >40tm
 
 Lets primer3 choose the best primers available within a range of sequence if allowable given neighboring fragments:
 
-```
+```txt
 In example below, A and C are too far away from B for annealing.
 Need to synthesize from A to B and from B to C.
 We let primer3_core pick the best primers available on B (within a 50bp range at the start and the end of B).
@@ -38,9 +38,3 @@ We let primer3_core pick the best primers available on B (within a 50bp range at
 ------ :A         ------ :C
           ------ :B
 ```
-
-## TODO
-
-- Allow users to select multiple databases
-  - Add costs to AddGene sources plasmids
-  - FASTA files with sequences/local-dbs they own (making cost zero)

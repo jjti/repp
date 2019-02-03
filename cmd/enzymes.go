@@ -9,12 +9,12 @@ import (
 // a backbone. Useful for if the user doesn't know which enzymes are available
 var enzymesCmd = &cobra.Command{
 	Use:                        "enzymes",
-	Short:                      "List enzymes available to linearize a backbone",
+	Short:                      "List enzymes available for linearizing backbones",
 	Run:                        defrag.Enzymes,
 	SuggestionsMinimumDistance: 4,
-	Long: `Lists out all the enzymes in defrag by name along with their recognition sequence.
-
-<Name>: <Recognition sequence>`,
+	Long: `
+Lists out all the enzymes in defrag by name along with their recognition sequence.
+[name]	[recognition sequence]`,
 }
 
 func init() {

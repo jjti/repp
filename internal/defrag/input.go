@@ -68,16 +68,19 @@ func NewFlags(in, out, backbone, enzymeName, filter string, dbs []string, addgen
 	}
 }
 
-// parseCmdFlags gathers the in path, out path, etc from the cobra cmd object
-func parseCmdFlags(cmd *cobra.Command, conf *config.Config) (fs *Flags, err error) {
-	fs = &Flags{} // parsed flags
+// parseCmdFlags gathers the in path, out path, etc from a cobra cmd object
+// returns Flags and a Config struct for defrag.Vector or defrag.Fragments
+func parseCmdFlags(cmd *cobra.Command, args []string) (*Flags, *config.Config) {
+	var err error
+	fs := &Flags{} // parsed flags
 	p := inputParser{}
+	c := config.New()
 
 	if fs.in, err = cmd.Flags().GetString("in"); err != nil {
 		// check whether an input fail was specified
 		if fs.in, err = p.guessInput(); err != nil {
 			// try to guess at the input file the user wanted to use
-			return
+			log.Fatal(err)
 		}
 	}
 
@@ -87,22 +90,22 @@ func parseCmdFlags(cmd *cobra.Command, conf *config.Config) (fs *Flags, err erro
 
 	addgene, err := cmd.Flags().GetBool("addgene") // use addgene db?
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse addgene flag: %v", err)
+		log.Fatalf("failed to parse addgene flag: %v", err)
 	}
 
 	igem, err := cmd.Flags().GetBool("igem") // use igem db?
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse igem flag: %v", err)
+		log.Fatalf("failed to parse igem flag: %v", err)
 	}
 
 	dbString, err := cmd.Flags().GetString("dbs")
 	if err != nil && !addgene {
-		return nil, fmt.Errorf("failed to parse building fragments: %v", err)
+		log.Fatalf("failed to parse building fragments: %v", err)
 	}
 
 	filters, err := cmd.Flags().GetString("filter")
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse filters: %v", err)
+		log.Fatalf("failed to parse filters: %v", err)
 	}
 
 	identity, err := cmd.Flags().GetFloat64("identity")
@@ -112,7 +115,7 @@ func parseCmdFlags(cmd *cobra.Command, conf *config.Config) (fs *Flags, err erro
 
 	// read in the BLAST DB paths
 	if fs.dbs, err = p.parseDBs(dbString, addgene, igem); err != nil || len(fs.dbs) == 0 {
-		return nil, fmt.Errorf("failed to find any fragment databases: %v", err)
+		log.Fatalf("failed to find any fragment databases: %v", err)
 	}
 
 	// check if user asked for a specific backbone, confirm it exists in one of the dbs
@@ -122,9 +125,9 @@ func parseCmdFlags(cmd *cobra.Command, conf *config.Config) (fs *Flags, err erro
 	enzymeName, _ := cmd.Flags().GetString("enzyme")
 
 	// try to digest the backbone with the enzyme
-	fs.backbone, err = p.parseBackbone(backbone, enzymeName, fs.dbs, conf)
+	fs.backbone, err = p.parseBackbone(backbone, enzymeName, fs.dbs, c)
 	if err != nil {
-		return nil, err
+		log.Fatal(err)
 	}
 
 	// try to split the filter fields into a list
@@ -133,7 +136,7 @@ func parseCmdFlags(cmd *cobra.Command, conf *config.Config) (fs *Flags, err erro
 	// set identity for blastn searching
 	fs.identity = identity
 
-	return
+	return fs, c
 }
 
 // parseJSONFlags parses a JSON payload into flags usable by defrag
