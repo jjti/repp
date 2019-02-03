@@ -46,8 +46,21 @@ func (f *FeatureDB) Create(cmd *cobra.Command, args []string) {
 	if len(args) < 2 {
 		log.Fatalf("expecting two args: a features name and sequence. %d passed\n", len(args))
 	}
+
 	name := args[0]
 	seq := args[1]
+
+	argNames := []string{"create", "add", "read", "find", "update", "change", "delete", "remove"}
+	for _, argName := range argNames {
+		if name == argName {
+			log.Fatalf("cannot create a feature named %s. invalid feature names: %s\n", name, strings.Join(argNames, ", "))
+		}
+	}
+
+	if len(args) > 2 {
+		name = strings.Join(args[:len(args)-1], " ")
+		seq = args[len(args)-1]
+	}
 
 	if _, contained := f.features[name]; contained {
 		log.Fatalf("cannot create feature %s, already in %s. try update\n", name, config.FeatureDB)
@@ -82,6 +95,10 @@ func (f *FeatureDB) Read(cmd *cobra.Command, args []string) {
 	}
 
 	name := args[0]
+	if len(args) > 1 {
+		name = strings.Join(args, " ")
+	}
+
 	ldCutoff := 5
 	containing := []string{}
 	lowDistance := []string{}
@@ -108,8 +125,14 @@ func (f *FeatureDB) Update(cmd *cobra.Command, args []string) {
 	if len(args) < 2 {
 		log.Fatalf("expecting two args: a features name and sequence. %d passed\n", len(args))
 	}
+
 	name := args[0]
 	seq := args[1]
+
+	if len(args) > 2 {
+		name = strings.Join(args[:len(args)-1], " ")
+		seq = args[len(args)-1]
+	}
 
 	if _, contained := f.features[name]; !contained {
 		f.Create(nil, []string{name, seq}) // it doesn't exist, create
@@ -155,7 +178,11 @@ func (f *FeatureDB) Delete(cmd *cobra.Command, args []string) {
 	if len(args) < 1 {
 		log.Fatalf("expecting one arg: a features name. %d passed\n", len(args))
 	}
+
 	name := args[0]
+	if len(args) > 1 {
+		name = strings.Join(args, " ")
+	}
 
 	if _, contained := f.features[name]; !contained {
 		fmt.Printf("failed to find %s in the features database\n", name)
