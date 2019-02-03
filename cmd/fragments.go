@@ -12,9 +12,10 @@ var fragmentsCmd = &cobra.Command{
 	Short:                      "Assemble a list of fragments via Gibson Assembly",
 	Run:                        defrag.FragmentsCmd,
 	SuggestionsMinimumDistance: 4,
-	Long: `Prepare a list of fragments into a vector via Gibson Assembly. Fragments are
-checked for existing homology with their neighbors (in the multi-FASTA input file).
-Fragments lacking the requisite homology are prepared for assembly with PCR.`,
+	Long: `
+Prepare a list of fragments for assembly via Gibson Assembly. Fragments are
+checked for existing homology with their neighbors and are prepared for
+assembly with PCR.`,
 }
 
 // set flags
@@ -29,7 +30,4 @@ func init() {
 	fragmentsCmd.Flags().BoolP("igem", "g", false, "Whether to use the iGEM repository as a source of building fragments")
 	fragmentsCmd.Flags().StringP("backbone", "b", "", backboneHelp)
 	fragmentsCmd.Flags().StringP("enzyme", "e", "", enzymeHelp)
-
-	// TODO: let the user run their assembly through `defrag vector` with the passed building fragments
-	// FragmentsCmd.Flags().StringP("dbs", "d", "", "Comma separated list of BLAST databases (multi-FASTA)")
 }

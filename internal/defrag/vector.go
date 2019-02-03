@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"math"
-	"os"
 	"sort"
 	"strings"
 	"time"
@@ -13,60 +12,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// VectorCmd is the interface for building a vector, from a sequence, from
-// the command line
+// VectorCmd takes a cobra command (with its flags) and runs Vector
 func VectorCmd(cmd *cobra.Command, args []string) {
-	conf := config.New()
-	start := time.Now()
-
-	input, err := parseCmdFlags(cmd, conf)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	target, builds, err := vector(input, conf)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	// write the results to the filesystem at the out location
-	fragments, err := read(input.in)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	insertLength := len(fragments[0].Seq)
-
-	elapsed := time.Since(start)
-
-	if _, err := write(input.out, target, builds, insertLength, conf, elapsed.Seconds()); err != nil {
-		log.Fatalln(err)
-	}
-
-	fmt.Printf("%s\n\n", elapsed)
-
-	os.Exit(0)
+	Vector(parseCmdFlags(cmd, args))
 }
 
-// VectorJSON is an interface for designing a vector from a JSON
-// representation of the flags to pass to `vector`
-func VectorJSON(json []byte) (output []byte, err error) {
-	conf := config.New()
-
-	input, err := parseJSONFlags(json, conf)
-	defer os.Remove(input.in) // they're temporary files
-	defer os.Remove(input.out)
-	if err != nil {
-		return
-	}
-
-	target, builds, err := vector(input, conf)
-
-	// write the results to a JSON formatted []byte slice, return
-	return write(input.out, target, builds, 0, conf, 0)
-}
-
-// VectorFlags is for running an end to end vector design using pre-built flags
-func VectorFlags(flags *Flags, conf *config.Config) {
+// Vector is for running an end to end vector design using a target sequence
+func Vector(flags *Flags, conf *config.Config) {
 	start := time.Now()
 
 	target, builds, err := vector(flags, conf)

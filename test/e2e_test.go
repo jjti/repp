@@ -88,7 +88,7 @@ func Test_E2E(t *testing.T) {
 
 	for _, t := range tests {
 		flags := defrag.NewFlags(t.in, t.out, t.backbone, t.enzyme, t.filters, t.dbs, t.addgene, t.igem)
-		defrag.VectorFlags(flags, c)
+		defrag.Vector(flags, c)
 	}
 
 	t.Fatal("fail (dev)")

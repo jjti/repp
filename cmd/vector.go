@@ -12,11 +12,11 @@ var vectorCmd = &cobra.Command{
 	Short:                      "Build a target vector from local and/or remote fragments",
 	Run:                        defrag.VectorCmd,
 	SuggestionsMinimumDistance: 4,
-	Long: `Build up a vector, by its sequence, from some combination of existing and
+	Long: `
+Build up a vector from its target sequence using a combination of existing and
 synthesized fragments.
 
-Combinations of fragments matching the target sequence are checked to find the
-one with the fewest fragments and lowest overall assembly cost.`,
+Solutions have either a minimum fragment count or assembly cost (or both).`,
 }
 
 // set flags
@@ -31,6 +31,6 @@ func init() {
 	vectorCmd.Flags().BoolP("igem", "g", false, "use the iGEM repository")
 	vectorCmd.Flags().StringP("backbone", "b", "", backboneHelp)
 	vectorCmd.Flags().StringP("enzyme", "e", "", enzymeHelp)
-	vectorCmd.Flags().StringP("filter", "f", "", "delimited keywords to remove fragments")
-	vectorCmd.Flags().Float64P("identity", "t", 100, "match %-identity threshold (see 'blastn -help')")
+	vectorCmd.Flags().StringP("filter", "f", "", "delimited keywords for removing fragments")
+	vectorCmd.Flags().Float64P("identity", "t", 100.0, "match %-identity threshold (see 'blastn -help')")
 }

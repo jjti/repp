@@ -42,8 +42,8 @@ func NewFeatureDB() *FeatureDB {
 	return &FeatureDB{features: features}
 }
 
-// Create adds an additional feature to the db (if it's not in it already)
-func (f *FeatureDB) Create(cmd *cobra.Command, args []string) {
+// CreateCmd adds an additional feature to the db (if it's not in it already)
+func (f *FeatureDB) CreateCmd(cmd *cobra.Command, args []string) {
 	if len(args) < 2 {
 		log.Fatalf("expecting two args: a features name and sequence. %d passed\n", len(args))
 	}
@@ -87,10 +87,10 @@ func (f *FeatureDB) Create(cmd *cobra.Command, args []string) {
 	f.features[name] = seq
 }
 
-// Read returns features that are similar in name to the feature name requested.
+// ReadCmd returns features that are similar in name to the feature name requested.
 // if multiple feature names include the feature name, they are all returned.
 // otherwise a list of feature names are returned (those beneath a levenshtein distance cutoff)
-func (f *FeatureDB) Read(cmd *cobra.Command, args []string) {
+func (f *FeatureDB) ReadCmd(cmd *cobra.Command, args []string) {
 	if len(args) < 1 {
 		log.Fatalf("expecting one arg: a features name. %d passed\n", len(args))
 	}
@@ -125,8 +125,8 @@ func (f *FeatureDB) Read(cmd *cobra.Command, args []string) {
 	w.Flush()
 }
 
-// Update the feature's seq in the database (or create if it isn't in the feature db)
-func (f *FeatureDB) Update(cmd *cobra.Command, args []string) {
+// UpdateCmd the feature's seq in the database (or create if it isn't in the feature db)
+func (f *FeatureDB) UpdateCmd(cmd *cobra.Command, args []string) {
 	if len(args) < 2 {
 		log.Fatalf("expecting two args: a features name and sequence. %d passed\n", len(args))
 	}
@@ -140,7 +140,7 @@ func (f *FeatureDB) Update(cmd *cobra.Command, args []string) {
 	}
 
 	if _, contained := f.features[name]; !contained {
-		f.Create(nil, []string{name, seq}) // it doesn't exist, create
+		f.CreateCmd(nil, []string{name, seq}) // it doesn't exist, create
 	}
 
 	featureFile, err := os.Open(config.FeatureDB)
@@ -178,8 +178,8 @@ func (f *FeatureDB) Update(cmd *cobra.Command, args []string) {
 	f.features[name] = seq
 }
 
-// Delete the feature from the database
-func (f *FeatureDB) Delete(cmd *cobra.Command, args []string) {
+// DeleteCmd the feature from the database
+func (f *FeatureDB) DeleteCmd(cmd *cobra.Command, args []string) {
 	if len(args) < 1 {
 		log.Fatalf("expecting one arg: a features name. %d passed\n", len(args))
 	}
@@ -227,6 +227,16 @@ func (f *FeatureDB) Delete(cmd *cobra.Command, args []string) {
 	} else {
 		fmt.Printf("failed to find %s in the features database\n", name)
 	}
+}
+
+// FeaturesCmd accepts a cobra commands and assembles a vector containing all the features
+func FeaturesCmd(cmd *cobra.Command, args []string) {
+	features(parseCmdFlags(cmd, args))
+}
+
+// assemble a vector with all the features requested in a 'defrag features [feature ...]' command
+func features(flags *Flags, conf *config.Config) {
+
 }
 
 // ld compares two strings and returns the levenshtein distance between them.

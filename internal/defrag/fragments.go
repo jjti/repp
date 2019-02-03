@@ -2,7 +2,6 @@ package defrag
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"strings"
 
@@ -10,32 +9,16 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// FragmentsCmd accepts a cobra.Command with flags for assembling a list of
-// fragments together into a vector (in the order specified). FragmentsCmd
-// without junctions for their neighbors are prepared via PCR
+// FragmentsCmd accepts a cobra commands and assembles a list of building fragments in order
 func FragmentsCmd(cmd *cobra.Command, args []string) {
-	conf := config.New()
-
-	input, err := parseCmdFlags(cmd, conf)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	fragments(input, conf)
-
-	os.Exit(0)
+	Fragments(parseCmdFlags(cmd, args))
 }
 
-// FragmentsJSON is the JSON interface for assembling fragments via a web-facing API
-func FragmentsJSON(json []byte) (output []byte, err error) {
-	conf := config.New()
+// Fragments assembles fragments using fragments
+func Fragments(flags *Flags, conf *config.Config) {
+	fragments(flags, conf)
 
-	input, err := parseJSONFlags(json, conf)
-	if err != nil {
-		return nil, err
-	}
-
-	return fragments(input, conf)
+	os.Exit(0)
 }
 
 // fragments pieces together a list of fragments into a single vector
