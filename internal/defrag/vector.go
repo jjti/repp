@@ -11,16 +11,16 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// VectorCmd takes a cobra command (with its flags) and runs Vector
-func VectorCmd(cmd *cobra.Command, args []string) {
-	Vector(parseCmdFlags(cmd, args))
+// SequenceCmd takes a cobra command (with its flags) and runs Vector
+func SequenceCmd(cmd *cobra.Command, args []string) {
+	Sequence(parseCmdFlags(cmd, args))
 }
 
-// Vector is for running an end to end vector design using a target sequence
-func Vector(flags *Flags, conf *config.Config) {
+// Sequence is for running an end to end vector design using a target sequence
+func Sequence(flags *Flags, conf *config.Config) {
 	start := time.Now()
 
-	target, builds, err := vector(flags, conf)
+	target, builds, err := sequence(flags, conf)
 	if err != nil {
 		stderr.Fatalln(err)
 	}
@@ -40,9 +40,9 @@ func Vector(flags *Flags, conf *config.Config) {
 	fmt.Printf("%s\n\n", elapsed)
 }
 
-// vector builds a vector using reverse engineering
+// sequence builds a vector using reverse engineering
 //
-// the goal is to find an "optimal" assembly vector with:
+// the goal is to find an "optimal" assembly sequence with:
 // 	1. the fewest fragments
 // 	2. the lowest overall assembly cost ($)
 // and, secondarily:
@@ -63,7 +63,7 @@ func Vector(flags *Flags, conf *config.Config) {
 // "fill-in" the nodes. Create primers on the Frag if it's a PCR Frag
 // or create a sequence to be synthesized if it's a synthetic fragment.
 // Error out and repeat the build stage if a Frag fails to be filled
-func vector(input *Flags, conf *config.Config) (Frag, [][]*Frag, error) {
+func sequence(input *Flags, conf *config.Config) (Frag, [][]*Frag, error) {
 	// read the target sequence (the first in the slice is used)
 	fragments, err := read(input.in, false)
 	if err != nil {

@@ -158,7 +158,7 @@ func parseCmdFlags(cmd *cobra.Command, args []string) (*Flags, *config.Config) {
 	}
 
 	if dbString == "" && !addgene && !igem {
-		fmt.Println("no fragment databases chosen [-a -d -i], setting Addgene and iGEM to true")
+		fmt.Println("no fragment databases chosen [-adi], setting Addgene and iGEM to true")
 		addgene = true
 		igem = true
 	}
