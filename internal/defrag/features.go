@@ -41,51 +41,6 @@ func NewFeatureDB() *FeatureDB {
 	return &FeatureDB{features: features}
 }
 
-// CreateCmd adds an additional feature to the db (if it's not in it already)
-func (f *FeatureDB) CreateCmd(cmd *cobra.Command, args []string) {
-	if len(args) < 2 {
-		stderr.Fatalf("expecting two args: a features name and sequence. %d passed\n", len(args))
-	}
-
-	name := args[0]
-	seq := args[1]
-
-	argNames := []string{"create", "add", "read", "find", "update", "change", "delete", "remove"}
-	for _, argName := range argNames {
-		if name == argName {
-			stderr.Fatalf("cannot create a feature named %s. invalid feature names: %s\n", name, strings.Join(argNames, ", "))
-		}
-	}
-
-	if len(args) > 2 {
-		name = strings.Join(args[:len(args)-1], " ")
-		seq = args[len(args)-1]
-	}
-
-	if _, contained := f.features[name]; contained {
-		stderr.Fatalf("cannot create feature %s, already in %s. try update\n", name, config.FeatureDB)
-	}
-
-	// https://golang.org/pkg/os/#example_OpenFile_append
-	featureFile, err := os.OpenFile(config.FeatureDB, os.O_APPEND|os.O_WRONLY, 0644)
-	if err != nil {
-		stderr.Fatal(err)
-	}
-
-	if _, err := featureFile.Write([]byte(fmt.Sprintf("%s	%s\n", name, seq))); err != nil {
-		stderr.Fatal(err)
-	}
-
-	if err := featureFile.Close(); err != nil {
-		stderr.Fatal(err)
-	}
-
-	fmt.Printf("created %s in the features database\n", name)
-
-	// add to features in the map
-	f.features[name] = seq
-}
-
 // ReadCmd returns features that are similar in name to the feature name requested.
 // if multiple feature names include the feature name, they are all returned.
 // otherwise a list of feature names are returned (those beneath a levenshtein distance cutoff)
@@ -131,8 +86,8 @@ func (f *FeatureDB) ReadCmd(cmd *cobra.Command, args []string) {
 	w.Flush()
 }
 
-// UpdateCmd the feature's seq in the database (or create if it isn't in the feature db)
-func (f *FeatureDB) UpdateCmd(cmd *cobra.Command, args []string) {
+// SetCmd the feature's seq in the database (or create if it isn't in the feature db)
+func (f *FeatureDB) SetCmd(cmd *cobra.Command, args []string) {
 	if len(args) < 2 {
 		stderr.Fatalf("expecting two args: a features name and sequence. %d passed\n", len(args))
 	}
@@ -143,10 +98,6 @@ func (f *FeatureDB) UpdateCmd(cmd *cobra.Command, args []string) {
 	if len(args) > 2 {
 		name = strings.Join(args[:len(args)-1], " ")
 		seq = args[len(args)-1]
-	}
-
-	if _, contained := f.features[name]; !contained {
-		f.CreateCmd(nil, []string{name, seq}) // it doesn't exist, create
 	}
 
 	featureFile, err := os.Open(config.FeatureDB)
@@ -166,6 +117,11 @@ func (f *FeatureDB) UpdateCmd(cmd *cobra.Command, args []string) {
 		} else {
 			output.WriteString(scanner.Text())
 		}
+	}
+
+	// create from nothing
+	if !updated {
+		output.WriteString(fmt.Sprintf("%s	%s\n", name, seq))
 	}
 
 	if err := featureFile.Close(); err != nil {
@@ -245,8 +201,13 @@ func features(flags *Flags, conf *config.Config) {
 	targetFeatures := [][]string{} // slice of tuples [feature name, feature sequence]
 
 	if parsedFeatures, err := read(flags.in, true); err == nil {
+		seenFeatures := make(map[string]string) // map feature name to sequence
 		// see if the features are in a file (multi-FASTA or features in a Genbank)
 		for _, f := range parsedFeatures {
+			if seq := seenFeatures[f.ID]; seq != f.Seq {
+				stderr.Fatalf("failed to parse features, %s has two different sequences:\n\t%s\n\t%s\n", f.ID, f.Seq, seq)
+			}
+
 			targetFeatures = append(targetFeatures, []string{f.ID, f.Seq})
 		}
 	} else {
@@ -281,11 +242,19 @@ func features(flags *Flags, conf *config.Config) {
 	}
 
 	fragsToMatches := make(map[string][]match) // map from building fragments to feature matches
+	fragsToFeats := make(map[string][]int)     // list of features (by index) that the frag/vector with unique id contains
 	featsToFrags := make(map[int][]string)     // map from feature index to building fragments
 	for i, target := range targetFeatures {
+		// TODO: don't re-BLAST here. if we already know a features' matches, just return those
 		matches, err := blast(target[0], target[1], false, flags.dbs, flags.filters, flags.identity)
 		if err != nil {
 			stderr.Fatalln(err)
+		}
+
+		if _, exists := fragsToFeats[target[0]]; !exists {
+			fragsToFeats[target[0]] = []int{i}
+		} else {
+			fragsToFeats[target[0]] = append(fragsToFeats[target[0]], i)
 		}
 
 		featsToFrags[i] = []string{}
@@ -299,6 +268,16 @@ func features(flags *Flags, conf *config.Config) {
 		}
 	}
 
+	// step through each feature index and create an assembly
+
+}
+
+// containNext returns fragments that have the next feature after the last feature
+// contained in the one being tested. Returns two slices. One with frags that
+// already overlap the frag enough for annealing without preparation, and another
+// of fragments that contain the next feature but will need to be annealed via PCR (more expensive)
+func containNext(last *Frag, lastF int, featsToFrags map[int][]string, fragsToFeats map[string][]int) (overlap []*Frag, haveNext []*Frag) {
+	return nil, nil
 }
 
 // ld compares two strings and returns the levenshtein distance between them.

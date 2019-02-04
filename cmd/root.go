@@ -3,10 +3,12 @@ package cmd
 import (
 	"log"
 
-	"github.com/jjtimmons/defrag/config"
+	"github.com/jjtimmons/defrag/internal/defrag"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
+
+var featureDB = defrag.NewFeatureDB()
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -14,13 +16,6 @@ var rootCmd = &cobra.Command{
 	Short: "Build vectors using their target sequence, constiuent features, or fragments",
 	Long:  ``,
 }
-
-// backboneHelp is the help message for the backbone CLI argument
-var backboneHelp = `backbone to insert the fragments into. Can either be an entry 
-in one of the dbs or a file on the local filesystem.`
-
-var enzymeHelp = `enzyme to linearize the backbone with (backbone must be specified).
-'defrag enzymes' prints a list of recognized enzymes.`
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
@@ -31,7 +26,5 @@ func Execute() {
 }
 
 func init() {
-	// settings is an optional parameter for a settings file (that overrides the fields in BaseSettingsFile)
-	rootCmd.PersistentFlags().StringP("settings", "s", config.RootSettingsFile, "root settings")
 	viper.BindPFlag("settings", rootCmd.PersistentFlags().Lookup("settings"))
 }
