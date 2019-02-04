@@ -25,7 +25,7 @@ func Fragments(flags *Flags, conf *config.Config) {
 // with the fragments in the order and orientation specified
 func fragments(input *Flags, conf *config.Config) (output []byte, err error) {
 	// read in the constituent fragments
-	inputFragments, err := read(input.in)
+	inputFragments, err := read(input.in, false)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read in fasta files at %s: %v", input.in, err)
 	}

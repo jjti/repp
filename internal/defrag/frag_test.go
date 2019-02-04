@@ -355,8 +355,7 @@ func Test_new(t *testing.T) {
 	c := config.New()
 
 	type args struct {
-		m    match
-		seqL int
+		m match
 	}
 	tests := []struct {
 		name string
@@ -373,7 +372,6 @@ func Test_new(t *testing.T) {
 					queryStart: 0,
 					queryEnd:   12,
 				},
-				seqL: 50,
 			},
 			&Frag{
 				ID:         "testMatch",
@@ -388,7 +386,7 @@ func Test_new(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := newFrag(tt.args.m, tt.args.seqL, c); !reflect.DeepEqual(got, tt.want) {
+			if got := newFrag(tt.args.m, c); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("new() = %+v, want %+v", got, tt.want)
 			}
 		})

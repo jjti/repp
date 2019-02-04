@@ -111,21 +111,25 @@ type Primer struct {
 }
 
 // newFrag creates a Frag from a match
-func newFrag(m match, seqL int, conf *config.Config) *Frag {
+func newFrag(m match, conf *config.Config) *Frag {
 	url := ""
 
-	if strings.Contains(m.entry, "gnl|addgene") {
+	if strings.Contains(m.entry, "addgene") {
 		// create a link to the source Addgene page
 		re := regexp.MustCompile("^.*addgene\\|(\\d*)")
 		match := re.FindStringSubmatch(m.entry)
-		url = fmt.Sprintf("https://www.addgene.org/%s/", match[1])
+		if len(match) > 0 {
+			url = fmt.Sprintf("https://www.addgene.org/%s/", match[1])
+		}
 	}
 
-	if strings.Contains(m.entry, "gnl|igem") {
+	if strings.Contains(m.entry, "igem") {
 		// create a source to the source iGEM page
 		re := regexp.MustCompile("^.*igem\\|(\\w*)")
 		match := re.FindStringSubmatch(m.entry)
-		url = fmt.Sprintf("http://parts.igem.org/Part:%s", match[1])
+		if len(match) > 0 {
+			url = fmt.Sprintf("http://parts.igem.org/Part:%s", match[1])
+		}
 	}
 
 	return &Frag{
@@ -158,7 +162,7 @@ func (f *Frag) cost() (c float64) {
 		c += f.conf.IGEMPartCost
 	}
 
-	if f.fragType == pcr {
+	if f.fragType == pcr && f.Primers != nil {
 		c += float64(len(f.Primers[0].Seq)+len(f.Primers[1].Seq)) * f.conf.PCRBPCost
 	} else if f.fragType == synthetic {
 		c += f.conf.SynthFragmentCost(len(f.Seq))
