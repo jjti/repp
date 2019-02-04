@@ -242,27 +242,36 @@ func FeaturesCmd(cmd *cobra.Command, args []string) {
 
 // features assembles a vector with all the features requested with the 'defrag features [feature ...]' command
 func features(flags *Flags, conf *config.Config) {
-	// validate the input features, turn each into a sequence
-	featureNames := strings.Fields(flags.in)
-	if len(featureNames) < 1 {
-		stderr.Fatal("no features chosen. see 'defrag features --help'")
-	}
-
 	targetFeatures := [][]string{} // slice of tuples [feature name, feature sequence]
-	featureDB := NewFeatureDB()
-	for _, f := range featureNames {
-		if seq, contained := featureDB.features[f]; contained {
-			targetFeatures = append(targetFeatures, []string{f, seq})
-		} else if dbFrag, err := queryDatabases(f, flags.dbs); err == nil {
-			targetFeatures = append(targetFeatures, []string{f, dbFrag.Seq})
-		} else {
-			stderr.Fatalf(
-				"failed to find '%s' in the features database (%s) or any of:"+
-					"%s\ncheck features database with 'defrag features find [feature name]'",
-				f,
-				config.FeatureDB,
-				"\n  "+strings.Join(flags.dbs, "\n  "),
-			)
+
+	if parsedFeatures, err := read(flags.in, true); err == nil {
+		// see if the features are in a file (multi-FASTA or features in a Genbank)
+		for _, f := range parsedFeatures {
+			targetFeatures = append(targetFeatures, []string{f.ID, f.Seq})
+		}
+	} else {
+		// if the features weren't in a file, try and find each in the features database
+		// or one of the databases passed as a source of building fragments
+		featureNames := strings.Fields(flags.in)
+		if len(featureNames) < 1 {
+			stderr.Fatal("no features chosen. see 'defrag features --help'")
+		}
+
+		featureDB := NewFeatureDB()
+		for _, f := range featureNames {
+			if seq, contained := featureDB.features[f]; contained {
+				targetFeatures = append(targetFeatures, []string{f, seq})
+			} else if dbFrag, err := queryDatabases(f, flags.dbs); err == nil {
+				targetFeatures = append(targetFeatures, []string{f, dbFrag.Seq})
+			} else {
+				stderr.Fatalf(
+					"failed to find '%s' in the features database (%s) or any of:"+
+						"%s\ncheck features database with 'defrag features find [feature name]'",
+					f,
+					config.FeatureDB,
+					"\n  "+strings.Join(flags.dbs, "\n  "),
+				)
+			}
 		}
 	}
 
