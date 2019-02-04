@@ -117,14 +117,13 @@ func parseCmdFlags(cmd *cobra.Command, args []string) (*Flags, *config.Config) {
 	p := inputParser{}
 	c := config.New()
 
-	if strings.ToLower(cmd.Name()) == "features" {
-		// with 'defrag features' the arguments are the feature names to use
-		// TODO: allow input to be a file with feature names in it, or a MULTI-FASTA with feature entries
-		fs.in = strings.Join(args, " ")
-	} else if fs.in, err = cmd.Flags().GetString("in"); err != nil {
-		// check whether an input fail was specified
-		if fs.in, err = p.guessInput(); err != nil {
-			// try to guess at the input file the user wanted to use
+	if fs.in, err = cmd.Flags().GetString("in"); err != nil {
+		if strings.ToLower(cmd.Name()) == "features" {
+			// if it's a features command, concatenate the arguments in case they're feature names
+			// with 'defrag features' the arguments are the feature names to use
+			fs.in = strings.Join(args, " ")
+		} else if fs.in, err = p.guessInput(); err != nil {
+			// check whether an input fail was specified
 			stderr.Fatal(err)
 		}
 	}
