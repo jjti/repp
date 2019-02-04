@@ -11,7 +11,7 @@ var deleteCmd = &cobra.Command{
 	SuggestionsMinimumDistance: 2,
 	Long: `
 Delete a feature or enzyme by name.`,
-	Aliases: []string{"search", "ls"},
+	Aliases: []string{"rm", "remove"},
 }
 
 // featuresDeleteCmd is for deleting features from the feature db

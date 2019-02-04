@@ -24,7 +24,7 @@ func Test_vector_single_vector(t *testing.T) {
 		false,
 	)
 
-	_, assemblies, err := vector(fs, c) // use addgene database
+	_, assemblies, err := sequence(fs, c) // use addgene database
 	if err != nil {
 		t.Error(err)
 	}
