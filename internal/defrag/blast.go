@@ -431,6 +431,7 @@ func queryDatabases(entry string, dbs []string) (f Frag, err error) {
 	for _, db := range dbs {
 		// if outFile is defined here we managed to query it from the db
 		outFile, err := blastdbcmd(entry, db)
+
 		if err == nil && outFile.Name() != "" {
 			defer os.Remove(outFile.Name())
 			frags, err := read(outFile.Name(), false)
