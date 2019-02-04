@@ -26,7 +26,7 @@ func Vector(flags *Flags, conf *config.Config) {
 	}
 
 	// write the results to the filesystem at the out location
-	fragments, err := read(flags.in)
+	fragments, err := read(flags.in, false)
 	if err != nil {
 		stderr.Fatalln(err)
 	}
@@ -65,7 +65,7 @@ func Vector(flags *Flags, conf *config.Config) {
 // Error out and repeat the build stage if a Frag fails to be filled
 func vector(input *Flags, conf *config.Config) (Frag, [][]*Frag, error) {
 	// read the target sequence (the first in the slice is used)
-	fragments, err := read(input.in)
+	fragments, err := read(input.in, false)
 	if err != nil {
 		return Frag{}, nil, fmt.Errorf("failed to read fragments from %s: %v", input.in, err)
 	}
@@ -109,7 +109,9 @@ func vector(input *Flags, conf *config.Config) (Frag, [][]*Frag, error) {
 	// map fragment Matches to nodes
 	var nodes []*Frag
 	for _, m := range matches {
-		nodes = append(nodes, newFrag(m, len(target.Seq), conf))
+		newPCRFrag := newFrag(m, conf)
+		newPCRFrag.fragType = pcr
+		nodes = append(nodes, newPCRFrag)
 	}
 
 	// build up a slice of assemblies that could, within the upper-limit on

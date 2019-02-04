@@ -131,7 +131,7 @@ func Test_inputParser_getFilters(t *testing.T) {
 		want []string
 	}{
 		{
-			"biobrick separated from year by commans",
+			"biobrick separated from year by commas",
 			&inputParser{},
 			args{
 				filterFlag: "tests,BBa_k222000,2004",
@@ -160,9 +160,10 @@ func Test_inputParser_getFilters(t *testing.T) {
 // Test reading of a FASTA file
 func Test_read(t *testing.T) {
 	type fileRead struct {
-		name      string
-		file      string
-		fragCount int
+		name         string
+		file         string
+		fragCount    int
+		readFeatures bool
 	}
 
 	files := []fileRead{
@@ -170,16 +171,30 @@ func Test_read(t *testing.T) {
 			"113726(circular)",
 			path.Join("..", "..", "test", "113726(circular).parent"),
 			1,
+			false,
 		},
 		{
 			"multi.fasta",
 			path.Join("..", "..", "test", "multi.fasta"),
 			5,
+			false,
+		},
+		{
+			"genbank sequence",
+			path.Join("..", "..", "test", "genbank.gb"),
+			1,
+			false,
+		},
+		{
+			"genbank features",
+			path.Join("..", "..", "test", "genbank.gb"),
+			66,
+			true,
 		},
 	}
 
 	for _, f := range files {
-		fragments, err := read(f.file)
+		fragments, err := read(f.file, f.readFeatures)
 
 		if err != nil {
 			t.Error(err)

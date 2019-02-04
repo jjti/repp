@@ -81,6 +81,16 @@ func Test_E2E(t *testing.T) {
 			false,
 			true,
 		},
+		testFlags{
+			"BBa_K1085023.fa",
+			path.Join("output", "BBa_K1085023.json"),
+			"pSB1C3",
+			"EcoRI",
+			"2009,2010,2011,2012,BBa_K108",
+			[]string{},
+			false,
+			true,
+		},
 	}
 
 	for _, t := range tests {

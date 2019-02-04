@@ -69,6 +69,7 @@ func (m *match) length() int {
 func (m *match) copyWithQueryRange(start, end int) match {
 	return match{
 		entry:        m.entry,
+		uniqueID:     m.uniqueID,
 		seq:          m.seq,
 		queryStart:   start,
 		queryEnd:     end,
@@ -158,7 +159,7 @@ func blast(name, seq string, circular bool, dbs, filters []string, identity int)
 		}
 
 		// parse the output file to Matches against the Frag
-		dbMatches, err := b.parse(filters, len(seq))
+		dbMatches, err := b.parse(filters)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse BLAST output: %v", err)
 		}
@@ -187,10 +188,9 @@ func (b *blastExec) input() error {
 	}
 
 	file := fmt.Sprintf(">%s\n%s\n", b.name, querySeq)
-	if _, err := b.in.WriteString(file); err != nil {
-		return err
-	}
-	return nil
+	_, err := b.in.WriteString(file)
+
+	return err
 }
 
 // run calls the external blastn binary on the input file
@@ -207,18 +207,31 @@ func (b *blastExec) run() (err error) {
 		"-out", b.out.Name(),
 		"-outfmt", "7 sseqid qstart qend sstart send sseq mismatch stitle",
 		"-perc_identity", fmt.Sprintf("%d", b.identity),
-		"-culling_limit", "20", // "If the query range of a hit is enveloped by that of at least this many higher-scoring hits, delete the hit"
+		"-culling_limit", "5", // "If the query range of a hit is enveloped by that of at least this many higher-scoring hits, delete the hit"
 		"-num_threads", strconv.Itoa(threads),
 		"-max_target_seqs", "500", // default is 500
 	}
 
-	if b.identity < 99 {
-		// It is important to choose reward/penalty values appropriate to the sequences being aligned with the (absolute) reward/penalty ratio increasing for more divergent sequences.
-		// A ratio of 0.33 (1/-3) is appropriate for sequences that are about 99% conserved; a ratio of 0.5 (1/-2) is best for sequences that are 95% conserved;
-		// a ratio of about one (1/-1) is best for sequences that are 75% conserved
+	if b.identity >= 99 {
+		// https://www.ncbi.nlm.nih.gov/books/NBK279684/
+		// Table D1
+		flags = append(flags,
+			"-reward", "1",
+			"-penalty", "-3",
+			"-gapopen", "2",
+			"-gapextend", "2",
+		)
+	} else if b.identity < 99 && b.identity > 90 {
 		flags = append(flags,
 			"-reward", "1",
 			"-penalty", "-2",
+			"-gapopen", "1",
+			"-gapextend", "2",
+		)
+	} else {
+		flags = append(flags,
+			"-reward", "1",
+			"-penalty", "-1",
 			"-gapopen", "1",
 			"-gapextend", "2",
 		)
@@ -232,11 +245,12 @@ func (b *blastExec) run() (err error) {
 	if output, err := blastCmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("failed to execute blastn against %s: %v: %s", b.db, err, string(output))
 	}
+
 	return
 }
 
 // parse reads the output of blastn into matches
-func (b *blastExec) parse(filters []string, targetLength int) (matches []match, err error) {
+func (b *blastExec) parse(filters []string) (matches []match, err error) {
 	// read in the results
 	file, err := ioutil.ReadFile(b.out.Name())
 	if err != nil {
@@ -290,7 +304,7 @@ func (b *blastExec) parse(filters []string, targetLength int) (matches []match, 
 		// create and append the new match
 		ms = append(ms, match{
 			entry:        entry,
-			uniqueID:     entry + strconv.Itoa(queryStart%targetLength),
+			uniqueID:     entry + strconv.Itoa(queryStart%len(b.seq)),
 			seq:          strings.Replace(seq, "-", "", -1),
 			queryStart:   queryStart - 1, // convert 1-based numbers to 0-based
 			queryEnd:     queryEnd - 1,
@@ -409,7 +423,7 @@ func sortMatches(matches []match) {
 // queryDatabases is for finding a fragment/vector with the entry name in one of the dbs
 func queryDatabases(entry string, dbs []string) (f Frag, err error) {
 	// first try to get the entry out of a local file
-	if frags, err := read(entry); err == nil && len(frags) > 0 {
+	if frags, err := read(entry, false); err == nil && len(frags) > 0 {
 		return frags[0], nil // it was a local file
 	}
 
@@ -419,7 +433,7 @@ func queryDatabases(entry string, dbs []string) (f Frag, err error) {
 		outFile, err := blastdbcmd(entry, db)
 		if err == nil && outFile.Name() != "" {
 			defer os.Remove(outFile.Name())
-			frags, err := read(outFile.Name())
+			frags, err := read(outFile.Name(), false)
 			return frags[0], err
 		}
 	}
@@ -528,7 +542,7 @@ func blastdbcmd(entry, db string) (output *os.File, err error) {
 	}
 
 	// read in the results as a fragment and return just the seq
-	fragments, err := read(output.Name())
+	fragments, err := read(output.Name(), false)
 	if err == nil && len(fragments) >= 1 {
 		return output, nil
 	}
@@ -566,6 +580,7 @@ func mismatch(primer string, parentFile *os.File, c *config.Config) (wasMismatch
 		in:      in,
 		out:     out,
 		subject: parentFile.Name(),
+		seq:     primer,
 	}
 
 	// execute blast
@@ -574,7 +589,7 @@ func mismatch(primer string, parentFile *os.File, c *config.Config) (wasMismatch
 	}
 
 	// get the BLAST matches
-	matches, err := b.parse([]string{}, 1)
+	matches, err := b.parse([]string{})
 	if err != nil {
 		return false, match{}, fmt.Errorf("failed to parse matches from %s: %v", out.Name(), err)
 	}
@@ -634,6 +649,10 @@ func (b *blastExec) runAgainst() (err error) {
 //
 // The equation used for the melting temperature is:
 // Tm = 81.5 + 0.41(%GC) - 675/N - % mismatch, where N = total number of bases.
+//
+// TODO: replace with primer3's temp calculation with oligotm
+// seq <36bp
+// oligotm -tp 1 -sc 1 seq
 func isMismatch(m match, c *config.Config) bool {
 	primer := strings.ToUpper(m.seq)
 	primerL := float64(len(primer))

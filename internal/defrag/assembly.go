@@ -187,12 +187,15 @@ func (a *assembly) fill(seq string, conf *config.Config) (frags []*Frag, err err
 
 		// create primers for the Frag and add them to the Frag if it needs them
 		// to anneal to the adjacent fragments
-		distLeft := last.distTo(f)
-		distRight := f.distTo(next)
+		needsPCR := false
+		if f.fragType == circular ||
+			!last.overlapsViaHomology(f) && last.overlapsViaPCR(f) ||
+			!f.overlapsViaHomology(next) && f.overlapsViaPCR(next) {
+			needsPCR = true
+		}
 
-		// if the Frag has a full seq from upload and already has enough overlap with
-		// the last and next nodes, we don't have to add anything to it (PCR it)
-		if f.fullSeq == "" || (distLeft < -minHomology && distRight < -minHomology) {
+		// if the Frag has a full seq from upload or
+		if f.fullSeq == "" || needsPCR {
 			if err := f.setPrimers(last, next, seq, conf); err != nil || len(f.Primers) < 2 {
 				return nil, fmt.Errorf("failed to pcr %s: %v", f.ID, err)
 			}

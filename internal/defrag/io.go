@@ -20,27 +20,6 @@ import (
 // stderr is for logging to Stderr (without an annoying timestamp)
 var stderr = log.New(os.Stderr, "", 0)
 
-// Payload is the JSON shape of an input payload from the API endpoint
-type Payload struct {
-	// Target sequence that we want to build
-	Target string `json:"target"`
-
-	// Fragments that should be assembled
-	Fragments []Frag `json:"fragments"`
-
-	// Addgene is whether to use the Addgene repository
-	Addgene bool `json:"addgene"`
-
-	// IGEM is whether to use the IGEM repository
-	IGEM bool `json:"igem"`
-
-	// Backbone to insert the inserts into
-	Backbone string `json:"backbone"`
-
-	// Enzyme to cut the backbone with (name)
-	Enzyme string `json:"enzyme"`
-}
-
 // Solution is a single solution to build up the target vector
 type Solution struct {
 	// Count is the number of fragments in this solution
@@ -70,6 +49,9 @@ type Output struct {
 
 	// VectorSynthesisCost is the cost of a full gene synthesis within a vector
 	VectorSynthesisCost float64 `json:"vectorSynthesisCost"`
+
+	// InsertSynthesisCost is the cost of just synthesizing the insert with homology for a linearized backbone
+	InsertSynthesisCost float64 `json:"insertSynthesisCost"`
 
 	// Solutions builds
 	Solutions []Solution `json:"solutions"`
@@ -207,53 +189,6 @@ func parseCmdFlags(cmd *cobra.Command, args []string) (*Flags, *config.Config) {
 	return fs, c
 }
 
-// parseJSONFlags parses a JSON payload into flags usable by defrag
-//
-// it's distinct from parseCmdFlags because we want to write the io files ourselves
-func parseJSONFlags(data []byte, conf *config.Config) (fs *Flags, err error) {
-	fs = &Flags{} // parsed flags
-
-	payload := &Payload{}
-	if err := json.Unmarshal(data, payload); err != nil {
-		return nil, err // failed to demarshal
-	}
-
-	// write the input file to the local file system as a temp file
-	in, _ := ioutil.TempFile("", "json-input-*")
-	if payload.Target != "" {
-		in.WriteString(fmt.Sprintf(">target_json\n%s\n", payload.Target))
-	} else if payload != nil {
-		for _, frag := range payload.Fragments {
-			in.WriteString(fmt.Sprintf(">%s\n%s\n", frag.ID, frag.Seq))
-		}
-	} else {
-		return nil, fmt.Errorf("no input vector or fragments passed")
-	}
-	fs.in = in.Name() // store path to this new temporary file
-
-	// ditto
-	out, _ := ioutil.TempFile("", "json-output-*")
-	fs.out = out.Name()
-
-	// get the db paths. from JSON, this is just for getting the path
-	// to addgene and iGEM
-	p := inputParser{}
-	fs.dbs, err = p.parseDBs("", payload.Addgene, payload.IGEM)
-	if err != nil {
-		return nil, err
-	}
-
-	fs.backbone, err = p.parseBackbone(payload.Backbone, payload.Enzyme, fs.dbs, conf)
-	if err != nil {
-		return nil, err
-	}
-
-	// try to split the filter fields into a list
-	fs.filters = []string{} // not supported in JSON payload yet
-
-	return
-}
-
 // guessInput returns the first fasta file in the current directory. Is used
 // if the user hasn't specified an input file
 func (p *inputParser) guessInput() (in string, err error) {
@@ -384,22 +319,37 @@ func (p *inputParser) getFilters(filterFlag string) []string {
 }
 
 // read a FASTA file (by its path on local FS) to a slice of Fragments
-func read(path string) (fragments []Frag, err error) {
+func read(path string, feature bool) (fragments []Frag, err error) {
 	if !filepath.IsAbs(path) {
 		path, err = filepath.Abs(path)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create path to FASTA file: %s", err)
+			return nil, fmt.Errorf("failed to create path to input file: %s", err)
 		}
 	}
 
 	dat, err := ioutil.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read input FASTA path: %s", err)
+		return nil, fmt.Errorf("failed to read input file: %s", err)
 	}
 	file := string(dat)
 
+	path = strings.ToLower(path)
+	if strings.HasSuffix(path, "fa") || strings.HasSuffix(path, "fasta") || file[0] == '>' {
+		return readFasta(path, file)
+	}
+
+	fmt.Println(path)
+	if strings.HasSuffix(path, "gb") || strings.HasSuffix(path, "gbk") || strings.HasSuffix(path, "genbank") {
+		return readGenbank(path, file, feature)
+	}
+
+	return nil, fmt.Errorf("failed to parse %s: unrecognized file type", path)
+}
+
+// readFasta parses the multifasta file to fragments
+func readFasta(path, contents string) (fragments []Frag, err error) {
 	// split by newlines
-	lines := strings.Split(file, "\n")
+	lines := strings.Split(contents, "\n")
 
 	// read in the fragments
 	var headerIndices []int
@@ -437,10 +387,88 @@ func read(path string) (fragments []Frag, err error) {
 
 	// opened and parsed file but found nothing
 	if len(fragments) < 1 {
-		return fragments, fmt.Errorf("failed to parse fragment(s) from %s", file)
+		return fragments, fmt.Errorf("failed to parse fragment(s) from %s", path)
 	}
 
 	return
+}
+
+// readGenbank parses a genbank file to fragments. Returns either fragments or parseFeatures,
+// depending on the parseFeatures parameter
+func readGenbank(path, contents string, parseFeatures bool) (fragments []Frag, err error) {
+	genbankSplit := strings.Split(contents, "ORIGIN")
+
+	if len(genbankSplit) != 2 {
+		return nil, fmt.Errorf("failed to parse %s: improperly formatted genbank file", path)
+	}
+
+	seq := strings.ToUpper(genbankSplit[1])
+	nonBpRegex := regexp.MustCompile("[^ATGC]")
+	cleanedSeq := nonBpRegex.ReplaceAllString(seq, "")
+
+	if parseFeatures {
+		// parse each feature to a fragment (misnomer)
+		splitOnFeatures := strings.Split(genbankSplit[0], "FEATURES")
+
+		if len(splitOnFeatures) < 2 {
+			return nil, fmt.Errorf("failed to parse features from %s", path)
+		}
+
+		featureSplitRegex := regexp.MustCompile("\\w+\\s+\\w+")
+		featureStrings := featureSplitRegex.Split(splitOnFeatures[1], -1)
+
+		features := []Frag{}
+		for featureIndex, feature := range featureStrings {
+			rangeRegex := regexp.MustCompile("(\\d*)\\.\\.(\\d*)")
+			rangeIndexes := rangeRegex.FindStringSubmatch(feature)
+
+			if len(rangeIndexes) < 3 {
+				continue
+			}
+
+			start, err := strconv.Atoi(rangeIndexes[1])
+			if err != nil {
+				return nil, err
+			}
+
+			end, err := strconv.Atoi(rangeIndexes[2])
+			if err != nil {
+				return nil, err
+			}
+			featureSeq := cleanedSeq[start-1 : end] // make 0-indexed
+
+			labelRegex := regexp.MustCompile("\\/label=(.*)")
+			labelMatch := labelRegex.FindStringSubmatch(feature)
+			label := ""
+			if len(labelMatch) > 1 {
+				label = labelMatch[1]
+			} else {
+				label = strconv.Itoa(featureIndex)
+			}
+
+			features = append(features, Frag{
+				ID:  label,
+				Seq: featureSeq,
+			})
+		}
+
+		return features, nil
+	}
+
+	// parse just the file's sequence
+	idRegex := regexp.MustCompile("LOCUS[ \\t]*([^ \\t]*)")
+	id := idRegex.FindString(genbankSplit[0])
+
+	if id == "" {
+		return nil, fmt.Errorf("failed to parse locus from %s", path)
+	}
+
+	return []Frag{
+		Frag{
+			ID:  id,
+			Seq: cleanedSeq,
+		},
+	}, nil
 }
 
 // write a slice of assemblies to the fs at the output path
@@ -467,7 +495,7 @@ func write(filename string, target Frag, assemblies [][]*Frag, insertSeqLength i
 				return nil, err
 			}
 
-			// add to actual assembly cost
+			// accumulate assembly cost
 			assemblyCost += f.Cost
 		}
 
@@ -488,8 +516,13 @@ func write(filename string, target Frag, assemblies [][]*Frag, insertSeqLength i
 		return solutions[i].Count < solutions[j].Count
 	})
 
-	// get the cost of full synthesis
+	// get the cost of full synthesis (comes in vector)
 	fullSynthCost, err := roundCost(conf.SynthGeneCost(insertSeqLength))
+	if err != nil {
+		return nil, err
+	}
+
+	insertSynthCost, err := roundCost(conf.SynthFragmentCost(insertSeqLength))
 	if err != nil {
 		return nil, err
 	}
@@ -501,6 +534,7 @@ func write(filename string, target Frag, assemblies [][]*Frag, insertSeqLength i
 		Execution:           seconds,
 		Solutions:           solutions,
 		VectorSynthesisCost: fullSynthCost,
+		InsertSynthesisCost: insertSynthCost,
 	}
 
 	output, err = json.MarshalIndent(out, "", "  ")
