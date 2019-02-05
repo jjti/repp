@@ -73,23 +73,23 @@ func init() {
 
 	// Flags for specifying the paths to the input file, input fragment files, and output file
 	featuresCmd.Flags().StringP("out", "o", "", "output file name")
-	featuresCmd.Flags().StringP("dbs", "d", "", "delimited list of local fragment databases")
+	featuresCmd.Flags().StringP("dbs", "d", "", "list of local fragment databases")
 	featuresCmd.Flags().BoolP("addgene", "a", false, "use the Addgene repository")
 	featuresCmd.Flags().BoolP("igem", "g", false, "use the iGEM repository")
 	featuresCmd.Flags().StringP("backbone", "b", "", backboneHelp)
 	featuresCmd.Flags().StringP("enzyme", "e", "", enzymeHelp)
-	featuresCmd.Flags().StringP("filter", "f", "", "delimited keywords for removing fragments")
+	featuresCmd.Flags().StringP("exclude", "x", "", "keywords for excluding fragments")
 	featuresCmd.Flags().IntP("identity", "t", 100, "match %-identity threshold (see 'blastn -help')")
 
 	// Flags for specifying the paths to the input file, input fragment files, and output file
 	sequenceCmd.Flags().StringP("in", "i", "", "input FASTA with target sequence")
 	sequenceCmd.Flags().StringP("out", "o", "", "output file name")
-	sequenceCmd.Flags().StringP("dbs", "d", "", "delimited list of local fragment databases")
+	sequenceCmd.Flags().StringP("dbs", "d", "", "list of local fragment databases")
 	sequenceCmd.Flags().BoolP("addgene", "a", false, "use the Addgene repository")
 	sequenceCmd.Flags().BoolP("igem", "g", false, "use the iGEM repository")
 	sequenceCmd.Flags().StringP("backbone", "b", "", backboneHelp)
 	sequenceCmd.Flags().StringP("enzyme", "e", "", enzymeHelp)
-	sequenceCmd.Flags().StringP("filter", "f", "", "delimited keywords for removing fragments")
+	sequenceCmd.Flags().StringP("exclude", "x", "", "keywords for excluding fragments")
 	sequenceCmd.Flags().IntP("identity", "t", 100, "match %-identity threshold (see 'blastn -help')")
 
 	buildCmd.AddCommand(fragmentsCmd)

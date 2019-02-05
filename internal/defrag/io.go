@@ -147,7 +147,7 @@ func parseCmdFlags(cmd *cobra.Command, args []string) (*Flags, *config.Config) {
 		stderr.Fatalf("failed to parse building fragments: %v", err)
 	}
 
-	filters, err := cmd.Flags().GetString("filter")
+	filters, err := cmd.Flags().GetString("exclude")
 	if err != nil {
 		stderr.Fatalf("failed to parse filters: %v", err)
 	}
