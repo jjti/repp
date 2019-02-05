@@ -30,6 +30,9 @@ var (
 
 	// FeatureDB is the path to the features db
 	FeatureDB = filepath.Join(defragDir, "features.tsv")
+
+	// EnzymeDB is the path to the enzymes db file
+	EnzymeDB = filepath.Join(defragDir, "enzymes.tsv")
 )
 
 // SynthCost contains data of the cost of synthesizing DNA up to a certain

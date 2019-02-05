@@ -1,46 +1,46 @@
 package defrag
 
 import (
+	"bufio"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"regexp"
 	"sort"
 	"strings"
 	"text/tabwriter"
 
+	"github.com/jjtimmons/defrag/config"
 	"github.com/spf13/cobra"
 )
-
-// enzymes that can be used to linearize a backbone in preparatoin for an insert sequence
-// map from the name of the enzyme to its recog, hangIndex, and cutIndex
-var enzymes map[string]enzyme
 
 // enzyme is a single enzyme that can be used to linearize a backbone before
 // inserting a sequence
 type enzyme struct {
 	recog   string
-	hangInd int
 	cutInd  int
+	hangInd int
 }
 
-// Enzymes is a Cobra command that prints out all the enzymes to the stdout
-// along with their recognition sequence
-func Enzymes(cmd *cobra.Command, args []string) {
-	// first get all the enzyme names and sort them alphabetically
-	sortedNames := []string{}
-	for name := range enzymes {
-		sortedNames = append(sortedNames, name)
-	}
-	sort.Strings(sortedNames)
+// parses a recognition sequence into a hangInd, cutInd for overhang calculation
+func newEnzyme(recogSeq string) enzyme {
+	cutIndex := strings.Index(recogSeq, "^")
+	hangIndex := strings.Index(recogSeq, "_")
 
-	// write all of them to the log
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 1, ' ', tabwriter.TabIndent)
-	for _, name := range sortedNames {
-		fmt.Fprintf(w, "%s\t%s\n", name, enzymes[name].recog)
+	if cutIndex < hangIndex {
+		hangIndex--
+	} else {
+		cutIndex--
 	}
-	w.Flush()
 
-	os.Exit(0) // that's it, just log
+	recogSeq = strings.Replace(recogSeq, "^", "", -1)
+	recogSeq = strings.Replace(recogSeq, "_", "", -1)
+
+	return enzyme{
+		recog:   recogSeq,
+		cutInd:  cutIndex,
+		hangInd: hangIndex,
+	}
 }
 
 // digest a Frag (backbone) with an enzyme's first recogition site
@@ -49,7 +49,7 @@ func Enzymes(cmd *cobra.Command, args []string) {
 // keep exposed 3' ends. good visual explanation:
 // https://warwick.ac.uk/study/csde/gsp/eportfolio/directory/pg/lsujcw/gibsonguide/
 func digest(frag Frag, enz enzyme) (digested Frag, err error) {
-	wrappedBp := 38 // largest current recognition site in the list of enzymes below
+	wrappedBp := 38 // largest current recognition site in the list of enzymes
 	if len(frag.Seq) < wrappedBp {
 		return Frag{}, fmt.Errorf("%s is too short for digestion", frag.ID)
 	}
@@ -137,243 +137,201 @@ func recogRegex(recog string) (decoded string) {
 	return regexDecoder.String()
 }
 
-func init() {
-	enzymes = map[string]enzyme{
-		"PI-SceI":   enzyme{recog: "ATCTATGTCGGGTGCGGAGAAAGAGGTAATGAAATGG", hangInd: 11, cutInd: 15},
-		"PI-PspI":   enzyme{recog: "TGGCAAACAGCTATTATGGGTATTATGGGT", hangInd: 13, cutInd: 17},
-		"I-CeuI":    enzyme{recog: "TAACTATAACGGTCCTAAGGTAGCGAA", hangInd: 14, cutInd: 18},
-		"I-SceI":    enzyme{recog: "TAGGGATAACAGGGTAAT", hangInd: 5, cutInd: 9},
-		"AscI":      enzyme{recog: "GGCGCGCC", hangInd: 6, cutInd: 2},
-		"AsiSI":     enzyme{recog: "GCGATCGC", hangInd: 3, cutInd: 5},
-		"FseI":      enzyme{recog: "GGCCGGCC", hangInd: 2, cutInd: 6},
-		"NotI":      enzyme{recog: "GCGGCCGC", hangInd: 6, cutInd: 2},
-		"PacI":      enzyme{recog: "TTAATTAA", hangInd: 3, cutInd: 5},
-		"PmeI":      enzyme{recog: "GTTTAAAC", hangInd: 4, cutInd: 4},
-		"PspXI":     enzyme{recog: "VCTCGAGB", hangInd: 6, cutInd: 2},
-		"SbfI":      enzyme{recog: "CCTGCAGG", hangInd: 2, cutInd: 6},
-		"SfiI":      enzyme{recog: "GGCCNNNNNGGCC", hangInd: 5, cutInd: 8},
-		"SgrAI":     enzyme{recog: "CRCCGGYG", hangInd: 6, cutInd: 2},
-		"SrfI":      enzyme{recog: "GCCCGGGC", hangInd: 4, cutInd: 4},
-		"SwaI":      enzyme{recog: "ATTTAAAT", hangInd: 4, cutInd: 4},
-		"BaeI":      enzyme{recog: "NNNNNNNNNNNNNNNACNNNNGTAYCNNNNNNNNNNNN", hangInd: 33, cutInd: 38},
-		"BbvCI":     enzyme{recog: "CCTCAGC", hangInd: 5, cutInd: 2},
-		"BspQI":     enzyme{recog: "GCTCTTCNNNN", hangInd: 11, cutInd: 8},
-		"CspCI":     enzyme{recog: "NNNNNNNNNNNNNCAANNNNNGTGGNNNNNNNNNNNN", hangInd: 35, cutInd: 37},
-		"PpuMI":     enzyme{recog: "RGGWCCY", hangInd: 5, cutInd: 2},
-		"RsrII":     enzyme{recog: "CGGWCCG", hangInd: 5, cutInd: 2},
-		"SapI":      enzyme{recog: "GCTCTTCNNNN", hangInd: 11, cutInd: 8},
-		"SexAI":     enzyme{recog: "ACCWGGT", hangInd: 6, cutInd: 1},
-		"AatII":     enzyme{recog: "GACGTC", hangInd: 1, cutInd: 5},
-		"Acc65I":    enzyme{recog: "GGTACC", hangInd: 5, cutInd: 1},
-		"AccI":      enzyme{recog: "GTMKAC", hangInd: 4, cutInd: 2},
-		"AclI":      enzyme{recog: "AACGTT", hangInd: 4, cutInd: 2},
-		"AcuI":      enzyme{recog: "CTGAAGNNNNNNNNNNNNNNNN", hangInd: 20, cutInd: 22},
-		"AfeI":      enzyme{recog: "AGCGCT", hangInd: 3, cutInd: 3},
-		"AflII":     enzyme{recog: "CTTAAG", hangInd: 5, cutInd: 1},
-		"AflIII":    enzyme{recog: "ACRYGT", hangInd: 5, cutInd: 1},
-		"AgeI":      enzyme{recog: "ACCGGT", hangInd: 5, cutInd: 1},
-		"AhdI":      enzyme{recog: "GACNNNNNGTC", hangInd: 5, cutInd: 6},
-		"AleI":      enzyme{recog: "CACNNNNGTG", hangInd: 5, cutInd: 5},
-		"AlwNI":     enzyme{recog: "CAGNNNCTG", hangInd: 3, cutInd: 6},
-		"ApaI":      enzyme{recog: "GGGCCC", hangInd: 1, cutInd: 5},
-		"ApaLI":     enzyme{recog: "GTGCAC", hangInd: 5, cutInd: 1},
-		"ApoI":      enzyme{recog: "RAATTY", hangInd: 5, cutInd: 1},
-		"AseI":      enzyme{recog: "ATTAAT", hangInd: 4, cutInd: 2},
-		"AvaI":      enzyme{recog: "CYCGRG", hangInd: 5, cutInd: 1},
-		"AvrII":     enzyme{recog: "CCTAGG", hangInd: 5, cutInd: 1},
-		"BaeGI":     enzyme{recog: "GKGCMC", hangInd: 1, cutInd: 5},
-		"BamHI":     enzyme{recog: "GGATCC", hangInd: 5, cutInd: 1},
-		"BanI":      enzyme{recog: "GGYRCC", hangInd: 5, cutInd: 1},
-		"BanII":     enzyme{recog: "GRGCYC", hangInd: 1, cutInd: 5},
-		"BbsI":      enzyme{recog: "GAAGACNNNNNN", hangInd: 12, cutInd: 8},
-		"BcgI":      enzyme{recog: "NNNNNNNNNNNNCGANNNNNNTGCNNNNNNNNNNNN", hangInd: 34, cutInd: 36},
-		"BciVI":     enzyme{recog: "GTATCCNNNNNN", hangInd: 11, cutInd: 12},
-		"BclI":      enzyme{recog: "TGATCA", hangInd: 5, cutInd: 1},
-		"BfuAI":     enzyme{recog: "ACCTGCNNNNNNNN", hangInd: 14, cutInd: 10},
-		"BglI":      enzyme{recog: "GCCNNNNNGGC", hangInd: 4, cutInd: 7},
-		"BglII":     enzyme{recog: "AGATCT", hangInd: 5, cutInd: 1},
-		"BlpI":      enzyme{recog: "GCTNAGC", hangInd: 5, cutInd: 2},
-		"BmgBI":     enzyme{recog: "CACGTC", hangInd: 3, cutInd: 3},
-		"BmrI":      enzyme{recog: "ACTGGGNNNNN", hangInd: 10, cutInd: 11},
-		"BmtI":      enzyme{recog: "GCTAGC", hangInd: 1, cutInd: 5},
-		"BpmI":      enzyme{recog: "CTGGAGNNNNNNNNNNNNNNNN", hangInd: 20, cutInd: 22},
-		"Bpu10I":    enzyme{recog: "CCTNAGC", hangInd: 5, cutInd: 2},
-		"BpuEI":     enzyme{recog: "CTTGAGNNNNNNNNNNNNNNNN", hangInd: 20, cutInd: 22},
-		"BsaAI":     enzyme{recog: "YACGTR", hangInd: 3, cutInd: 3},
-		"BsaBI":     enzyme{recog: "GATNNNNATC", hangInd: 5, cutInd: 5},
-		"BsaHI":     enzyme{recog: "GRCGYC", hangInd: 4, cutInd: 2},
-		"BsaI":      enzyme{recog: "GGTCTCNNNNN", hangInd: 11, cutInd: 7},
-		"BsaWI":     enzyme{recog: "WCCGGW", hangInd: 5, cutInd: 1},
-		"BsaXI":     enzyme{recog: "NNNNNNNNNNNNACNNNNNCTCCNNNNNNNNNN", hangInd: 30, cutInd: 33},
-		"BseRI":     enzyme{recog: "GAGGAGNNNNNNNNNN", hangInd: 14, cutInd: 16},
-		"BseYI":     enzyme{recog: "CCCAGC", hangInd: 5, cutInd: 1},
-		"BsgI":      enzyme{recog: "GTGCAGNNNNNNNNNNNNNNNN", hangInd: 20, cutInd: 22},
-		"BsiEI":     enzyme{recog: "CGRYCG", hangInd: 2, cutInd: 4},
-		"BsiHKAI":   enzyme{recog: "GWGCWC", hangInd: 1, cutInd: 5},
-		"BsiWI":     enzyme{recog: "CGTACG", hangInd: 5, cutInd: 1},
-		"BsmBI":     enzyme{recog: "CGTCTCNNNNN", hangInd: 11, cutInd: 7},
-		"BsmI":      enzyme{recog: "GAATGCN", hangInd: 5, cutInd: 7},
-		"BsoBI":     enzyme{recog: "CYCGRG", hangInd: 5, cutInd: 1},
-		"Bsp1286I":  enzyme{recog: "GDGCHC", hangInd: 1, cutInd: 5},
-		"BspDI":     enzyme{recog: "ATCGAT", hangInd: 4, cutInd: 2},
-		"BspEI":     enzyme{recog: "TCCGGA", hangInd: 5, cutInd: 1},
-		"BspHI":     enzyme{recog: "TCATGA", hangInd: 5, cutInd: 1},
-		"BspMI":     enzyme{recog: "ACCTGCNNNNNNNN", hangInd: 14, cutInd: 10},
-		"BsrBI":     enzyme{recog: "CCGCTC", hangInd: 3, cutInd: 3},
-		"BsrDI":     enzyme{recog: "GCAATGNN", hangInd: 6, cutInd: 8},
-		"BsrFI":     enzyme{recog: "RCCGGY", hangInd: 5, cutInd: 1},
-		"BsrGI":     enzyme{recog: "TGTACA", hangInd: 5, cutInd: 1},
-		"BssHII":    enzyme{recog: "GCGCGC", hangInd: 5, cutInd: 1},
-		"BssSI":     enzyme{recog: "CACGAG", hangInd: 5, cutInd: 1},
-		"BstAPI":    enzyme{recog: "GCANNNNNTGC", hangInd: 4, cutInd: 7},
-		"BstBI":     enzyme{recog: "TTCGAA", hangInd: 4, cutInd: 2},
-		"BstEII":    enzyme{recog: "GGTNACC", hangInd: 6, cutInd: 1},
-		"BstXI":     enzyme{recog: "CCANNNNNNTGG", hangInd: 4, cutInd: 8},
-		"BstYI":     enzyme{recog: "RGATCY", hangInd: 5, cutInd: 1},
-		"BstZ17I":   enzyme{recog: "GTATAC", hangInd: 3, cutInd: 3},
-		"Bsu36I":    enzyme{recog: "CCTNAGG", hangInd: 5, cutInd: 2},
-		"BtgI":      enzyme{recog: "CCRYGG", hangInd: 5, cutInd: 1},
-		"BtgZI":     enzyme{recog: "GCGATGNNNNNNNNNNNNNN", hangInd: 20, cutInd: 16},
-		"BtsI":      enzyme{recog: "GCAGTGNN", hangInd: 6, cutInd: 8},
-		"ClaI":      enzyme{recog: "ATCGAT", hangInd: 4, cutInd: 2},
-		"DraI":      enzyme{recog: "TTTAAA", hangInd: 3, cutInd: 3},
-		"DraIII":    enzyme{recog: "CACNNNGTG", hangInd: 3, cutInd: 6},
-		"DrdI":      enzyme{recog: "GACNNNNNNGTC", hangInd: 5, cutInd: 7},
-		"EaeI":      enzyme{recog: "YGGCCR", hangInd: 5, cutInd: 1},
-		"EagI":      enzyme{recog: "CGGCCG", hangInd: 5, cutInd: 1},
-		"EarI":      enzyme{recog: "CTCTTCNNNN", hangInd: 10, cutInd: 7},
-		"EciI":      enzyme{recog: "GGCGGANNNNNNNNNNN", hangInd: 15, cutInd: 17},
-		"Eco53kI":   enzyme{recog: "GAGCTC", hangInd: 3, cutInd: 3},
-		"EcoNI":     enzyme{recog: "CCTNNNNNAGG", hangInd: 6, cutInd: 5},
-		"EcoO109I":  enzyme{recog: "RGGNCCY", hangInd: 5, cutInd: 2},
-		"EcoRI":     enzyme{recog: "GAATTC", hangInd: 5, cutInd: 1},
-		"EcoRV":     enzyme{recog: "GATATC", hangInd: 3, cutInd: 3},
-		"Esp3I":     enzyme{recog: "CGTCTCNNNNN", hangInd: 11, cutInd: 7},
-		"FspI":      enzyme{recog: "TGCGCA", hangInd: 3, cutInd: 3},
-		"HaeII":     enzyme{recog: "RGCGCY", hangInd: 1, cutInd: 5},
-		"HincII":    enzyme{recog: "GTYRAC", hangInd: 3, cutInd: 3},
-		"HindIII":   enzyme{recog: "AAGCTT", hangInd: 5, cutInd: 1},
-		"HpaI":      enzyme{recog: "GTTAAC", hangInd: 3, cutInd: 3},
-		"KasI":      enzyme{recog: "GGCGCC", hangInd: 5, cutInd: 1},
-		"KpnI":      enzyme{recog: "GGTACC", hangInd: 1, cutInd: 5},
-		"MfeI":      enzyme{recog: "CAATTG", hangInd: 5, cutInd: 1},
-		"MluI":      enzyme{recog: "ACGCGT", hangInd: 5, cutInd: 1},
-		"MmeI":      enzyme{recog: "TCCRACNNNNNNNNNNNNNNNNNNNN", hangInd: 24, cutInd: 26},
-		"MscI":      enzyme{recog: "TGGCCA", hangInd: 3, cutInd: 3},
-		"MslI":      enzyme{recog: "CAYNNNNRTG", hangInd: 5, cutInd: 5},
-		"MspA1I":    enzyme{recog: "CMGCKG", hangInd: 3, cutInd: 3},
-		"NaeI":      enzyme{recog: "GCCGGC", hangInd: 3, cutInd: 3},
-		"NarI":      enzyme{recog: "GGCGCC", hangInd: 4, cutInd: 2},
-		"NcoI":      enzyme{recog: "CCATGG", hangInd: 5, cutInd: 1},
-		"NdeI":      enzyme{recog: "CATATG", hangInd: 4, cutInd: 2},
-		"NgoMIV":    enzyme{recog: "GCCGGC", hangInd: 5, cutInd: 1},
-		"NheI":      enzyme{recog: "GCTAGC", hangInd: 5, cutInd: 1},
-		"NmeAIII":   enzyme{recog: "GCCGAGNNNNNNNNNNNNNNNNNNNN", hangInd: 25, cutInd: 26},
-		"NruI":      enzyme{recog: "TCGCGA", hangInd: 3, cutInd: 3},
-		"NsiI":      enzyme{recog: "ATGCAT", hangInd: 1, cutInd: 5},
-		"NspI":      enzyme{recog: "RCATGY", hangInd: 1, cutInd: 5},
-		"PaeR7I":    enzyme{recog: "CTCGAG", hangInd: 5, cutInd: 1},
-		"PciI":      enzyme{recog: "ACATGT", hangInd: 5, cutInd: 1},
-		"PflFI":     enzyme{recog: "GACNNNGTC", hangInd: 5, cutInd: 4},
-		"PflMI":     enzyme{recog: "CCANNNNNTGG", hangInd: 4, cutInd: 7},
-		"PluTI":     enzyme{recog: "GGCGCC", hangInd: 1, cutInd: 5},
-		"PmlI":      enzyme{recog: "CACGTG", hangInd: 3, cutInd: 3},
-		"PshAI":     enzyme{recog: "GACNNNNGTC", hangInd: 5, cutInd: 5},
-		"PsiI":      enzyme{recog: "TTATAA", hangInd: 3, cutInd: 3},
-		"PspOMI":    enzyme{recog: "GGGCCC", hangInd: 5, cutInd: 1},
-		"PstI":      enzyme{recog: "CTGCAG", hangInd: 1, cutInd: 5},
-		"PvuI":      enzyme{recog: "CGATCG", hangInd: 2, cutInd: 4},
-		"PvuII":     enzyme{recog: "CAGCTG", hangInd: 3, cutInd: 3},
-		"SacI":      enzyme{recog: "GAGCTC", hangInd: 1, cutInd: 5},
-		"SacII":     enzyme{recog: "CCGCGG", hangInd: 2, cutInd: 4},
-		"SalI":      enzyme{recog: "GTCGAC", hangInd: 5, cutInd: 1},
-		"ScaI":      enzyme{recog: "AGTACT", hangInd: 3, cutInd: 3},
-		"SfcI":      enzyme{recog: "CTRYAG", hangInd: 5, cutInd: 1},
-		"SfoI":      enzyme{recog: "GGCGCC", hangInd: 3, cutInd: 3},
-		"SmaI":      enzyme{recog: "CCCGGG", hangInd: 3, cutInd: 3},
-		"SmlI":      enzyme{recog: "CTYRAG", hangInd: 5, cutInd: 1},
-		"SnaBI":     enzyme{recog: "TACGTA", hangInd: 3, cutInd: 3},
-		"SpeI":      enzyme{recog: "ACTAGT", hangInd: 5, cutInd: 1},
-		"SphI":      enzyme{recog: "GCATGC", hangInd: 1, cutInd: 5},
-		"SspI":      enzyme{recog: "AATATT", hangInd: 3, cutInd: 3},
-		"StuI":      enzyme{recog: "AGGCCT", hangInd: 3, cutInd: 3},
-		"StyI":      enzyme{recog: "CCWWGG", hangInd: 5, cutInd: 1},
-		"TspMI":     enzyme{recog: "CCCGGG", hangInd: 5, cutInd: 1},
-		"Tth111I":   enzyme{recog: "GACNNNGTC", hangInd: 5, cutInd: 4},
-		"XbaI":      enzyme{recog: "TCTAGA", hangInd: 5, cutInd: 1},
-		"XcmI":      enzyme{recog: "CCANNNNNNNNNTGG", hangInd: 7, cutInd: 8},
-		"XhoI":      enzyme{recog: "CTCGAG", hangInd: 5, cutInd: 1},
-		"XmaI":      enzyme{recog: "CCCGGG", hangInd: 5, cutInd: 1},
-		"XmnI":      enzyme{recog: "GAANNNNTTC", hangInd: 5, cutInd: 5},
-		"ZraI":      enzyme{recog: "GACGTC", hangInd: 3, cutInd: 3},
-		"AlwI":      enzyme{recog: "GGATCNNNNN", hangInd: 10, cutInd: 9},
-		"ApeKI":     enzyme{recog: "GCWGC", hangInd: 4, cutInd: 1},
-		"AvaII":     enzyme{recog: "GGWCC", hangInd: 4, cutInd: 1},
-		"BbvI":      enzyme{recog: "GCAGCNNNNNNNNNNNN", hangInd: 17, cutInd: 13},
-		"BccI":      enzyme{recog: "CCATCNNNNN", hangInd: 10, cutInd: 9},
-		"BceAI":     enzyme{recog: "ACGGCNNNNNNNNNNNNNN", hangInd: 19, cutInd: 17},
-		"BcoDI":     enzyme{recog: "GTCTCNNNNN", hangInd: 10, cutInd: 6},
-		"BsmAI":     enzyme{recog: "GTCTCNNNNN", hangInd: 10, cutInd: 6},
-		"BsmFI":     enzyme{recog: "GGGACNNNNNNNNNNNNNN", hangInd: 19, cutInd: 15},
-		"BspCNI":    enzyme{recog: "CTCAGNNNNNNNNN", hangInd: 12, cutInd: 14},
-		"BsrI":      enzyme{recog: "ACTGGN", hangInd: 4, cutInd: 6},
-		"BstNI":     enzyme{recog: "CCWGG", hangInd: 3, cutInd: 2},
-		"BtsCI":     enzyme{recog: "GGATGNN", hangInd: 5, cutInd: 7},
-		"BtsIMutI":  enzyme{recog: "CAGTGNN", hangInd: 5, cutInd: 7},
-		"FauI":      enzyme{recog: "CCCGCNNNNNN", hangInd: 11, cutInd: 9},
-		"FokI":      enzyme{recog: "GGATGNNNNNNNNNNNNN", hangInd: 18, cutInd: 14},
-		"HgaI":      enzyme{recog: "GACGCNNNNNNNNNN", hangInd: 15, cutInd: 10},
-		"HphI":      enzyme{recog: "GGTGANNNNNNNN", hangInd: 12, cutInd: 13},
-		"Hpy99I":    enzyme{recog: "CGWCG", hangInd: 0, cutInd: 5},
-		"HpyAV":     enzyme{recog: "CCTTCNNNNNN", hangInd: 10, cutInd: 11},
-		"MboII":     enzyme{recog: "GAAGANNNNNNNN", hangInd: 12, cutInd: 13},
-		"MlyI":      enzyme{recog: "GAGTCNNNNN", hangInd: 10, cutInd: 10},
-		"NciI":      enzyme{recog: "CCSGG", hangInd: 3, cutInd: 2},
-		"PleI":      enzyme{recog: "GAGTCNNNNN", hangInd: 10, cutInd: 9},
-		"PspGI":     enzyme{recog: "CCWGG", hangInd: 5, cutInd: 0},
-		"SfaNI":     enzyme{recog: "GCATCNNNNNNNNN", hangInd: 14, cutInd: 10},
-		"TfiI":      enzyme{recog: "GAWTC", hangInd: 4, cutInd: 1},
-		"TseI":      enzyme{recog: "GCWGC", hangInd: 4, cutInd: 1},
-		"Tsp45I":    enzyme{recog: "GTSAC", hangInd: 5, cutInd: 0},
-		"TspRI":     enzyme{recog: "NNCASTGNN", hangInd: 0, cutInd: 9},
-		"AciI":      enzyme{recog: "CCGC", hangInd: 3, cutInd: 1},
-		"AluI":      enzyme{recog: "AGCT", hangInd: 2, cutInd: 2},
-		"BfaI":      enzyme{recog: "CTAG", hangInd: 3, cutInd: 1},
-		"BsaJI":     enzyme{recog: "CCNNGG", hangInd: 5, cutInd: 1},
-		"BslI":      enzyme{recog: "CCNNNNNNNGG", hangInd: 4, cutInd: 7},
-		"BstUI":     enzyme{recog: "CGCG", hangInd: 2, cutInd: 2},
-		"Cac8I":     enzyme{recog: "GCNNGC", hangInd: 3, cutInd: 3},
-		"CviAII":    enzyme{recog: "CATG", hangInd: 3, cutInd: 1},
-		"CviKI-1":   enzyme{recog: "RGCY", hangInd: 2, cutInd: 2},
-		"CviQI":     enzyme{recog: "GTAC", hangInd: 3, cutInd: 1},
-		"DdeI":      enzyme{recog: "CTNAG", hangInd: 4, cutInd: 1},
-		"DpnII":     enzyme{recog: "GATC", hangInd: 4, cutInd: 0},
-		"FatI":      enzyme{recog: "CATG", hangInd: 4, cutInd: 0},
-		"Fnu4HI":    enzyme{recog: "GCNGC", hangInd: 3, cutInd: 2},
-		"HaeIII":    enzyme{recog: "GGCC", hangInd: 2, cutInd: 2},
-		"HhaI":      enzyme{recog: "GCGC", hangInd: 1, cutInd: 3},
-		"HinP1I":    enzyme{recog: "GCGC", hangInd: 3, cutInd: 1},
-		"HinfI":     enzyme{recog: "GANTC", hangInd: 4, cutInd: 1},
-		"HpaII":     enzyme{recog: "CCGG", hangInd: 3, cutInd: 1},
-		"Hpy166II":  enzyme{recog: "GTNNAC", hangInd: 3, cutInd: 3},
-		"Hpy188I":   enzyme{recog: "TCNGA", hangInd: 2, cutInd: 3},
-		"Hpy188III": enzyme{recog: "TCNNGA", hangInd: 4, cutInd: 2},
-		"HpyCH4III": enzyme{recog: "ACNGT", hangInd: 2, cutInd: 3},
-		"HpyCH4IV":  enzyme{recog: "ACGT", hangInd: 3, cutInd: 1},
-		"HpyCH4V":   enzyme{recog: "TGCA", hangInd: 2, cutInd: 2},
-		"MboI":      enzyme{recog: "GATC", hangInd: 4, cutInd: 0},
-		"MluCI":     enzyme{recog: "AATT", hangInd: 4, cutInd: 0},
-		"MnlI":      enzyme{recog: "CCTCNNNNNNN", hangInd: 10, cutInd: 11},
-		"MseI":      enzyme{recog: "TTAA", hangInd: 3, cutInd: 1},
-		"MspI":      enzyme{recog: "CCGG", hangInd: 3, cutInd: 1},
-		"MwoI":      enzyme{recog: "GCNNNNNNNGC", hangInd: 4, cutInd: 7},
-		"NlaIII":    enzyme{recog: "CATG", hangInd: 0, cutInd: 4},
-		"NlaIV":     enzyme{recog: "GGNNCC", hangInd: 3, cutInd: 3},
-		"RsaI":      enzyme{recog: "GTAC", hangInd: 2, cutInd: 2},
-		"Sau3AI":    enzyme{recog: "GATC", hangInd: 4, cutInd: 0},
-		"Sau96I":    enzyme{recog: "GGNCC", hangInd: 4, cutInd: 1},
-		"ScrFI":     enzyme{recog: "CCNGG", hangInd: 3, cutInd: 2},
-		"StyD4I":    enzyme{recog: "CCNGG", hangInd: 5, cutInd: 0},
-		"TaqI":      enzyme{recog: "TCGA", hangInd: 3, cutInd: 1},
+// EnzymeDB is a struct for accessing defrags enzymes db
+type EnzymeDB struct {
+	// enzymes is a map between a enzymes name and its sequence
+	enzymes map[string]string
+}
+
+// NewEnzymeDB returns a new copy of the enzymes db
+func NewEnzymeDB() *EnzymeDB {
+	enzymes := make(map[string]string)
+
+	enzymeFile, err := os.Open(config.EnzymeDB)
+	if err != nil {
+		stderr.Fatal(err)
+	}
+
+	// https://golang.org/pkg/bufio/#example_Scanner_lines
+	scanner := bufio.NewScanner(enzymeFile)
+	for scanner.Scan() {
+		columns := strings.Split(scanner.Text(), "	")
+		enzymes[columns[0]] = columns[1] // enzyme name = enzyme seq
+	}
+
+	if err := enzymeFile.Close(); err != nil {
+		stderr.Fatal(err)
+	}
+
+	return &EnzymeDB{enzymes: enzymes}
+}
+
+// ReadCmd returns enzymes that are similar in name to the enzyme name requested.
+// if multiple enzyme names include the enzyme name, they are all returned.
+// otherwise a list of enzyme names are returned (those beneath a levenshtein distance cutoff)
+func (f *EnzymeDB) ReadCmd(cmd *cobra.Command, args []string) {
+	// from https://golang.org/pkg/text/tabwriter/
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', tabwriter.TabIndent)
+
+	if len(args) < 1 {
+		enzymeNames := make([]string, len(f.enzymes), len(f.enzymes))
+		i := 0
+		for name := range f.enzymes {
+			enzymeNames[i] = name
+			i++
+		}
+		sort.Strings(enzymeNames)
+
+		for _, name := range enzymeNames {
+			fmt.Fprintf(w, "%s\t%s\n", name, f.enzymes[name])
+		}
+		w.Flush()
+		return
+	}
+
+	name := args[0]
+
+	// if there's an exact match, just long that one
+	if seq, exists := f.enzymes[name]; exists {
+		fmt.Printf("%s	%s\n", name, seq)
+		return
+	}
+
+	ldCutoff := 2
+	containing := []string{}
+	lowDistance := []string{}
+
+	for fName, fSeq := range f.enzymes {
+		if strings.Contains(fName, name) {
+			containing = append(containing, fName+"\t"+fSeq)
+		} else if len(fName) > ldCutoff && ld(name, fName, true) <= ldCutoff {
+			lowDistance = append(lowDistance, fName+"\t"+fSeq)
+		}
+	}
+
+	if len(containing) < 3 {
+		lowDistance = append(lowDistance, containing...)
+		containing = []string{} // clear
+	}
+	if len(containing) > 0 {
+		fmt.Fprintf(w, strings.Join(containing, "\n"))
+	} else if len(lowDistance) > 0 {
+		fmt.Fprintf(w, strings.Join(lowDistance, "\n"))
+	} else {
+		fmt.Fprintf(w, fmt.Sprintf("failed to find any enzymes for %s", name))
+	}
+	w.Write([]byte("\n"))
+	w.Flush()
+}
+
+// SetCmd the enzyme's seq in the database (or create if it isn't in the enzyme db)
+func (f *EnzymeDB) SetCmd(cmd *cobra.Command, args []string) {
+	if len(args) < 2 {
+		stderr.Fatalf("expecting two args: a name and recognition sequence. see 'defrag find enzyme --help'\n")
+	}
+
+	name := args[0]
+	seq := args[1]
+	if len(args) > 2 {
+		name = strings.Join(args[:len(args)-1], " ")
+		seq = args[len(args)-1]
+	}
+	seq = strings.ToUpper(seq)
+
+	invalidChars := regexp.MustCompile("[^ATGCMRWYSKHDVBNX_\\^]")
+	seq = invalidChars.ReplaceAllString(seq, "")
+
+	if strings.Count(seq, "^") != 1 || strings.Count(seq, "_") != 1 {
+		stderr.Fatalf("%s is not a valid enzyme recognition sequence. see 'defrag find enzyme --help'\n", seq)
+	}
+
+	enzymeFile, err := os.Open(config.EnzymeDB)
+	if err != nil {
+		stderr.Fatal(err)
+	}
+
+	// https://golang.org/pkg/bufio/#example_Scanner_lines
+	var output strings.Builder
+	updated := false
+	scanner := bufio.NewScanner(enzymeFile)
+	for scanner.Scan() {
+		columns := strings.Split(scanner.Text(), "	")
+		if columns[0] == name {
+			output.WriteString(fmt.Sprintf("%s	%s\n", name, seq))
+			updated = true
+		} else {
+			output.WriteString(scanner.Text())
+		}
+	}
+
+	// create from nothing
+	if !updated {
+		output.WriteString(fmt.Sprintf("%s	%s\n", name, seq))
+	}
+
+	if err := enzymeFile.Close(); err != nil {
+		stderr.Fatal(err)
+	}
+
+	if err := ioutil.WriteFile(config.EnzymeDB, []byte(output.String()), 0644); err != nil {
+		stderr.Fatal(err)
+	}
+
+	if updated {
+		fmt.Printf("updated %s in the enzymes database\n", name)
+	}
+
+	// update in memory
+	f.enzymes[name] = seq
+}
+
+// DeleteCmd the enzyme from the database
+func (f *EnzymeDB) DeleteCmd(cmd *cobra.Command, args []string) {
+	if len(args) < 1 {
+		stderr.Fatalf("expecting one arg: a enzymes name. %d passed\n", len(args))
+	}
+
+	name := args[0]
+	if len(args) > 1 {
+		name = strings.Join(args, " ")
+	}
+
+	if _, contained := f.enzymes[name]; !contained {
+		fmt.Printf("failed to find %s in the enzymes database\n", name)
+	}
+
+	enzymeFile, err := os.Open(config.EnzymeDB)
+	if err != nil {
+		stderr.Fatal(err)
+	}
+
+	// https://golang.org/pkg/bufio/#example_Scanner_lines
+	var output strings.Builder
+	deleted := false
+	scanner := bufio.NewScanner(enzymeFile)
+	for scanner.Scan() {
+		columns := strings.Split(scanner.Text(), "	")
+		if columns[0] != name {
+			output.WriteString(scanner.Text())
+		} else {
+			deleted = true
+		}
+	}
+
+	if err := enzymeFile.Close(); err != nil {
+		stderr.Fatal(err)
+	}
+
+	if err := ioutil.WriteFile(config.EnzymeDB, []byte(output.String()), 0644); err != nil {
+		stderr.Fatal(err)
+	}
+
+	// delete from memory
+	delete(f.enzymes, name)
+
+	if deleted {
+		fmt.Printf("deleted %s from the enzymes database\n", name)
+	} else {
+		fmt.Printf("failed to find %s in the enzymes database\n", name)
 	}
 }

@@ -7,7 +7,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var featureDB = defrag.NewFeatureDB()
+var (
+	featureDB = defrag.NewFeatureDB()
+
+	enzymeDB = defrag.NewEnzymeDB()
+)
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{

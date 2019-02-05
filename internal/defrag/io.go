@@ -297,8 +297,9 @@ func (p *inputParser) parseBackbone(backbone, enzyme string, dbs []string, c *co
 
 // getEnzymes return the enzyme with the name passed. errors out if there is none
 func (p *inputParser) getEnzyme(enzymeName string) (enzyme, error) {
-	if e, exists := enzymes[enzymeName]; exists {
-		return e, nil
+	enzymeDB := NewEnzymeDB()
+	if e, exists := enzymeDB.enzymes[enzymeName]; exists {
+		return newEnzyme(e), nil
 	}
 
 	return enzyme{}, fmt.Errorf(

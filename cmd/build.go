@@ -29,7 +29,7 @@ against a list of consituent fragment, feature, or a target sequence.`,
 // fragmentsCmd is for piecing together a list of input fragments into a vector
 var fragmentsCmd = &cobra.Command{
 	Use:                        "fragments",
-	Short:                      "Prepare fragments for assembly",
+	Short:                      "Prepare fragments for Gibson assembly",
 	Run:                        defrag.FragmentsCmd,
 	SuggestionsMinimumDistance: 4,
 	Long: `
@@ -41,7 +41,7 @@ assembly with PCR.`,
 // featuresCmd is for building a vector from its list of contained features
 var featuresCmd = &cobra.Command{
 	Use:                        "features [feature] ... [featureN]",
-	Short:                      "Find or build a vector from its features",
+	Short:                      "Find or build a vector from its constituent features",
 	Run:                        defrag.FeaturesCmd, // TODO
 	SuggestionsMinimumDistance: 4,
 	Long:                       "",
@@ -50,7 +50,7 @@ var featuresCmd = &cobra.Command{
 // sequenceCmd is for assembling a vector (single circular sequence) from its target sequence
 var sequenceCmd = &cobra.Command{
 	Use:                        "sequence",
-	Short:                      "Build a vector with the target sequence using local and/or remote fragments",
+	Short:                      "Find or build a vector from its target sequence",
 	Run:                        defrag.SequenceCmd,
 	SuggestionsMinimumDistance: 4,
 	Long: `

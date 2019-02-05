@@ -17,8 +17,8 @@ be passed to the --enzyme flag`,
 	Aliases: []string{"add", "update"},
 }
 
-// featuresCreateCmd is for adding a new feature to the features db
-var featuresCreateCmd = &cobra.Command{
+// featureCreateCmd is for adding a new feature to the features db
+var featureCreateCmd = &cobra.Command{
 	Use:                        "feature [name] [sequence]",
 	Short:                      "Add a feature to the features database",
 	Run:                        featureDB.SetCmd,
@@ -28,9 +28,25 @@ var featuresCreateCmd = &cobra.Command{
 	Example:                    "  defrag set feature \"custom terminator 3\" CTAGCATAACAAGCTTGGGCACCTGTAAACGGGTCTTGAGGGGTTCCATTTTG",
 }
 
-// set flags
+// enzymeCreateCmd is for adding a new feature to the features db
+var enzymeCreateCmd = &cobra.Command{
+	Use:                        "enzyme [name] [sequence]",
+	Short:                      "Add an enzyme to the enzymes database",
+	Run:                        enzymeDB.SetCmd,
+	SuggestionsMinimumDistance: 2,
+	Long: `
+Set an enzyme in the enzymes database so it can be used to linearize backbones.
+Enzymes are passed to the build command, by name, with the --enzyme flag.
+
+Valid recognition sequences have both a cut site in the template sequence: "^" and
+a cut site in the complement sequence: "_". Use 'defrag ls enzyme' for an example`,
+	Aliases: []string{"add", "update"},
+	Example: "  defrag set enzyme BbvCI CC^TCA_GC",
+}
+
 func init() {
-	setCmd.AddCommand(featuresCreateCmd)
+	setCmd.AddCommand(featureCreateCmd)
+	setCmd.AddCommand(enzymeCreateCmd)
 
 	rootCmd.AddCommand(setCmd)
 }
