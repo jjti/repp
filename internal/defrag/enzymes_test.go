@@ -31,8 +31,8 @@ func Test_recogRegex(t *testing.T) {
 	}
 
 	// should be able to decode every recognition site without failing
-	for _, enz := range enzymes {
-		recogRegex(enz.recog)
+	for _, enz := range NewEnzymeDB().enzymes {
+		recogRegex(newEnzyme(enz).recog)
 	}
 }
 

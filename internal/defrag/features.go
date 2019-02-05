@@ -18,6 +18,87 @@ type FeatureDB struct {
 	features map[string]string
 }
 
+// FeaturesCmd accepts a cobra commands and assembles a vector containing all the features
+func FeaturesCmd(cmd *cobra.Command, args []string) {
+	features(parseCmdFlags(cmd, args))
+}
+
+// features assembles a vector with all the features requested with the 'defrag features [feature ...]' command
+func features(flags *Flags, conf *config.Config) {
+	targetFeatures := [][]string{} // slice of tuples [feature name, feature sequence]
+
+	if parsedFeatures, err := read(flags.in, true); err == nil {
+		seenFeatures := make(map[string]string) // map feature name to sequence
+		// see if the features are in a file (multi-FASTA or features in a Genbank)
+		for _, f := range parsedFeatures {
+			if seq := seenFeatures[f.ID]; seq != f.Seq {
+				stderr.Fatalf("failed to parse features, %s has two different sequences:\n\t%s\n\t%s\n", f.ID, f.Seq, seq)
+			}
+
+			targetFeatures = append(targetFeatures, []string{f.ID, f.Seq})
+		}
+	} else {
+		// if the features weren't in a file, try and find each in the features database
+		// or one of the databases passed as a source of building fragments
+		featureNames := strings.Fields(flags.in)
+		if len(featureNames) < 1 {
+			stderr.Fatal("no features chosen. see 'defrag features --help'")
+		}
+
+		featureDB := NewFeatureDB()
+		for _, f := range featureNames {
+			if seq, contained := featureDB.features[f]; contained {
+				targetFeatures = append(targetFeatures, []string{f, seq})
+			} else if dbFrag, err := queryDatabases(f, flags.dbs); err == nil {
+				targetFeatures = append(targetFeatures, []string{f, dbFrag.Seq})
+			} else {
+				stderr.Fatalf(
+					"failed to find '%s' in the features database (%s) or any of:"+
+						"%s\ncheck features database with 'defrag features find [feature name]'",
+					f,
+					config.FeatureDB,
+					"\n  "+strings.Join(flags.dbs, "\n  "),
+				)
+			}
+		}
+	}
+
+	// add in the backbone as a "feature"
+	if flags.backbone.ID != "" {
+		targetFeatures = append(targetFeatures, []string{flags.backbone.ID, flags.backbone.Seq})
+	}
+
+	fragsToMatches := make(map[string][]match) // map from building fragments to feature matches
+	fragsToFeats := make(map[string][]int)     // list of features (by index) that the frag/vector with unique id contains
+	featsToFrags := make(map[int][]string)     // map from feature index to building fragments
+	for i, target := range targetFeatures {
+		// TODO: don't re-BLAST here. if we already know a features' matches, just return those
+		matches, err := blast(target[0], target[1], false, flags.dbs, flags.filters, flags.identity)
+		if err != nil {
+			stderr.Fatalln(err)
+		}
+
+		if _, exists := fragsToFeats[target[0]]; !exists {
+			fragsToFeats[target[0]] = []int{i}
+		} else {
+			fragsToFeats[target[0]] = append(fragsToFeats[target[0]], i)
+		}
+
+		featsToFrags[i] = []string{}
+		for _, m := range matches {
+			if _, exists := fragsToMatches[m.entry]; !exists {
+				fragsToMatches[m.entry] = []match{m}
+			} else {
+				fragsToMatches[m.entry] = append(fragsToMatches[m.entry], m)
+			}
+			featsToFrags[i] = append(featsToFrags[i], m.entry)
+		}
+	}
+
+	// step through each feature index and create an assembly
+
+}
+
 // NewFeatureDB returns a new copy of the features db
 func NewFeatureDB() *FeatureDB {
 	features := make(map[string]string)
@@ -189,87 +270,6 @@ func (f *FeatureDB) DeleteCmd(cmd *cobra.Command, args []string) {
 	} else {
 		fmt.Printf("failed to find %s in the features database\n", name)
 	}
-}
-
-// FeaturesCmd accepts a cobra commands and assembles a vector containing all the features
-func FeaturesCmd(cmd *cobra.Command, args []string) {
-	features(parseCmdFlags(cmd, args))
-}
-
-// features assembles a vector with all the features requested with the 'defrag features [feature ...]' command
-func features(flags *Flags, conf *config.Config) {
-	targetFeatures := [][]string{} // slice of tuples [feature name, feature sequence]
-
-	if parsedFeatures, err := read(flags.in, true); err == nil {
-		seenFeatures := make(map[string]string) // map feature name to sequence
-		// see if the features are in a file (multi-FASTA or features in a Genbank)
-		for _, f := range parsedFeatures {
-			if seq := seenFeatures[f.ID]; seq != f.Seq {
-				stderr.Fatalf("failed to parse features, %s has two different sequences:\n\t%s\n\t%s\n", f.ID, f.Seq, seq)
-			}
-
-			targetFeatures = append(targetFeatures, []string{f.ID, f.Seq})
-		}
-	} else {
-		// if the features weren't in a file, try and find each in the features database
-		// or one of the databases passed as a source of building fragments
-		featureNames := strings.Fields(flags.in)
-		if len(featureNames) < 1 {
-			stderr.Fatal("no features chosen. see 'defrag features --help'")
-		}
-
-		featureDB := NewFeatureDB()
-		for _, f := range featureNames {
-			if seq, contained := featureDB.features[f]; contained {
-				targetFeatures = append(targetFeatures, []string{f, seq})
-			} else if dbFrag, err := queryDatabases(f, flags.dbs); err == nil {
-				targetFeatures = append(targetFeatures, []string{f, dbFrag.Seq})
-			} else {
-				stderr.Fatalf(
-					"failed to find '%s' in the features database (%s) or any of:"+
-						"%s\ncheck features database with 'defrag features find [feature name]'",
-					f,
-					config.FeatureDB,
-					"\n  "+strings.Join(flags.dbs, "\n  "),
-				)
-			}
-		}
-	}
-
-	// add in the backbone as a "feature"
-	if flags.backbone.ID != "" {
-		targetFeatures = append(targetFeatures, []string{flags.backbone.ID, flags.backbone.Seq})
-	}
-
-	fragsToMatches := make(map[string][]match) // map from building fragments to feature matches
-	fragsToFeats := make(map[string][]int)     // list of features (by index) that the frag/vector with unique id contains
-	featsToFrags := make(map[int][]string)     // map from feature index to building fragments
-	for i, target := range targetFeatures {
-		// TODO: don't re-BLAST here. if we already know a features' matches, just return those
-		matches, err := blast(target[0], target[1], false, flags.dbs, flags.filters, flags.identity)
-		if err != nil {
-			stderr.Fatalln(err)
-		}
-
-		if _, exists := fragsToFeats[target[0]]; !exists {
-			fragsToFeats[target[0]] = []int{i}
-		} else {
-			fragsToFeats[target[0]] = append(fragsToFeats[target[0]], i)
-		}
-
-		featsToFrags[i] = []string{}
-		for _, m := range matches {
-			if _, exists := fragsToMatches[m.entry]; !exists {
-				fragsToMatches[m.entry] = []match{m}
-			} else {
-				fragsToMatches[m.entry] = append(fragsToMatches[m.entry], m)
-			}
-			featsToFrags[i] = append(featsToFrags[i], m.entry)
-		}
-	}
-
-	// step through each feature index and create an assembly
-
 }
 
 // containNext returns fragments that have the next feature after the last feature

@@ -51,8 +51,11 @@ endif
 	cp -r ./assets/addgene/db/** $(DEFRAGHOME) 
 	cp -r ./assets/igem/db/** $(DEFRAGHOME)
 
-	# copy features database
+	# copy features list
 	cp ./assets/snapgene/features.tsv $(DEFRAGHOME)
+
+	# copy enzymes list
+	cp ./assets/neb/enzymes.tsv $(DEFRAGHOME)
 	
 build:
 	# build for supported operating systems
