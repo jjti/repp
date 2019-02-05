@@ -69,34 +69,37 @@ func features(flags *Flags, conf *config.Config) {
 	}
 
 	fragsToMatches := make(map[string][]match) // map from building fragments to feature matches
-	fragsToFeats := make(map[string][]int)     // list of features (by index) that the frag/vector with unique id contains
+	fragsToFeats := make(map[string][]int)     // a list from each entry (by id) to its list of covered features by index
 	featsToFrags := make(map[int][]string)     // map from feature index to building fragments
 	for i, target := range targetFeatures {
-		// TODO: don't re-BLAST here. if we already know a features' matches, just return those
 		matches, err := blast(target[0], target[1], false, flags.dbs, flags.filters, flags.identity)
 		if err != nil {
 			stderr.Fatalln(err)
-		}
-
-		if _, exists := fragsToFeats[target[0]]; !exists {
-			fragsToFeats[target[0]] = []int{i}
-		} else {
-			fragsToFeats[target[0]] = append(fragsToFeats[target[0]], i)
 		}
 
 		featsToFrags[i] = []string{}
 		for _, m := range matches {
 			if _, exists := fragsToMatches[m.entry]; !exists {
 				fragsToMatches[m.entry] = []match{m}
+				fragsToFeats[target[0]] = []int{i}
 			} else {
 				fragsToMatches[m.entry] = append(fragsToMatches[m.entry], m)
+				fragsToFeats[target[0]] = append(fragsToFeats[target[0]], i)
 			}
 			featsToFrags[i] = append(featsToFrags[i], m.entry)
 		}
 	}
 
-	// step through each feature index and create an assembly
+	// from left to right, create assemblies for each fragments starting feature node
+	// assemblies := make([][]assembly, len(targetFeatures), len(targetFeatures)) // one assembly slice for each feature index
+	// for _, feats := range fragsToFeats {
+	// 	// expand the range that we expect from the fragment based on its continuous feature stretches
+	// 	start := feats[0]
+	// 	for i, f := range feats {
 
+	// 	}
+
+	// }
 }
 
 // NewFeatureDB returns a new copy of the features db
@@ -270,14 +273,6 @@ func (f *FeatureDB) DeleteCmd(cmd *cobra.Command, args []string) {
 	} else {
 		fmt.Printf("failed to find %s in the features database\n", name)
 	}
-}
-
-// containNext returns fragments that have the next feature after the last feature
-// contained in the one being tested. Returns two slices. One with frags that
-// already overlap the frag enough for annealing without preparation, and another
-// of fragments that contain the next feature but will need to be annealed via PCR (more expensive)
-func containNext(last *Frag, lastF int, featsToFrags map[int][]string, fragsToFeats map[string][]int) (overlap []*Frag, haveNext []*Frag) {
-	return nil, nil
 }
 
 // ld compares two strings and returns the levenshtein distance between them.
