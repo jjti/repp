@@ -72,7 +72,7 @@ func features(flags *Flags, conf *config.Config) {
 	fragsToFeats := make(map[string][]int)     // a list from each entry (by id) to its list of covered features by index
 	featsToFrags := make(map[int][]string)     // map from feature index to building fragments
 	for i, target := range targetFeatures {
-		matches, err := blast(target[0], target[1], false, flags.dbs, flags.filters, flags.identity)
+		matches, err := blast(target[0], target[1], false, flags.dbs, flags.filters, flags.identity, cmdFeatures)
 		if err != nil {
 			stderr.Fatalln(err)
 		}

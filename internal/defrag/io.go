@@ -485,9 +485,17 @@ func write(filename string, target Frag, assemblies [][]*Frag, insertSeqLength i
 	solutions := []Solution{}
 	for _, assembly := range assemblies {
 		assemblyCost := 0.0
+		assemblyFragmentIDs := make(map[string]bool)
 		for _, f := range assembly {
 			// freeze fragment type
 			f.Type = f.fragType.String()
+
+			// if it's already in the assembly, don't count cost twice
+			if _, contained := assemblyFragmentIDs[f.ID]; contained {
+				continue
+			} else {
+				assemblyFragmentIDs[f.ID] = true
+			}
 
 			// round to two decimal places
 			f.Cost, err = roundCost(f.cost())

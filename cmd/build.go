@@ -31,7 +31,7 @@ var fragmentsCmd = &cobra.Command{
 	Use:                        "fragments",
 	Short:                      "Prepare fragments for Gibson assembly",
 	Run:                        defrag.FragmentsCmd,
-	SuggestionsMinimumDistance: 4,
+	SuggestionsMinimumDistance: 3,
 	Long: `
 Prepare a list of fragments for assembly via Gibson Assembly. Fragments are
 checked for existing homology with their neighbors and are prepared for
@@ -43,7 +43,7 @@ var featuresCmd = &cobra.Command{
 	Use:                        "features [feature] ... [featureN]",
 	Short:                      "Find or build a vector from its constituent features",
 	Run:                        defrag.FeaturesCmd, // TODO
-	SuggestionsMinimumDistance: 4,
+	SuggestionsMinimumDistance: 3,
 	Long:                       "",
 }
 
@@ -52,7 +52,7 @@ var sequenceCmd = &cobra.Command{
 	Use:                        "sequence",
 	Short:                      "Find or build a vector from its target sequence",
 	Run:                        defrag.SequenceCmd,
-	SuggestionsMinimumDistance: 4,
+	SuggestionsMinimumDistance: 3,
 	Long: `
 Build up a vector from its target sequence using a combination of existing and
 synthesized fragments.

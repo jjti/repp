@@ -40,14 +40,14 @@ func Sequence(flags *Flags, conf *config.Config) {
 	fmt.Printf("%s\n\n", elapsed)
 }
 
-// sequence builds a vector using reverse engineering
+// sequence builds a vector using a simple cost optimization scheme
 //
 // the goal is to find an "optimal" assembly sequence with:
 // 	1. the fewest fragments
 // 	2. the lowest overall assembly cost ($)
 // and, secondarily:
 //	3. no duplicate end regions between Gibson fragments
-// 	4. no inverted repeats in the junctions
+// 	4. no hairpins in the junctions
 // 	5. no off-target binding sites in the parent vectors
 //	6. low primer3 penalty scores
 //
@@ -87,7 +87,7 @@ func sequence(input *Flags, conf *config.Config) (Frag, [][]*Frag, error) {
 	}
 
 	// get all the matches against the target vector
-	matches, err := blast(target.ID, target.Seq, true, input.dbs, input.filters, 100)
+	matches, err := blast(target.ID, target.Seq, true, input.dbs, input.filters, 100, cmdSequence)
 
 	// keep only "proper" arcs (non-self-contained)
 	matches = filter(matches, len(target.Seq), conf.PCRMinLength)
@@ -233,9 +233,9 @@ func createAssemblies(frags []*Frag, target string, conf *config.Config) (assemb
 		// create a starting assembly for each fragment just containing it
 		frags[i].assemblies = []assembly{
 			assembly{
-				frags:  []*Frag{f.copy()}, // just self
-				cost:   f.costTo(f),       // just PCR,
-				synths: 0,                 // no synthetic frags at start
+				frags:  []*Frag{f.copy()},        // just self
+				cost:   f.costTo(f, cmdSequence), // just PCR,
+				synths: 0,                        // no synthetic frags at start
 			},
 		}
 	}
@@ -246,7 +246,7 @@ func createAssemblies(frags []*Frag, target string, conf *config.Config) (assemb
 		for _, j := range f.reach(frags, i, synthCount) {
 			// for every assembly on the reaching fragment
 			for _, a := range f.assemblies {
-				newAssembly, created, circularized := a.add(frags[j], maxNodes)
+				newAssembly, created, circularized := a.add(frags[j], maxNodes, cmdSequence)
 
 				// if a new assembly wasn't created, move on
 				if !created {
