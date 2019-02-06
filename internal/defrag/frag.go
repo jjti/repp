@@ -73,7 +73,7 @@ type Frag struct {
 	// assemblies that span from this Frag to the end of the vector
 	assemblies []assembly
 
-	// Assembly configuration
+	// build configuration
 	conf *config.Config
 }
 
@@ -193,7 +193,11 @@ func (f *Frag) overlapsViaHomology(other *Frag) bool {
 // synthDist returns the number of synthesized fragments that would need to be created
 // between one Frag and another if the two were to be joined, with no existing
 // fragments/nodes in-between, in an assembly
-func (f *Frag) synthDist(other *Frag) (synthCount int) {
+func (f *Frag) synthDist(other *Frag, cmd buildCmd) (synthCount int) {
+	if cmd == cmdFeatures {
+		return 0
+	}
+
 	dist := f.distTo(other)
 
 	if f.overlapsViaPCR(other) {
@@ -221,19 +225,27 @@ func (f *Frag) synthDist(other *Frag) (synthCount int) {
 //
 // This does not add in the cost of procurement, which is added to the assembly cost
 // in assembly.add()
-func (f *Frag) costTo(other *Frag) (cost float64) {
+func (f *Frag) costTo(other *Frag, cmd buildCmd) (cost float64) {
+	if cmd == cmdFeatures {
+		if f.junction(other, f.conf.FragmentsMinHomology, f.conf.FragmentsMaxHomology) != "" {
+			return 50 * f.conf.PCRBPCost // regular PCR, they already anneal
+		}
+
+		return float64(50+f.conf.FragmentsMinHomology) * f.conf.PCRBPCost
+	}
+
 	dist := f.distTo(other)
 
 	if f.overlapsViaPCR(other) {
 		if f.overlapsViaHomology(other) {
 			// there's already enough overlap between this Frag and the one being tested
-			// estimating two primers, max primer length
-			return 52 * f.conf.PCRBPCost
+			// estimating two primers, primer length assumed to be 25bp
+			return 50 * f.conf.PCRBPCost
 		}
 
 		// we have to create some additional primer sequence to reach the next fragment
-		// estimating here that we'll add the min homology via PCR to both sides
-		return float64(52+2*f.conf.FragmentsMinHomology) * f.conf.PCRBPCost
+		// estimating here that we'll add half of minHomology to both sides
+		return float64(50+f.conf.FragmentsMinHomology) * f.conf.PCRBPCost
 	}
 
 	// we need to create a new synthetic fragment to get from this fragment to the next
@@ -319,7 +331,7 @@ func (f *Frag) synthTo(next *Frag, target string) (synths []*Frag) {
 
 	// check whether we need to make synthetic fragments to get
 	// to the next fragment in the assembly
-	fragCount := f.synthDist(next)
+	fragCount := f.synthDist(next, cmdSequence)
 	if fragCount == 0 {
 		return nil
 	}

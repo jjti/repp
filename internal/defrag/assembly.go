@@ -7,6 +7,16 @@ import (
 	"github.com/jjtimmons/defrag/config"
 )
 
+type buildCmd int
+
+const (
+	// build up a vector from its sequence
+	cmdSequence buildCmd = iota
+
+	// build up a vector from its features
+	cmdFeatures
+)
+
 // assembly is a slice of nodes ordered by the nodes
 // distance from the end of the target vector
 type assembly struct {
@@ -20,35 +30,29 @@ type assembly struct {
 	synths int
 }
 
-// add a Frag to the end of this assembly.
-//
-// Update the cost of the assembly for what it would be with this new fragment.
-// Store the Frag's ID in the list of Frag ids.
-// Complete  an assembly if a Frag has matched up onto itself across the zero-index.
-func (a *assembly) add(f *Frag, maxCount int) (newAssembly assembly, created, circularized bool) {
+// add adds Frag to the end of a sequence assembly. Used when building up a target sequence.
+func (a *assembly) add(f *Frag, maxCount int, cmd buildCmd) (newAssembly assembly, created, circularized bool) {
 	// check if we could complete an assembly with this new Frag
 	circularized = f.uniqueID == a.frags[0].uniqueID // if its the same unique fragment, it's circularized
 
 	// calc the number of synthesis fragments needed to get to this next Frag
-	synths := a.frags[len(a.frags)-1].synthDist(f)
+	synths := a.frags[len(a.frags)-1].synthDist(f, cmd)
 	newCount := a.len() + synths
 	if !circularized {
-		// only adding a new Frag to total count if it isn't the same as the starting one (circularizing)
 		newCount++
 	}
 
-	// stay beneath upper limit
 	if newCount > maxCount {
 		return assembly{}, false, false
 	}
 
-	// we will create a new assembly with this added fragment
 	created = true
 
 	// calc the estimated dollar cost of getting to the next Frag
-	annealCost := a.frags[len(a.frags)-1].costTo(f)
+	annealCost := a.frags[len(a.frags)-1].costTo(f, cmd)
 
 	// check whether the Frag is already contained in the assembly
+	// if so, the cost of procurement is not incurred twice
 	nodeContained := false
 	for _, included := range a.frags {
 		if included.ID == f.ID {
@@ -120,14 +124,14 @@ func (a *assembly) fill(seq string, conf *config.Config) (frags []*Frag, err err
 	minHomology := conf.FragmentsMinHomology
 	maxHomology := conf.FragmentsMaxHomology
 
-	// check for and error out if there are duplicate ends between fragments
+	// check for and error out if there are duplicate ends between fragments,
 	// ie unintended junctions between fragments that shouldn't be annealing
 	if hasDuplicate, left, right, dupSeq := a.duplicates(a.frags, minHomology, maxHomology); hasDuplicate {
 		return nil, fmt.Errorf("failed to fill: duplicate junction sequence in %s and %s: %s", left, right, dupSeq)
 	}
 
 	// edge case where a single Frag fills the whole target vector. Return just a single
-	// "fragment" (of Vector type... it is misnomer) that matches the target sequence 100%
+	// "fragment" (of circular type... it is misnomer) that matches the target sequence 100%
 	if a.len() == 1 && len(a.frags[0].Seq) >= len(seq) {
 		f := a.frags[0]
 		return []*Frag{

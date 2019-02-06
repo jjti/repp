@@ -113,7 +113,7 @@ type blastExec struct {
 }
 
 // blast the seq against all dbs and acculate matches
-func blast(name, seq string, circular bool, dbs, filters []string, identity int) (matches []match, err error) {
+func blast(name, seq string, circular bool, dbs, filters []string, identity int, cmd buildCmd) (matches []match, err error) {
 	in, err := ioutil.TempFile(blastnDir, name+"in-*")
 	if err != nil {
 		return nil, err
@@ -159,7 +159,7 @@ func blast(name, seq string, circular bool, dbs, filters []string, identity int)
 		}
 
 		// parse the output file to Matches against the Frag
-		dbMatches, err := b.parse(filters)
+		dbMatches, err := b.parse(filters, cmd)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse BLAST output: %v", err)
 		}
@@ -250,7 +250,7 @@ func (b *blastExec) run() (err error) {
 }
 
 // parse reads the output of blastn into matches
-func (b *blastExec) parse(filters []string) (matches []match, err error) {
+func (b *blastExec) parse(filters []string, cmd buildCmd) (matches []match, err error) {
 	// read in the results
 	file, err := ioutil.ReadFile(b.out.Name())
 	if err != nil {
@@ -301,10 +301,16 @@ func (b *blastExec) parse(filters []string) (matches []match, err error) {
 			continue // has been filtered out because of "filter" CLI flag
 		}
 
+		// get a unique identifier to distinguish this match/fragment from the others
+		uniqueID := entry + strconv.Itoa(queryStart%len(b.seq))
+		if cmd == cmdFeatures {
+			uniqueID = entry + strconv.Itoa(subjectStart%len(b.seq))
+		}
+
 		// create and append the new match
 		ms = append(ms, match{
 			entry:        entry,
-			uniqueID:     entry + strconv.Itoa(queryStart%len(b.seq)),
+			uniqueID:     uniqueID,
 			seq:          strings.Replace(seq, "-", "", -1),
 			queryStart:   queryStart - 1, // convert 1-based numbers to 0-based
 			queryEnd:     queryEnd - 1,
@@ -590,7 +596,7 @@ func mismatch(primer string, parentFile *os.File, c *config.Config) (wasMismatch
 	}
 
 	// get the BLAST matches
-	matches, err := b.parse([]string{})
+	matches, err := b.parse([]string{}, cmdFeatures)
 	if err != nil {
 		return false, match{}, fmt.Errorf("failed to parse matches from %s: %v", out.Name(), err)
 	}
