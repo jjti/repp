@@ -244,11 +244,11 @@ func (p *primer3) settings(
 		"PRIMER_OPT_SIZE":                      strconv.Itoa(primerOpt),
 		"PRIMER_MAX_SIZE":                      strconv.Itoa(primerMax),
 		"PRIMER_EXPLAIN_FLAG":                  "1",
-		"PRIMER_MIN_TM":                        "47.0", // defaults to 57.0
-		"PRIMER_MAX_TM":                        "73.0", // defaults to 63.0
-		"PRIMER_MAX_HAIRPIN_TH":                "50.0", // defaults to 47.0
-		"PRIMER_MAX_POLY_X":                    "7",    // defaults to 5
-		"PRIMER_PAIR_MAX_COMPL_ANY":            "13.0", // defaults to 8.00
+		"PRIMER_MIN_TM":                        "47.0",                                              // defaults to 57.0
+		"PRIMER_MAX_TM":                        "73.0",                                              // defaults to 63.0
+		"PRIMER_MAX_HAIRPIN_TH":                fmt.Sprintf("%f", p.f.conf.FragmentsMaxHairpinMelt), // defaults to 47.0
+		"PRIMER_MAX_POLY_X":                    "7",                                                 // defaults to 5
+		"PRIMER_PAIR_MAX_COMPL_ANY":            "13.0",                                              // defaults to 8.00
 	}
 
 	start += len(seq) // move to one seq length further in the vector seq (get off left edge)
@@ -396,7 +396,7 @@ func (p *primer3) parse(target string) (err error) {
 
 // hairpin finds the melting temperature of a hairpin in a sequence
 // returns 0 if there is none
-func hairpin(seq string, conf *config.Config) (melt int) {
+func hairpin(seq string, conf *config.Config) (melt float64) {
 	// if it's longer than 60bp (max for ntthal) find the max between
 	// the start and end of the sequence
 	if len(seq) > 60 {
@@ -413,7 +413,7 @@ func hairpin(seq string, conf *config.Config) (melt int) {
 	ntthalCmd := exec.Command(
 		"ntthal",
 		"-a", "HAIRPIN",
-		"-t", "50",
+		"-t", "50", // gibson assembly is at 50 degrees
 		"-s1", seq,
 		"-path", conf.Primer3Config,
 	)
@@ -431,7 +431,7 @@ func hairpin(seq string, conf *config.Config) (melt int) {
 		if len(tempString) < 1 {
 			return 0
 		}
-		temp, err := strconv.Atoi(tempString[0][1])
+		temp, err := strconv.ParseFloat(tempString[0][1], 64)
 
 		if err != nil {
 			stderr.Fatal(err)

@@ -336,7 +336,7 @@ func Test_hairpin(t *testing.T) {
 	tests := []struct {
 		name     string
 		args     args
-		wantMelt int
+		wantMelt float64
 	}{
 		{
 			"find hairpin of ~86 degrees",
@@ -344,7 +344,7 @@ func Test_hairpin(t *testing.T) {
 				"TGTGCACTCATCATCATCATCGGGGGGGGGGGGTGAACACTATCCCCCCCCCCCCCCA",
 				c,
 			},
-			86,
+			86.0,
 		},
 		{
 			"return 0 when no hairpin found",
@@ -352,7 +352,7 @@ func Test_hairpin(t *testing.T) {
 				"TGTGcactcatcatcCCCA",
 				c,
 			},
-			0,
+			0.0,
 		},
 		{
 			"return the right-most hairpin when >60bp",
@@ -360,7 +360,7 @@ func Test_hairpin(t *testing.T) {
 				"TGTGcactcatcatcaacacaactacgtcgatcagctacgatcgatcgatgctgatcgatatttatatcgagctagctacggatcatcGGGGGGGGGGGGTGAACACTATCCCCCCCCCCCCCCA",
 				c,
 			},
-			86,
+			86.0,
 		},
 	}
 	for _, tt := range tests {

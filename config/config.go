@@ -64,10 +64,13 @@ type Config struct {
 	FragmentsMaxCount int `mapstructure:"fragments-max-count"`
 
 	// the minimum homology between this fragment and the net one
-	FragmentsMinHomology int `mapstructure:"fragments-min-homology"`
+	FragmentsMinHomology int `mapstructure:"fragments-min-junction-length"`
 
 	// maximum length of homology between two adjacent fragments in bp
-	FragmentsMaxHomology int `mapstructure:"fragments-max-homology"`
+	FragmentsMaxHomology int `mapstructure:"fragments-max-junction-length"`
+
+	// maximum allowable hairpin melting temperature (celcius)
+	FragmentsMaxHairpinMelt float64 `mapstructure:"fragments-max-junction-hairpin"`
 
 	// the cost per bp of primer DNA
 	PCRBPCost float64 `mapstructure:"pcr-bp-cost"`

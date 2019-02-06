@@ -357,7 +357,7 @@ func (f *Frag) synthTo(next *Frag, target string) (synths []*Frag) {
 	for len(synths) < int(fragCount) {
 		end := start + fragLength + minHomology
 		seq := target[start+targetLength : end+targetLength]
-		for hairpin(seq[len(seq)-minHomology:], f.conf) > 40 {
+		for hairpin(seq[len(seq)-minHomology:], f.conf) > f.conf.FragmentsMaxHairpinMelt {
 			end += minHomology / 2
 			seq = target[start+targetLength : end+targetLength]
 		}

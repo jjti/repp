@@ -2,10 +2,13 @@
 fragments-max-count: 6
 
 # Minimum homology length between fragments
-fragments-min-homology: 20
+fragments-min-junction-length: 20
 
 # Maximum homology length between fragments
-fragments-max-homology: 120
+fragments-max-junction-length: 120
+
+# Maximum allowable hairpin melting temperature (celcius)
+fragments-max-junction-hairpin: 47.0
 
 # Cost per bp of PCR primer
 pcr-bp-cost: 0.6
