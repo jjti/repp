@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"text/tabwriter"
 
 	"github.com/jjtimmons/defrag/config"
 )
@@ -113,7 +114,7 @@ type blastExec struct {
 }
 
 // blast the seq against all dbs and acculate matches
-func blast(name, seq string, circular bool, dbs, filters []string, identity int, cmd buildCmd) (matches []match, err error) {
+func blast(name, seq string, circular bool, dbs, filters []string, identity int, tw *tabwriter.Writer) (matches []match, err error) {
 	in, err := ioutil.TempFile(blastnDir, name+"in-*")
 	if err != nil {
 		return nil, err
@@ -159,18 +160,25 @@ func blast(name, seq string, circular bool, dbs, filters []string, identity int,
 		}
 
 		// parse the output file to Matches against the Frag
-		dbMatches, err := b.parse(filters, cmd)
+		dbMatches, err := b.parse(filters)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse BLAST output: %v", err)
 		}
 
-		fmt.Printf("%d matches in %s\n", len(dbMatches), db)
+		fmt.Fprintf(tw, "%s\t%d\t%s\n", name, len(dbMatches), db)
 
 		// add these matches against the growing list of matches
 		matches = append(matches, dbMatches...)
 	}
 
 	return matches, nil
+}
+
+// blastWriter returns a new tabwriter specifically for blast database calls
+func blastWriter() *tabwriter.Writer {
+	tw := tabwriter.NewWriter(os.Stdout, 0, 4, 3, ' ', 0)
+	fmt.Fprintf(tw, "entry\tmatches\tdatabase\t\n")
+	return tw
 }
 
 // input creates an input query file (FASTA) for blastn
@@ -246,7 +254,7 @@ func (b *blastExec) run() (err error) {
 }
 
 // parse reads the output of blastn into matches
-func (b *blastExec) parse(filters []string, cmd buildCmd) (matches []match, err error) {
+func (b *blastExec) parse(filters []string) (matches []match, err error) {
 	// read in the results
 	file, err := ioutil.ReadFile(b.out.Name())
 	if err != nil {
@@ -299,9 +307,6 @@ func (b *blastExec) parse(filters []string, cmd buildCmd) (matches []match, err 
 
 		// get a unique identifier to distinguish this match/fragment from the others
 		uniqueID := entry + strconv.Itoa(queryStart%len(b.seq))
-		if cmd == cmdFeatures {
-			uniqueID = entry + strconv.Itoa(subjectStart%len(b.seq))
-		}
 
 		// create and append the new match
 		ms = append(ms, match{
@@ -592,7 +597,7 @@ func mismatch(primer string, parentFile *os.File, c *config.Config) (wasMismatch
 	}
 
 	// get the BLAST matches
-	matches, err := b.parse([]string{}, cmdFeatures)
+	matches, err := b.parse([]string{})
 	if err != nil {
 		return false, match{}, fmt.Errorf("failed to parse matches from %s: %v", out.Name(), err)
 	}
