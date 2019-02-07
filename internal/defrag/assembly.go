@@ -181,10 +181,9 @@ func (a *assembly) fill(seq string, conf *config.Config) (frags []*Frag, err err
 			next = a.frags[i+1]
 		} else {
 			// mock up a next fragment that's to the right of this terminal Frag
-			first := a.frags[0]
 			next = &Frag{
-				start: first.start + len(seq),
-				end:   first.end + len(seq),
+				start: a.frags[0].start + len(seq),
+				end:   a.frags[0].end + len(seq),
 				conf:  conf,
 			}
 		}
@@ -219,8 +218,6 @@ func (a *assembly) fill(seq string, conf *config.Config) (frags []*Frag, err err
 			break
 		}
 
-		// convert to a fragment from a Frag, store this to the list of building fragments
-		// cost is calculated here as the summed cost of both primers (based on length)
 		frags = append(frags, f)
 
 		// add synthesized fragments between this Frag and the next (if necessary)
@@ -234,8 +231,6 @@ func (a *assembly) fill(seq string, conf *config.Config) (frags []*Frag, err err
 
 // duplicates runs through all the nodes in an assembly and checks whether any of
 // them have unintended homology, or "duplicate homology"
-// Need to cheack each Frag's junction() with nodes other than the one after it
-// (which it's supposed to anneal to)
 func (a *assembly) duplicates(nodes []*Frag, minHomology, maxHomology int) (isDup bool, first, second, dup string) {
 	if len(nodes) > 1 && nodes[0].uniqueID != "" && nodes[0].uniqueID == nodes[len(nodes)-1].uniqueID {
 		nodes = nodes[:len(nodes)-1] // do not include the circularizing fragment

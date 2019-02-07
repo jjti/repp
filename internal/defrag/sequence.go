@@ -3,6 +3,7 @@ package defrag
 import (
 	"fmt"
 	"math"
+	"os"
 	"sort"
 	"strings"
 	"time"
@@ -18,26 +19,23 @@ func SequenceCmd(cmd *cobra.Command, args []string) {
 
 // Sequence is for running an end to end vector design using a target sequence
 func Sequence(flags *Flags, conf *config.Config) {
+	handleErr := func(err error) {
+		if err != nil {
+			stderr.Fatalf("failed to assemble the vector sequence in %s: %v", flags.in, err)
+		}
+	}
 	start := time.Now()
 
-	target, builds, err := sequence(flags, conf)
-	if err != nil {
-		stderr.Fatalln(err)
-	}
+	target, builds, err := sequence(flags, conf) // build up the assemblies that make the sequence
+	handleErr(err)
 
-	// write the results to the filesystem at the out location
-	fragments, err := read(flags.in, false)
-	if err != nil {
-		stderr.Fatalln(err)
-	}
-	insertLength := len(fragments[0].Seq)
-
+	// write the results to a file
 	elapsed := time.Since(start)
-	if _, err := write(flags.out, target, builds, insertLength, conf, elapsed.Seconds()); err != nil {
-		stderr.Fatalln(err)
-	}
+	_, err = write(flags.out, target, builds, len(target.Seq), conf, elapsed.Seconds())
+	handleErr(err)
 
 	fmt.Printf("%s\n\n", elapsed)
+	os.Exit(0)
 }
 
 // sequence builds a vector using a simple cost optimization scheme
@@ -72,12 +70,13 @@ func sequence(input *Flags, conf *config.Config) (Frag, [][]*Frag, error) {
 
 	if len(fragments) > 1 {
 		stderr.Printf(
-			"warning: %d fragments were in %s. Only targeting the sequence of the first: %s",
+			"warning: %d fragments were in %s. Only targeting the sequence of the first: %s\n",
 			len(fragments),
 			input.in,
 			fragments[0].ID,
 		)
 	}
+
 	target := fragments[0]
 	fmt.Printf("Building %s\n", target.ID)
 
@@ -88,73 +87,50 @@ func sequence(input *Flags, conf *config.Config) (Frag, [][]*Frag, error) {
 
 	// get all the matches against the target vector
 	matches, err := blast(target.ID, target.Seq, true, input.dbs, input.filters, 100, cmdSequence)
-
-	// keep only "proper" arcs (non-self-contained)
-	matches = filter(matches, len(target.Seq), conf.PCRMinLength)
-	if len(matches) < 1 {
-		return Frag{}, nil, fmt.Errorf("did not find any matches for %s", target.ID)
-	}
-
-	fmt.Printf("%d matches after filtering\n", len(matches))
-
 	if err != nil {
 		dbMessage := strings.Join(input.dbs, ", ")
 		return Frag{}, nil, fmt.Errorf("failed to blast %s against the dbs %s: %v", target.ID, dbMessage, err)
 	}
+	if len(matches) < 1 {
+		return Frag{}, nil, fmt.Errorf("did not find any matches for %s", target.ID)
+	}
 
-	// for _, m := range matches {
-	// 	fmt.Println(m.entry, m.start, m.end)
-	// }
+	// keep only "proper" arcs (non-self-contained)
+	matches = filter(matches, len(target.Seq), conf.PCRMinLength)
+	fmt.Printf("%d matches after filtering\n", len(matches))
 
 	// map fragment Matches to nodes
-	var nodes []*Frag
-	for _, m := range matches {
-		newPCRFrag := newFrag(m, conf)
-		newPCRFrag.fragType = pcr
-		nodes = append(nodes, newPCRFrag)
-	}
+	frags := newFrags(matches, conf)
 
 	// build up a slice of assemblies that could, within the upper-limit on
 	// fragment count, be assembled to make the target vector
-	assemblies := createAssemblies(nodes, target.Seq, conf)
-
-	fmt.Printf("%d assemblies made\n", len(assemblies))
+	assemblies := createAssemblies(frags, target.Seq, conf)
 
 	// build up a map from fragment count to a sorted list of assemblies with that number
-	groupedAssemblies := groupAssemblies(assemblies)
-
-	// sort the keys of the assemblies (their fragment count). Start with the smaller
-	// assemblies first and work our way up
-	assemblyCounts := []int{}
-	for count := range groupedAssemblies {
-		assemblyCounts = append(assemblyCounts, count)
-	}
-	sort.Ints(assemblyCounts)
+	assemblyCounts, countToAssemblies := groupAssembliesByCount(assemblies)
 
 	// "fill-in" the fragments (create synthetic fragments and primers)
 	// skip assemblies that wouldn't be less than the current cheapest assembly
 	filled := make(map[int][]*Frag)
 
-	// append a fully synthetic solution at first, nothing added should cost more than this
-	minCostAssembly := addFullySyntheticVector(filled, target.Seq, conf)
+	// append a fully synthetic solution at first, nothing added should cost more than this (single vector)
+	minCostAssembly := addSyntheticVector(filled, target.Seq, conf)
 
 	for _, count := range assemblyCounts {
-		// get the first assembly that fills properly (cheapest workable solution)
-		for _, testAssembly := range groupedAssemblies[count] {
-			if testAssembly.cost > minCostAssembly {
+		for _, assemblyToFill := range countToAssemblies[count] {
+			if assemblyToFill.cost > minCostAssembly {
 				// skip this and the rest with this count, there's another
 				// cheaper option with fewer fragments
 				break
 			}
 
-			filledFragments, err := testAssembly.fill(target.Seq, conf)
+			filledFragments, err := assemblyToFill.fill(target.Seq, conf)
 			if err != nil || filledFragments == nil {
 				// write the console for debugging, continue looking
-				// logger.Println(testAssembly.log(), "error", err.Error())
+				// logger.Println(assemblyToFill.log(), "error", err.Error())
 				continue
 			}
-
-			// fmt.Println(testAssembly.log(), fragsCost(filledFragments))
+			// fmt.Println(assemblyToFill.log(), fragsCost(filledFragments))
 
 			// if a Frag in the assembly fails to be prepared,
 			// remove all assemblies with the Frag and try again
@@ -167,11 +143,6 @@ func sequence(input *Flags, conf *config.Config) (Frag, [][]*Frag, error) {
 			// store this as the new cheapest assembly
 			minCostAssembly = newAssemblyCost
 
-			// check whether there's already a cheaper solution
-			if existingCost := fragsCost(filled[len(filledFragments)]); existingCost > 0 && existingCost < newAssemblyCost {
-				continue
-			}
-
 			// set this is as the new cheapest of this length
 			filled[len(filledFragments)] = filledFragments
 
@@ -182,23 +153,22 @@ func sequence(input *Flags, conf *config.Config) (Frag, [][]*Frag, error) {
 				}
 
 				existingCost := fragsCost(existingFilledFragments)
-
 				if existingCost >= newAssemblyCost {
 					delete(filled, filledCount)
 				}
 			}
 
-			// break, don't look at other possible assemblies because this one worked
+			// don't look at other possible assemblies, assume this will be the cheapest of this length
 			break
 		}
 	}
 
-	var found [][]*Frag
+	var solutions [][]*Frag
 	for _, frags := range filled {
-		found = append(found, frags)
+		solutions = append(solutions, frags) // flatten
 	}
 
-	return target, found, nil
+	return target, solutions, nil
 }
 
 // createAssemblies builds up circular assemblies (unfilled lists of fragments that should be combinable)
@@ -264,12 +234,14 @@ func createAssemblies(frags []*Frag, target string, conf *config.Config) (assemb
 		}
 	}
 
+	fmt.Printf("%d assemblies made\n", len(assemblies))
+
 	return assemblies
 }
 
-// groupAssemblies returns a map from the number of fragments in a build
+// groupAssembliesByCount returns a map from the number of fragments in a build
 // to a slice of builds with that number of fragments, sorted by their cost
-func groupAssemblies(assemblies []assembly) map[int][]assembly {
+func groupAssembliesByCount(assemblies []assembly) ([]int, map[int][]assembly) {
 	countToAssemblies := make(map[int][]assembly)
 	for _, a := range assemblies {
 		// The "-1"s here are because the assemblies are circular and
@@ -283,19 +255,25 @@ func groupAssemblies(assemblies []assembly) map[int][]assembly {
 		}
 	}
 
+	// sort the fragment counts of assemblies and the assemblies within each
+	// assembly count, so we're trying the shortest assemblies first, and the cheapest
+	// assembly within each fragment count before the others
+	assemblyCounts := []int{}
 	for count := range countToAssemblies {
+		assemblyCounts = append(assemblyCounts, count)
 		sort.Slice(countToAssemblies[count], func(i, j int) bool {
 			return countToAssemblies[count][i].cost < countToAssemblies[count][j].cost
 		})
 	}
+	sort.Ints(assemblyCounts)
 
-	return countToAssemblies
+	return assemblyCounts, countToAssemblies
 }
 
-// addFullySyntheticVector adds a new fully synthetic vector to the built map if it's cheaper
+// addSyntheticVector adds a new fully synthetic vector to the built map if it's cheaper
 // that any other solution of that many fragments.
 // Returns the cost of synthesis for the fragments
-func addFullySyntheticVector(built map[int][]*Frag, seq string, conf *config.Config) float64 {
+func addSyntheticVector(built map[int][]*Frag, seq string, conf *config.Config) float64 {
 	start := &Frag{start: 0, end: 0, conf: conf}
 	end := &Frag{start: len(seq), end: len(seq), conf: conf}
 

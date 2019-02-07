@@ -16,7 +16,9 @@ func FragmentsCmd(cmd *cobra.Command, args []string) {
 
 // Fragments assembles fragments using fragments
 func Fragments(flags *Flags, conf *config.Config) {
-	fragments(flags, conf)
+	if _, err := fragments(flags, conf); err != nil {
+		stderr.Fatalf("failed to assemble the fragments in %s: %v", flags.in, err)
+	}
 
 	os.Exit(0)
 }
@@ -27,7 +29,7 @@ func fragments(input *Flags, conf *config.Config) (output []byte, err error) {
 	// read in the constituent fragments
 	inputFragments, err := read(input.in, false)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read in fasta files at %s: %v", input.in, err)
+		return
 	}
 
 	// add in the backbone if it was provided
@@ -36,7 +38,7 @@ func fragments(input *Flags, conf *config.Config) (output []byte, err error) {
 	}
 
 	// piece together the adjacent fragments
-	target, fragments, err := assembleFragments(inputFragments, conf)
+	target, fragments, err := prepareFragments(inputFragments, conf)
 	if err != nil {
 		return
 	}
@@ -45,16 +47,16 @@ func fragments(input *Flags, conf *config.Config) (output []byte, err error) {
 	return write(input.out, target, [][]*Frag{fragments}, len(target.Seq), conf, 0)
 }
 
-// assembleFragments takes a list of Fragments and returns the Vector we assume the user is
+// prepareFragments takes a list of Fragments and returns the Vector we assume the user is
 // trying to build as well as the Fragments (possibly prepared via PCR)
-func assembleFragments(inputFragments []Frag, conf *config.Config) (targetVector Frag, fragments []*Frag, err error) {
-	if len(inputFragments) < 1 {
+func prepareFragments(targetFrags []Frag, conf *config.Config) (target Frag, solution []*Frag, err error) {
+	if len(targetFrags) < 1 {
 		return Frag{}, nil, fmt.Errorf("failed: no fragments to assemble")
 	}
 
 	// convert the fragments to frags (without a start and end and with the conf)
-	frags := make([]*Frag, len(inputFragments))
-	for i, f := range inputFragments {
+	frags := make([]*Frag, len(targetFrags))
+	for i, f := range targetFrags {
 		frags[i] = &Frag{
 			ID:       f.ID,
 			Seq:      f.Seq,
@@ -86,18 +88,18 @@ func assembleFragments(inputFragments []Frag, conf *config.Config) (targetVector
 		vectorSeq.WriteString(n.Seq[0 : len(n.Seq)-len(junction)])
 	}
 
-	// create the assumed vector object
-	targetVector = Frag{
+	// create the assumed target vector object
+	target = Frag{
 		Seq:      vectorSeq.String(),
 		fragType: circular,
 	}
 
 	// create an assembly out of the frags (to fill/convert to fragments with primers)
 	a := assembly{frags: frags}
-	fragments, err = a.fill(targetVector.Seq, conf)
+	solution, err = a.fill(target.Seq, conf)
 	if err != nil {
 		return Frag{}, nil, fmt.Errorf("failed to fill in the frags: %+v", err)
 	}
 
-	return targetVector, fragments, nil
+	return target, solution, nil
 }

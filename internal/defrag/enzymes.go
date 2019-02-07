@@ -17,9 +17,9 @@ import (
 // enzyme is a single enzyme that can be used to linearize a backbone before
 // inserting a sequence
 type enzyme struct {
-	recog   string
-	cutInd  int
-	hangInd int
+	recog        string
+	seqCutIndex  int
+	compCutIndex int
 }
 
 // parses a recognition sequence into a hangInd, cutInd for overhang calculation
@@ -37,9 +37,9 @@ func newEnzyme(recogSeq string) enzyme {
 	recogSeq = strings.Replace(recogSeq, "_", "", -1)
 
 	return enzyme{
-		recog:   recogSeq,
-		cutInd:  cutIndex,
-		hangInd: hangIndex,
+		recog:        recogSeq,
+		seqCutIndex:  cutIndex,
+		compCutIndex: hangIndex,
 	}
 }
 
@@ -71,7 +71,7 @@ func digest(frag Frag, enz enzyme) (digested Frag, err error) {
 
 	// positive if template strand has overhang
 	// negative if rev comp strand has overhang
-	templateOverhangLength := enz.cutInd - enz.hangInd
+	templateOverhangLength := enz.seqCutIndex - enz.compCutIndex
 	cutIndex := -1
 	digestedSeq := ""
 	if reg.MatchString(seq) {
@@ -93,11 +93,11 @@ func digest(frag Frag, enz enzyme) (digested Frag, err error) {
 	}
 
 	if templateOverhangLength >= 0 {
-		cutIndex = (cutIndex + enz.cutInd) % len(frag.Seq)
+		cutIndex = (cutIndex + enz.seqCutIndex) % len(frag.Seq)
 		digestedSeq = frag.Seq[cutIndex:] + frag.Seq[:cutIndex]
 	} else {
-		bottomIndex := (cutIndex + enz.cutInd) % len(frag.Seq)
-		topIndex := (cutIndex + enz.hangInd) % len(frag.Seq)
+		bottomIndex := (cutIndex + enz.seqCutIndex) % len(frag.Seq)
+		topIndex := (cutIndex + enz.compCutIndex) % len(frag.Seq)
 		digestedSeq = frag.Seq[topIndex:] + frag.Seq[:bottomIndex]
 	}
 

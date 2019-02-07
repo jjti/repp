@@ -559,5 +559,6 @@ func write(filename string, target Frag, assemblies [][]*Frag, insertSeqLength i
 // roundCost returns a float for cost to 2 decimal places
 func roundCost(cost float64) (float64, error) {
 	roundedString := fmt.Sprintf("%.2f", cost)
+
 	return strconv.ParseFloat(roundedString, 64)
 }

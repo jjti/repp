@@ -20,10 +20,11 @@ vendor/*/**
 # bins
 bin/**
 
-# addgene raw FASTA files, too many, ignore them
+# ignore source files, too large
 assets/addgene/**
 assets/igem/**
 assets/snapgene/**
+assets/dnasu/**
 
 # test output files
 test/output/**

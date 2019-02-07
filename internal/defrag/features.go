@@ -68,16 +68,14 @@ func features(flags *Flags, conf *config.Config) {
 		targetFeatures = append(targetFeatures, []string{flags.backbone.ID, flags.backbone.Seq})
 	}
 
-	fragsToMatches := make(map[string][]match) // map from building fragments to feature matches
 	fragsToFeats := make(map[string][]int)     // a list from each entry (by id) to its list of covered features by index
-	featsToFrags := make(map[int][]string)     // map from feature index to building fragments
+	fragsToMatches := make(map[string][]match) // map from building fragments to feature matches
 	for i, target := range targetFeatures {
 		matches, err := blast(target[0], target[1], false, flags.dbs, flags.filters, flags.identity, cmdFeatures)
 		if err != nil {
 			stderr.Fatalln(err)
 		}
 
-		featsToFrags[i] = []string{}
 		for _, m := range matches {
 			if _, exists := fragsToMatches[m.entry]; !exists {
 				fragsToMatches[m.entry] = []match{m}
@@ -86,20 +84,68 @@ func features(flags *Flags, conf *config.Config) {
 				fragsToMatches[m.entry] = append(fragsToMatches[m.entry], m)
 				fragsToFeats[target[0]] = append(fragsToFeats[target[0]], i)
 			}
-			featsToFrags[i] = append(featsToFrags[i], m.entry)
 		}
 	}
 
-	// from left to right, create assemblies for each fragments starting feature node
-	// assemblies := make([][]assembly, len(targetFeatures), len(targetFeatures)) // one assembly slice for each feature index
-	// for _, feats := range fragsToFeats {
-	// 	// expand the range that we expect from the fragment based on its continuous feature stretches
-	// 	start := feats[0]
-	// 	for i, f := range feats {
+}
 
-	// 	}
+//
+//
+// eg features: 1, 2, 3, 4, 5, 1, 2, 3, 4, 5
+func featureFragments(numFeatures int, fragsToFeats map[string][]int, fragsToMatches map[string][]match, dbs []string) []*Frag {
+	matches := []match{}
 
-	// }
+	// turn matches into frags but with start and end referring to feature index
+	for frag, feats := range fragsToFeats {
+		fragMatches := fragsToMatches[frag]
+
+		// expand the range the matches range based on its continuous feature stretches
+		m := fragMatches[0]
+		stretchStart := feats[0]
+		circularFeats := append(feats, feats...)
+		for testIndex, testFeat := range circularFeats[1:] {
+			if testFeat == (stretchStart+1)%numFeatures {
+				continue
+			}
+
+			// cannot extend this stretch, create a new fragment
+			m.queryStart = stretchStart
+			m.queryEnd = testFeat - 1
+			m.subjectEnd = fragMatches[testIndex%len(feats)].subjectEnd
+
+			matches = append(matches, m)
+
+			stretchStart = testFeat
+			m = fragMatches[testFeat]
+		}
+	}
+
+	matches = filter(matches, numFeatures, 1)
+
+	// get the matches back out of the databases (the full parts) and
+	// create an assembly holding them in their start index
+	assemblies := [][]assembly{}
+	for _, m := range matches {
+		frag, err := queryDatabases(m.entry, dbs)
+		if err != nil {
+			stderr.Fatalln(err)
+		}
+
+		start := m.subjectStart
+		end := m.subjectEnd
+		if end < start {
+			end += len(frag.Seq)
+		}
+		frag.Seq = (frag.Seq + frag.Seq)[start:end]
+
+		assemblies[m.queryStart] = append(assemblies[m.queryStart], assembly{
+			frags: []*Frag{&frag},
+		})
+	}
+
+	fmt.Println(len(matches))
+
+	return nil
 }
 
 // NewFeatureDB returns a new copy of the features db
@@ -129,8 +175,23 @@ func NewFeatureDB() *FeatureDB {
 // if multiple feature names include the feature name, they are all returned.
 // otherwise a list of feature names are returned (those beneath a levenshtein distance cutoff)
 func (f *FeatureDB) ReadCmd(cmd *cobra.Command, args []string) {
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', tabwriter.TabIndent)
+
 	if len(args) < 1 {
-		stderr.Fatalf("expecting one arg: a features name. %d passed\n", len(args))
+		// print all their names to the console and the first few bp
+		for feat, seq := range f.features {
+			printSeq := ""
+			if 20 >= len(seq) {
+				printSeq = seq
+			} else {
+				printSeq = seq[:20] + "..."
+			}
+
+			fmt.Fprintf(w, "%s\t%s\n", feat, printSeq)
+		}
+		w.Flush()
+
+		return
 	}
 
 	name := args[0]
@@ -154,7 +215,7 @@ func (f *FeatureDB) ReadCmd(cmd *cobra.Command, args []string) {
 	}
 
 	// from https://golang.org/pkg/text/tabwriter/
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', tabwriter.TabIndent)
+
 	if len(containing) < 3 {
 		lowDistance = append(lowDistance, containing...)
 		containing = []string{} // clear
