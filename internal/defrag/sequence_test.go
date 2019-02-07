@@ -108,7 +108,7 @@ func Test_countMaps(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if gotParetoSet := groupAssemblies(tt.args.assemblies); !reflect.DeepEqual(gotParetoSet, tt.wantParetoSet) {
+			if _, gotParetoSet := groupAssembliesByCount(tt.args.assemblies); !reflect.DeepEqual(gotParetoSet, tt.wantParetoSet) {
 				t.Errorf("pareto() = %v, want %v", gotParetoSet, tt.wantParetoSet)
 			}
 		})

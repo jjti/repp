@@ -38,7 +38,8 @@ def read_features():
 
                     name = dna_feature["name"].encode("utf-8").strip()
                     seq = dna_feature["pattern"]["bases"]
-                    features[name] = seq
+                    if len(seq) > 1 and "™" not in name:
+                        features[name] = seq
             except:
                 # raise
                 failures.append(file)

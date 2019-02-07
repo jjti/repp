@@ -60,8 +60,8 @@ type match struct {
 	internal bool
 }
 
-// length returns the length of the match on the target fragment
-func (m *match) length() int {
+// queryLength returns the length of the match on the target fragment
+func (m *match) queryLength() int {
 	return m.queryEnd - m.queryStart + 1 // it's inclusive
 }
 
@@ -169,10 +169,6 @@ func blast(name, seq string, circular bool, dbs, filters []string, identity int,
 		// add these matches against the growing list of matches
 		matches = append(matches, dbMatches...)
 	}
-
-	// for _, m := range matches {
-	// 	fmt.Printf("%s %d %d %s\n", m.entry, m.start, m.end, m.title)
-	// }
 
 	return matches, nil
 }
@@ -350,7 +346,7 @@ func filter(matches []match, targetLength, minSize int) (properized []match) {
 	var internal []match
 	var external []match
 	for _, m := range matches {
-		if m.length() < minSize {
+		if m.queryLength() < minSize {
 			continue // too short
 		}
 
@@ -419,8 +415,8 @@ func sortMatches(matches []match) {
 	sort.Slice(matches, func(i, j int) bool {
 		if matches[i].queryStart != matches[j].queryStart {
 			return matches[i].queryStart < matches[j].queryStart
-		} else if matches[i].length() != matches[j].length() {
-			return matches[i].length() > matches[j].length()
+		} else if matches[i].queryLength() != matches[j].queryLength() {
+			return matches[i].queryLength() > matches[j].queryLength()
 		}
 		return matches[i].entry > matches[j].entry
 	})
@@ -657,7 +653,6 @@ func (b *blastExec) runAgainst() (err error) {
 // The equation used for the melting temperature is:
 // Tm = 81.5 + 0.41(%GC) - 675/N - % mismatch, where N = total number of bases.
 //
-// TODO: replace with primer3's temp calculation with oligotm
 // seq <36bp
 // oligotm -tp 1 -sc 1 seq
 func isMismatch(m match, c *config.Config) bool {

@@ -145,6 +145,15 @@ func newFrag(m match, conf *config.Config) *Frag {
 	}
 }
 
+// newFlags is the plural of newFlag
+func newFrags(matches []match, conf *config.Config) []*Frag {
+	var frags []*Frag
+	for _, m := range matches {
+		frags = append(frags, newFrag(m, conf))
+	}
+	return frags
+}
+
 // copy returns a deep dopy of a Frag. used because nodes are mutated
 // during assembly filling, and we don't want primers being shared between
 // nodes in different assemblies
