@@ -15,15 +15,15 @@ in one of the dbs or a file on the local filesystem.`
 'defrag enzymes' prints a list of recognized enzymes.`
 )
 
-// buildCmd is for finding building a vector from its fragments, features, or sequence
-var buildCmd = &cobra.Command{
-	Use:                        "build",
-	Short:                      "Build a vector from its fragments, features or sequence",
-	SuggestionsMinimumDistance: 2,
+// assembleCmd is for finding building a vector from its fragments, features, or sequence
+var assembleCmd = &cobra.Command{
+	Use:                        "assemble",
+	Short:                      "Assemble a vector from its fragments, features or sequence",
+	SuggestionsMinimumDistance: 3,
 	Long: `
 Find fragments for assembling a vector via Gibson Assembly. Build the vector
 against a list of consituent fragment, feature, or a target sequence.`,
-	Aliases: []string{"assemble"},
+	Aliases: []string{"make", "build"},
 }
 
 // fragmentsCmd is for piecing together a list of input fragments into a vector
@@ -92,13 +92,13 @@ func init() {
 	sequenceCmd.Flags().StringP("exclude", "x", "", "keywords for excluding fragments")
 	sequenceCmd.Flags().IntP("identity", "t", 100, "match %-identity threshold (see 'blastn -help')")
 
-	buildCmd.AddCommand(fragmentsCmd)
-	buildCmd.AddCommand(featuresCmd)
-	buildCmd.AddCommand(sequenceCmd)
+	assembleCmd.AddCommand(fragmentsCmd)
+	assembleCmd.AddCommand(featuresCmd)
+	assembleCmd.AddCommand(sequenceCmd)
 
 	// settings is an optional parameter for a settings file (that overrides the fields in BaseSettingsFile)
-	buildCmd.PersistentFlags().StringP("settings", "s", config.RootSettingsFile, "build settings")
-	viper.BindPFlag("settings", buildCmd.PersistentFlags().Lookup("settings"))
+	assembleCmd.PersistentFlags().StringP("settings", "s", config.RootSettingsFile, "build settings")
+	viper.BindPFlag("settings", assembleCmd.PersistentFlags().Lookup("settings"))
 
-	rootCmd.AddCommand(buildCmd)
+	rootCmd.AddCommand(assembleCmd)
 }

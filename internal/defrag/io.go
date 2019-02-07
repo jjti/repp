@@ -119,9 +119,7 @@ func parseCmdFlags(cmd *cobra.Command, args []string) (*Flags, *config.Config) {
 
 	if fs.in, err = cmd.Flags().GetString("in"); err != nil {
 		if strings.ToLower(cmd.Name()) == "features" {
-			// if it's a features command, concatenate the arguments in case they're feature names
-			// with 'defrag features' the arguments are the feature names to use
-			fs.in = strings.Join(args, " ")
+			fs.in = p.parseFeatureInput(args)
 		} else if fs.in, err = p.guessInput(); err != nil {
 			// check whether an input fail was specified
 			stderr.Fatal(err)
@@ -158,7 +156,7 @@ func parseCmdFlags(cmd *cobra.Command, args []string) (*Flags, *config.Config) {
 	}
 
 	if dbString == "" && !addgene && !igem {
-		fmt.Println("no fragment databases chosen [-adi], setting Addgene and iGEM to true")
+		fmt.Println("no fragment databases chosen [-adi]: setting Addgene and iGEM to true")
 		addgene = true
 		igem = true
 	}
@@ -209,6 +207,31 @@ func (p *inputParser) guessInput() (in string, err error) {
 	}
 
 	return "", fmt.Errorf("failed: no input argument set and no fasta file found in %s", dir)
+}
+
+// parseFeatureInput turns the arguments to the features command into a
+// CSV list of features in a single string
+func (p *inputParser) parseFeatureInput(args []string) (out string) {
+	commaSeparated := false
+	for _, a := range args {
+		if strings.Contains(a, ",") {
+			commaSeparated = true
+		}
+	}
+
+	// if it's a features command, concatenate the arguments in case they're feature names
+	// with 'defrag features' the arguments are the feature names to use
+	if commaSeparated {
+		spacedSeparated := strings.Join(args, " ")
+		splitByComma := strings.Split(spacedSeparated, ",")
+		trimmedSeqs := []string{}
+		for _, entry := range splitByComma {
+			trimmedSeqs = append(trimmedSeqs, strings.TrimSpace(entry))
+		}
+		return strings.Join(trimmedSeqs, ",")
+	}
+
+	return strings.Join(args, " ")
 }
 
 // guessOutput gets an outpath path from an input path (if no output path is

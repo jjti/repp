@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"sort"
+	"strconv"
 	"strings"
 	"text/tabwriter"
 
@@ -24,23 +26,29 @@ func FeaturesCmd(cmd *cobra.Command, args []string) {
 }
 
 // features assembles a vector with all the features requested with the 'defrag features [feature ...]' command
+// pSB1A3 "p10 promoter" mEGFP "T7 terminator"
 func features(flags *Flags, conf *config.Config) {
 	targetFeatures := [][]string{} // slice of tuples [feature name, feature sequence]
 
-	if parsedFeatures, err := read(flags.in, true); err == nil {
-		seenFeatures := make(map[string]string) // map feature name to sequence
+	if readFeatures, err := read(flags.in, true); err == nil {
 		// see if the features are in a file (multi-FASTA or features in a Genbank)
-		for _, f := range parsedFeatures {
+		seenFeatures := make(map[string]string) // map feature name to sequence
+		for _, f := range readFeatures {
 			if seq := seenFeatures[f.ID]; seq != f.Seq {
 				stderr.Fatalf("failed to parse features, %s has two different sequences:\n\t%s\n\t%s\n", f.ID, f.Seq, seq)
 			}
-
 			targetFeatures = append(targetFeatures, []string{f.ID, f.Seq})
 		}
 	} else {
 		// if the features weren't in a file, try and find each in the features database
 		// or one of the databases passed as a source of building fragments
-		featureNames := strings.Fields(flags.in)
+		featureNames := []string{}
+		if strings.Contains(flags.in, ",") {
+			featureNames = strings.Split(flags.in, ",") // comma separated
+		} else {
+			featureNames = strings.Fields(flags.in) // spaces
+		}
+
 		if len(featureNames) < 1 {
 			stderr.Fatal("no features chosen. see 'defrag features --help'")
 		}
@@ -70,13 +78,16 @@ func features(flags *Flags, conf *config.Config) {
 
 	fragsToFeats := make(map[string][]int)     // a list from each entry (by id) to its list of covered features by index
 	fragsToMatches := make(map[string][]match) // map from building fragments to feature matches
+	tw := blastWriter()
 	for i, target := range targetFeatures {
-		matches, err := blast(target[0], target[1], false, flags.dbs, flags.filters, flags.identity, cmdFeatures)
+		matches, err := blast(target[0], target[1], false, flags.dbs, flags.filters, flags.identity, tw)
 		if err != nil {
 			stderr.Fatalln(err)
 		}
 
 		for _, m := range matches {
+			m.uniqueID = m.entry + strconv.Itoa(m.subjectStart)
+
 			if _, exists := fragsToMatches[m.entry]; !exists {
 				fragsToMatches[m.entry] = []match{m}
 				fragsToFeats[target[0]] = []int{i}
@@ -86,6 +97,7 @@ func features(flags *Flags, conf *config.Config) {
 			}
 		}
 	}
+	tw.Flush()
 
 }
 
@@ -143,7 +155,9 @@ func featureFragments(numFeatures int, fragsToFeats map[string][]int, fragsToMat
 		})
 	}
 
-	fmt.Println(len(matches))
+	for _, m := range matches {
+		fmt.Printf("%s %d %d %d %d\n", m.entry, m.queryStart, m.queryEnd, m.subjectStart, m.subjectEnd)
+	}
 
 	return nil
 }
@@ -178,19 +192,27 @@ func (f *FeatureDB) ReadCmd(cmd *cobra.Command, args []string) {
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', tabwriter.TabIndent)
 
 	if len(args) < 1 {
-		// print all their names to the console and the first few bp
-		for feat, seq := range f.features {
-			printSeq := ""
-			if 20 >= len(seq) {
-				printSeq = seq
-			} else {
-				printSeq = seq[:20] + "..."
-			}
-
-			fmt.Fprintf(w, "%s\t%s\n", feat, printSeq)
+		featNames := []string{}
+		for feat := range f.features {
+			featNames = append(featNames, feat)
 		}
-		w.Flush()
+		sort.Slice(
+			featNames,
+			func(i, j int) bool {
+				return strings.ToLower(featNames[i]) < strings.ToLower(featNames[j])
+			},
+		)
 
+		// print all their names to the console and the first few bp
+		for _, feat := range featNames {
+			seq := f.features[feat]
+			if len(seq) > 20 {
+				seq = seq[:20] + "..."
+			}
+			fmt.Fprintf(w, "%s\t%s\n", feat, seq)
+		}
+
+		w.Flush()
 		return
 	}
 
@@ -215,7 +237,6 @@ func (f *FeatureDB) ReadCmd(cmd *cobra.Command, args []string) {
 	}
 
 	// from https://golang.org/pkg/text/tabwriter/
-
 	if len(containing) < 3 {
 		lowDistance = append(lowDistance, containing...)
 		containing = []string{} // clear
@@ -368,7 +389,6 @@ func ld(s, t string, ignoreCase bool) int {
 				d[i][j] = min + 1
 			}
 		}
-
 	}
 	return d[len(s)][len(t)]
 }

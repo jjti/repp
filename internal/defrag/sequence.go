@@ -86,7 +86,10 @@ func sequence(input *Flags, conf *config.Config) (Frag, [][]*Frag, error) {
 	}
 
 	// get all the matches against the target vector
-	matches, err := blast(target.ID, target.Seq, true, input.dbs, input.filters, 100, cmdSequence)
+	tw := blastWriter()
+	matches, err := blast(target.ID, target.Seq, true, input.dbs, input.filters, 100, tw)
+	tw.Flush()
+
 	if err != nil {
 		dbMessage := strings.Join(input.dbs, ", ")
 		return Frag{}, nil, fmt.Errorf("failed to blast %s against the dbs %s: %v", target.ID, dbMessage, err)
