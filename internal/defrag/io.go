@@ -99,6 +99,10 @@ func NewFlags(in, out, backbone, enzymeName, filter string, dbs []string, addgen
 		stderr.Fatal(err)
 	}
 
+	if strings.Contains(in, ",") {
+		in = p.parseFeatureInput(strings.Fields(in))
+	}
+
 	return &Flags{
 		in:       in,
 		out:      out,

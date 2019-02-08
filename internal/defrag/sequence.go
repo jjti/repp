@@ -107,7 +107,7 @@ func sequence(input *Flags, conf *config.Config) (Frag, [][]*Frag, error) {
 
 	// build up a slice of assemblies that could, within the upper-limit on
 	// fragment count, be assembled to make the target vector
-	assemblies := createAssemblies(frags, target.Seq, conf)
+	assemblies := createAssemblies(frags, len(target.Seq), conf, cmdSequence)
 
 	// build up a map from fragment count to a sorted list of assemblies with that number
 	assemblyCounts, countToAssemblies := groupAssembliesByCount(assemblies)
@@ -184,7 +184,7 @@ func sequence(input *Flags, conf *config.Config) (Frag, [][]*Frag, error) {
 // 	  foreach otherFragment that thisFragment overlaps with + synthCount more:
 //	 	foreach assembly on thisFragment:
 //    	    add otherFragment to the assembly to create a new assembly, store on otherFragment
-func createAssemblies(frags []*Frag, target string, conf *config.Config) (assemblies []assembly) {
+func createAssemblies(frags []*Frag, targetLength int, conf *config.Config, cmd buildCmd) (assemblies []assembly) {
 	// number of additional frags try synthesizing to, in addition to those that
 	// already have enough homology for overlap without any modifications for each Frag
 	maxNodes := conf.FragmentsMaxCount
@@ -194,7 +194,7 @@ func createAssemblies(frags []*Frag, target string, conf *config.Config) (assemb
 	for i, f := range frags {
 		// edge case where the Frag spans the entire target vector... 100% match
 		// it is the target vector. just return that as the assembly
-		if len(f.Seq) >= len(target) {
+		if len(f.Seq) >= targetLength {
 			return []assembly{
 				assembly{
 					frags:  []*Frag{f.copy()},
@@ -206,9 +206,9 @@ func createAssemblies(frags []*Frag, target string, conf *config.Config) (assemb
 		// create a starting assembly for each fragment just containing it
 		frags[i].assemblies = []assembly{
 			assembly{
-				frags:  []*Frag{f.copy()},        // just self
-				cost:   f.costTo(f, cmdSequence), // just PCR,
-				synths: 0,                        // no synthetic frags at start
+				frags:  []*Frag{f.copy()}, // just self
+				cost:   f.costTo(f, cmd),  // just PCR,
+				synths: 0,                 // no synthetic frags at start
 			},
 		}
 	}
@@ -219,7 +219,7 @@ func createAssemblies(frags []*Frag, target string, conf *config.Config) (assemb
 		for _, j := range f.reach(frags, i, synthCount) {
 			// for every assembly on the reaching fragment
 			for _, a := range f.assemblies {
-				newAssembly, created, circularized := a.add(frags[j], maxNodes, cmdSequence)
+				newAssembly, created, circularized := a.add(frags[j], maxNodes, cmd)
 
 				// if a new assembly wasn't created, move on
 				if !created {

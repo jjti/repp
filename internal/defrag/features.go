@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"os"
 	"sort"
 	"strconv"
@@ -26,7 +27,7 @@ func FeaturesCmd(cmd *cobra.Command, args []string) {
 }
 
 // features assembles a vector with all the features requested with the 'defrag features [feature ...]' command
-// pSB1A3 "p10 promoter" mEGFP "T7 terminator"
+// defrag assemble features p10 promoter, mEGFP, T7 terminator
 func features(flags *Flags, conf *config.Config) {
 	targetFeatures := [][]string{} // slice of tuples [feature name, feature sequence]
 
@@ -90,53 +91,68 @@ func features(flags *Flags, conf *config.Config) {
 
 			if _, exists := fragsToMatches[m.entry]; !exists {
 				fragsToMatches[m.entry] = []match{m}
-				fragsToFeats[target[0]] = []int{i}
+				fragsToFeats[m.entry] = []int{i}
 			} else {
 				fragsToMatches[m.entry] = append(fragsToMatches[m.entry], m)
-				fragsToFeats[target[0]] = append(fragsToFeats[target[0]], i)
+				fragsToFeats[m.entry] = append(fragsToFeats[m.entry], i)
 			}
 		}
 	}
 	tw.Flush()
+
+	featureFragments(len(targetFeatures), fragsToFeats, fragsToMatches, flags.dbs, conf)
 
 }
 
 //
 //
 // eg features: 1, 2, 3, 4, 5, 1, 2, 3, 4, 5
-func featureFragments(numFeatures int, fragsToFeats map[string][]int, fragsToMatches map[string][]match, dbs []string) []*Frag {
+func featureFragments(
+	numFeatures int,
+	fragsToFeats map[string][]int,
+	fragsToMatches map[string][]match,
+	dbs []string,
+	conf *config.Config) []*Frag {
 	matches := []match{}
 
 	// turn matches into frags but with start and end referring to feature index
 	for frag, feats := range fragsToFeats {
+		sort.Ints(feats)
 		fragMatches := fragsToMatches[frag]
 
 		// expand the range the matches range based on its continuous feature stretches
 		m := fragMatches[0]
 		stretchStart := feats[0]
-		circularFeats := append(feats, feats...)
-		for testIndex, testFeat := range circularFeats[1:] {
+
+		// features doubled on self to account for feature runs that cross the zero index
+		for testFeatIndex, testFeat := range append(feats, feats...) {
 			if testFeat == (stretchStart+1)%numFeatures {
 				continue
 			}
 
 			// cannot extend this stretch, create a new fragment
 			m.queryStart = stretchStart
-			m.queryEnd = testFeat - 1
-			m.subjectEnd = fragMatches[testIndex%len(feats)].subjectEnd
+			m.queryEnd = testFeat
+			if m.queryEnd < m.queryStart {
+				m.queryEnd += len(feats)
+			}
+
+			m.subjectEnd = fragMatches[testFeatIndex%len(feats)].subjectEnd
 
 			matches = append(matches, m)
 
-			stretchStart = testFeat
-			m = fragMatches[testFeat]
+			m = fragMatches[testFeatIndex%len(feats)]
+			stretchStart = testFeatIndex
 		}
 	}
 
-	matches = filter(matches, numFeatures, 1)
+	matches = filter(matches, numFeatures, -1)
+
+	fmt.Printf("%d matches after filtering\n", len(matches))
 
 	// get the matches back out of the databases (the full parts) and
 	// create an assembly holding them in their start index
-	assemblies := [][]assembly{}
+	frags := []*Frag{}
 	for _, m := range matches {
 		frag, err := queryDatabases(m.entry, dbs)
 		if err != nil {
@@ -148,16 +164,16 @@ func featureFragments(numFeatures int, fragsToFeats map[string][]int, fragsToMat
 		if end < start {
 			end += len(frag.Seq)
 		}
+
+		frag.conf = conf
 		frag.Seq = (frag.Seq + frag.Seq)[start:end]
 
-		assemblies[m.queryStart] = append(assemblies[m.queryStart], assembly{
-			frags: []*Frag{&frag},
-		})
+		frags = append(frags, &frag)
 	}
 
-	for _, m := range matches {
-		fmt.Printf("%s %d %d %d %d\n", m.entry, m.queryStart, m.queryEnd, m.subjectStart, m.subjectEnd)
-	}
+	// traverse the fragments, accumulate filled assemblies
+	assemblies := createAssemblies(frags, math.MaxInt16, conf, cmdFeatures)
+	fmt.Printf("%d assemblies created\n", len(assemblies))
 
 	return nil
 }

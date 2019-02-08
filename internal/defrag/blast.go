@@ -61,8 +61,8 @@ type match struct {
 	internal bool
 }
 
-// queryLength returns the length of the match on the target fragment
-func (m *match) queryLength() int {
+// length returns the length of the match on the queried fragment
+func (m *match) length() int {
 	return m.queryEnd - m.queryStart + 1 // it's inclusive
 }
 
@@ -262,8 +262,6 @@ func (b *blastExec) parse(filters []string) (matches []match, err error) {
 	}
 	fileS := string(file)
 
-	// fmt.Printf("%+v", filters)
-
 	// read it into Matches
 	var ms []match
 	for _, line := range strings.Split(fileS, "\n") {
@@ -284,12 +282,15 @@ func (b *blastExec) parse(filters []string) (matches []match, err error) {
 		subjectStart, _ := strconv.Atoi(cols[3])
 		subjectEnd, _ := strconv.Atoi(cols[4])
 		seq := cols[5]
-		mm, _ := strconv.Atoi(cols[6])
+		mismatching, _ := strconv.Atoi(cols[6])
 		titles := cols[7] // salltitles, eg: "fwd terminator 2011"
 
-		// direction not guarenteed
+		// flip if blast is reading right to left
 		if queryStart > queryEnd {
 			queryStart, queryEnd = queryEnd, queryStart
+		}
+		if subjectStart > subjectEnd {
+			subjectStart, subjectEnd = subjectEnd, subjectStart
 		}
 
 		// filter on titles
@@ -318,7 +319,7 @@ func (b *blastExec) parse(filters []string) (matches []match, err error) {
 			subjectStart: subjectStart - 1,
 			subjectEnd:   subjectEnd - 1,
 			circular:     strings.Contains(titles, "circular"),
-			mismatching:  mm,
+			mismatching:  mismatching,
 			internal:     b.internal,
 			db:           b.db, // store for checking off-targets later
 			title:        titles,
@@ -351,7 +352,7 @@ func filter(matches []match, targetLength, minSize int) (properized []match) {
 	var internal []match
 	var external []match
 	for _, m := range matches {
-		if m.queryLength() < minSize {
+		if minSize > 0 && m.length() < minSize {
 			continue // too short
 		}
 
@@ -377,9 +378,13 @@ func filter(matches []match, targetLength, minSize int) (properized []match) {
 		}
 	}
 
-	// add back copied matches for those that only show up once
+	// add back copied matches for those that only show up once but should cross the zero index
 	copiedMatches := []match{}
 	for _, m := range properized {
+		if minSize < 0 {
+			continue
+		}
+
 		if count := matchCount[m.uniqueID]; count == 2 {
 			continue
 		}
@@ -420,8 +425,8 @@ func sortMatches(matches []match) {
 	sort.Slice(matches, func(i, j int) bool {
 		if matches[i].queryStart != matches[j].queryStart {
 			return matches[i].queryStart < matches[j].queryStart
-		} else if matches[i].queryLength() != matches[j].queryLength() {
-			return matches[i].queryLength() > matches[j].queryLength()
+		} else if matches[i].length() != matches[j].length() {
+			return matches[i].length() > matches[j].length()
 		}
 		return matches[i].entry > matches[j].entry
 	})
