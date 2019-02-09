@@ -503,7 +503,7 @@ func readGenbank(path, contents string, parseFeatures bool) (fragments []Frag, e
 // filename is the output file to write to
 // target is the vector we tried to assemble
 // assemblies are the solutions that can build up the target vector
-func write(filename string, target Frag, assemblies [][]*Frag, insertSeqLength int, conf *config.Config, seconds float64) (output []byte, err error) {
+func write(filename, targetName, targetSeq string, assemblies [][]*Frag, insertSeqLength int, conf *config.Config, seconds float64) (output []byte, err error) {
 	// store save time, using same format as log.Println https://golang.org/pkg/log/#Println
 	t := time.Now() // https://gobyexample.com/time-formatting-parsing
 	time := fmt.Sprintf("%d/%02d/%02d %02d:%02d:%02d", t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
@@ -564,8 +564,8 @@ func write(filename string, target Frag, assemblies [][]*Frag, insertSeqLength i
 
 	out := Output{
 		Time:                time,
-		Target:              target.ID,
-		TargetSeq:           strings.ToUpper(target.Seq),
+		Target:              targetName,
+		TargetSeq:           strings.ToUpper(targetSeq),
 		Execution:           seconds,
 		Solutions:           solutions,
 		VectorSynthesisCost: fullSynthCost,

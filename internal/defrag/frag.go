@@ -64,7 +64,7 @@ type Frag struct {
 	// circular if it was submitted/created as a circular fragment (marked as such in the DB)
 	circular bool
 
-	// start of this Frag on the target vector (which has been 3x'ed for BLAST)
+	// start of this Frag on the target vector
 	start int
 
 	// end of this Frag on the target vector
@@ -364,7 +364,7 @@ func (f *Frag) synthTo(next *Frag, target string) (synths []*Frag) {
 	synths = []*Frag{}
 	start := f.end - minHomology // start w/ homology, move left
 	for len(synths) < int(fragCount) {
-		end := start + fragLength + minHomology
+		end := start + fragLength + minHomology + 1
 		seq := target[start+targetLength : end+targetLength]
 		for hairpin(seq[len(seq)-minHomology:], f.conf) > f.conf.FragmentsMaxHairpinMelt {
 			end += minHomology / 2
@@ -397,7 +397,8 @@ func (f *Frag) setPrimers(last, next *Frag, seq string, conf *config.Config) (er
 		conf.FragmentsMinHomology,
 		conf.FragmentsMaxHomology,
 		conf.PCRMaxEmbedLength,
-		conf.PCRMinLength)
+		conf.PCRMinLength,
+	)
 	if err != nil {
 		return
 	}
@@ -479,6 +480,9 @@ func (f *Frag) setPrimers(last, next *Frag, seq string, conf *config.Config) (er
 func mutateNodePrimers(f *Frag, seq string, addLeft, addRight int) (mutated *Frag) {
 	template := strings.ToUpper(seq + seq + seq)
 
+	// update fragment sequence
+	f.Seq = template[f.start+len(seq) : f.end+len(seq)+1]
+
 	// add bp to the left/FWD primer to match the fragment to the left
 	if addLeft > 0 {
 		oldStart := f.Primers[0].Range.start + len(seq)
@@ -497,9 +501,6 @@ func mutateNodePrimers(f *Frag, seq string, addLeft, addRight int) (mutated *Fra
 	// of the primers, since the range may have shifted to get better primers
 	f.start = f.Primers[0].Range.start
 	f.end = f.Primers[1].Range.end
-
-	// update the Frag's seq to reflect that change
-	// f.Seq = template[f.start+len(seq) : f.end+len(seq)+1]
 
 	return f
 }
