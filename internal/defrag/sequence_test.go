@@ -34,87 +34,6 @@ func Test_vector_single_vector(t *testing.T) {
 	}
 }
 
-func Test_countMaps(t *testing.T) {
-	c := config.New()
-	n1 := &Frag{
-		uniqueID: "1",
-		start:    0,
-		end:      50,
-		conf:     c,
-	}
-	n2 := &Frag{
-		uniqueID: "2",
-		start:    20,
-		end:      80,
-		conf:     c,
-	}
-	n3 := &Frag{
-		uniqueID: "3",
-		start:    60,
-		end:      100,
-		conf:     c,
-	}
-
-	a1 := assembly{
-		frags: []*Frag{
-			n1, n1,
-		},
-		cost: 11.0,
-	}
-	a2 := assembly{
-		frags: []*Frag{
-			n1, n2, n1,
-		},
-		cost: 12.5,
-	}
-	a3 := assembly{
-		frags: []*Frag{
-			n2, n3, n2,
-		},
-		cost: 12.0,
-	}
-	a4 := assembly{
-		frags: []*Frag{
-			n1, n2, n3, n1,
-		},
-		cost: 10.0,
-	}
-	a5 := assembly{
-		frags: []*Frag{
-			n2, n3, n1, n2,
-		},
-		cost: 10.5,
-	}
-
-	type args struct {
-		assemblies []assembly
-	}
-	tests := []struct {
-		name          string
-		args          args
-		wantParetoSet map[int][]assembly
-	}{
-		{
-			"gen pSet up to 3",
-			args{
-				assemblies: []assembly{a1, a2, a3, a4, a5},
-			},
-			map[int][]assembly{
-				1: []assembly{a1},
-				2: []assembly{a3, a2},
-				3: []assembly{a4, a5},
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if _, gotParetoSet := groupAssembliesByCount(tt.args.assemblies); !reflect.DeepEqual(gotParetoSet, tt.wantParetoSet) {
-				t.Errorf("pareto() = %v, want %v", gotParetoSet, tt.wantParetoSet)
-			}
-		})
-	}
-}
-
 func Test_build(t *testing.T) {
 	seq := "GTCGACGGATCGGGAGATCTCCCGATCCCCTATGGTGCACTCTCAGTACAATCTGCTCTGATGCCGCATAGTCGACGGATCGGGAGATCTCCCGATCCCCTATGGTGCACTCTCAGTACAATCTGCTCTGATGCCGCATA"
 	c := config.New()
@@ -223,7 +142,7 @@ func Test_build(t *testing.T) {
 			wantedIds := getNodeSet(tt.wantAssemblies)
 
 			if !reflect.DeepEqual(actualIds, wantedIds) {
-				t.Errorf("createAssemblies() = %v, want %v", actualIds, wantedIds)
+				t.Errorf("build() = %v, want %v", actualIds, wantedIds)
 			}
 		})
 	}

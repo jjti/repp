@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"text/tabwriter"
+	"time"
 
 	"github.com/jjtimmons/defrag/config"
 	"github.com/spf13/cobra"
@@ -29,6 +30,7 @@ func FeaturesCmd(cmd *cobra.Command, args []string) {
 // features assembles a vector with all the features requested with the 'defrag features [feature ...]' command
 // defrag assemble features p10 promoter, mEGFP, T7 terminator
 func features(flags *Flags, conf *config.Config) {
+	start := time.Now()
 	targetFeatures := [][]string{} // slice of tuples [feature name, feature sequence]
 
 	if readFeatures, err := read(flags.in, true); err == nil {
@@ -100,8 +102,10 @@ func features(flags *Flags, conf *config.Config) {
 	}
 	tw.Flush()
 
-	featureFragments(len(targetFeatures), fragsToFeats, fragsToMatches, flags.dbs, conf)
+	solutions := featureFragments(len(targetFeatures), fragsToFeats, fragsToMatches, flags.dbs, conf)
 
+	elapsed := time.Since(start)
+	write(flags.out, flags.in, "", solutions, 0, conf, elapsed.Seconds())
 }
 
 //
@@ -112,7 +116,7 @@ func featureFragments(
 	fragsToFeats map[string][]int,
 	fragsToMatches map[string][]match,
 	dbs []string,
-	conf *config.Config) []*Frag {
+	conf *config.Config) [][]*Frag {
 	matches := []match{}
 
 	// turn matches into frags but with start and end referring to feature index
@@ -146,7 +150,7 @@ func featureFragments(
 		}
 	}
 
-	matches = filter(matches, numFeatures, -1)
+	matches = filter(matches, numFeatures, conf.PCRMinLength)
 
 	fmt.Printf("%d matches after filtering\n", len(matches))
 
@@ -165,17 +169,39 @@ func featureFragments(
 			end += len(frag.Seq)
 		}
 
-		frag.conf = conf
+		frag.ID = m.entry
+		frag.uniqueID = m.uniqueID
 		frag.Seq = (frag.Seq + frag.Seq)[start:end]
+		frag.start = 0
+		frag.end = len(frag.Seq) - 1
+		frag.conf = conf
 
 		frags = append(frags, &frag)
 	}
 
-	// traverse the fragments, accumulate filled assemblies
+	// traverse the fragments, accumulate assemblies that span all the features
 	assemblies := createAssemblies(frags, math.MaxInt16, conf, cmdFeatures)
-	fmt.Printf("%d assemblies created\n", len(assemblies))
 
-	return nil
+	// fill each assembly an accumulate as a solution
+	solutions := [][]*Frag{}
+	for _, a := range assemblies {
+		// the target vector sequence is the concatenation of each of their individual sequences
+		var vectorSeqBuilder strings.Builder
+		for _, f := range a.frags {
+			f.start += vectorSeqBuilder.Len()
+			f.end += vectorSeqBuilder.Len()
+			vectorSeqBuilder.WriteString(f.Seq)
+		}
+
+		filledFrags, err := a.fill(vectorSeqBuilder.String(), conf)
+		if err == nil {
+			solutions = append(solutions, filledFrags)
+		} else {
+			fmt.Println(err.Error())
+		}
+	}
+
+	return solutions
 }
 
 // NewFeatureDB returns a new copy of the features db

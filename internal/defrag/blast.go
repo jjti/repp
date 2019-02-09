@@ -63,7 +63,12 @@ type match struct {
 
 // length returns the length of the match on the queried fragment
 func (m *match) length() int {
-	return m.queryEnd - m.queryStart + 1 // it's inclusive
+	queryLength := m.queryEnd - m.queryStart + 1
+	subjectLength := m.subjectEnd - m.subjectStart + 1
+	if queryLength > subjectLength {
+		return queryLength
+	}
+	return subjectLength
 }
 
 // copyWithQueryRange returns a new match with the new start, end
@@ -285,6 +290,13 @@ func (b *blastExec) parse(filters []string) (matches []match, err error) {
 		mismatching, _ := strconv.Atoi(cols[6])
 		titles := cols[7] // salltitles, eg: "fwd terminator 2011"
 
+		// bug where titles are being included in the entry
+		entryCols := strings.Fields(entry)
+		if len(entryCols) > 1 {
+			entry = entryCols[0]
+			titles = entryCols[1] + titles
+		}
+
 		// flip if blast is reading right to left
 		if queryStart > queryEnd {
 			queryStart, queryEnd = queryEnd, queryStart
@@ -295,7 +307,7 @@ func (b *blastExec) parse(filters []string) (matches []match, err error) {
 
 		// filter on titles
 		matchesFilter := false
-		search := strings.ToUpper(entry + titles)
+		search := strings.ToUpper(entry + " " + titles)
 		for _, f := range filters {
 			if strings.Contains(search, f) {
 				matchesFilter = true
@@ -318,11 +330,11 @@ func (b *blastExec) parse(filters []string) (matches []match, err error) {
 			queryEnd:     queryEnd - 1,
 			subjectStart: subjectStart - 1,
 			subjectEnd:   subjectEnd - 1,
-			circular:     strings.Contains(titles, "circular"),
+			circular:     strings.Contains(entry+titles, "circular"),
 			mismatching:  mismatching,
 			internal:     b.internal,
 			db:           b.db, // store for checking off-targets later
-			title:        titles,
+			title:        search,
 		})
 	}
 
@@ -381,10 +393,6 @@ func filter(matches []match, targetLength, minSize int) (properized []match) {
 	// add back copied matches for those that only show up once but should cross the zero index
 	copiedMatches := []match{}
 	for _, m := range properized {
-		if minSize < 0 {
-			continue
-		}
-
 		if count := matchCount[m.uniqueID]; count == 2 {
 			continue
 		}
@@ -446,8 +454,14 @@ func queryDatabases(entry string, dbs []string) (f Frag, err error) {
 
 		if err == nil && outFile.Name() != "" {
 			defer os.Remove(outFile.Name())
-			frags, err := read(outFile.Name(), false)
-			return frags[0], err
+
+			if frags, err := read(outFile.Name(), false); err == nil {
+				targetFrag := frags[0]
+				targetFrag.db = db
+				return targetFrag, nil
+			}
+
+			return Frag{}, err
 		}
 	}
 

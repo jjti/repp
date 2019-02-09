@@ -2,9 +2,7 @@ package defrag
 
 import (
 	"fmt"
-	"math"
 	"os"
-	"sort"
 	"strings"
 	"time"
 
@@ -31,7 +29,7 @@ func Sequence(flags *Flags, conf *config.Config) {
 
 	// write the results to a file
 	elapsed := time.Since(start)
-	_, err = write(flags.out, target, builds, len(target.Seq), conf, elapsed.Seconds())
+	_, err = write(flags.out, target.ID, target.Seq, builds, len(target.Seq), conf, elapsed.Seconds())
 	handleErr(err)
 
 	fmt.Printf("%s\n\n", elapsed)
@@ -112,11 +110,8 @@ func sequence(input *Flags, conf *config.Config) (Frag, [][]*Frag, error) {
 	// build up a map from fragment count to a sorted list of assemblies with that number
 	assemblyCounts, countToAssemblies := groupAssembliesByCount(assemblies)
 
-	// "fill-in" the fragments (create synthetic fragments and primers)
-	// skip assemblies that wouldn't be less than the current cheapest assembly
-	filled := make(map[int][]*Frag)
-
 	// append a fully synthetic solution at first, nothing added should cost more than this (single vector)
+	filled := make(map[int][]*Frag)
 	minCostAssembly := addSyntheticVector(filled, target.Seq, conf)
 
 	for _, count := range assemblyCounts {
@@ -172,105 +167,6 @@ func sequence(input *Flags, conf *config.Config) (Frag, [][]*Frag, error) {
 	}
 
 	return target, solutions, nil
-}
-
-// createAssemblies builds up circular assemblies (unfilled lists of fragments that should be combinable)
-//
-// maxNodes is the maximum number of fragments in a single assembly
-// target is the target sequence we're trying to createAssemblies up
-//
-// It is created by traversing a DAG in forward order:
-// 	foreach thisFragment (sorted in increasing start index order):
-// 	  foreach otherFragment that thisFragment overlaps with + synthCount more:
-//	 	foreach assembly on thisFragment:
-//    	    add otherFragment to the assembly to create a new assembly, store on otherFragment
-func createAssemblies(frags []*Frag, targetLength int, conf *config.Config, cmd buildCmd) (assemblies []assembly) {
-	// number of additional frags try synthesizing to, in addition to those that
-	// already have enough homology for overlap without any modifications for each Frag
-	maxNodes := conf.FragmentsMaxCount
-	synthCount := int(math.Max(5, 0.05*float64(len(frags)))) // 5 of 5%, whichever is greater
-
-	// create a starting assembly on each Frag including just itself
-	for i, f := range frags {
-		// edge case where the Frag spans the entire target vector... 100% match
-		// it is the target vector. just return that as the assembly
-		if len(f.Seq) >= targetLength {
-			return []assembly{
-				assembly{
-					frags:  []*Frag{f.copy()},
-					synths: 0,
-				},
-			}
-		}
-
-		// create a starting assembly for each fragment just containing it
-		frags[i].assemblies = []assembly{
-			assembly{
-				frags:  []*Frag{f.copy()}, // just self
-				cost:   f.costTo(f, cmd),  // just PCR,
-				synths: 0,                 // no synthetic frags at start
-			},
-		}
-	}
-
-	// for every Frag in the list of increasing start index frags
-	for i, f := range frags {
-		// for every overlapping fragment + synthCount more
-		for _, j := range f.reach(frags, i, synthCount) {
-			// for every assembly on the reaching fragment
-			for _, a := range f.assemblies {
-				newAssembly, created, circularized := a.add(frags[j], maxNodes, cmd)
-
-				// if a new assembly wasn't created, move on
-				if !created {
-					continue
-				}
-
-				if circularized {
-					// we've circularized a plasmid assembly, it's ready for filling
-					assemblies = append(assemblies, newAssembly)
-				} else {
-					// add to the other fragment's list of assemblies
-					frags[j].assemblies = append(frags[j].assemblies, newAssembly)
-				}
-			}
-		}
-	}
-
-	fmt.Printf("%d assemblies made\n", len(assemblies))
-
-	return assemblies
-}
-
-// groupAssembliesByCount returns a map from the number of fragments in a build
-// to a slice of builds with that number of fragments, sorted by their cost
-func groupAssembliesByCount(assemblies []assembly) ([]int, map[int][]assembly) {
-	countToAssemblies := make(map[int][]assembly)
-	for _, a := range assemblies {
-		// The "-1"s here are because the assemblies are circular and
-		// their last Frag is the same as the first. The total number
-		// of nodes/fragments in the assembly is actually one less than
-		// the assembly's length
-		if as, ok := countToAssemblies[a.len()-1]; ok {
-			countToAssemblies[a.len()-1] = append(as, a)
-		} else {
-			countToAssemblies[a.len()-1] = []assembly{a}
-		}
-	}
-
-	// sort the fragment counts of assemblies and the assemblies within each
-	// assembly count, so we're trying the shortest assemblies first, and the cheapest
-	// assembly within each fragment count before the others
-	assemblyCounts := []int{}
-	for count := range countToAssemblies {
-		assemblyCounts = append(assemblyCounts, count)
-		sort.Slice(countToAssemblies[count], func(i, j int) bool {
-			return countToAssemblies[count][i].cost < countToAssemblies[count][j].cost
-		})
-	}
-	sort.Ints(assemblyCounts)
-
-	return assemblyCounts, countToAssemblies
 }
 
 // addSyntheticVector adds a new fully synthetic vector to the built map if it's cheaper
