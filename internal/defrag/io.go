@@ -517,17 +517,20 @@ func write(filename, targetName, targetSeq string, assemblies [][]*Frag, insertS
 			// freeze fragment type
 			f.Type = f.fragType.String()
 
-			// if it's already in the assembly, don't count cost twice
-			if _, contained := assemblyFragmentIDs[f.ID]; contained {
-				continue
-			} else {
-				assemblyFragmentIDs[f.ID] = true
-			}
-
 			// round to two decimal places
-			f.Cost, err = roundCost(f.cost())
+			f.Cost, err = roundCost(f.cost(true))
 			if err != nil {
 				return nil, err
+			}
+
+			// if it's already in the assembly, don't count cost twice
+			if _, contained := assemblyFragmentIDs[f.ID]; f.ID != "" && contained {
+				f.Cost, err = roundCost(f.cost(false)) // ignore repo procurement costs
+				if err != nil {
+					return nil, err
+				}
+			} else {
+				assemblyFragmentIDs[f.ID] = true
 			}
 
 			// accumulate assembly cost
@@ -580,6 +583,7 @@ func write(filename, targetName, targetSeq string, assemblies [][]*Frag, insertS
 	if err = ioutil.WriteFile(filename, output, 0666); err != nil {
 		return output, fmt.Errorf("failed to write the output: %v", err)
 	}
+
 	return output, nil
 }
 

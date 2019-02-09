@@ -164,11 +164,13 @@ func (f *Frag) copy() (newFrag *Frag) {
 }
 
 // cost returns the estimated cost of a fragment. Combination of source and preparation
-func (f *Frag) cost() (c float64) {
-	if strings.Contains(f.URL, "addgene") {
-		c += f.conf.AddGeneVectorCost
-	} else if strings.Contains(f.URL, "igem") {
-		c += f.conf.IGEMPartCost
+func (f *Frag) cost(procure bool) (c float64) {
+	if procure {
+		if strings.Contains(f.URL, "addgene") {
+			c += f.conf.AddGeneVectorCost
+		} else if strings.Contains(f.URL, "igem") {
+			c += f.conf.IGEMPartCost
+		}
 	}
 
 	if f.fragType == pcr && f.Primers != nil {
@@ -412,7 +414,7 @@ func (f *Frag) setPrimers(last, next *Frag, seq string, conf *config.Config) (er
 	}
 
 	// update Frag's range, and add additional bp to the left and right primer if it wasn't included in the primer3 output
-	mutateNodePrimers(f, seq, addLeft, addRight)
+	mutatePrimers(f, seq, addLeft, addRight)
 
 	// make sure the fragment's length is still long enough for PCR
 	if f.end-f.start < conf.PCRMinLength {
@@ -470,18 +472,18 @@ func (f *Frag) setPrimers(last, next *Frag, seq string, conf *config.Config) (er
 	return
 }
 
-// mutateNodePrimers adds additional bp to the sides of a Frag
+// mutatePrimers adds additional bp to the sides of a Frag
 // if there was additional homology bearing sequence that we were unable
 // to add through primer3 alone
 //
 // it also updates the range, start + end, of the Frag to match that of the primers
 //
 // returning Frag for testing
-func mutateNodePrimers(f *Frag, seq string, addLeft, addRight int) (mutated *Frag) {
+func mutatePrimers(f *Frag, seq string, addLeft, addRight int) (mutated *Frag) {
 	template := strings.ToUpper(seq + seq + seq)
 
 	// update fragment sequence
-	f.Seq = template[f.start+len(seq) : f.end+len(seq)+1]
+	f.Seq = template[f.Primers[0].Range.start+len(seq) : f.Primers[1].Range.end+len(seq)+1]
 
 	// add bp to the left/FWD primer to match the fragment to the left
 	if addLeft > 0 {
@@ -513,7 +515,7 @@ func (t fragType) String() string {
 // fragsCost returns the total cost of a slice of frags. Just the summation of their costs
 func fragsCost(frags []*Frag) (cost float64) {
 	for _, f := range frags {
-		cost += f.cost()
+		cost += f.cost(true)
 	}
 
 	return

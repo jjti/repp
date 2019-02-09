@@ -14,7 +14,7 @@ import (
 // as is and without PCR or any preparation
 func Test_vector_single_vector(t *testing.T) {
 	fs, c := NewFlags(
-		path.Join("..", "..", "test", "109049.addgene.fa"),
+		path.Join("..", "..", "test", "input", "109049.addgene.fa"),
 		path.Join("..", "..", "test", "output", "109049.output.json"),
 		"",
 		"",

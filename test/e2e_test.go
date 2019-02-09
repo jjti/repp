@@ -22,7 +22,7 @@ func Test_E2E(t *testing.T) {
 
 	tests := []testFlags{
 		testFlags{
-			path.Join("BBa_E0610.fa"),
+			path.Join("input", "BBa_E0610.fa"),
 			path.Join("output", "BBa_E0610.json"),
 			"pSB1C3",
 			"EcoRI",
@@ -32,7 +32,7 @@ func Test_E2E(t *testing.T) {
 			true,
 		},
 		testFlags{
-			path.Join("BBa_K2602025.fa"),
+			path.Join("input", "BBa_K2602025.fa"),
 			path.Join("output", "BBa_K2602025.json"),
 			"pSB1A3",
 			"PstI",
@@ -42,7 +42,7 @@ func Test_E2E(t *testing.T) {
 			true,
 		},
 		testFlags{
-			path.Join("BBa_I5310.fa"),
+			path.Join("input", "BBa_I5310.fa"),
 			path.Join("output", "BBa_I5310.json"),
 			"pSB1C3",
 			"EcoRI",
@@ -52,7 +52,7 @@ func Test_E2E(t *testing.T) {
 			true,
 		},
 		testFlags{
-			path.Join("BBa_K077557.fa"),
+			path.Join("input", "BBa_K077557.fa"),
 			path.Join("output", "BBa_K077557.json"),
 			"pSB1C3",
 			"EcoRI",
@@ -62,7 +62,7 @@ func Test_E2E(t *testing.T) {
 			true,
 		},
 		testFlags{
-			path.Join("BBa_K2651001.fa"),
+			path.Join("input", "BBa_K2651001.fa"),
 			path.Join("output", "BBa_K2651001.json"),
 			"pSB1C3",
 			"EcoRI",
@@ -72,7 +72,7 @@ func Test_E2E(t *testing.T) {
 			true,
 		},
 		testFlags{
-			path.Join("BBa_K2779020.fa"),
+			path.Join("input", "BBa_K2779020.fa"),
 			path.Join("output", "BBa_K2779020.json"),
 			"pSB1A3",
 			"PstI",
@@ -82,7 +82,7 @@ func Test_E2E(t *testing.T) {
 			true,
 		},
 		testFlags{
-			"BBa_K1085023.fa",
+			path.Join("input", "BBa_K1085023.fa"),
 			path.Join("output", "BBa_K1085023.json"),
 			"pSB1C3",
 			"EcoRI",
