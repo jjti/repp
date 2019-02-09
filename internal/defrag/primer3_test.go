@@ -293,7 +293,7 @@ func Test_mutateNodePrimers(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if gotMutated := mutateNodePrimers(tt.args.n, tt.args.Seq, tt.args.addLeft, tt.args.addRight); !reflect.DeepEqual(gotMutated, tt.wantMutated) {
+			if gotMutated := mutatePrimers(tt.args.n, tt.args.Seq, tt.args.addLeft, tt.args.addRight); !reflect.DeepEqual(gotMutated, tt.wantMutated) {
 				t.Errorf("mutateNodePrimers() = %v, want %v", gotMutated, tt.wantMutated)
 			}
 		})

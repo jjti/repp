@@ -2,7 +2,6 @@ package defrag
 
 import (
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
@@ -33,7 +32,6 @@ func Sequence(flags *Flags, conf *config.Config) {
 	handleErr(err)
 
 	fmt.Printf("%s\n\n", elapsed)
-	os.Exit(0)
 }
 
 // sequence builds a vector using a simple cost optimization scheme

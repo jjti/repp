@@ -2,7 +2,6 @@ package defrag
 
 import (
 	"fmt"
-	"os"
 	"path"
 	"path/filepath"
 	"reflect"
@@ -92,7 +91,6 @@ func Test_inputParser_parseOut(t *testing.T) {
 func Test_inputParser_getInput(t *testing.T) {
 	// move into the test directory
 	parser := inputParser{}
-	os.Chdir(filepath.Join("..", "..", "test"))
 
 	tests := []struct {
 		name    string
@@ -101,7 +99,7 @@ func Test_inputParser_getInput(t *testing.T) {
 	}{
 		{
 			"get fasta file from directory alone",
-			"109049.addgene.fa",
+			filepath.Join("..", "..", "test", "input", "109049.addgene.fa"),
 			false,
 		},
 	}
@@ -169,25 +167,25 @@ func Test_read(t *testing.T) {
 	files := []fileRead{
 		{
 			"113726(circular)",
-			path.Join("..", "..", "test", "113726(circular).parent"),
+			path.Join("..", "..", "test", "input", "113726(circular).parent"),
 			1,
 			false,
 		},
 		{
 			"multi.fasta",
-			path.Join("..", "..", "test", "multi.fasta"),
+			path.Join("..", "..", "test", "input", "multi.fasta"),
 			5,
 			false,
 		},
 		{
 			"genbank sequence",
-			path.Join("..", "..", "test", "genbank.gb"),
+			path.Join("..", "..", "test", "input", "genbank.gb"),
 			1,
 			false,
 		},
 		{
 			"genbank features",
-			path.Join("..", "..", "test", "genbank.gb"),
+			path.Join("..", "..", "test", "input", "genbank.gb"),
 			66,
 			true,
 		},

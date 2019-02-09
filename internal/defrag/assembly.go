@@ -33,7 +33,7 @@ type assembly struct {
 }
 
 // add adds Frag to the end of a sequence assembly. Used when building up a target sequence.
-func (a *assembly) add(f *Frag, maxCount int, cmd buildCmd) (newAssembly assembly, created, circularized bool) {
+func (a *assembly) add(f *Frag, maxCount, targetLength int, cmd buildCmd) (newAssembly assembly, created, circularized bool) {
 	// check if we could complete an assembly with this new Frag
 	circularized = f.uniqueID == a.frags[0].uniqueID // if its the same unique fragment, it's circularized
 
@@ -44,7 +44,7 @@ func (a *assembly) add(f *Frag, maxCount int, cmd buildCmd) (newAssembly assembl
 		newCount++
 	}
 
-	if newCount > maxCount {
+	if newCount > maxCount || f.start > (a.frags[0].start+targetLength) {
 		return assembly{}, false, false
 	}
 
@@ -63,9 +63,11 @@ func (a *assembly) add(f *Frag, maxCount int, cmd buildCmd) (newAssembly assembl
 		}
 	}
 
-	if !nodeContained {
-		// add the cost of procuring this Frag to the total assembly cost
-		annealCost += f.cost()
+	if nodeContained {
+		// don't double count the cost of procuring this Frag to the total assembly cost
+		annealCost += f.cost(false)
+	} else {
+		annealCost += f.cost(true)
 	}
 
 	// copy over all the fragments, need to avoid referncing same frags
@@ -294,7 +296,7 @@ func createAssemblies(frags []*Frag, targetLength int, conf *config.Config, cmd 
 		for _, j := range f.reach(frags, i, synthCount) {
 			// for every assembly on the reaching fragment
 			for _, a := range f.assemblies {
-				newAssembly, created, circularized := a.add(frags[j], maxNodes, cmd)
+				newAssembly, created, circularized := a.add(frags[j], maxNodes, targetLength, cmd)
 
 				// if a new assembly wasn't created, move on
 				if !created {

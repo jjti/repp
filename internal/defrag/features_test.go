@@ -19,8 +19,8 @@ func Test_features(t *testing.T) {
 	test1, conf := NewFlags(
 		"SV40 origin, p10 promoter, mEGFP, T7 terminator",
 		filepath.Join("..", "..", "test", "output", "features.json"),
-		"",
-		"",
+		"pSB1A3",
+		"EcoRI",
 		"",
 		[]string{},
 		true,
