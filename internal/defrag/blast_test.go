@@ -207,3 +207,50 @@ func Test_parentMismatch(t *testing.T) {
 		})
 	}
 }
+
+func Test_queryDatabases(t *testing.T) {
+	type args struct {
+		entry string
+		dbs   []string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantF   Frag
+		wantErr bool
+	}{
+		{
+			"query pSB1A3",
+			args{
+				entry: "pSB1A3",
+				dbs:   []string{config.IGEMDB, config.AddgeneDB},
+			},
+			Frag{
+				ID: "igem:pSB1A3",
+				db: config.IGEMDB,
+			},
+			false,
+		},
+		{
+			"fail at nonsense frag",
+			args{
+				entry: "jahf9a8f9",
+				dbs:   []string{config.IGEMDB, config.AddgeneDB},
+			},
+			Frag{},
+			true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotF, err := queryDatabases(tt.args.entry, tt.args.dbs)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("queryDatabases() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if gotF.ID != tt.wantF.ID || gotF.db != tt.wantF.db {
+				t.Errorf("queryDatabases() = %v, want %v", gotF, tt.wantF)
+			}
+		})
+	}
+}

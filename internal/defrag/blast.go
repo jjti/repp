@@ -447,22 +447,51 @@ func queryDatabases(entry string, dbs []string) (f Frag, err error) {
 		return frags[0], nil // it was a local file
 	}
 
+	// channel that returns filename to an output result from blastdbcmd
+	outFileCh := make(chan string, len(dbs))
+	dbSourceCh := make(chan string, len(dbs))
+
 	// move through each db and see if it contains the entry
 	for _, db := range dbs {
-		// if outFile is defined here we managed to query it from the db
-		outFile, err := blastdbcmd(entry, db)
+		go func(db string) {
+			// if outFile is defined here we managed to query the entry from the db
+			outFile, err := blastdbcmd(entry, db)
+			if err == nil && outFile != nil {
+				outFileCh <- outFile.Name() // "" if not found
+				dbSourceCh <- db
+			} else {
+				outFileCh <- ""
+				dbSourceCh <- ""
+			}
+		}(db)
+	}
 
-		if err == nil && outFile.Name() != "" {
-			defer os.Remove(outFile.Name())
+	// try and return a read fragment file
+	for i := 0; i < len(dbs); i++ {
+		outFile := <-outFileCh
+		dbSource := <-dbSourceCh
+		if outFile == "" {
+			continue // failed to query from this DB
+		}
 
-			if frags, err := read(outFile.Name(), false); err == nil {
-				targetFrag := frags[0]
-				targetFrag.db = db
-				return targetFrag, nil
+		close(outFileCh)
+		close(dbSourceCh)
+
+		defer os.Remove(outFile)
+
+			targetFrag := frags[0]
+
+			// fix the ID, don't want titles in the ID (bug)
+			idSplit := strings.Fields(targetFrag.ID)
+			if len(idSplit) > 1 {
+				targetFrag.ID = idSplit[0]
 			}
 
-			return Frag{}, err
+			targetFrag.db = dbSource
+			return targetFrag, nil
 		}
+
+		return Frag{}, err
 	}
 
 	return Frag{}, fmt.Errorf("failed to find %s in any of:\n\t%s", entry, strings.Join(dbs, "\n"))
