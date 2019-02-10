@@ -479,6 +479,7 @@ func queryDatabases(entry string, dbs []string) (f Frag, err error) {
 
 		defer os.Remove(outFile)
 
+		if frags, err := read(outFile, false); err == nil {
 			targetFrag := frags[0]
 
 			// fix the ID, don't want titles in the ID (bug)
