@@ -103,7 +103,7 @@ func sequence(input *Flags, conf *config.Config) (Frag, [][]*Frag, error) {
 
 	// build up a slice of assemblies that could, within the upper-limit on
 	// fragment count, be assembled to make the target vector
-	assemblies := createAssemblies(frags, len(target.Seq), conf, cmdSequence)
+	assemblies := createAssemblies(frags, len(target.Seq), conf)
 
 	// build up a map from fragment count to a sorted list of assemblies with that number
 	assemblyCounts, countToAssemblies := groupAssembliesByCount(assemblies)

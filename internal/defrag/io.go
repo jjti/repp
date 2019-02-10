@@ -307,7 +307,6 @@ func (p *inputParser) parseBackbone(backbone, enzyme string, dbs []string, c *co
 	if err != nil {
 		return Frag{}, err
 	}
-	bbFrag.circular = true // assume it's circular here (hackish, fix)
 
 	// gather the enzyme by name, err if it's unknown
 	enz, err := p.getEnzyme(enzyme)
@@ -381,10 +380,16 @@ func readFasta(path, contents string) (fragments []Frag, err error) {
 	// read in the fragments
 	var headerIndices []int
 	var ids []string
+	var fragTypes []fragType
 	for i, line := range lines {
 		if strings.HasPrefix(line, ">") {
 			headerIndices = append(headerIndices, i)
 			ids = append(ids, line[1:])
+			if strings.Contains(line, "circular") {
+				fragTypes = append(fragTypes, circular)
+			} else {
+				fragTypes = append(fragTypes, existing)
+			}
 		}
 	}
 
@@ -407,8 +412,9 @@ func readFasta(path, contents string) (fragments []Frag, err error) {
 	// build and return the new fragments
 	for i, id := range ids {
 		fragments = append(fragments, Frag{
-			ID:  id,
-			Seq: seqs[i],
+			ID:       id,
+			Seq:      seqs[i],
+			fragType: fragTypes[i],
 		})
 	}
 

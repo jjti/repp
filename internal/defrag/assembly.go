@@ -9,16 +9,6 @@ import (
 	"github.com/jjtimmons/defrag/config"
 )
 
-type buildCmd int
-
-const (
-	// build up a vector from its sequence
-	cmdSequence buildCmd = iota
-
-	// build up a vector from its features
-	cmdFeatures
-)
-
 // assembly is a slice of nodes ordered by the nodes
 // distance from the end of the target vector
 type assembly struct {
@@ -33,25 +23,31 @@ type assembly struct {
 }
 
 // add adds Frag to the end of a sequence assembly. Used when building up a target sequence.
-func (a *assembly) add(f *Frag, maxCount, targetLength int, cmd buildCmd) (newAssembly assembly, created, circularized bool) {
+func (a *assembly) add(f *Frag, maxCount, targetLength int) (newAssembly assembly, created, circularized bool) {
 	// check if we could complete an assembly with this new Frag
-	circularized = f.uniqueID == a.frags[0].uniqueID // if its the same unique fragment, it's circularized
+	circularized = f.end > a.frags[0].start+targetLength
+
+	// check if this is the first fragment annealing to itself
+	selfAnnealing := f.uniqueID == a.frags[0].uniqueID
 
 	// calc the number of synthesis fragments needed to get to this next Frag
-	synths := a.frags[len(a.frags)-1].synthDist(f, cmd)
+	synths := a.frags[len(a.frags)-1].synthDist(f)
 	newCount := a.len() + synths
-	if !circularized {
+	if !selfAnnealing {
 		newCount++
 	}
 
-	if newCount > maxCount || f.start > (a.frags[0].start+targetLength) {
+	if newCount > maxCount {
 		return assembly{}, false, false
 	}
 
 	created = true
 
 	// calc the estimated dollar cost of getting to the next Frag
-	annealCost := a.frags[len(a.frags)-1].costTo(f, cmd)
+	annealCost := a.frags[len(a.frags)-1].costTo(f)
+	if selfAnnealing {
+		annealCost = 0 // just one fragment, the first one
+	}
 
 	// check whether the Frag is already contained in the assembly
 	// if so, the cost of procurement is not incurred twice
@@ -70,32 +66,20 @@ func (a *assembly) add(f *Frag, maxCount, targetLength int, cmd buildCmd) (newAs
 		annealCost += f.cost(true)
 	}
 
-	// copy over all the fragments, need to avoid referncing same frags
-	newFrags := make([]*Frag, len(a.frags)+1)
-	for i, frag := range a.frags {
-		newFrags[i] = frag.copy()
+	// copy over all the fragments, need to avoid referencing same frags
+	newFrags := []*Frag{}
+	for _, frag := range a.frags {
+		newFrags = append(newFrags, frag.copy())
 	}
-	newFrags[len(newFrags)-1] = f.copy()
-
-	if circularized {
-		if synths < 1 {
-			// costs nothing to anneal Frag to self, already been PCR'ed
-			// this assumes that we're circularizing here at the end
-			annealCost = 0
-		}
-
-		return assembly{
-			frags:  newFrags,
-			cost:   a.cost + annealCost,
-			synths: a.synths + synths,
-		}, created, circularized
+	if !selfAnnealing {
+		newFrags = append(newFrags, f.copy())
 	}
 
 	return assembly{
 		frags:  newFrags,
 		cost:   a.cost + annealCost,
 		synths: a.synths + synths,
-	}, created, false
+	}, created, circularized
 }
 
 // len returns len(assembly.nodes) + the synthesis fragment count
@@ -124,7 +108,7 @@ func (a *assembly) log() string {
 // - Synthetic fragments if there wasn't a match for a region
 //
 // It can fail. For example, a PCR Frag may have off-targets in the parent vector
-func (a *assembly) fill(seq string, conf *config.Config) (frags []*Frag, err error) {
+func (a *assembly) fill(target string, conf *config.Config) (frags []*Frag, err error) {
 	minHomology := conf.FragmentsMinHomology
 	maxHomology := conf.FragmentsMaxHomology
 
@@ -136,12 +120,12 @@ func (a *assembly) fill(seq string, conf *config.Config) (frags []*Frag, err err
 
 	// edge case where a single Frag fills the whole target vector. Return just a single
 	// "fragment" (of circular type... it is misnomer) that matches the target sequence 100%
-	if a.len() == 1 && len(a.frags[0].Seq) >= len(seq) {
+	if a.len() == 1 && len(a.frags[0].Seq) >= len(target) {
 		f := a.frags[0]
 		return []*Frag{
 			&Frag{
 				ID:       f.ID,
-				Seq:      strings.ToUpper(f.Seq)[0:len(seq)], // it may be longer
+				Seq:      strings.ToUpper(f.Seq)[0:len(target)], // it may be longer
 				fragType: circular,
 				URL:      f.URL,
 				conf:     conf,
@@ -154,43 +138,20 @@ func (a *assembly) fill(seq string, conf *config.Config) (frags []*Frag, err err
 	// in two loops because synthesis depends on nodes' ranges, and nodes' ranges
 	// may change during setPrimers (we let primer3_core pick from a range of primer options)
 	for i, f := range a.frags {
-		// last Frag, do nothing
-		// here only to allow for vector "circularization" if we need to synthesize
-		// from a.nodes[len(a.nodes)-2] to a.nodes[len(a.nodes)-1]
-		if i > 0 && f.uniqueID == a.frags[0].uniqueID {
-			break
-		}
-
 		// try and make primers for the fragment (need last and next nodes)
 		var last *Frag
 		if i == 0 {
 			// mock up a last fragment that's to the left of this starting Frag
-			final := a.frags[len(a.frags)-1]
-			if f.uniqueID != "" && f.uniqueID == final.uniqueID {
-				// -2 is if the first and last are the same and is just there for circularization
-				final = a.frags[len(a.frags)-2]
-			}
-
 			last = &Frag{
-				start: final.start - len(seq),
-				end:   final.end - len(seq),
+				start: a.frags[len(a.frags)-1].start - len(target),
+				end:   a.frags[len(a.frags)-1].end - len(target),
 				conf:  conf,
 			}
 		} else {
 			last = a.frags[i-1]
 		}
 
-		var next *Frag
-		if i < len(a.frags)-1 {
-			next = a.frags[i+1]
-		} else {
-			// mock up a next fragment that's to the right of this terminal Frag
-			next = &Frag{
-				start: a.frags[0].start + len(seq),
-				end:   a.frags[0].end + len(seq),
-				conf:  conf,
-			}
-		}
+		next := a.mockNext(i, target, conf)
 
 		// create primers for the Frag and add them to the Frag if it needs them
 		// to anneal to the adjacent fragments
@@ -199,31 +160,21 @@ func (a *assembly) fill(seq string, conf *config.Config) (frags []*Frag, err err
 			!last.overlapsViaHomology(f) && last.overlapsViaPCR(f) ||
 			!f.overlapsViaHomology(next) && f.overlapsViaPCR(next)
 
-		// if the Frag has a full seq from upload or
+		// if the Frag has a full target from upload or
 		if needsPCR {
-			if err := f.setPrimers(last, next, seq, conf); err != nil || len(f.Primers) < 2 {
+			if err := f.setPrimers(last, next, target, conf); err != nil || len(f.Primers) < 2 {
 				return nil, fmt.Errorf("failed to pcr %s: %v", f.ID, err)
 			}
 			f.fragType = pcr // is now a pcr type
 		} else {
 			f.fragType = existing // no change needed
 		}
-	}
 
-	// do another loop to covert the nodes with primers to fragments and
-	// synthesize the sequence between nodes
-	for i, f := range a.frags {
-		// last Frag, do nothing
-		// here only to allow for vector "circularization" if we need to synthesize
-		// from a.nodes[len(a.nodes)-2] to a.nodes[len(a.nodes)-1]
-		if i > 0 && f.uniqueID != "" && f.uniqueID == a.frags[0].uniqueID {
-			break
-		}
-
+		// accumulate the prepared fragment
 		frags = append(frags, f)
 
 		// add synthesized fragments between this Frag and the next (if necessary)
-		if synthedFrags := f.synthTo(a.frags[(i+1)%len(a.frags)], seq); synthedFrags != nil {
+		if synthedFrags := f.synthTo(a.mockNext(i, target, conf), target); synthedFrags != nil {
 			frags = append(frags, synthedFrags...)
 		}
 	}
@@ -231,13 +182,25 @@ func (a *assembly) fill(seq string, conf *config.Config) (frags []*Frag, err err
 	return
 }
 
+// mockNext returns the fragment that's one beyond the one passed
+// if there is none, it mocks one using the first fragment and changing
+// its start and end index
+func (a *assembly) mockNext(i int, target string, conf *config.Config) *Frag {
+	if i < len(a.frags)-1 {
+		return a.frags[i+1]
+	}
+
+	// mock up a next fragment that's to the right of this terminal Frag
+	return &Frag{
+		start: a.frags[0].start + len(target),
+		end:   a.frags[0].end + len(target),
+		conf:  conf,
+	}
+}
+
 // duplicates runs through all the nodes in an assembly and checks whether any of
 // them have unintended homology, or "duplicate homology"
 func (a *assembly) duplicates(nodes []*Frag, minHomology, maxHomology int) (isDup bool, first, second, dup string) {
-	if len(nodes) > 1 && nodes[0].uniqueID != "" && nodes[0].uniqueID == nodes[len(nodes)-1].uniqueID {
-		nodes = nodes[:len(nodes)-1] // do not include the circularizing fragment
-	}
-
 	c := len(nodes) // Frag count
 	for i, f := range nodes {
 		for j := 2; j <= c; j++ { // skip next Frag, i+1 is supposed to anneal to i
@@ -258,14 +221,14 @@ func (a *assembly) duplicates(nodes []*Frag, minHomology, maxHomology int) (isDu
 //
 // It is created by traversing a DAG in forward order:
 // 	foreach thisFragment (sorted in increasing start index order):
-// 	  foreach otherFragment that thisFragment overlaps with + synthCount more:
+// 	  foreach otherFragment that thisFragment overlaps with + reachSynthCount more:
 //	 	foreach assembly on thisFragment:
 //    	    add otherFragment to the assembly to create a new assembly, store on otherFragment
-func createAssemblies(frags []*Frag, targetLength int, conf *config.Config, cmd buildCmd) (assemblies []assembly) {
+func createAssemblies(frags []*Frag, targetLength int, conf *config.Config) (assemblies []assembly) {
 	// number of additional frags try synthesizing to, in addition to those that
 	// already have enough homology for overlap without any modifications for each Frag
 	maxNodes := conf.FragmentsMaxCount
-	synthCount := int(math.Max(5, 0.05*float64(len(frags)))) // 5 of 5%, whichever is greater
+	reachSynthCount := int(math.Max(5, 0.05*float64(len(frags)))) // 5 of 5%, whichever is greater
 
 	// create a starting assembly on each Frag including just itself
 	for i, f := range frags {
@@ -284,7 +247,7 @@ func createAssemblies(frags []*Frag, targetLength int, conf *config.Config, cmd 
 		frags[i].assemblies = []assembly{
 			assembly{
 				frags:  []*Frag{f.copy()}, // just self
-				cost:   f.costTo(f, cmd),  // just PCR,
+				cost:   f.costTo(f),       // just PCR,
 				synths: 0,                 // no synthetic frags at start
 			},
 		}
@@ -292,11 +255,11 @@ func createAssemblies(frags []*Frag, targetLength int, conf *config.Config, cmd 
 
 	// for every Frag in the list of increasing start index frags
 	for i, f := range frags {
-		// for every overlapping fragment + synthCount more
-		for _, j := range f.reach(frags, i, synthCount) {
+		// for every overlapping fragment + reachSynthCount more
+		for _, j := range f.reach(frags, i, reachSynthCount) {
 			// for every assembly on the reaching fragment
 			for _, a := range f.assemblies {
-				newAssembly, created, circularized := a.add(frags[j], maxNodes, targetLength, cmd)
+				newAssembly, created, circularized := a.add(frags[j], maxNodes, targetLength)
 
 				// if a new assembly wasn't created, move on
 				if !created {

@@ -69,7 +69,7 @@ func Test_assembly_add(t *testing.T) {
 			},
 			assembly{
 				frags:  []*Frag{n1, n2},
-				cost:   n1.costTo(n2, cmdSequence),
+				cost:   n1.costTo(n2),
 				synths: 0,
 			},
 			true,
@@ -87,7 +87,7 @@ func Test_assembly_add(t *testing.T) {
 			},
 			assembly{
 				frags:  []*Frag{n1, n3},
-				cost:   10.0 + n1.costTo(n3, cmdSequence),
+				cost:   10.0 + n1.costTo(n3),
 				synths: 1,
 			},
 			true,
@@ -160,7 +160,7 @@ func Test_assembly_add(t *testing.T) {
 				cost:   tt.fields.cost,
 				synths: tt.fields.synths,
 			}
-			gotNewAssembly, gotCreated, gotComplete := a.add(tt.args.n, 5, 10000, cmdSequence)
+			gotNewAssembly, gotCreated, gotComplete := a.add(tt.args.n, 5, 10000)
 			if !reflect.DeepEqual(gotNewAssembly, tt.wantNewAssembly) {
 				t.Errorf("assembly.add() gotNewAssembly = %v, want %v", gotNewAssembly, tt.wantNewAssembly)
 			}

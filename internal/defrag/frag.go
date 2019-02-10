@@ -61,9 +61,6 @@ type Frag struct {
 	// db that the frag came from
 	db string
 
-	// circular if it was submitted/created as a circular fragment (marked as such in the DB)
-	circular bool
-
 	// start of this Frag on the target vector
 	start int
 
@@ -132,16 +129,21 @@ func newFrag(m match, conf *config.Config) *Frag {
 		}
 	}
 
+	fType := existing
+	if m.circular {
+		fType = circular
+	}
+
 	return &Frag{
 		ID:       m.entry,
 		uniqueID: m.uniqueID,
 		Seq:      strings.ToUpper(m.seq),
-		circular: m.circular,
 		start:    m.queryStart,
 		end:      m.queryEnd,
 		db:       m.db,
 		URL:      url,
 		conf:     conf,
+		fragType: fType,
 	}
 }
 
@@ -204,11 +206,7 @@ func (f *Frag) overlapsViaHomology(other *Frag) bool {
 // synthDist returns the number of synthesized fragments that would need to be created
 // between one Frag and another if the two were to be joined, with no existing
 // fragments/nodes in-between, in an assembly
-func (f *Frag) synthDist(other *Frag, cmd buildCmd) (synthCount int) {
-	if cmd == cmdFeatures {
-		return 0
-	}
-
+func (f *Frag) synthDist(other *Frag) (synthCount int) {
 	dist := f.distTo(other)
 
 	if f.overlapsViaPCR(other) {
@@ -217,8 +215,6 @@ func (f *Frag) synthDist(other *Frag, cmd buildCmd) (synthCount int) {
 		return 0
 	}
 
-	// if it's > 5, we have to synthesize to get there (arbitatry, TODO: move to settings)
-	// can't be negative before the ceil
 	floatDist := math.Max(1.0, float64(dist))
 
 	// split up the distance between them by the max synthesized fragment size
@@ -236,15 +232,7 @@ func (f *Frag) synthDist(other *Frag, cmd buildCmd) (synthCount int) {
 //
 // This does not add in the cost of procurement, which is added to the assembly cost
 // in assembly.add()
-func (f *Frag) costTo(other *Frag, cmd buildCmd) (cost float64) {
-	if cmd == cmdFeatures {
-		if f.junction(other, f.conf.FragmentsMinHomology, f.conf.FragmentsMaxHomology) != "" {
-			return 50 * f.conf.PCRBPCost // regular PCR, they already anneal
-		}
-
-		return float64(50+f.conf.FragmentsMinHomology) * f.conf.PCRBPCost
-	}
-
+func (f *Frag) costTo(other *Frag) (cost float64) {
 	dist := f.distTo(other)
 
 	if f.overlapsViaPCR(other) {
@@ -342,7 +330,7 @@ func (f *Frag) synthTo(next *Frag, target string) (synths []*Frag) {
 
 	// check whether we need to make synthetic fragments to get
 	// to the next fragment in the assembly
-	fragCount := f.synthDist(next, cmdSequence)
+	fragCount := f.synthDist(next)
 	if fragCount == 0 {
 		return nil
 	}
@@ -366,7 +354,7 @@ func (f *Frag) synthTo(next *Frag, target string) (synths []*Frag) {
 	synths = []*Frag{}
 	start := f.end - minHomology // start w/ homology, move left
 	for len(synths) < int(fragCount) {
-		end := start + fragLength + minHomology + 1
+		end := start + fragLength + 1
 		seq := target[start+targetLength : end+targetLength]
 		for hairpin(seq[len(seq)-minHomology:], f.conf) > f.conf.FragmentsMaxHairpinMelt {
 			end += minHomology / 2
@@ -380,7 +368,7 @@ func (f *Frag) synthTo(next *Frag, target string) (synths []*Frag) {
 			conf:     f.conf,
 		})
 
-		start += fragLength
+		start = end - minHomology
 	}
 
 	return

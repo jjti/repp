@@ -166,15 +166,11 @@ func (p *primer3) shrink(last, f, next *Frag, maxHomology int, minLength int) *F
 	}
 
 	// make sure the fragment doesn't become less than the minimum length
-	if (f.end-shiftInRight)-(f.start+shiftInLeft) > minLength {
-
-		// update the seq to slice for the new modified range
+	canShrink := (f.end-shiftInRight)-(f.start+shiftInLeft) > minLength && len(f.Seq)-shiftInRight > shiftInLeft
+	if canShrink {
 		f.start += shiftInLeft
 		f.end -= shiftInRight
-
-		if f.Seq != "" {
-			f.Seq = f.Seq[shiftInLeft : len(f.Seq)-shiftInRight]
-		}
+		f.Seq = f.Seq[shiftInLeft : len(f.Seq)-shiftInRight]
 	}
 
 	return f
