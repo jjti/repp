@@ -45,8 +45,8 @@ func (a *assembly) add(f *Frag, maxCount, targetLength int) (newAssembly assembl
 
 	// calc the estimated dollar cost of getting to the next Frag
 	annealCost := a.frags[len(a.frags)-1].costTo(f)
-	if selfAnnealing {
-		annealCost = 0 // just one fragment, the first one
+	if selfAnnealing && synths == 0 {
+		annealCost = 0 // does not cost extra to anneal to the first fragment
 	}
 
 	// check whether the Frag is already contained in the assembly

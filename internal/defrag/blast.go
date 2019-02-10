@@ -391,7 +391,7 @@ func filter(matches []match, targetLength, minSize int) (properized []match) {
 	// add back copied matches for those that only show up once but should cross the zero index
 	copiedMatches := []match{}
 	for _, m := range properized {
-		if count := matchCount[m.uniqueID]; count == 2 {
+		if count := matchCount[m.uniqueID]; count >= 2 {
 			continue
 		}
 

@@ -82,7 +82,7 @@ func Test_queryFeatures(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := queryFeatures(tt.args.flags); !reflect.DeepEqual(got, tt.want) {
+			if got, _ := queryFeatures(tt.args.flags); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("queryFeatures() = %v, want %v", got, tt.want)
 			}
 		})

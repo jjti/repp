@@ -37,21 +37,26 @@ func features(flags *Flags, conf *config.Config) {
 	start := time.Now()
 
 	// turn feature names into sequences
-	targetFeatures := queryFeatures(flags)
+	insertFeatures, backboneFeature := queryFeatures(flags)
+	targetFeatures := append(insertFeatures, backboneFeature)
 
 	// find matches in the databases
 	fragToFeatureMatches := blastFeatures(flags, targetFeatures)
 
 	// build assemblies containing the matched fragments
-	solutions := buildFeatureSolutions(targetFeatures, fragToFeatureMatches, flags.dbs, conf)
+	syntheticVector, solutions := buildFeatureSolutions(targetFeatures, fragToFeatureMatches, flags.dbs, conf)
 
 	// write the output file
-	write(flags.out, flags.in, "", solutions, 0, conf, time.Since(start).Seconds())
+	insertLength := 0
+	for _, f := range targetFeatures {
+		insertLength += len(f[1])
+	}
+	write(flags.out, flags.in, syntheticVector, solutions, insertLength, conf, time.Since(start).Seconds())
 }
 
 // queryFeatures takes the list of feature names and finds them in the available databases
-func queryFeatures(flags *Flags) [][]string {
-	targetFeatures := [][]string{} // slice of tuples [feature name, feature sequence]
+func queryFeatures(flags *Flags) ([][]string, []string) {
+	insertFeatures := [][]string{} // slice of tuples [feature name, feature sequence]
 
 	if readFeatures, err := read(flags.in, true); err == nil {
 		// see if the features are in a file (multi-FASTA or features in a Genbank)
@@ -60,7 +65,7 @@ func queryFeatures(flags *Flags) [][]string {
 			if seq := seenFeatures[f.ID]; seq != f.Seq {
 				stderr.Fatalf("failed to parse features, %s has two different sequences:\n\t%s\n\t%s\n", f.ID, f.Seq, seq)
 			}
-			targetFeatures = append(targetFeatures, []string{f.ID, f.Seq})
+			insertFeatures = append(insertFeatures, []string{f.ID, f.Seq})
 		}
 	} else {
 		// if the features weren't in a file, try and find each in the features database
@@ -79,9 +84,9 @@ func queryFeatures(flags *Flags) [][]string {
 		featureDB := NewFeatureDB()
 		for _, f := range featureNames {
 			if seq, contained := featureDB.features[f]; contained {
-				targetFeatures = append(targetFeatures, []string{f, seq})
+				insertFeatures = append(insertFeatures, []string{f, seq})
 			} else if dbFrag, err := queryDatabases(f, flags.dbs); err == nil {
-				targetFeatures = append(targetFeatures, []string{f, dbFrag.Seq})
+				insertFeatures = append(insertFeatures, []string{f, dbFrag.Seq})
 			} else {
 				stderr.Fatalf(
 					"failed to find '%s' in the features database (%s) or any of:"+
@@ -95,11 +100,12 @@ func queryFeatures(flags *Flags) [][]string {
 	}
 
 	// add in the backbone as a "feature"
+	backboneFeature := []string{}
 	if flags.backbone.ID != "" {
-		targetFeatures = append(targetFeatures, []string{flags.backbone.ID, flags.backbone.Seq})
+		backboneFeature = []string{flags.backbone.ID, flags.backbone.Seq}
 	}
 
-	return targetFeatures
+	return insertFeatures, backboneFeature
 }
 
 // blastFeatures returns matches between the target features and entries in the databases with those features
@@ -136,7 +142,7 @@ func buildFeatureSolutions(
 	targetFeatures [][]string,
 	fragToFeatureMatches map[string][]featureMatch,
 	dbs []string,
-	conf *config.Config) [][]*Frag {
+	conf *config.Config) (string, [][]*Frag) {
 	accMatches := []match{}
 
 	// turn matches into frags but with query start and end referring to feature index
@@ -180,7 +186,7 @@ func buildFeatureSolutions(
 		featureToStart[i] = fullSynthSeqBuilder.Len()
 		fullSynthSeqBuilder.WriteString(feat[1])
 	}
-	fullSynthSeq := fullSynthSeqBuilder.String()
+	syntheticVector := fullSynthSeqBuilder.String()
 
 	// get the matches back out of the databases (the full parts)
 	frags := []*Frag{}
@@ -199,25 +205,30 @@ func buildFeatureSolutions(
 		frag.ID = m.entry
 		frag.uniqueID = m.uniqueID
 		frag.Seq = (frag.Seq + frag.Seq)[start : end+1]
+		frag.conf = conf
+
 		frag.start = featureToStart[m.queryStart]
 		frag.end = featureToStart[(m.queryEnd+1)%len(targetFeatures)]
 
-		if frag.end < frag.start {
-			frag.end += len(fullSynthSeq)
+		if frag.end <= frag.start {
+			frag.end += len(frag.Seq)
 		}
 
-		frag.conf = conf
+		if m.queryStart >= len(targetFeatures) {
+			frag.start += len(syntheticVector)
+			frag.end += len(syntheticVector)
+		}
 
 		frags = append(frags, &frag)
 	}
 
 	// traverse the fragments, accumulate assemblies that span all the features
-	assemblies := createAssemblies(frags, len(fullSynthSeq), conf)
+	assemblies := createAssemblies(frags, len(syntheticVector), conf)
 
 	// fill each assembly an accumulate as a solution
 	solutions := [][]*Frag{}
 	for _, a := range assemblies {
-		filledFrags, err := a.fill(fullSynthSeq, conf)
+		filledFrags, err := a.fill(syntheticVector, conf)
 		if err == nil {
 			solutions = append(solutions, filledFrags)
 		} else {
@@ -225,7 +236,7 @@ func buildFeatureSolutions(
 		}
 	}
 
-	return solutions
+	return syntheticVector, solutions
 }
 
 // NewFeatureDB returns a new copy of the features db
