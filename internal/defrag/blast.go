@@ -281,14 +281,14 @@ func (b *blastExec) parse(filters []string) (matches []match, err error) {
 			continue
 		}
 
-		entry := strings.Replace(cols[0], ">", "", -1) // eg: BBa_B00001
+		entry := strings.Replace(cols[0], ">", "", -1)
 		queryStart, _ := strconv.Atoi(cols[1])
 		queryEnd, _ := strconv.Atoi(cols[2])
 		subjectStart, _ := strconv.Atoi(cols[3])
 		subjectEnd, _ := strconv.Atoi(cols[4])
 		seq := cols[5]
 		mismatching, _ := strconv.Atoi(cols[6])
-		titles := cols[7] // salltitles, eg: "fwd terminator 2011"
+		titles := cols[7] // salltitles, eg: "fwd-terminator-2011"
 
 		// bug where titles are being included in the entry
 		entryCols := strings.Fields(entry)
@@ -319,7 +319,7 @@ func (b *blastExec) parse(filters []string) (matches []match, err error) {
 		}
 
 		// get a unique identifier to distinguish this match/fragment from the others
-		uniqueID := entry + strconv.Itoa(queryStart%len(b.seq))
+		uniqueID := entry + strconv.Itoa((queryStart-1)%len(b.seq))
 
 		// create and append the new match
 		ms = append(ms, match{
@@ -350,8 +350,6 @@ func (b *blastExec) parse(filters []string) (matches []match, err error) {
 // self-contained in other fragments: the larger of the available fragments
 // will be the better one, since it covers a greater region and will almost
 // always be preferable to the smaller one
-//
-// Circular-arc graph: https://en.wikipedia.org/wiki/Circular-arc_graph
 //
 // also remove small fragments here that are too small to be useful during assembly
 func filter(matches []match, targetLength, minSize int) (properized []match) {
@@ -474,9 +472,6 @@ func queryDatabases(entry string, dbs []string) (f Frag, err error) {
 			continue // failed to query from this DB
 		}
 
-		close(outFileCh)
-		close(dbSourceCh)
-
 		defer os.Remove(outFile)
 
 		if frags, err := read(outFile, false); err == nil {
@@ -494,6 +489,9 @@ func queryDatabases(entry string, dbs []string) (f Frag, err error) {
 
 		return Frag{}, err
 	}
+
+	close(outFileCh)
+	close(dbSourceCh)
 
 	return Frag{}, fmt.Errorf("failed to find %s in any of:\n\t%s", entry, strings.Join(dbs, "\n"))
 }

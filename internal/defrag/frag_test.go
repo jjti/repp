@@ -144,7 +144,7 @@ func Test_Frag_synthDist(t *testing.T) {
 				assemblies: tt.fields.assemblies,
 				conf:       c,
 			}
-			if gotSynthCount := n.synthDist(tt.args.other, cmdSequence); gotSynthCount != tt.wantSynthCount {
+			if gotSynthCount := n.synthDist(tt.args.other); gotSynthCount != tt.wantSynthCount {
 				t.Errorf("Frag.synthDist() = %v, want %v", gotSynthCount, tt.wantSynthCount)
 			}
 		})
@@ -237,7 +237,7 @@ func Test_Frag_costTo(t *testing.T) {
 				assemblies: tt.fields.assemblies,
 				conf:       c,
 			}
-			if gotCost := n.costTo(tt.args.other, cmdSequence); gotCost != tt.wantCost {
+			if gotCost := n.costTo(tt.args.other); gotCost != tt.wantCost {
 				t.Errorf("Frag.costTo() = %v, want %v", gotCost, tt.wantCost)
 			}
 		})

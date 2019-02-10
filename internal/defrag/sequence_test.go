@@ -133,7 +133,7 @@ func Test_build(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assemblies := createAssemblies(tt.args.nodes, len(seq), c, cmdSequence)
+			assemblies := createAssemblies(tt.args.nodes, len(seq), c)
 
 			// concatenate Frag ids together
 			actualIds := getNodeSet(assemblies)
@@ -146,4 +146,37 @@ func Test_build(t *testing.T) {
 			}
 		})
 	}
+}
+
+// Test_sequence is for sequence from end to end
+func Test_sequence(t *testing.T) {
+	type testFlags struct {
+		in       string
+		out      string
+		backbone string
+		enzyme   string
+		filters  string
+		dbs      []string
+		addgene  bool
+		igem     bool
+	}
+
+	tests := []testFlags{
+		testFlags{
+			path.Join("..", "..", "test", "input", "BBa_K2779020.fa"),
+			path.Join("..", "..", "test", "output", "BBa_K2779020.json"),
+			"pSB1A3",
+			"PstI",
+			"BBa_K277",
+			[]string{},
+			false,
+			true,
+		},
+	}
+
+	for _, t := range tests {
+		Sequence(NewFlags(t.in, t.out, t.backbone, t.enzyme, t.filters, t.dbs, t.addgene, t.igem))
+	}
+
+	t.Fatal("fail (dev)")
 }
