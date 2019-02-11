@@ -28,7 +28,7 @@ type featureMatch struct {
 
 // FeaturesCmd accepts a cobra commands and assembles a vector containing all the features
 func FeaturesCmd(cmd *cobra.Command, args []string) {
-	features(parseCmdFlags(cmd, args))
+	features(parseCmdFlags(cmd, args, true))
 }
 
 // features assembles a vector with all the features requested with the 'defrag features [feature ...]' command
@@ -56,8 +56,7 @@ func features(flags *Flags, conf *config.Config) {
 
 // queryFeatures takes the list of feature names and finds them in the available databases
 func queryFeatures(flags *Flags) ([][]string, []string) {
-	insertFeatures := [][]string{} // slice of tuples [feature name, feature sequence]
-
+	var insertFeatures [][]string // slice of tuples [feature name, feature sequence]
 	if readFeatures, err := read(flags.in, true); err == nil {
 		// see if the features are in a file (multi-FASTA or features in a Genbank)
 		seenFeatures := make(map[string]string) // map feature name to sequence
@@ -88,12 +87,13 @@ func queryFeatures(flags *Flags) ([][]string, []string) {
 			} else if dbFrag, err := queryDatabases(f, flags.dbs); err == nil {
 				insertFeatures = append(insertFeatures, []string{f, dbFrag.Seq})
 			} else {
+				sep := "\n\t"
 				stderr.Fatalf(
 					"failed to find '%s' in the features database (%s) or any of:"+
 						"%s\ncheck features database with 'defrag features find [feature name]'",
 					f,
 					config.FeatureDB,
-					"\n  "+strings.Join(flags.dbs, "\n  "),
+					sep+strings.Join(flags.dbs, sep)+sep,
 				)
 			}
 		}
@@ -143,9 +143,8 @@ func buildFeatureSolutions(
 	fragToFeatureMatches map[string][]featureMatch,
 	dbs []string,
 	conf *config.Config) (string, [][]*Frag) {
-	accMatches := []match{}
-
 	// turn matches into frags but with query start and end referring to feature index
+	var accMatches []match
 	for _, matches := range fragToFeatureMatches {
 		sort.Slice(matches, func(i, j int) bool {
 			return matches[i].featureIndex < matches[j].featureIndex
@@ -189,7 +188,7 @@ func buildFeatureSolutions(
 	syntheticVector := fullSynthSeqBuilder.String()
 
 	// get the matches back out of the databases (the full parts)
-	frags := []*Frag{}
+	var frags []*Frag
 	for _, m := range accMatches {
 		frag, err := queryDatabases(m.entry, dbs)
 		if err != nil {
@@ -337,7 +336,8 @@ func (f *FeatureDB) ReadCmd(cmd *cobra.Command, args []string) {
 // SetCmd the feature's seq in the database (or create if it isn't in the feature db)
 func (f *FeatureDB) SetCmd(cmd *cobra.Command, args []string) {
 	if len(args) < 2 {
-		stderr.Fatalf("expecting two args: a features name and sequence. %d passed\n", len(args))
+		cmd.Help()
+		stderr.Fatalln("\nexpecting two args: a features name and sequence.")
 	}
 
 	name := args[0]
@@ -391,7 +391,8 @@ func (f *FeatureDB) SetCmd(cmd *cobra.Command, args []string) {
 // DeleteCmd the feature from the database
 func (f *FeatureDB) DeleteCmd(cmd *cobra.Command, args []string) {
 	if len(args) < 1 {
-		stderr.Fatalf("expecting one arg: a features name. %d passed\n", len(args))
+		cmd.Help()
+		stderr.Fatalln("\nno features name passed.")
 	}
 
 	name := args[0]

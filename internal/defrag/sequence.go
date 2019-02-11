@@ -11,7 +11,7 @@ import (
 
 // SequenceCmd takes a cobra command (with its flags) and runs Vector
 func SequenceCmd(cmd *cobra.Command, args []string) {
-	Sequence(parseCmdFlags(cmd, args))
+	Sequence(parseCmdFlags(cmd, args, true))
 }
 
 // Sequence is for running an end to end vector design using a target sequence
@@ -34,7 +34,7 @@ func Sequence(flags *Flags, conf *config.Config) {
 	fmt.Printf("%s\n\n", elapsed)
 }
 
-// sequence builds a vector using a simple cost optimization scheme
+// sequence builds a vector using a simple cost optimization scheme.
 //
 // the goal is to find an "optimal" assembly sequence with:
 // 	1. the fewest fragments

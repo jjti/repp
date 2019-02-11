@@ -11,7 +11,23 @@ import (
 
 // FragmentsCmd accepts a cobra commands and assembles a list of building fragments in order
 func FragmentsCmd(cmd *cobra.Command, args []string) {
-	Fragments(parseCmdFlags(cmd, args))
+	Fragments(parseCmdFlags(cmd, args, true))
+}
+
+// FragmentFindCmd logs the building fragment with the name passed.
+func FragmentFindCmd(cmd *cobra.Command, args []string) {
+	if len(args) < 1 {
+		cmd.Help()
+		stderr.Fatalln("\nno fragment name passed.")
+	}
+	name := args[0]
+
+	flags, _ := parseCmdFlags(cmd, args, false)
+	frag, err := queryDatabases(name, flags.dbs)
+	if err != nil {
+		stderr.Fatalln(err)
+	}
+	fmt.Printf("%s\t%s\t%s\n", name, frag.db, frag.Seq)
 }
 
 // Fragments assembles fragments using fragments

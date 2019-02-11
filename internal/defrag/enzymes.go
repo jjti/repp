@@ -227,7 +227,8 @@ func (f *EnzymeDB) ReadCmd(cmd *cobra.Command, args []string) {
 // SetCmd the enzyme's seq in the database (or create if it isn't in the enzyme db).
 func (f *EnzymeDB) SetCmd(cmd *cobra.Command, args []string) {
 	if len(args) < 2 {
-		stderr.Fatalf("expecting two args: a name and recognition sequence. see 'defrag find enzyme --help'\n")
+		cmd.Help()
+		stderr.Fatalln("expecting two args: a name and recognition sequence.")
 	}
 
 	name := args[0]
@@ -288,7 +289,8 @@ func (f *EnzymeDB) SetCmd(cmd *cobra.Command, args []string) {
 // DeleteCmd the enzyme from the database
 func (f *EnzymeDB) DeleteCmd(cmd *cobra.Command, args []string) {
 	if len(args) < 1 {
-		stderr.Fatalf("expecting one arg: a enzymes name. %d passed\n", len(args))
+		cmd.Help()
+		stderr.Fatalf("\nexpecting an enzymes name.")
 	}
 
 	name := args[0]

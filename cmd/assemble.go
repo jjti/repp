@@ -63,17 +63,17 @@ Solutions have either a minimum fragment count or assembly cost (or both).`,
 // set flags
 func init() {
 	// Flags for specifying the paths to the input file, input fragment files, and output file
-	fragmentsCmd.Flags().StringP("in", "i", "", "Input file with a list of building fragments <FASTA>")
-	fragmentsCmd.Flags().StringP("out", "o", "", "Output file name with fragments and primers <JSON>")
-	fragmentsCmd.Flags().StringP("dbs", "d", "", "Comma separated list of databases with building fragments")
-	fragmentsCmd.Flags().BoolP("addgene", "a", false, "Whether to use the Addgene repository as a source of building fragments")
-	fragmentsCmd.Flags().BoolP("igem", "g", false, "Whether to use the iGEM repository as a source of building fragments")
+	fragmentsCmd.Flags().StringP("in", "i", "", "input file name")
+	fragmentsCmd.Flags().StringP("out", "o", "", "output file name")
+	fragmentsCmd.Flags().StringP("dbs", "d", "", "comma separated list of local fragment databases")
+	fragmentsCmd.Flags().BoolP("addgene", "a", false, "use the Addgene repository")
+	fragmentsCmd.Flags().BoolP("igem", "g", false, "use the iGEM repository")
 	fragmentsCmd.Flags().StringP("backbone", "b", "", backboneHelp)
 	fragmentsCmd.Flags().StringP("enzyme", "e", "", enzymeHelp)
 
 	// Flags for specifying the paths to the input file, input fragment files, and output file
 	featuresCmd.Flags().StringP("out", "o", "", "output file name")
-	featuresCmd.Flags().StringP("dbs", "d", "", "list of local fragment databases")
+	featuresCmd.Flags().StringP("dbs", "d", "", "comma separated list of local fragment databases")
 	featuresCmd.Flags().BoolP("addgene", "a", false, "use the Addgene repository")
 	featuresCmd.Flags().BoolP("igem", "g", false, "use the iGEM repository")
 	featuresCmd.Flags().StringP("backbone", "b", "", backboneHelp)
