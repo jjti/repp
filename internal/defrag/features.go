@@ -225,16 +225,11 @@ func buildFeatureSolutions(
 	// traverse the fragments, accumulate assemblies that span all the features
 	assemblies := createAssemblies(frags, len(syntheticVector), conf)
 
-	// fill each assembly an accumulate as a solution
-	solutions := [][]*Frag{}
-	for _, a := range assemblies {
-		filledFrags, err := a.fill(syntheticVector, conf)
-		if err == nil {
-			solutions = append(solutions, filledFrags)
-		} else {
-			// fmt.Println(err.Error())
-		}
-	}
+	// build up a map from fragment count to a sorted list of assemblies with that number
+	assemblyCounts, countToAssemblies := groupAssembliesByCount(assemblies)
+
+	// fill each assembly and accumulate the pareto optimal solutions
+	solutions := fillSolutions(syntheticVector, assemblyCounts, countToAssemblies, conf)
 
 	return syntheticVector, solutions
 }

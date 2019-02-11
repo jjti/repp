@@ -22,7 +22,7 @@ var (
 	blastdbcmdDir = ""
 )
 
-// match is a blast "hit" in the blastdb
+// match is a blast "hit" in the blastdb.
 type match struct {
 	// entry of the matched building fragment in the database
 	entry string
@@ -61,34 +61,7 @@ type match struct {
 	internal bool
 }
 
-// length returns the length of the match on the queried fragment
-func (m *match) length() int {
-	queryLength := m.queryEnd - m.queryStart + 1
-	subjectLength := m.subjectEnd - m.subjectStart + 1
-	if queryLength > subjectLength {
-		return queryLength
-	}
-	return subjectLength
-}
-
-// copyWithQueryRange returns a new match with the new start, end
-func (m *match) copyWithQueryRange(start, end int) match {
-	return match{
-		entry:        m.entry,
-		uniqueID:     m.uniqueID,
-		seq:          m.seq,
-		queryStart:   start,
-		queryEnd:     end,
-		subjectStart: m.subjectStart,
-		subjectEnd:   m.subjectEnd,
-		db:           m.db,
-		circular:     m.circular,
-		mismatching:  m.mismatching,
-		internal:     m.internal,
-	}
-}
-
-// blastExec is a small utility object for executing BLAST
+// blastExec is a small utility object for executing BLAST.
 type blastExec struct {
 	// the name of the query
 	name string
@@ -118,7 +91,34 @@ type blastExec struct {
 	identity int
 }
 
-// blast the seq against all dbs and acculate matches
+// length returns the length of the match on the queried fragment.
+func (m *match) length() int {
+	queryLength := m.queryEnd - m.queryStart + 1
+	subjectLength := m.subjectEnd - m.subjectStart + 1
+	if queryLength > subjectLength {
+		return queryLength
+	}
+	return subjectLength
+}
+
+// copyWithQueryRange returns a new match with the new start, end.
+func (m *match) copyWithQueryRange(start, end int) match {
+	return match{
+		entry:        m.entry,
+		uniqueID:     m.uniqueID,
+		seq:          m.seq,
+		queryStart:   start,
+		queryEnd:     end,
+		subjectStart: m.subjectStart,
+		subjectEnd:   m.subjectEnd,
+		db:           m.db,
+		circular:     m.circular,
+		mismatching:  m.mismatching,
+		internal:     m.internal,
+	}
+}
+
+// blast the seq against all dbs and acculate matches.
 func blast(name, seq string, circular bool, dbs, filters []string, identity int, tw *tabwriter.Writer) (matches []match, err error) {
 	in, err := ioutil.TempFile(blastnDir, name+"in-*")
 	if err != nil {
@@ -179,14 +179,14 @@ func blast(name, seq string, circular bool, dbs, filters []string, identity int,
 	return matches, nil
 }
 
-// blastWriter returns a new tabwriter specifically for blast database calls
+// blastWriter returns a new tabwriter specifically for blast database calls.
 func blastWriter() *tabwriter.Writer {
 	tw := tabwriter.NewWriter(os.Stdout, 0, 4, 3, ' ', 0)
 	fmt.Fprintf(tw, "entry\tmatches\tdatabase\t\n")
 	return tw
 }
 
-// input creates an input query file (FASTA) for blastn
+// input creates an input query file (FASTA) for blastn.
 func (b *blastExec) input() error {
 	// create the query sequence file.
 	// if circular, add the sequence to itself because it's circular
@@ -202,7 +202,7 @@ func (b *blastExec) input() error {
 	return err
 }
 
-// run calls the external blastn binary on the input file
+// run calls the external blastn binary on the input file.
 func (b *blastExec) run() (err error) {
 	threads := runtime.NumCPU() - 1
 	if threads < 1 {
@@ -258,7 +258,7 @@ func (b *blastExec) run() (err error) {
 	return
 }
 
-// parse reads the output of blastn into matches
+// parse reads the output of blastn into matches.
 func (b *blastExec) parse(filters []string) (matches []match, err error) {
 	// read in the results
 	file, err := ioutil.ReadFile(b.out.Name())

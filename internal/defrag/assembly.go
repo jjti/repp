@@ -10,7 +10,7 @@ import (
 )
 
 // assembly is a slice of nodes ordered by the nodes
-// distance from the end of the target vector
+// distance from the end of the target vector.
 type assembly struct {
 	// frags, ordered by distance from the "end" of the vector
 	frags []*Frag
@@ -82,12 +82,12 @@ func (a *assembly) add(f *Frag, maxCount, targetLength int) (newAssembly assembl
 	}, created, circularized
 }
 
-// len returns len(assembly.nodes) + the synthesis fragment count
+// len returns len(assembly.nodes) + the synthesis fragment count.
 func (a *assembly) len() int {
 	return len(a.frags) + a.synths
 }
 
-// log returns a description of the assembly (the entires in it and its cost)
+// log returns a description of the assembly (the entires in it and its cost).
 func (a *assembly) log() string {
 	logString := ""
 	if len(a.frags) >= 1 {
@@ -99,15 +99,8 @@ func (a *assembly) log() string {
 	return fmt.Sprintf("%s- $%.2f", logString, a.cost)
 }
 
-// fill traverses frags in an assembly and adds primers or makes syntheic fragments where necessary
-//
-// - Vector fragments if a Frag spans the whole target range (entirely contains it)
-//
-// - PCR fragments if the Frag subselects a region (BLAST match)
-//
-// - Synthetic fragments if there wasn't a match for a region
-//
-// It can fail. For example, a PCR Frag may have off-targets in the parent vector
+// fill traverses frags in an assembly and adds primers or makes syntheic fragments where necessary.
+// It can fail. For example, a PCR Frag may have off-targets in the parent vector.
 func (a *assembly) fill(target string, conf *config.Config) (frags []*Frag, err error) {
 	minHomology := conf.FragmentsMinHomology
 	maxHomology := conf.FragmentsMaxHomology
@@ -182,9 +175,9 @@ func (a *assembly) fill(target string, conf *config.Config) (frags []*Frag, err 
 	return
 }
 
-// mockNext returns the fragment that's one beyond the one passed
-// if there is none, it mocks one using the first fragment and changing
-// its start and end index
+// mockNext returns the fragment that's one beyond the one passed.
+// If there is none, it mocks one using the first fragment and changing
+// its start and end index.
 func (a *assembly) mockNext(i int, target string, conf *config.Config) *Frag {
 	if i < len(a.frags)-1 {
 		return a.frags[i+1]
@@ -199,7 +192,7 @@ func (a *assembly) mockNext(i int, target string, conf *config.Config) *Frag {
 }
 
 // duplicates runs through all the nodes in an assembly and checks whether any of
-// them have unintended homology, or "duplicate homology"
+// them have unintended homology, or "duplicate homology".
 func (a *assembly) duplicates(nodes []*Frag, minHomology, maxHomology int) (isDup bool, first, second, dup string) {
 	c := len(nodes) // Frag count
 	for i, f := range nodes {
@@ -228,7 +221,6 @@ func createAssemblies(frags []*Frag, targetLength int, conf *config.Config) (ass
 	// number of additional frags try synthesizing to, in addition to those that
 	// already have enough homology for overlap without any modifications for each Frag
 	maxNodes := conf.FragmentsMaxCount
-	reachSynthCount := int(math.Max(5, 0.05*float64(len(frags)))) // 5 of 5%, whichever is greater
 
 	// create a starting assembly on each Frag including just itself
 	for i, f := range frags {
@@ -253,10 +245,11 @@ func createAssemblies(frags []*Frag, targetLength int, conf *config.Config) (ass
 		}
 	}
 
+	reachC := int(math.Max(5, 0.05*float64(len(frags)))) // 5 of 5%, whichever is greater
 	// for every Frag in the list of increasing start index frags
 	for i, f := range frags {
-		// for every overlapping fragment + reachSynthCount more
-		for _, j := range f.reach(frags, i, reachSynthCount) {
+		// for every overlapping fragment + reachC more
+		for _, j := range f.reach(frags, i, reachC) {
 			// for every assembly on the reaching fragment
 			for _, a := range f.assemblies {
 				newAssembly, created, circularized := a.add(frags[j], maxNodes, targetLength)
@@ -283,7 +276,7 @@ func createAssemblies(frags []*Frag, targetLength int, conf *config.Config) (ass
 }
 
 // groupAssembliesByCount returns a map from the number of fragments in a build
-// to a slice of builds with that number of fragments, sorted by their cost
+// to a slice of builds with that number of fragments, sorted by their cost.
 func groupAssembliesByCount(assemblies []assembly) ([]int, map[int][]assembly) {
 	countToAssemblies := make(map[int][]assembly)
 	for _, a := range assemblies {
@@ -301,14 +294,79 @@ func groupAssembliesByCount(assemblies []assembly) ([]int, map[int][]assembly) {
 	// sort the fragment counts of assemblies and the assemblies within each
 	// assembly count, so we're trying the shortest assemblies first, and the cheapest
 	// assembly within each fragment count before the others
-	assemblyCounts := []int{}
+	var counts []int
 	for count := range countToAssemblies {
-		assemblyCounts = append(assemblyCounts, count)
+		counts = append(counts, count)
 		sort.Slice(countToAssemblies[count], func(i, j int) bool {
 			return countToAssemblies[count][i].cost < countToAssemblies[count][j].cost
 		})
 	}
-	sort.Ints(assemblyCounts)
+	sort.Ints(counts)
 
-	return assemblyCounts, countToAssemblies
+	return counts, countToAssemblies
+}
+
+// fillSolutions fills in assemblies and returns the pareto optimal solutions.
+func fillSolutions(
+	target string,
+	assemblyCounts []int,
+	countToAssemblies map[int][]assembly,
+	conf *config.Config) (solutions [][]*Frag) {
+
+	// append a fully synthetic solution at first, nothing added should cost more than this (single vector)
+	filled := make(map[int][]*Frag)
+	minCostAssembly := addSyntheticVector(filled, target, conf)
+
+	for _, count := range assemblyCounts {
+		for _, assemblyToFill := range countToAssemblies[count] {
+			if assemblyToFill.cost > minCostAssembly {
+				// skip this and the rest with this count, there's another
+				// cheaper option with fewer fragments
+				break
+			}
+
+			filledFragments, err := assemblyToFill.fill(target, conf)
+			if err != nil || filledFragments == nil {
+				// write the console for debugging, continue looking
+				// logger.Println(assemblyToFill.log(), "error", err.Error())
+				continue
+			}
+			// fmt.Println(assemblyToFill.log(), fragsCost(filledFragments))
+
+			// if a Frag in the assembly fails to be prepared,
+			// remove all assemblies with the Frag and try again
+			newAssemblyCost := fragsCost(filledFragments)
+
+			if newAssemblyCost >= minCostAssembly {
+				continue // wasn't actually cheaper, keep trying
+			}
+
+			// store this as the new cheapest assembly
+			minCostAssembly = newAssemblyCost
+
+			// set this is as the new cheapest of this length
+			filled[len(filledFragments)] = filledFragments
+
+			// delete all assemblies with more fragments that cost more
+			for filledCount, existingFilledFragments := range filled {
+				if filledCount <= len(filledFragments) {
+					continue
+				}
+
+				existingCost := fragsCost(existingFilledFragments)
+				if existingCost >= newAssemblyCost {
+					delete(filled, filledCount)
+				}
+			}
+
+			// don't look at other possible assemblies, assume this will be the cheapest of this length
+			break
+		}
+	}
+
+	for _, frags := range filled {
+		solutions = append(solutions, frags) // flatten
+	}
+
+	return solutions
 }

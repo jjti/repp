@@ -1,3 +1,4 @@
+// Package cmd is for command line interactions with the defrag application
 package cmd
 
 import (
@@ -13,7 +14,7 @@ var (
 	enzymeDB = defrag.NewEnzymeDB()
 )
 
-// rootCmd represents the base command when called without any subcommands
+// rootCmd represents the base command when called without any subcommands.
 var rootCmd = &cobra.Command{
 	Use:     "defrag",
 	Short:   "Build vectors using their target sequence, constiuent features, or fragments",
