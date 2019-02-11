@@ -108,61 +108,8 @@ func sequence(input *Flags, conf *config.Config) (Frag, [][]*Frag, error) {
 	// build up a map from fragment count to a sorted list of assemblies with that number
 	assemblyCounts, countToAssemblies := groupAssembliesByCount(assemblies)
 
-	// append a fully synthetic solution at first, nothing added should cost more than this (single vector)
-	filled := make(map[int][]*Frag)
-	minCostAssembly := addSyntheticVector(filled, target.Seq, conf)
-
-	for _, count := range assemblyCounts {
-		for _, assemblyToFill := range countToAssemblies[count] {
-			if assemblyToFill.cost > minCostAssembly {
-				// skip this and the rest with this count, there's another
-				// cheaper option with fewer fragments
-				break
-			}
-
-			filledFragments, err := assemblyToFill.fill(target.Seq, conf)
-			if err != nil || filledFragments == nil {
-				// write the console for debugging, continue looking
-				// logger.Println(assemblyToFill.log(), "error", err.Error())
-				continue
-			}
-			// fmt.Println(assemblyToFill.log(), fragsCost(filledFragments))
-
-			// if a Frag in the assembly fails to be prepared,
-			// remove all assemblies with the Frag and try again
-			newAssemblyCost := fragsCost(filledFragments)
-
-			if newAssemblyCost >= minCostAssembly {
-				continue // wasn't actually cheaper, keep trying
-			}
-
-			// store this as the new cheapest assembly
-			minCostAssembly = newAssemblyCost
-
-			// set this is as the new cheapest of this length
-			filled[len(filledFragments)] = filledFragments
-
-			// delete all assemblies with more fragments that cost more
-			for filledCount, existingFilledFragments := range filled {
-				if filledCount <= len(filledFragments) {
-					continue
-				}
-
-				existingCost := fragsCost(existingFilledFragments)
-				if existingCost >= newAssemblyCost {
-					delete(filled, filledCount)
-				}
-			}
-
-			// don't look at other possible assemblies, assume this will be the cheapest of this length
-			break
-		}
-	}
-
-	var solutions [][]*Frag
-	for _, frags := range filled {
-		solutions = append(solutions, frags) // flatten
-	}
+	// fill in pareto optimal assembly solutions
+	solutions := fillSolutions(target.Seq, assemblyCounts, countToAssemblies, conf)
 
 	return target, solutions, nil
 }

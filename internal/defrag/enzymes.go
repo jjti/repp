@@ -15,14 +15,14 @@ import (
 )
 
 // enzyme is a single enzyme that can be used to linearize a backbone before
-// inserting a sequence
+// inserting a sequence.
 type enzyme struct {
 	recog        string
 	seqCutIndex  int
 	compCutIndex int
 }
 
-// parses a recognition sequence into a hangInd, cutInd for overhang calculation
+// parses a recognition sequence into a hangInd, cutInd for overhang calculation.
 func newEnzyme(recogSeq string) enzyme {
 	cutIndex := strings.Index(recogSeq, "^")
 	hangIndex := strings.Index(recogSeq, "_")
@@ -108,7 +108,7 @@ func digest(frag Frag, enz enzyme) (digested Frag, err error) {
 }
 
 // recogRegex turns a recognition sequence into a regex sequence for searching
-// sequence for searching the template sequence for digestion sites
+// sequence for searching the template sequence for digestion sites.
 func recogRegex(recog string) (decoded string) {
 	regexDecode := map[rune]string{
 		'A': "A",
@@ -137,13 +137,13 @@ func recogRegex(recog string) (decoded string) {
 	return regexDecoder.String()
 }
 
-// EnzymeDB is a struct for accessing defrags enzymes db
+// EnzymeDB is a struct for accessing defrags enzymes db.
 type EnzymeDB struct {
 	// enzymes is a map between a enzymes name and its sequence
 	enzymes map[string]string
 }
 
-// NewEnzymeDB returns a new copy of the enzymes db
+// NewEnzymeDB returns a new copy of the enzymes db.
 func NewEnzymeDB() *EnzymeDB {
 	enzymes := make(map[string]string)
 
@@ -168,7 +168,7 @@ func NewEnzymeDB() *EnzymeDB {
 
 // ReadCmd returns enzymes that are similar in name to the enzyme name requested.
 // if multiple enzyme names include the enzyme name, they are all returned.
-// otherwise a list of enzyme names are returned (those beneath a levenshtein distance cutoff)
+// otherwise a list of enzyme names are returned (those beneath a levenshtein distance cutoff).
 func (f *EnzymeDB) ReadCmd(cmd *cobra.Command, args []string) {
 	// from https://golang.org/pkg/text/tabwriter/
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', tabwriter.TabIndent)
@@ -224,7 +224,7 @@ func (f *EnzymeDB) ReadCmd(cmd *cobra.Command, args []string) {
 	w.Flush()
 }
 
-// SetCmd the enzyme's seq in the database (or create if it isn't in the enzyme db)
+// SetCmd the enzyme's seq in the database (or create if it isn't in the enzyme db).
 func (f *EnzymeDB) SetCmd(cmd *cobra.Command, args []string) {
 	if len(args) < 2 {
 		stderr.Fatalf("expecting two args: a name and recognition sequence. see 'defrag find enzyme --help'\n")
