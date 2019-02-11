@@ -1,10 +1,11 @@
 package cmd
 
 import (
+	"github.com/jjtimmons/defrag/internal/defrag"
 	"github.com/spf13/cobra"
 )
 
-// findCmd is for finding features or enzymes by their name
+// findCmd is for finding features or enzymes by their name.
 var findCmd = &cobra.Command{
 	Use:                        "find [feature,enzyme]",
 	Short:                      "Find features or enzymes",
@@ -15,7 +16,7 @@ If there is no exact match, similar entries are returned`,
 	Aliases: []string{"ls", "list"},
 }
 
-// featureFindCmd is for reading features (close to the one requested) from the db
+// featureFindCmd is for reading features (close to the one requested) from the db.
 var featureFindCmd = &cobra.Command{
 	Use:                        "feature [name]",
 	Short:                      "Find features in the features database",
@@ -31,7 +32,7 @@ Otherwise, all features with names similar to the feature name are writen to std
 }
 
 // enzymeFindCmd is for listing out all the available enzymes usable for digesting
-// a backbone. Useful for if the user doesn't know which enzymes are available
+// a backbone. Useful for if the user doesn't know which enzymes are available.
 var enzymeFindCmd = &cobra.Command{
 	Use:                        "enzyme [name]",
 	Short:                      "Find enzymes available for linearizing backbones by name",
@@ -44,10 +45,25 @@ Lists out all the enzymes with the same or a similar a similar name as the argum
 	Aliases: []string{"enzymes"},
 }
 
+// fragmentFindCmd is for finding a fragment by its name
+var fragmentFindCmd = &cobra.Command{
+	Use:                        "fragment [name]",
+	Short:                      "Find a fragment from the databases",
+	Run:                        defrag.FragmentFindCmd,
+	SuggestionsMinimumDistance: 2,
+	Long: `
+Finds a fragment with a given name in the available databases.`,
+}
+
 // set flags
 func init() {
+	fragmentFindCmd.Flags().StringP("dbs", "d", "", "comma separated list of local fragment databases")
+	fragmentFindCmd.Flags().BoolP("addgene", "a", false, "use the Addgene repository")
+	fragmentFindCmd.Flags().BoolP("igem", "g", false, "use the iGEM repository")
+
 	findCmd.AddCommand(featureFindCmd)
 	findCmd.AddCommand(enzymeFindCmd)
+	findCmd.AddCommand(fragmentFindCmd)
 
 	rootCmd.AddCommand(findCmd)
 }

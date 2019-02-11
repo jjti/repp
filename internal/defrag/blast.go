@@ -389,7 +389,7 @@ func filter(matches []match, targetLength, minSize int) (properized []match) {
 	}
 
 	// add back copied matches for those that only show up once but should cross the zero index
-	copiedMatches := []match{}
+	var copiedMatches []match
 	for _, m := range properized {
 		if count := matchCount[m.uniqueID]; count >= 2 {
 			continue
@@ -493,7 +493,8 @@ func queryDatabases(entry string, dbs []string) (f Frag, err error) {
 	close(outFileCh)
 	close(dbSourceCh)
 
-	return Frag{}, fmt.Errorf("failed to find %s in any of:\n\t%s", entry, strings.Join(dbs, "\n"))
+	sep := "\n\t"
+	return Frag{}, fmt.Errorf("failed to find %s in any of:%s", entry, sep+strings.Join(dbs, sep))
 }
 
 // seqMismatch queries for any mismatching primer locations in the parent sequence

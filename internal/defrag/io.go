@@ -115,7 +115,7 @@ func NewFlags(in, out, backbone, enzymeName, filter string, dbs []string, addgen
 
 // parseCmdFlags gathers the in path, out path, etc from a cobra cmd object
 // returns Flags and a Config struct for defrag.Vector or defrag.Fragments
-func parseCmdFlags(cmd *cobra.Command, args []string) (*Flags, *config.Config) {
+func parseCmdFlags(cmd *cobra.Command, args []string, strict bool) (*Flags, *config.Config) {
 	var err error
 	fs := &Flags{} // parsed flags
 	p := inputParser{}
@@ -124,33 +124,33 @@ func parseCmdFlags(cmd *cobra.Command, args []string) (*Flags, *config.Config) {
 	if fs.in, err = cmd.Flags().GetString("in"); err != nil {
 		if strings.ToLower(cmd.Name()) == "features" {
 			fs.in = p.parseFeatureInput(args)
-		} else if fs.in, err = p.guessInput(); err != nil {
+		} else if fs.in, err = p.guessInput(); strict && err != nil {
 			// check whether an input fail was specified
 			stderr.Fatal(err)
 		}
 	}
 
-	if fs.out, err = cmd.Flags().GetString("out"); err != nil {
+	if fs.out, err = cmd.Flags().GetString("out"); strict && err != nil {
 		fs.out = p.guessOutput(fs.in) // guess at an output name
 	}
 
 	addgene, err := cmd.Flags().GetBool("addgene") // use addgene db?
-	if err != nil {
+	if strict && err != nil {
 		stderr.Fatalf("failed to parse addgene flag: %v", err)
 	}
 
 	igem, err := cmd.Flags().GetBool("igem") // use igem db?
-	if err != nil {
+	if strict && err != nil {
 		stderr.Fatalf("failed to parse igem flag: %v", err)
 	}
 
 	dbString, err := cmd.Flags().GetString("dbs")
-	if err != nil && !addgene {
+	if strict && err != nil && !addgene {
 		stderr.Fatalf("failed to parse building fragments: %v", err)
 	}
 
 	filters, err := cmd.Flags().GetString("exclude")
-	if err != nil {
+	if strict && err != nil {
 		stderr.Fatalf("failed to parse filters: %v", err)
 	}
 
@@ -160,7 +160,7 @@ func parseCmdFlags(cmd *cobra.Command, args []string) (*Flags, *config.Config) {
 	}
 
 	if dbString == "" && !addgene && !igem {
-		fmt.Println("no fragment databases chosen [-adi]: setting Addgene and iGEM to true")
+		fmt.Println("no fragment databases chosen [-adi]: using Addgene and iGEM by default")
 		addgene = true
 		igem = true
 	}
@@ -177,7 +177,7 @@ func parseCmdFlags(cmd *cobra.Command, args []string) (*Flags, *config.Config) {
 
 	// try to digest the backbone with the enzyme
 	fs.backbone, err = p.parseBackbone(backbone, enzymeName, fs.dbs, c)
-	if err != nil {
+	if strict && err != nil {
 		stderr.Fatal(err)
 	}
 
