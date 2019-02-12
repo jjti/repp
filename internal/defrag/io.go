@@ -20,7 +20,7 @@ import (
 // stderr is for logging to Stderr (without an annoying timestamp)
 var stderr = log.New(os.Stderr, "", 0)
 
-// Solution is a single solution to build up the target vector
+// Solution is a single solution to build up the target vector.
 type Solution struct {
 	// Count is the number of fragments in this solution
 	Count int `json:"count"`
@@ -32,7 +32,7 @@ type Solution struct {
 	Fragments []*Frag `json:"fragments"`
 }
 
-// Output is a struct containing design results for the assembly
+// Output is a struct containing design results for the assembly.
 type Output struct {
 	// Target's name. In >example_CDS FASTA its "example_CDS"
 	Target string `json:"target"`
@@ -57,8 +57,7 @@ type Output struct {
 	Solutions []Solution `json:"solutions"`
 }
 
-// Flags conatins parsed cobra Flags like "in", "out", "dbs", etc that
-// are used by multiple commands
+// Flags conatins parsed cobra Flags like "in", "out", "dbs", etc that are used by multiple commands.
 type Flags struct {
 	// the name of the file to write the input to
 	in string
@@ -79,10 +78,10 @@ type Flags struct {
 	identity int
 }
 
-// inputParser contains methods for parsing flags from the input &cobra.Command
+// inputParser contains methods for parsing flags from the input &cobra.Command.
 type inputParser struct{}
 
-// NewFlags makes a new flags object manually. for testing
+// NewFlags makes a new flags object manually. for testing.
 func NewFlags(in, out, backbone, enzymeName, filter string, dbs []string, addgene, igem bool) (*Flags, *config.Config) {
 	c := config.New()
 
@@ -114,7 +113,7 @@ func NewFlags(in, out, backbone, enzymeName, filter string, dbs []string, addgen
 }
 
 // parseCmdFlags gathers the in path, out path, etc from a cobra cmd object
-// returns Flags and a Config struct for defrag.Vector or defrag.Fragments
+// returns Flags and a Config struct for defrag.Vector or defrag.Fragments.
 func parseCmdFlags(cmd *cobra.Command, args []string, strict bool) (*Flags, *config.Config) {
 	var err error
 	fs := &Flags{} // parsed flags
@@ -126,6 +125,7 @@ func parseCmdFlags(cmd *cobra.Command, args []string, strict bool) (*Flags, *con
 			fs.in = p.parseFeatureInput(args)
 		} else if fs.in, err = p.guessInput(); strict && err != nil {
 			// check whether an input fail was specified
+			cmd.Help()
 			stderr.Fatal(err)
 		}
 	}
@@ -136,28 +136,36 @@ func parseCmdFlags(cmd *cobra.Command, args []string, strict bool) (*Flags, *con
 
 	addgene, err := cmd.Flags().GetBool("addgene") // use addgene db?
 	if strict && err != nil {
+		cmd.Help()
 		stderr.Fatalf("failed to parse addgene flag: %v", err)
 	}
 
 	igem, err := cmd.Flags().GetBool("igem") // use igem db?
 	if strict && err != nil {
+		cmd.Help()
 		stderr.Fatalf("failed to parse igem flag: %v", err)
 	}
 
 	dbString, err := cmd.Flags().GetString("dbs")
 	if strict && err != nil && !addgene {
+		cmd.Help()
 		stderr.Fatalf("failed to parse building fragments: %v", err)
 	}
 
 	filters, err := cmd.Flags().GetString("exclude")
 	if strict && err != nil {
+		cmd.Help()
 		stderr.Fatalf("failed to parse filters: %v", err)
 	}
+	// try to split the filter fields into a list
+	fs.filters = p.getFilters(filters)
 
 	identity, err := cmd.Flags().GetInt("identity")
 	if err != nil {
 		identity = 100 // might be something other than `defrag vector`
 	}
+	// set identity for blastn searching
+	fs.identity = identity
 
 	if dbString == "" && !addgene && !igem {
 		fmt.Println("no fragment databases chosen [-adi]: using Addgene and iGEM by default")
@@ -181,17 +189,11 @@ func parseCmdFlags(cmd *cobra.Command, args []string, strict bool) (*Flags, *con
 		stderr.Fatal(err)
 	}
 
-	// try to split the filter fields into a list
-	fs.filters = p.getFilters(filters)
-
-	// set identity for blastn searching
-	fs.identity = identity
-
 	return fs, c
 }
 
 // guessInput returns the first fasta file in the current directory. Is used
-// if the user hasn't specified an input file
+// if the user hasn't specified an input file.
 func (p *inputParser) guessInput() (in string, err error) {
 	dir, _ := filepath.Abs(".")
 	files, err := ioutil.ReadDir(dir)
@@ -214,7 +216,7 @@ func (p *inputParser) guessInput() (in string, err error) {
 }
 
 // parseFeatureInput turns the arguments to the features command into a
-// CSV list of features in a single string
+// CSV list of features in a single string.
 func (p *inputParser) parseFeatureInput(args []string) (out string) {
 	commaSeparated := false
 	for _, a := range args {
@@ -239,14 +241,14 @@ func (p *inputParser) parseFeatureInput(args []string) (out string) {
 }
 
 // guessOutput gets an outpath path from an input path (if no output path is
-// specified). It uses the same name as the input path to create an output
+// specified). It uses the same name as the input path to create an output.
 func (p *inputParser) guessOutput(in string) (out string) {
 	ext := filepath.Ext(in)
 	noExt := in[0 : len(in)-len(ext)]
 	return noExt + ".defrag.json"
 }
 
-// parseDBs returns a list of absolute paths to BLAST databases
+// parseDBs returns a list of absolute paths to BLAST databases.
 func (p *inputParser) parseDBs(dbs string, addgene, igem bool) (paths []string, err error) {
 	if addgene {
 		dbs += "," + config.AddgeneDB
@@ -270,7 +272,7 @@ func (p *inputParser) parseDBs(dbs string, addgene, igem bool) (paths []string, 
 }
 
 // dbPaths turns a single string of comma separated BLAST dbs into a
-// slice of absolute paths to the BLAST dbs on the local fs
+// slice of absolute paths to the BLAST dbs on the local fs.
 func (p *inputParser) dbPaths(dbList string) (paths []string, err error) {
 	dbRegex := regexp.MustCompile(",")
 	for _, db := range dbRegex.Split(dbList, -1) {
@@ -290,7 +292,7 @@ func (p *inputParser) dbPaths(dbList string) (paths []string, err error) {
 }
 
 // parseBackbone takes a backbone, referenced by its id, and an enzyme to cleave the
-// backbone, and returns the linearized backbone as a Frag
+// backbone, and returns the linearized backbone as a Frag.
 func (p *inputParser) parseBackbone(backbone, enzyme string, dbs []string, c *config.Config) (f Frag, err error) {
 	// if no backbone was specified, return an empty Frag
 	if backbone == "" {
@@ -321,7 +323,7 @@ func (p *inputParser) parseBackbone(backbone, enzyme string, dbs []string, c *co
 	return
 }
 
-// getEnzymes return the enzyme with the name passed. errors out if there is none
+// getEnzymes return the enzyme with the name passed. errors out if there is none.
 func (p *inputParser) getEnzyme(enzymeName string) (enzyme, error) {
 	enzymeDB := NewEnzymeDB()
 	if e, exists := enzymeDB.enzymes[enzymeName]; exists {
@@ -335,7 +337,7 @@ func (p *inputParser) getEnzyme(enzymeName string) (enzyme, error) {
 }
 
 // getFilters takes an input string and returns a list of strings to run against matches
-// when filtering out possible building fragments
+// when filtering out possible building fragments.
 func (p *inputParser) getFilters(filterFlag string) []string {
 	splitFunc := func(c rune) bool {
 		return c == ' ' || c == ',' // space or comma separated
@@ -344,7 +346,7 @@ func (p *inputParser) getFilters(filterFlag string) []string {
 	return strings.FieldsFunc(strings.ToUpper(filterFlag), splitFunc)
 }
 
-// read a FASTA file (by its path on local FS) to a slice of Fragments
+// read a FASTA file (by its path on local FS) to a slice of Fragments.
 func read(path string, feature bool) (fragments []Frag, err error) {
 	if !filepath.IsAbs(path) {
 		path, err = filepath.Abs(path)
@@ -372,7 +374,7 @@ func read(path string, feature bool) (fragments []Frag, err error) {
 	return nil, fmt.Errorf("failed to parse %s: unrecognized file type", path)
 }
 
-// readFasta parses the multifasta file to fragments
+// readFasta parses the multifasta file to fragments.
 func readFasta(path, contents string) (fragments []Frag, err error) {
 	// split by newlines
 	lines := strings.Split(contents, "\n")
@@ -427,7 +429,7 @@ func readFasta(path, contents string) (fragments []Frag, err error) {
 }
 
 // readGenbank parses a genbank file to fragments. Returns either fragments or parseFeatures,
-// depending on the parseFeatures parameter
+// depending on the parseFeatures parameter.
 func readGenbank(path, contents string, parseFeatures bool) (fragments []Frag, err error) {
 	genbankSplit := strings.Split(contents, "ORIGIN")
 
@@ -504,15 +506,21 @@ func readGenbank(path, contents string, parseFeatures bool) (fragments []Frag, e
 	}, nil
 }
 
-// write a slice of assemblies to the fs at the output path
-//
-// filename is the output file to write to
-// target is the vector we tried to assemble
-// assemblies are the solutions that can build up the target vector
-func write(filename, targetName, targetSeq string, assemblies [][]*Frag, insertSeqLength int, conf *config.Config, seconds float64) (output []byte, err error) {
+// writeJSON turns a list of solutions into a Solution object and writes to the filename requested.
+func writeJSON(
+	filename,
+	targetName,
+	targetSeq string,
+	assemblies [][]*Frag,
+	insertSeqLength int,
+	conf *config.Config,
+	seconds float64) (output []byte, err error) {
 	// store save time, using same format as log.Println https://golang.org/pkg/log/#Println
 	t := time.Now() // https://gobyexample.com/time-formatting-parsing
 	time := fmt.Sprintf("%d/%02d/%02d %02d:%02d:%02d", t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
+	roundCost := func(cost float64) (float64, error) {
+		return strconv.ParseFloat(fmt.Sprintf("%.2f", cost), 64)
+	}
 
 	// calculate final cost of the assembly and fragment count
 	solutions := []Solution{}
@@ -524,16 +532,14 @@ func write(filename, targetName, targetSeq string, assemblies [][]*Frag, insertS
 			f.Type = f.fragType.String()
 
 			// round to two decimal places
-			f.Cost, err = roundCost(f.cost(true))
-			if err != nil {
+			if f.Cost, err = roundCost(f.cost(true)); err != nil {
 				return nil, err
 			}
 
 			// if it's already in the assembly, don't count cost twice
 			if _, contained := assemblyFragmentIDs[f.ID]; f.ID != "" && contained {
-				f.Cost, err = roundCost(f.cost(false)) // ignore repo procurement costs
-				if err != nil {
-					return nil, err
+				if f.Cost, err = roundCost(f.cost(false)); err != nil {
+					return nil, err // ignore repo procurement costs
 				}
 			} else {
 				assemblyFragmentIDs[f.ID] = true
@@ -593,9 +599,55 @@ func write(filename, targetName, targetSeq string, assemblies [][]*Frag, insertS
 	return output, nil
 }
 
-// roundCost returns a float for cost to 2 decimal places
-func roundCost(cost float64) (float64, error) {
-	roundedString := fmt.Sprintf("%.2f", cost)
+// writeGenbank writes a slice of fragments/features to a genbank output file.
+func writeGenbank(filename, name, seq string, frags []*Frag, feats []match) {
+	// header row
+	d := time.Now().Local()
+	h1 := fmt.Sprintf("LOCUS       %s", name)
+	h2 := fmt.Sprintf("%d bp DNA      circular     %s", len(seq), strings.ToUpper(d.Format("02-Jan-2006")))
+	space := strings.Repeat(" ", 80-len(h1+h2))
+	header := h1 + space + h2
 
-	return strconv.ParseFloat(roundedString, 64)
+	// feature rows
+	var fsb strings.Builder
+	fsb.WriteString("FEATURES             Location/Qualifiers\n")
+	for _, f := range feats {
+		s := (f.queryStart + 1) % len(seq)
+		e := (f.queryEnd + 1) % len(seq)
+
+		if s == 0 {
+			s = len(seq)
+		}
+		if e == 0 {
+			e = len(seq)
+		}
+
+		fsb.WriteString(
+			fmt.Sprintf("     misc_feature    %d..%d\n", s, e) +
+				fmt.Sprintf("		/label=\"%s\"\n", f.entry),
+		)
+	}
+
+	// origin row
+	var ori strings.Builder
+	ori.WriteString("ORIGIN\n")
+	for i := 0; i < len(seq); i += 60 {
+		n := strconv.Itoa(i + 1)
+		ori.WriteString(strings.Repeat(" ", 9-len(n)) + n)
+		for s := i; s < i+60 && s < len(seq); s += 10 {
+			e := s + 10
+			if e > len(seq) {
+				e = len(seq)
+			}
+			ori.WriteString(fmt.Sprintf(" %s", seq[s:e]))
+		}
+		ori.WriteString("\n")
+	}
+	ori.WriteString("//\n")
+
+	gb := strings.Join([]string{header, fsb.String(), ori.String()}, "\n")
+	err := ioutil.WriteFile(filename, []byte(gb), 0644)
+	if err != nil {
+		stderr.Fatalln(err)
+	}
 }

@@ -196,8 +196,7 @@ func (b *blastExec) input() error {
 		querySeq += b.seq
 	}
 
-	file := fmt.Sprintf(">%s\n%s\n", b.name, querySeq)
-	_, err := b.in.WriteString(file)
+	_, err := b.in.WriteString(fmt.Sprintf(">%s\n%s\n", b.name, querySeq))
 
 	return err
 }
@@ -267,6 +266,8 @@ func (b *blastExec) parse(filters []string) (matches []match, err error) {
 	}
 	fileS := string(file)
 
+	identityThreshold := float32(b.identity)/100.0 - 0.0001
+
 	// read it into Matches
 	var ms []match
 	for _, line := range strings.Split(fileS, "\n") {
@@ -289,6 +290,17 @@ func (b *blastExec) parse(filters []string) (matches []match, err error) {
 		seq := cols[5]
 		mismatching, _ := strconv.Atoi(cols[6])
 		titles := cols[7] // salltitles, eg: "fwd-terminator-2011"
+
+		// check whether the mismatch ratio is less than the set limit
+		matchRatio := float32(len(seq)-mismatching) / float32(len(seq))
+		if matchRatio < identityThreshold {
+			continue
+		}
+
+		queryStart--
+		queryEnd--
+		subjectStart--
+		subjectEnd--
 
 		// bug where titles are being included in the entry
 		entryCols := strings.Fields(entry)
@@ -326,10 +338,10 @@ func (b *blastExec) parse(filters []string) (matches []match, err error) {
 			entry:        entry,
 			uniqueID:     uniqueID,
 			seq:          strings.Replace(seq, "-", "", -1),
-			queryStart:   queryStart - 1, // convert 1-based numbers to 0-based
-			queryEnd:     queryEnd - 1,
-			subjectStart: subjectStart - 1,
-			subjectEnd:   subjectEnd - 1,
+			queryStart:   queryStart, // convert 1-based numbers to 0-based
+			queryEnd:     queryEnd,
+			subjectStart: subjectStart,
+			subjectEnd:   subjectEnd,
 			circular:     strings.Contains(entry+titles, "circular"),
 			mismatching:  mismatching,
 			internal:     b.internal,

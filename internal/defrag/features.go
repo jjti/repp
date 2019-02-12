@@ -51,7 +51,7 @@ func features(flags *Flags, conf *config.Config) {
 	for _, f := range targetFeatures {
 		insertLength += len(f[1])
 	}
-	write(flags.out, flags.in, syntheticVector, solutions, insertLength, conf, time.Since(start).Seconds())
+	writeJSON(flags.out, flags.in, syntheticVector, solutions, insertLength, conf, time.Since(start).Seconds())
 }
 
 // queryFeatures takes the list of feature names and finds them in the available databases
@@ -260,14 +260,13 @@ func NewFeatureDB() *FeatureDB {
 // if multiple feature names include the feature name, they are all returned.
 // otherwise a list of feature names are returned (those beneath a levenshtein distance cutoff)
 func (f *FeatureDB) ReadCmd(cmd *cobra.Command, args []string) {
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', tabwriter.TabIndent)
-
 	if len(args) < 1 {
 		// no feature name passed, log all of them
 		featNames := []string{}
 		for feat := range f.features {
 			featNames = append(featNames, feat)
 		}
+
 		sort.Slice(
 			featNames,
 			func(i, j int) bool {
@@ -276,6 +275,7 @@ func (f *FeatureDB) ReadCmd(cmd *cobra.Command, args []string) {
 		)
 
 		// print all their names to the console and the first few bp
+		w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, '-', tabwriter.TabIndent)
 		for _, feat := range featNames {
 			seq := f.features[feat]
 			if len(seq) > 20 {
@@ -285,6 +285,7 @@ func (f *FeatureDB) ReadCmd(cmd *cobra.Command, args []string) {
 		}
 
 		w.Flush()
+
 		return
 	}
 
@@ -309,6 +310,7 @@ func (f *FeatureDB) ReadCmd(cmd *cobra.Command, args []string) {
 	}
 
 	// check for an exact match
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', tabwriter.TabIndent)
 	matchedFeature, exactMatch := f.features[name]
 	if exactMatch && len(containing) < 2 {
 		fmt.Fprintf(w, name+"\t"+matchedFeature)

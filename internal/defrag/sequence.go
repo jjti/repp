@@ -28,7 +28,7 @@ func Sequence(flags *Flags, conf *config.Config) {
 
 	// write the results to a file
 	elapsed := time.Since(start)
-	_, err = write(flags.out, target.ID, target.Seq, builds, len(target.Seq), conf, elapsed.Seconds())
+	_, err = writeJSON(flags.out, target.ID, target.Seq, builds, len(target.Seq), conf, elapsed.Seconds())
 	handleErr(err)
 
 	fmt.Printf("%s\n\n", elapsed)

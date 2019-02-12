@@ -29,7 +29,7 @@ against a list of consituent fragment, feature, or a target sequence.`,
 // fragmentsCmd is for piecing together a list of input fragments into a vector
 var fragmentsCmd = &cobra.Command{
 	Use:                        "fragments",
-	Short:                      "Prepare fragments for Gibson assembly",
+	Short:                      "Build a vector from its constituent fragments",
 	Run:                        defrag.FragmentsCmd,
 	SuggestionsMinimumDistance: 3,
 	Long: `
