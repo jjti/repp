@@ -26,8 +26,7 @@ func FragmentFindCmd(cmd *cobra.Command, args []string) {
 
 // FragmentsCmd accepts a cobra commands and assembles a list of building fragments in order
 func FragmentsCmd(cmd *cobra.Command, args []string) {
-	_, err := fragments(parseCmdFlags(cmd, args, true))
-	if err != nil {
+	if _, err := fragments(parseCmdFlags(cmd, args, true)); err != nil {
 		stderr.Println(err)
 	}
 }
@@ -111,4 +110,16 @@ func prepareFragments(targetFrags []Frag, conf *config.Config) (target Frag, sol
 	}
 
 	return target, solution, nil
+}
+
+// ValidateJunctions checks each fragment and confirms that it has sufficient homology
+// with its adjacent fragments and that the match is exact. Largely for testing
+func ValidateJunctions(frags []*Frag, conf *config.Config) {
+	for i, f := range frags {
+		next := frags[(i+1)%len(frags)]
+		j := f.junction(next, conf.FragmentsMinHomology, conf.FragmentsMaxHomology)
+		if j == "" {
+			stderr.Fatalf("no junction found between %s and %s", f.ID, next.ID)
+		}
+	}
 }
