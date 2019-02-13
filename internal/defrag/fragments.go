@@ -2,17 +2,11 @@ package defrag
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/jjtimmons/defrag/config"
 	"github.com/spf13/cobra"
 )
-
-// FragmentsCmd accepts a cobra commands and assembles a list of building fragments in order
-func FragmentsCmd(cmd *cobra.Command, args []string) {
-	Fragments(parseCmdFlags(cmd, args, true))
-}
 
 // FragmentFindCmd logs the building fragment with the name passed.
 func FragmentFindCmd(cmd *cobra.Command, args []string) {
@@ -30,13 +24,12 @@ func FragmentFindCmd(cmd *cobra.Command, args []string) {
 	fmt.Printf("%s\t%s\t%s\n", name, frag.db, frag.Seq)
 }
 
-// Fragments assembles fragments using fragments
-func Fragments(flags *Flags, conf *config.Config) {
-	if _, err := fragments(flags, conf); err != nil {
-		stderr.Fatalf("failed to assemble the fragments in %s: %v", flags.in, err)
+// FragmentsCmd accepts a cobra commands and assembles a list of building fragments in order
+func FragmentsCmd(cmd *cobra.Command, args []string) {
+	_, err := fragments(parseCmdFlags(cmd, args, true))
+	if err != nil {
+		stderr.Println(err)
 	}
-
-	os.Exit(0)
 }
 
 // fragments pieces together a list of fragments into a single vector
