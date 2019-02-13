@@ -567,7 +567,7 @@ func writeJSON(
 	})
 
 	// get the cost of full synthesis (comes in vector)
-	fullSynthCost, err := roundCost(conf.SynthGeneCost(insertSeqLength))
+	fullSynthCost, err := roundCost(conf.SynthVectorCost(insertSeqLength))
 	if err != nil {
 		return nil, err
 	}
@@ -604,16 +604,23 @@ func writeGenbank(filename, name, seq string, frags []*Frag, feats []match) {
 	// header row
 	d := time.Now().Local()
 	h1 := fmt.Sprintf("LOCUS       %s", name)
-	h2 := fmt.Sprintf("%d bp DNA      circular     %s", len(seq), strings.ToUpper(d.Format("02-Jan-2006")))
-	space := strings.Repeat(" ", 80-len(h1+h2))
+	h2 := fmt.Sprintf("%d bp DNA      circular      %s\n", len(seq), strings.ToUpper(d.Format("02-Jan-2006")))
+	space := strings.Repeat(" ", 81-len(h1+h2))
 	header := h1 + space + h2
 
 	// feature rows
 	var fsb strings.Builder
-	fsb.WriteString("FEATURES             Location/Qualifiers\n")
-	for _, f := range feats {
-		s := (f.queryStart + 1) % len(seq)
-		e := (f.queryEnd + 1) % len(seq)
+	fsb.WriteString("DEFINITION  .\nACCESSION   .\nFEATURES             Location/Qualifiers\n")
+	for _, m := range feats {
+		cS := ""
+		cE := ""
+		if !m.forward {
+			cS = "complement("
+			cE = ")"
+		}
+
+		s := (m.queryStart + 1) % len(seq)
+		e := (m.queryEnd + 1) % len(seq)
 
 		if s == 0 {
 			s = len(seq)
@@ -623,8 +630,8 @@ func writeGenbank(filename, name, seq string, frags []*Frag, feats []match) {
 		}
 
 		fsb.WriteString(
-			fmt.Sprintf("     misc_feature    %d..%d\n", s, e) +
-				fmt.Sprintf("		/label=\"%s\"\n", f.entry),
+			fmt.Sprintf("     misc_feature    %s%d..%d%s\n", cS, s, e, cE) +
+				fmt.Sprintf("                     /label=\"%s\"\n", m.entry),
 		)
 	}
 
@@ -645,7 +652,7 @@ func writeGenbank(filename, name, seq string, frags []*Frag, feats []match) {
 	}
 	ori.WriteString("//\n")
 
-	gb := strings.Join([]string{header, fsb.String(), ori.String()}, "\n")
+	gb := strings.Join([]string{header, fsb.String(), ori.String()}, "")
 	err := ioutil.WriteFile(filename, []byte(gb), 0644)
 	if err != nil {
 		stderr.Fatalln(err)

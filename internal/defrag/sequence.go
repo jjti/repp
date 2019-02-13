@@ -16,20 +16,19 @@ func SequenceCmd(cmd *cobra.Command, args []string) {
 
 // Sequence is for running an end to end vector design using a target sequence
 func Sequence(flags *Flags, conf *config.Config) {
-	handleErr := func(err error) {
-		if err != nil {
-			stderr.Fatalf("failed to assemble the vector sequence in %s: %v", flags.in, err)
-		}
-	}
 	start := time.Now()
 
 	target, builds, err := sequence(flags, conf) // build up the assemblies that make the sequence
-	handleErr(err)
+	if err != nil {
+		stderr.Fatalln(err)
+	}
 
 	// write the results to a file
 	elapsed := time.Since(start)
 	_, err = writeJSON(flags.out, target.ID, target.Seq, builds, len(target.Seq), conf, elapsed.Seconds())
-	handleErr(err)
+	if err != nil {
+		stderr.Fatalln(err)
+	}
 
 	fmt.Printf("%s\n\n", elapsed)
 }
@@ -110,6 +109,9 @@ func sequence(input *Flags, conf *config.Config) (Frag, [][]*Frag, error) {
 
 	// fill in pareto optimal assembly solutions
 	solutions := fillSolutions(target.Seq, assemblyCounts, countToAssemblies, conf)
+
+	// subtract backbone sequence for cost estimation
+	target.Seq = target.Seq[:len(target.Seq)-len(input.backbone.Seq)]
 
 	return target, solutions, nil
 }

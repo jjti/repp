@@ -161,8 +161,8 @@ func (c Config) SynthFragmentCost(fragLength int) float64 {
 	return fragCount * float64(fragLength) * cost.Cost
 }
 
-// SynthGeneCost returns the cost of synthesizing the insert and having it delivered in a vector
-func (c Config) SynthGeneCost(insertLength int) float64 {
+// SynthVectorCost returns the cost of synthesizing the insert and having it delivered in a vector
+func (c Config) SynthVectorCost(insertLength int) float64 {
 	cost := synthCost(insertLength, c.SynthesisVectorCost)
 	if cost.Fixed {
 		return cost.Cost

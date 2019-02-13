@@ -59,6 +59,9 @@ type match struct {
 
 	// internal if the fragment doesn't have to be procured from a remote repository (eg Addgene, iGEM)
 	internal bool
+
+	// forward if the match is along the sequence strand versus the reverse complement strand
+	forward bool
 }
 
 // blastExec is a small utility object for executing BLAST.
@@ -290,6 +293,7 @@ func (b *blastExec) parse(filters []string) (matches []match, err error) {
 		seq := cols[5]
 		mismatching, _ := strconv.Atoi(cols[6])
 		titles := cols[7] // salltitles, eg: "fwd-terminator-2011"
+		forward := true
 
 		// check whether the mismatch ratio is less than the set limit
 		matchRatio := float32(len(seq)-mismatching) / float32(len(seq))
@@ -312,9 +316,11 @@ func (b *blastExec) parse(filters []string) (matches []match, err error) {
 		// flip if blast is reading right to left
 		if queryStart > queryEnd {
 			queryStart, queryEnd = queryEnd, queryStart
+			forward = !forward
 		}
 		if subjectStart > subjectEnd {
 			subjectStart, subjectEnd = subjectEnd, subjectStart
+			forward = !forward
 		}
 
 		// filter on titles
@@ -347,6 +353,7 @@ func (b *blastExec) parse(filters []string) (matches []match, err error) {
 			internal:     b.internal,
 			db:           b.db, // store for checking off-targets later
 			title:        search,
+			forward:      forward,
 		})
 	}
 
