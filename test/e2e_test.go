@@ -4,6 +4,7 @@ import (
 	"path"
 	"testing"
 
+	"github.com/jjtimmons/defrag/config"
 	"github.com/jjtimmons/defrag/internal/defrag"
 )
 
@@ -27,7 +28,7 @@ func Test_Sequence(t *testing.T) {
 			"EcoRI",
 			"2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,BBa_E061",
 			[]string{},
-			false,
+			true,
 			true,
 		},
 		testFlags{
@@ -37,7 +38,7 @@ func Test_Sequence(t *testing.T) {
 			"PstI",
 			"",
 			[]string{},
-			false,
+			true,
 			true,
 		},
 		testFlags{
@@ -47,7 +48,7 @@ func Test_Sequence(t *testing.T) {
 			"EcoRI",
 			"",
 			[]string{},
-			false,
+			true,
 			true,
 		},
 		testFlags{
@@ -57,7 +58,7 @@ func Test_Sequence(t *testing.T) {
 			"EcoRI",
 			"2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,BBa_K0077",
 			[]string{},
-			false,
+			true,
 			true,
 		},
 		testFlags{
@@ -67,7 +68,7 @@ func Test_Sequence(t *testing.T) {
 			"EcoRI",
 			"BBa_K265",
 			[]string{},
-			false,
+			true,
 			true,
 		},
 		testFlags{
@@ -77,7 +78,7 @@ func Test_Sequence(t *testing.T) {
 			"PstI",
 			"BBa_K277", // no year filters needed
 			[]string{},
-			false,
+			true,
 			true,
 		},
 		testFlags{
@@ -87,13 +88,19 @@ func Test_Sequence(t *testing.T) {
 			"EcoRI",
 			"2009,2010,2011,2012,BBa_K108",
 			[]string{},
-			false,
+			true,
 			true,
 		},
 	}
 
+	c := config.New()
+
 	for _, t := range tests {
-		defrag.Sequence(defrag.NewFlags(t.in, t.out, t.backbone, t.enzyme, t.filters, t.dbs, t.addgene, t.igem))
+		sols := defrag.Sequence(defrag.NewFlags(t.in, t.out, t.backbone, t.enzyme, t.filters, t.dbs, t.addgene, t.igem))
+
+		for _, s := range sols {
+			defrag.ValidateJunctions(s, c)
+		}
 	}
 
 	t.Fatal("fail (dev)")
@@ -124,8 +131,14 @@ func Test_Features(t *testing.T) {
 		},
 	}
 
+	c := config.New()
+
 	for _, t := range tests {
-		defrag.Features(defrag.NewFlags(t.in, t.out, t.backbone, t.enzyme, t.filters, t.dbs, t.addgene, t.igem))
+		sols := defrag.Features(defrag.NewFlags(t.in, t.out, t.backbone, t.enzyme, t.filters, t.dbs, t.addgene, t.igem))
+
+		for _, s := range sols {
+			defrag.ValidateJunctions(s, c)
+		}
 	}
 
 	t.Fatal("fail (dev)")

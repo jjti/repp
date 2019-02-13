@@ -32,7 +32,7 @@ func FeaturesCmd(cmd *cobra.Command, args []string) {
 
 // Features assembles a vector with all the Features requested with the 'defrag Features [feature ...]' command
 // defrag assemble Features p10 promoter, mEGFP, T7 terminator
-func Features(flags *Flags, conf *config.Config) {
+func Features(flags *Flags, conf *config.Config) [][]*Frag {
 	start := time.Now()
 
 	// turn feature names into sequences
@@ -51,6 +51,8 @@ func Features(flags *Flags, conf *config.Config) {
 		insertLength += len(f[1])
 	}
 	writeJSON(flags.out, flags.in, syntheticVector, solutions, insertLength, conf, time.Since(start).Seconds())
+
+	return solutions
 }
 
 // queryFeatures takes the list of feature names and finds them in the available databases

@@ -15,22 +15,24 @@ func SequenceCmd(cmd *cobra.Command, args []string) {
 }
 
 // Sequence is for running an end to end vector design using a target sequence
-func Sequence(flags *Flags, conf *config.Config) {
+func Sequence(flags *Flags, conf *config.Config) [][]*Frag {
 	start := time.Now()
 
-	target, builds, err := sequence(flags, conf) // build up the assemblies that make the sequence
+	insert, target, solutions, err := sequence(flags, conf) // build up the assemblies that make the sequence
 	if err != nil {
 		stderr.Fatalln(err)
 	}
 
 	// write the results to a file
 	elapsed := time.Since(start)
-	_, err = writeJSON(flags.out, target.ID, target.Seq, builds, len(target.Seq), conf, elapsed.Seconds())
+	_, err = writeJSON(flags.out, target.ID, target.Seq, solutions, len(insert.Seq), conf, elapsed.Seconds())
 	if err != nil {
 		stderr.Fatalln(err)
 	}
 
 	fmt.Printf("%s\n\n", elapsed)
+
+	return solutions
 }
 
 // sequence builds a vector using a simple cost optimization scheme.
@@ -56,11 +58,11 @@ func Sequence(flags *Flags, conf *config.Config) {
 // "fill-in" the nodes. Create primers on the Frag if it's a PCR Frag
 // or create a sequence to be synthesized if it's a synthetic fragment.
 // Error out and repeat the build stage if a Frag fails to be filled
-func sequence(input *Flags, conf *config.Config) (Frag, [][]*Frag, error) {
+func sequence(input *Flags, conf *config.Config) (insert, target *Frag, solutions [][]*Frag, err error) {
 	// read the target sequence (the first in the slice is used)
 	fragments, err := read(input.in, false)
 	if err != nil {
-		return Frag{}, nil, fmt.Errorf("failed to read fragments from %s: %v", input.in, err)
+		return &Frag{}, &Frag{}, nil, fmt.Errorf("failed to read fragments from %s: %v", input.in, err)
 	}
 
 	if len(fragments) > 1 {
@@ -72,8 +74,10 @@ func sequence(input *Flags, conf *config.Config) (Frag, [][]*Frag, error) {
 		)
 	}
 
-	target := fragments[0]
+	target = &fragments[0]
 	fmt.Printf("Building %s\n", target.ID)
+
+	insert = target.copy()
 
 	// if a backbone was specified, add it to the sequence of the target frag
 	if input.backbone.ID != "" {
@@ -87,10 +91,10 @@ func sequence(input *Flags, conf *config.Config) (Frag, [][]*Frag, error) {
 
 	if err != nil {
 		dbMessage := strings.Join(input.dbs, ", ")
-		return Frag{}, nil, fmt.Errorf("failed to blast %s against the dbs %s: %v", target.ID, dbMessage, err)
+		return &Frag{}, &Frag{}, nil, fmt.Errorf("failed to blast %s against the dbs %s: %v", target.ID, dbMessage, err)
 	}
 	if len(matches) < 1 {
-		return Frag{}, nil, fmt.Errorf("did not find any matches for %s", target.ID)
+		return &Frag{}, &Frag{}, nil, fmt.Errorf("did not find any matches for %s", target.ID)
 	}
 
 	// keep only "proper" arcs (non-self-contained)
@@ -108,12 +112,9 @@ func sequence(input *Flags, conf *config.Config) (Frag, [][]*Frag, error) {
 	assemblyCounts, countToAssemblies := groupAssembliesByCount(assemblies)
 
 	// fill in pareto optimal assembly solutions
-	solutions := fillSolutions(target.Seq, assemblyCounts, countToAssemblies, conf)
+	solutions = fillSolutions(target.Seq, assemblyCounts, countToAssemblies, conf)
 
-	// subtract backbone sequence for cost estimation
-	target.Seq = target.Seq[:len(target.Seq)-len(input.backbone.Seq)]
-
-	return target, solutions, nil
+	return insert, target, solutions, nil
 }
 
 // addSyntheticVector adds a new fully synthetic vector to the built map if it's cheaper
