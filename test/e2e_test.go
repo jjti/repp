@@ -7,8 +7,7 @@ import (
 	"github.com/jjtimmons/defrag/internal/defrag"
 )
 
-// Test_E2E is for building vectors from end to end
-func Test_E2E(t *testing.T) {
+func Test_Sequence(t *testing.T) {
 	type testFlags struct {
 		in       string
 		out      string
@@ -95,6 +94,38 @@ func Test_E2E(t *testing.T) {
 
 	for _, t := range tests {
 		defrag.Sequence(defrag.NewFlags(t.in, t.out, t.backbone, t.enzyme, t.filters, t.dbs, t.addgene, t.igem))
+	}
+
+	t.Fatal("fail (dev)")
+}
+
+func Test_Features(t *testing.T) {
+	type testFlags struct {
+		in       string
+		out      string
+		backbone string
+		enzyme   string
+		filters  string
+		dbs      []string
+		addgene  bool
+		igem     bool
+	}
+
+	tests := []testFlags{
+		testFlags{
+			"lacI promoter, EGFP, rrnBT1 terminator:rev",
+			path.Join("output", "lacI-EGFP-rrnBT1.features.json"),
+			"pSB1A3",
+			"PstI",
+			"",
+			[]string{},
+			true,
+			true,
+		},
+	}
+
+	for _, t := range tests {
+		defrag.Features(defrag.NewFlags(t.in, t.out, t.backbone, t.enzyme, t.filters, t.dbs, t.addgene, t.igem))
 	}
 
 	t.Fatal("fail (dev)")

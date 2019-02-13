@@ -35,7 +35,7 @@ func Annotate(cmd *cobra.Command, args []string) {
 		query = args[0]
 	} else {
 		in, err := cmd.Flags().GetString("in")
-		if err != nil {
+		if in == "" || err != nil {
 			cmd.Help()
 			stderr.Fatalln("must pass a file with a vector sequence or the vector sequence as an argument.")
 		}

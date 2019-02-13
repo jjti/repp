@@ -48,7 +48,7 @@ type Frag struct {
 	// primers necessary to create this (if pcr fragment)
 	Primers []Primer `json:"primers,omitempty"`
 
-	// fragType of this fragment. pcr | vector | synthetic
+	// fragType of this fragment. circular | pcr | synthetic | existing
 	fragType fragType
 
 	// uniqueID of a match, ID + the start index % seq-length
@@ -109,26 +109,6 @@ type Primer struct {
 
 // newFrag creates a Frag from a match
 func newFrag(m match, conf *config.Config) *Frag {
-	url := ""
-
-	if strings.Contains(m.entry, "addgene") {
-		// create a link to the source Addgene page
-		re := regexp.MustCompile("^.*addgene\\|(\\d*)")
-		match := re.FindStringSubmatch(m.entry)
-		if len(match) > 0 {
-			url = fmt.Sprintf("https://www.addgene.org/%s/", match[1])
-		}
-	}
-
-	if strings.Contains(m.entry, "igem") {
-		// create a source to the source iGEM page
-		re := regexp.MustCompile("^.*igem\\|(\\w*)")
-		match := re.FindStringSubmatch(m.entry)
-		if len(match) > 0 {
-			url = fmt.Sprintf("http://parts.igem.org/Part:%s", match[1])
-		}
-	}
-
 	fType := existing
 	if m.circular {
 		fType = circular
@@ -141,10 +121,33 @@ func newFrag(m match, conf *config.Config) *Frag {
 		start:    m.queryStart,
 		end:      m.queryEnd,
 		db:       m.db,
-		URL:      url,
+		URL:      parseURL(m.entry),
 		conf:     conf,
 		fragType: fType,
 	}
+}
+
+// parseURL turns a fragment identifier into a URL to its repository
+func parseURL(id string) string {
+	if strings.Contains(id, "addgene") {
+		// create a link to the source Addgene page
+		re := regexp.MustCompile("^.*addgene\\|(\\d*)")
+		match := re.FindStringSubmatch(id)
+		if len(match) > 0 {
+			return fmt.Sprintf("https://www.addgene.org/%s/", match[1])
+		}
+	}
+
+	if strings.Contains(id, "igem") {
+		// create a source to the source iGEM page
+		re := regexp.MustCompile("^.*igem\\|(\\w*)")
+		match := re.FindStringSubmatch(id)
+		if len(match) > 0 {
+			return fmt.Sprintf("http://parts.igem.org/Part:%s", match[1])
+		}
+	}
+
+	return ""
 }
 
 // newFlags is the plural of newFlag

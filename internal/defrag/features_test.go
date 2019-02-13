@@ -47,7 +47,7 @@ func Test_features(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			features(tt.args.flags, tt.args.conf)
+			Features(tt.args.flags, tt.args.conf)
 
 			t.Fail()
 		})

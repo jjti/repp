@@ -121,8 +121,11 @@ func parseCmdFlags(cmd *cobra.Command, args []string, strict bool) (*Flags, *con
 	c := config.New()
 
 	if fs.in, err = cmd.Flags().GetString("in"); err != nil {
-		if strings.ToLower(cmd.Name()) == "features" {
+		cmdName := strings.ToLower(cmd.Name())
+		if cmdName == "features" {
 			fs.in = p.parseFeatureInput(args)
+		} else if cmdName == "annotate" {
+			fs.in = ""
 		} else if fs.in, err = p.guessInput(); strict && err != nil {
 			// check whether an input fail was specified
 			cmd.Help()
@@ -357,7 +360,7 @@ func read(path string, feature bool) (fragments []Frag, err error) {
 
 	dat, err := ioutil.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read input file: %s", err)
+		return nil, err
 	}
 	file := string(dat)
 
@@ -530,6 +533,10 @@ func writeJSON(
 		for _, f := range assembly {
 			// freeze fragment type
 			f.Type = f.fragType.String()
+
+			if f.URL == "" && f.fragType != synthetic {
+				f.URL = parseURL(f.ID)
+			}
 
 			// round to two decimal places
 			if f.Cost, err = roundCost(f.cost(true)); err != nil {
