@@ -17,8 +17,7 @@ import (
 
 // FeatureDB is a struct for accessing defrags features db
 type FeatureDB struct {
-	// features is a map between a features name and its sequence
-	features map[string]string
+	features map[string]string // features is a map between a features name and its sequence
 }
 
 type featureMatch struct {
@@ -28,12 +27,12 @@ type featureMatch struct {
 
 // FeaturesCmd accepts a cobra commands and assembles a vector containing all the features
 func FeaturesCmd(cmd *cobra.Command, args []string) {
-	features(parseCmdFlags(cmd, args, true))
+	Features(parseCmdFlags(cmd, args, true))
 }
 
-// features assembles a vector with all the features requested with the 'defrag features [feature ...]' command
-// defrag assemble features p10 promoter, mEGFP, T7 terminator
-func features(flags *Flags, conf *config.Config) {
+// Features assembles a vector with all the Features requested with the 'defrag Features [feature ...]' command
+// defrag assemble Features p10 promoter, mEGFP, T7 terminator
+func Features(flags *Flags, conf *config.Config) {
 	start := time.Now()
 
 	// turn feature names into sequences
@@ -82,9 +81,23 @@ func queryFeatures(flags *Flags) ([][]string, []string) {
 
 		featureDB := NewFeatureDB()
 		for _, f := range featureNames {
+			fwd := true
+			if strings.Contains(f, ":") {
+				ns := strings.Split(f, ":")
+				f = ns[0]
+				fwd = !strings.Contains(strings.ToLower(ns[1]), "rev")
+			}
+
 			if seq, contained := featureDB.features[f]; contained {
+				if !fwd {
+					seq = revComp(seq)
+				}
 				insertFeatures = append(insertFeatures, []string{f, seq})
 			} else if dbFrag, err := queryDatabases(f, flags.dbs); err == nil {
+				f = strings.Replace(f, ":", "|", -1)
+				if !fwd {
+					dbFrag.Seq = revComp(dbFrag.Seq)
+				}
 				insertFeatures = append(insertFeatures, []string{f, dbFrag.Seq})
 			} else {
 				sep := "\n\t"
