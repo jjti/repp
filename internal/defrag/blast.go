@@ -216,7 +216,7 @@ func (b *blastExec) run() (err error) {
 		"-db", b.db,
 		"-query", b.in.Name(),
 		"-out", b.out.Name(),
-		"-outfmt", "7 sseqid qstart qend sstart send sseq mismatch stitle",
+		"-outfmt", "7 sseqid qstart qend sstart send sseq mismatch gaps stitle",
 		"-perc_identity", fmt.Sprintf("%d", b.identity),
 		"-culling_limit", "5", // "If the query range of a hit is enveloped by that of at least this many higher-scoring hits, delete the hit"
 		"-num_threads", strconv.Itoa(threads),
@@ -292,11 +292,12 @@ func (b *blastExec) parse(filters []string) (matches []match, err error) {
 		subjectEnd, _ := strconv.Atoi(cols[4])
 		seq := cols[5]
 		mismatching, _ := strconv.Atoi(cols[6])
-		titles := cols[7] // salltitles, eg: "fwd-terminator-2011"
+		gaps, _ := strconv.Atoi(cols[7])
+		titles := cols[8] // salltitles, eg: "fwd-terminator-2011"
 		forward := true
 
 		// check whether the mismatch ratio is less than the set limit
-		matchRatio := float32(len(seq)-mismatching) / float32(len(seq))
+		matchRatio := float32(len(seq)-(mismatching+gaps)) / float32(len(seq))
 		if matchRatio < identityThreshold {
 			continue
 		}
@@ -337,7 +338,7 @@ func (b *blastExec) parse(filters []string) (matches []match, err error) {
 		}
 
 		// get a unique identifier to distinguish this match/fragment from the others
-		uniqueID := entry + strconv.Itoa((queryStart-1)%len(b.seq))
+		uniqueID := entry + strconv.Itoa(queryStart%len(b.seq))
 
 		// create and append the new match
 		ms = append(ms, match{
@@ -349,7 +350,7 @@ func (b *blastExec) parse(filters []string) (matches []match, err error) {
 			subjectStart: subjectStart,
 			subjectEnd:   subjectEnd,
 			circular:     strings.Contains(entry+titles, "circular"),
-			mismatching:  mismatching,
+			mismatching:  mismatching + gaps,
 			internal:     b.internal,
 			db:           b.db, // store for checking off-targets later
 			title:        search,
@@ -416,9 +417,15 @@ func filter(matches []match, targetLength, minSize int) (properized []match) {
 
 		// first half of the queried seq range (2 seq lengths)
 		if m.queryEnd < targetLength {
-			copiedMatches = append(copiedMatches, m.copyWithQueryRange(m.queryStart+targetLength, m.queryEnd+targetLength))
+			copiedMatches = append(
+				copiedMatches,
+				m.copyWithQueryRange(m.queryStart+targetLength, m.queryEnd+targetLength),
+			)
 		} else if m.queryStart > targetLength {
-			copiedMatches = append(copiedMatches, m.copyWithQueryRange(m.queryStart-targetLength, m.queryEnd-targetLength))
+			copiedMatches = append(
+				copiedMatches,
+				m.copyWithQueryRange(m.queryStart-targetLength, m.queryEnd-targetLength),
+			)
 		}
 	}
 
@@ -706,7 +713,7 @@ func (b *blastExec) runAgainst() (err error) {
 		"-query", b.in.Name(),
 		"-subject", b.subject,
 		"-out", b.out.Name(),
-		"-outfmt", "7 sseqid qstart qend sstart send sseq mismatch salltitles",
+		"-outfmt", "7 sseqid qstart qend sstart send sseq mismatch gaps stitle",
 	)
 
 	// execute BLAST and wait on it to finish

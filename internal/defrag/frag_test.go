@@ -198,7 +198,7 @@ func Test_Frag_costTo(t *testing.T) {
 					conf:  c,
 				},
 			},
-			1.56,
+			1.5,
 		},
 		{
 			"cost of synthesis if they don't overlap",
@@ -224,7 +224,7 @@ func Test_Frag_costTo(t *testing.T) {
 			args{
 				other: n1,
 			},
-			1.56,
+			1.5,
 		},
 	}
 	for _, tt := range tests {
@@ -375,6 +375,7 @@ func Test_new(t *testing.T) {
 			},
 			&Frag{
 				ID:         "testMatch",
+				fragType:   existing,
 				Seq:        "ATGCTAGCTAGTG",
 				uniqueID:   "0testMatch",
 				start:      0,

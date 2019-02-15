@@ -149,7 +149,9 @@ func Test_build(t *testing.T) {
 }
 
 // Test_sequence is for sequence from end to end
-func Test_sequence(t *testing.T) {
+func Test_sequence(test *testing.T) {
+	c := config.New()
+
 	type testFlags struct {
 		in       string
 		out      string
@@ -163,6 +165,16 @@ func Test_sequence(t *testing.T) {
 
 	tests := []testFlags{
 		testFlags{
+			path.Join("..", "..", "test", "input", "BBa_K2602025.fa"),
+			path.Join("..", "..", "test", "output", "BBa_K2602025.json"),
+			"pSB1A3",
+			"PstI",
+			"",
+			[]string{},
+			true,
+			true,
+		},
+		testFlags{
 			path.Join("..", "..", "test", "input", "BBa_K2779020.fa"),
 			path.Join("..", "..", "test", "output", "BBa_K2779020.json"),
 			"pSB1A3",
@@ -175,8 +187,14 @@ func Test_sequence(t *testing.T) {
 	}
 
 	for _, t := range tests {
-		Sequence(NewFlags(t.in, t.out, t.backbone, t.enzyme, t.filters, t.dbs, t.addgene, t.igem))
-	}
+		sols := Sequence(NewFlags(t.in, t.out, t.backbone, t.enzyme, t.filters, t.dbs, t.addgene, t.igem))
 
-	t.Fatal("fail (dev)")
+		if len(sols) < 1 {
+			test.Fail()
+		}
+
+		for _, s := range sols {
+			ValidateJunctions(s, c)
+		}
+	}
 }

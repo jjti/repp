@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"os"
 	"os/exec"
-	"regexp"
 	"strconv"
 	"strings"
 
@@ -150,7 +150,6 @@ func (p *primer3) input(minHomology, maxHomology, maxEmbedLength, minLength int)
 // it excessively overlaps a neighboring fragment. For example, if there's
 // 700bp of overlap, this will trim it back so we just PCR a subselection of
 // the Frag and keep the overlap beneath the upper limit
-// TODO: consider giving minLength for PCR fragments precedent, this may subvert that rule
 func (p *primer3) shrink(last, f, next *Frag, maxHomology int, minLength int) *Frag {
 	var shiftInLeft int
 	var shiftInRight int
@@ -194,7 +193,9 @@ func (p *primer3) bpToAdd(left, right *Frag) int {
 		// eg: 5 bp distance leads to 2.5bp + ~10bp additonal
 		// eg: -10bp distance leads to ~0 bp additional:
 		// 		other Frag is responsible for all of it
-		return bpDist + (minHomology / 2)
+		b := math.Ceil(float64(minHomology) / float64(2))
+
+		return bpDist + int(b)
 	}
 
 	return 0
@@ -409,6 +410,7 @@ func hairpin(seq string, conf *config.Config) (melt float64) {
 	ntthalCmd := exec.Command(
 		"ntthal",
 		"-a", "HAIRPIN",
+		"-r",       // temperature only
 		"-t", "50", // gibson assembly is at 50 degrees
 		"-s1", seq,
 		"-path", conf.Primer3Config,
@@ -420,23 +422,12 @@ func hairpin(seq string, conf *config.Config) (melt float64) {
 	}
 
 	ntthalOutString := string(ntthalOut)
-	tempRegex := regexp.MustCompile("t = (\\d*)")
-
-	if tempRegex.MatchString(ntthalOutString) {
-		tempString := tempRegex.FindAllStringSubmatch(ntthalOutString, 1)
-		if len(tempString) < 1 {
-			return 0
-		}
-		temp, err := strconv.ParseFloat(tempString[0][1], 64)
-
-		if err != nil {
-			stderr.Fatal(err)
-		}
-
-		return temp
+	temp, err := strconv.ParseFloat(strings.TrimSpace(ntthalOutString), 64)
+	if err != nil {
+		stderr.Fatalln(err)
 	}
 
-	return 0
+	return temp
 }
 
 // revComp returns the reverse complement of a template sequence
