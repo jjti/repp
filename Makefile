@@ -71,3 +71,6 @@ uninstall:
 	# removing defrag from filesystem
 	rm $(DEFRAGBIN)
 	rm -rf $(DEFRAGHOME)
+
+test:
+	go test ./internal/defrag

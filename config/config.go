@@ -5,6 +5,7 @@ package config
 import (
 	"log"
 	"math"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"sort"
@@ -14,7 +15,11 @@ import (
 )
 
 var (
+	wdir, _ = os.Executable()
 	home, _ = homedir.Dir()
+
+	// WDir is the working directory of the repository
+	WDir = filepath.Join(wdir, "..")
 
 	// defragDir is the root directory where defrag settings and database files live
 	defragDir = filepath.Join(home, ".defrag")

@@ -45,6 +45,9 @@ type Frag struct {
 	// fragment/vector's sequence
 	Seq string `json:"seq,omitempty"`
 
+	// sequence of a pcr fragment after PCR's addition of bp
+	PCRSeq string `json:"pcrSeq,omitempty"`
+
 	// primers necessary to create this (if pcr fragment)
 	Primers []Primer `json:"primers,omitempty"`
 
@@ -165,6 +168,7 @@ func newFrags(matches []match, conf *config.Config) []*Frag {
 func (f *Frag) copy() (newFrag *Frag) {
 	newFrag = &Frag{}
 	copier.Copy(newFrag, f)
+
 	return
 }
 
@@ -201,7 +205,7 @@ func (f *Frag) overlapsViaPCR(other *Frag) bool {
 }
 
 // overlapsViaHomology returns whether this Frag already has sufficient overlap with the
-// other Frag, without any preparation like PCR
+// other Frag without any preparation like PCR
 func (f *Frag) overlapsViaHomology(other *Frag) bool {
 	return f.distTo(other) < -(f.conf.FragmentsMinHomology)
 }
@@ -289,8 +293,18 @@ func (f *Frag) reach(nodes []*Frag, i, synthCount int) (reachable []int) {
 // junction checks for and returns any 100% identical homology between the end of this
 // Frag and the start of the other. returns an empty string if there's no junction between them
 func (f *Frag) junction(other *Frag, minHomology, maxHomology int) (junction string) {
-	thisSeq := strings.ToUpper(f.Seq)
-	otherSeq := strings.ToUpper(other.Seq)
+	s1 := f.Seq
+	if f.PCRSeq != "" {
+		s1 = f.PCRSeq
+	}
+
+	s2 := other.Seq
+	if other.PCRSeq != "" {
+		s2 = other.PCRSeq
+	}
+
+	thisSeq := strings.ToUpper(s1)
+	otherSeq := strings.ToUpper(s2)
 
 	//      v-maxHomology from end    v-minHomology from end
 	// ------------------------------------
@@ -471,29 +485,33 @@ func (f *Frag) setPrimers(last, next *Frag, seq string, conf *config.Config) (er
 //
 // returning Frag for testing
 func mutatePrimers(f *Frag, seq string, addLeft, addRight int) (mutated *Frag) {
+	sl := len(seq)
 	template := strings.ToUpper(seq + seq + seq)
 
 	// update fragment sequence
 	f.Seq = template[f.Primers[0].Range.start+len(seq) : f.Primers[1].Range.end+len(seq)+1]
 
+	// change the Frag's start and end index to match those of the start and end index
+	// of the primers, since the range may have shifted to get better primers
+	f.start = f.Primers[0].Range.start
+	f.end = f.Primers[1].Range.end
+
 	// add bp to the left/FWD primer to match the fragment to the left
 	if addLeft > 0 {
-		oldStart := f.Primers[0].Range.start + len(seq)
+		oldStart := f.Primers[0].Range.start + sl
 		f.Primers[0].Seq = template[oldStart-addLeft:oldStart] + f.Primers[0].Seq
 		f.Primers[0].Range.start -= addLeft
 	}
 
 	// add bp to the right/REV primer to match the fragment to the right
 	if addRight > 0 {
-		oldEnd := f.Primers[1].Range.end + len(seq)
+		oldEnd := f.Primers[1].Range.end + sl
 		f.Primers[1].Seq = revComp(template[oldEnd+1:oldEnd+addRight+1]) + f.Primers[1].Seq
 		f.Primers[1].Range.end += addRight
 	}
 
-	// change the Frag's start and end index to match those of the start and end index
-	// of the primers, since the range may have shifted to get better primers
-	f.start = f.Primers[0].Range.start
-	f.end = f.Primers[1].Range.end
+	// update fragment sequence
+	f.PCRSeq = template[f.Primers[0].Range.start+sl : f.Primers[1].Range.end+sl+1]
 
 	return f
 }
