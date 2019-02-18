@@ -103,3 +103,6 @@ addgene-vector-cost: 65.0
 
 # cost of a single igem part
 igem-part-cost: 0.0
+
+# 55 for academic, 65 for corporate
+dnasu-vector-cost: 55.0

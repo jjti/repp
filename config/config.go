@@ -33,6 +33,9 @@ var (
 	// AddgeneDB is the path to the Addgene db
 	AddgeneDB = filepath.Join(defragDir, "addgene")
 
+	// DNASUDB is the path to the DNASU db
+	DNASUDB = filepath.Join(defragDir, "dnasu")
+
 	// FeatureDB is the path to the features db
 	FeatureDB = filepath.Join(defragDir, "features.tsv")
 
@@ -60,6 +63,9 @@ type Config struct {
 
 	// the cost of a single part from the iGEM registry
 	IGEMPartCost float64 `mapstructure:"igem-part-cost"`
+
+	// the per vector cost of DNASU vectors
+	DNASUVectorCost float64 `mapstructure:"dnasu-vector-cost"`
 
 	// primer3 config folder, needed for thermodynamic calculations
 	// created in the settings file during `make install`

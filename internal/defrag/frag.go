@@ -150,6 +150,14 @@ func parseURL(id string) string {
 		}
 	}
 
+	if strings.Contains(id, "dnasu") {
+		re := regexp.MustCompile("^.*dnasu\\|(\\d*)")
+		match := re.FindStringSubmatch(id)
+		if len(match) > 0 {
+			return fmt.Sprintf("http://dnasu.org/DNASU/GetCloneDetail.do?cloneid=%s", match[1])
+		}
+	}
+
 	return ""
 }
 

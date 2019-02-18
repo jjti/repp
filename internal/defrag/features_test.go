@@ -27,6 +27,7 @@ func Test_features(t *testing.T) {
 		[]string{},
 		true,
 		true,
+		false,
 	)
 
 	type args struct {
