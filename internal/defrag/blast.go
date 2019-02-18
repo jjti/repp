@@ -588,14 +588,14 @@ func parentMismatch(primers []Primer, parent, db string, conf *config.Config) (w
 // entry here is the ID that's associated with the fragment in its source DB (db)
 func blastdbcmd(entry, db string) (output *os.File, err error) {
 	// path to the entry batch file to hold the entry accession
-	entryFile, err := ioutil.TempFile(blastdbcmdDir, ".in-*")
+	entryFile, err := ioutil.TempFile(blastdbcmdDir, "in-*")
 	if err != nil {
 		return nil, err
 	}
 	defer os.Remove(entryFile.Name())
 
 	// path to the output sequence file from querying the entry's sequence from the BLAST db
-	output, err = ioutil.TempFile(blastdbcmdDir, ".out-*")
+	output, err = ioutil.TempFile(blastdbcmdDir, "out-*")
 	if err != nil {
 		return nil, err
 	}
@@ -638,14 +638,14 @@ func blastdbcmd(entry, db string) (output *os.File, err error) {
 // The fragment to query against is stored in parentFile
 func mismatch(primer string, parentFile *os.File, c *config.Config) (wasMismatch bool, m match, err error) {
 	// path to the entry batch file to hold the entry accession
-	in, err := ioutil.TempFile(blastnDir, ".primer.in")
+	in, err := ioutil.TempFile(blastnDir, "primer.in-*")
 	if err != nil {
 		return false, match{}, err
 	}
 	defer os.Remove(in.Name())
 
 	// path to the output sequence file from querying the entry's sequence from the BLAST db
-	out, err := ioutil.TempFile(blastnDir, ".primer.out")
+	out, err := ioutil.TempFile(blastnDir, "primer.out-*")
 	if err != nil {
 		return false, match{}, err
 	}

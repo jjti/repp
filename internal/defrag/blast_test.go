@@ -47,7 +47,7 @@ func Test_BLAST(t *testing.T) {
 	}
 
 	matchesContain(match{
-		entry:      "gnl|addgene|107006(circular)",
+		entry:      "gnl|addgene|107006",
 		queryStart: 0,
 		queryEnd:   72,
 	})
@@ -86,16 +86,17 @@ func Test_filter(t *testing.T) {
 
 	newMatches := filter(matches, 72, 3) // keep all fragments larger than 3bp (all of them)
 
-	if len(newMatches) != 5 {
-		t.Errorf("%d filtered matches found on test fragment, 5 expected: %v", len(newMatches), newMatches)
-	}
-
 	// make sure m2 has been removed
 	for _, m := range newMatches {
 		if m.entry == "m2" {
 			t.Error("m2 found in resulting matches, should have been removed")
 		}
 	}
+
+	if len(newMatches) != 3 {
+		t.Errorf("%d filtered matches found on test fragment, 3 expected: %v", len(newMatches), newMatches)
+	}
+
 }
 
 func Test_isMismatch(t *testing.T) {
@@ -161,7 +162,7 @@ func Test_parentMismatch(t *testing.T) {
 			"avoids false positive",
 			args{
 				"GTTGGAGTCCACGTTCTTT",
-				"gnl|addgene|113726(circular)",
+				"gnl|addgene|113726",
 			},
 			false,
 			match{},
@@ -172,28 +173,23 @@ func Test_parentMismatch(t *testing.T) {
 			"finds mismatch",
 			args{
 				"AGTATAGGATAGGTAGTCATTCTT",
-				"gnl|addgene|107006(circular)",
+				"gnl|addgene|107006",
 			},
 			true,
 			match{
-				entry:       "addgene:107006(circular)",
-				uniqueID:    "addgene:107006(circular)0",
+				entry:       "addgene:107006",
+				uniqueID:    "addgene:1070060",
 				seq:         "AGTATAGTAGGTAGTCATTCTT",
 				queryStart:  0,
 				queryEnd:    23,
-				circular:    true,
-				mismatching: 0,
+				mismatching: 2,
 			},
 			false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotMismatch, gotMatch, err := parentMismatch([]Primer{
-				Primer{
-					Seq: tt.args.primer,
-				},
-			}, tt.args.parent, testDB, conf)
+			gotMismatch, gotMatch, err := parentMismatch([]Primer{Primer{Seq: tt.args.primer}}, tt.args.parent, testDB, conf)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("parentMismatch() error = %+v, wantErr %+v", err, tt.wantErr)
 				return
@@ -201,6 +197,14 @@ func Test_parentMismatch(t *testing.T) {
 			if gotMismatch != tt.wantMismatch {
 				t.Errorf("parentMismatch() gotMismatch = %+v, want %+v", gotMismatch, tt.wantMismatch)
 			}
+
+			// have to mutate the fields not included in expected set
+			gotMatch.circular = false
+			gotMatch.title = ""
+			gotMatch.subjectStart = 0
+			gotMatch.subjectEnd = 0
+			gotMatch.forward = false
+
 			if !reflect.DeepEqual(gotMatch, tt.wantMatch) {
 				t.Errorf("parentMismatch() gotMatch = %+v, want %+v", gotMatch, tt.wantMatch)
 			}

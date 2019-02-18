@@ -9,6 +9,7 @@ import (
 
 func Test_assembleFragments(t *testing.T) {
 	c := config.New()
+	c.PCRMinLength = 10
 	c.FragmentsMinHomology = 8
 	c.FragmentsMaxHomology = 20
 
@@ -61,7 +62,11 @@ func Test_assembleFragments(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotTargetVector, gotFragments, _ := prepareFragments(tt.args.inputFragments, tt.args.conf)
+			gotTargetVector, gotFragments, err := prepareFragments(tt.args.inputFragments, tt.args.conf)
+
+			if err != nil {
+				t.Fatal(err)
+			}
 
 			if !reflect.DeepEqual(gotTargetVector, tt.wantTargetVector) {
 				t.Errorf("assembleFWD() gotTargetVector = %v, want %v", gotTargetVector, tt.wantTargetVector)

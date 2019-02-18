@@ -303,14 +303,14 @@ func (f *Frag) junction(other *Frag, minHomology, maxHomology int) (junction str
 		s2 = other.PCRSeq
 	}
 
-	thisSeq := strings.ToUpper(s1)
-	otherSeq := strings.ToUpper(s2)
+	s1 = strings.ToUpper(s1)
+	s2 = strings.ToUpper(s2)
 
 	//      v-maxHomology from end    v-minHomology from end
 	// ------------------------------------
 	//                    -----------------------------
-	start := len(thisSeq) - maxHomology
-	end := len(thisSeq) - minHomology
+	start := len(s1) - maxHomology
+	end := len(s1) - minHomology
 
 	if start < 0 {
 		start = 0
@@ -319,17 +319,14 @@ func (f *Frag) junction(other *Frag, minHomology, maxHomology int) (junction str
 	// for every possible start index
 	for i := start; i <= end; i++ {
 		// traverse from that index to the end of the seq
-		j := 0
-		for k := i; k < len(thisSeq); k++ {
-			if j == len(otherSeq) || thisSeq[k] != otherSeq[j] {
+		for k, j := i, 0; k < len(s1); j, k = j+1, k+1 {
+			if s1[k] != s2[j] {
 				break
-			} else {
-				j++
 			}
 
 			// we made it to the end of the sequence, there's a junction
-			if k == len(thisSeq)-1 {
-				return thisSeq[i:]
+			if k == len(s1)-1 {
+				return s1[i:]
 			}
 		}
 	}
@@ -451,7 +448,7 @@ func (f *Frag) setPrimers(last, next *Frag, seq string, conf *config.Config) (er
 	if f.fullSeq != "" {
 		// we have the full sequence (it was included in the forward design)
 		mismatchExists, mm, err = seqMismatch(f.Primers, f.ID, f.fullSeq, conf)
-	} else {
+	} else if f.db != "" {
 		// otherwise, query the fragment from the DB (try to find it) and then check for mismatches
 		mismatchExists, mm, err = parentMismatch(f.Primers, f.ID, f.db, conf)
 	}

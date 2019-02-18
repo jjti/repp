@@ -461,6 +461,20 @@ func Test_Frag_junction(t *testing.T) {
 			},
 			"AGCTAGCATCG",
 		},
+		{
+			"find an off-target junction",
+			fields{
+				Seq: "ATGATGCCACGTGCAACTGAGATGAGACCAGATGACGATG",
+			},
+			args{
+				other: &Frag{
+					Seq: "CAGATGACGATGACCGCAACTCGTTGATGATGCCAC",
+				},
+				minHomology: 5,
+				maxHomology: 20,
+			},
+			"CAGATGACGATG",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -600,8 +614,8 @@ func Test_setPrimers(t *testing.T) {
 				"CCTGTGTAAGTCCCCAATAACACGCTCTTTACCCGA", // rev comp is TCGGGTAAAGAGCGTGTTATTGGGGGACTTACACAGGC
 			},
 			false,
-			35,
-			364,
+			50,
+			349,
 		},
 		{
 			"optimize when synthesizing neighbors",
@@ -660,12 +674,12 @@ func Test_setPrimers(t *testing.T) {
 				Seq: "GTAAATCCTGGGATCATTCAGTAGTAACCACAAACTTACGCTGGGGCTTCTTTGGCGGATTTTTACAGATACTAACCAGGTGATTTGAAGTAAATTAGTTGAGGATTTAGCCGCGCTATCCGGTAATCTCCAAATTAAAACATACCGTTCCATGAGGGCTAGAATTACTTACCGGCCTTCACCATGCCTGCGCTATACGCGCCCACTCTCCCGTTTATCCGTCCAAGCGGATGCAATGCGATCCTCCGCTAAGATATTCTTACGTGTAACGTAGCTATGTATTTTACAGAGCTGGCGTACGCGTTGAACACTTCACAGATGATAGGGATTCGGGTAAAGAGCGTGTTATTGGGGACTTACACAGGCGTAGACTACAATGGGCCCAACTCAATCACAGCTC",
 			},
 			[]string{
-				"AGGATTTAGCCGCGCTATCC",
-				"GAAGTGTTCAACGCGTACGC", // rev comp is TCGGGTAAAGAGCGTGTTATTGGGGGACTTACACAGGC
+				"AGTTGAGGATTTAGCCGCGC",
+				"ACGCTCTTTACCCGAATCCC", // rev comp is TCGGGTAAAGAGCGTGTTATTGGGGGACTTACACAGGC
 			},
 			false,
-			101, // deprecation test only, got this from the output and confirmed it made sense
-			313,
+			96, // deprecation test only, got this from the output and confirmed it made sense
+			343,
 		},
 	}
 	for _, tt := range tests {

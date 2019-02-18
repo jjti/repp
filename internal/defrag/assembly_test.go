@@ -20,6 +20,8 @@ func Test_assembly_add(t *testing.T) {
 		},
 	}
 
+	sl := 100
+
 	n1 := &Frag{
 		uniqueID: "1",
 		start:    0,
@@ -36,6 +38,12 @@ func Test_assembly_add(t *testing.T) {
 		uniqueID: "3",
 		start:    60,
 		end:      100,
+		conf:     c,
+	}
+	n4 := &Frag{
+		uniqueID: "1",
+		start:    100,
+		end:      150,
 		conf:     c,
 	}
 
@@ -94,17 +102,17 @@ func Test_assembly_add(t *testing.T) {
 			false,
 		},
 		{
-			"add with completion",
+			"add with completion/circularization",
 			fields{
 				nodes:  []*Frag{n1, n2, n3},
 				cost:   10.0,
 				synths: 0,
 			},
 			args{
-				n: n1,
+				n: n4,
 			},
 			assembly{
-				frags:  []*Frag{n1, n2, n3, n1},
+				frags:  []*Frag{n1, n2, n3},
 				cost:   10.0,
 				synths: 0,
 			},
@@ -114,7 +122,7 @@ func Test_assembly_add(t *testing.T) {
 		{
 			"add with completion requiring synthesis",
 			fields{
-				nodes:  []*Frag{n1, n2, n3},
+				nodes:  []*Frag{n1, n2},
 				cost:   16.4,
 				synths: 0,
 			},
@@ -127,11 +135,7 @@ func Test_assembly_add(t *testing.T) {
 				},
 			},
 			assembly{
-				frags: []*Frag{n1, n2, n3, &Frag{
-					uniqueID: n1.uniqueID,
-					start:    n3.start + c.SynthesisMaxLength,
-					end:      n3.end + c.SynthesisMaxLength,
-				}},
+				frags:  []*Frag{n1, n2},
 				cost:   16.4,
 				synths: 1,
 			},
@@ -160,7 +164,7 @@ func Test_assembly_add(t *testing.T) {
 				cost:   tt.fields.cost,
 				synths: tt.fields.synths,
 			}
-			gotNewAssembly, gotCreated, gotComplete := a.add(tt.args.n, 5, 10000)
+			gotNewAssembly, gotCreated, gotComplete := a.add(tt.args.n, 5, sl)
 			if !reflect.DeepEqual(gotNewAssembly, tt.wantNewAssembly) {
 				t.Errorf("assembly.add() gotNewAssembly = %v, want %v", gotNewAssembly, tt.wantNewAssembly)
 			}
@@ -226,111 +230,6 @@ func Test_assembly_len(t *testing.T) {
 			}
 			if got := a.len(); got != tt.want {
 				t.Errorf("assembly.len() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_assembly_fill(t *testing.T) {
-	c := config.New()
-	c.FragmentsMinHomology = 5
-	c.FragmentsMaxHomology = 50
-	c.PCRMinLength = 50
-	c.SynthesisMaxLength = 1000
-	c.PCRP3MaxPenalty = 40.0
-
-	// All of these ids correspond to entires in the test BLAST db
-	f1 := &Frag{
-		ID:       "gnl|addgene|113726(circular)",
-		uniqueID: "01",
-		start:    5,
-		end:      119 + 5,
-		Seq:      "GTTGGAGTCCACGTTCTTTAATAGTGGACTCTTGTTCCAAACTGGAACAACACTCAACCCTATCTCGGTCTATTCTTTTGATTTATAAGGGATTTTGCCGATTTCGGCCTATTGGTTA",
-		conf:     c,
-	}
-
-	f2 := &Frag{
-		ID:       "gnl|addgene|85039.1",
-		uniqueID: "02",
-		start:    102,
-		end:      102 + 141,
-		Seq:      "CTCGTAGGGCTTGCCTTCGCCCTCGGATGTGCACTTGAAGTGGTGGTTGTTCACGGTGCCCTCCATGTACAGCTTCATGTGCATGTTCTCCTTGATCAGCTCGCTCATAGGTCCAGGGTTCTCCTCCACGTCTCCAGCCTG",
-		conf:     c,
-	}
-
-	f3 := &Frag{
-		ID:       "gnl|addgene|39412.1",
-		uniqueID: "03",
-		start:    102 + 121,
-		end:      102 + 121 + 224,
-		Seq:      "CACGTCTCCAGCCTGCTTCAGCAGGCTGAAGTTAGTAGCTCCGCTTCCGGATCCCCCGGGGAGCATGTCAAGGTCAAAATCGTCAAGAGCGTCAGCAGGCAGCATATCAAGGTCAAAGTCGTCAAGGGCATCGGCTGGGAgCATGTCTAAgTCAAAATCGTCAAGGGCGTCGGCCGGCCCGCCGCTTTcgcacGCCCTGGCAATCGAGATGCTGGACAGGCATC",
-		conf:     c,
-	}
-
-	// starts 150bp past the end of f3, will require synthesis
-	f4 := &Frag{
-		ID:       "gnl|addgene|107006(circular)",
-		uniqueID: "01",
-		start:    102 + 121 + 224 + 150,
-		end:      102 + 121 + 224 + 150 + 57,
-		Seq:      "CGTCGGCCGGCCCGCCGCTTTcgcacGCCCTGGCAATCGAGATGCTGGACAGGCATC",
-		conf:     c,
-	}
-
-	type fields struct {
-		nodes    []*Frag
-		cost     float64
-		synths   int
-		maxCount int
-	}
-	type args struct {
-		seq string
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-	}{
-		{
-			"fill in an assembly",
-			fields{
-				nodes: []*Frag{f1, f2, f3, f4},
-			},
-			args{
-				seq: "GGCCGCAATAAAATATCTTTATTTTCATTACATCTGTGTGTTGGTTTTTTGTGTGAATCGATAGTACTAACATGACCACCTTGATCTTCATGGTCTGGGTGCCCTCGTAGGGCTTGCCTTCGCCCTCGGATGTGCACTTGAAGTGGTGGTTGTTCACGGTGCCCTCCATGTACAGCTTCATGTGCATGTTCTCCTTGATCAGCTCGCTCATAGGTCCAGGGTTCTCCTCCACGTCTCCAGCCTGCTTCAGCAGGCTGAAGTTAGTAGCTCCGCTTCCGGATCCCCCGGGGAGCATGTCAAGGTCAAAATCGTCAAGAGCGTCAGCAGGCAGCATATCAAGGTCAAAGTCGTCAAGGGCATCGGCTGGGAgCATGTCTAAgTCAAAATCGTCAAGGGCGTCGGCCGGCCCGCCGCTTTcgcacGCCCTGGCAATCGAGATGCTGGACAGGCATCATACCCACTTCTGCCCCCTGGAAGGCGAGTCATGGCAAGACTTTCTGCGGAACAACGCCAAGTCATTCCGCTGTGCTCTCCTCTCACATCGCGACGGGGCTAAAGTGCATCTCGGCACCCGCCCAACAGAGAAACAGTACGAAACCCTGGAAAATCAGCTCGCGTTCCTGTGTCAGCAAGGCTTCTCCCTGGAGAACGCACTGTACGCTCTGTCCGCCGTGGGCCACTTTACACTGGGCTGCGTATTGGAGGATCAGGAGCATCAAGTAGCAAAAGAGGAAAGAGAGACACCTACCACCGATTCTATGCCTGACTGTGGCGGGTGAGCTTAGGGGGCCTCCGCTCCAGCTCGACACCGGGCAGCTGCTGAAGATCGCGAAGAGAGGGGGAGTAACAGCGGTAGAGGCAGTGCACGCCTGGCGCAATGCGCTCACCGGGGCCCCCTTGAACCTGACCCCAGACCAGGTAGTCGCAATCGCGAACAATAATGGGGGAAAGCAAGCCCTGGAAACCGTGCAAAGGTTGTTGCCGGTCCTTTGTCAAGACCACGGCCTTACACCGGAGCAAGTCGTGGCCATTGCAAGCAATGGGGGTGGCAAACAGGCTCTTGAGACGGTTCAGAGACTTCTCCCAGTTCTCTGTCAAGCCGTTGGAGTCCACGTTCTTTAATAGTGGACTCTTGTTCCAAACTGGAACAACACTCAACCCTATCTCGGTCTATTCTTTTGATTTATAAGGGATTTTGCCGATTTCGGCCTATTGGTTAAAAAATGAGCTGATTTAACAAAAATTTAACGCGAATTTTAACAAAATATTAACGCTTACAATTTAGGTGGCACTTTTCGGGGAAATGTGCGCGGAACCCCTATTTGTTTATTTTTCTAAATACATTCAAATATGTATCCGCTCATGAGACAATAACCCTGATAAATGCTTCAATAATATTGAAAAAGGAAGAGTATGAGTATTCAACATTTCCGTGTCGCCCTTATTCCCTTTTTTGCGGCATTTTGCCTTCCTGTTTTTGCTCACCCAGAAACGCTGGTGAAAGTAAAAGATGCTGAAGATCAGTTGGGTGCACGAGTGGGTTACATCGAACTGGATCTCAACAGCGGTAAGATCCTTGAGAGTTTTCGCCCCGAAGAACGTTTTCCAATGATGAGCACTTTTAAAGTTCTGCTATGTGGCGCGGTATTATCCCGTATTGACGCCGGGCAAGAGCAACTCGGTCGCCGCATACACTATTCTCAGAATGACTTGGTTGAGTACTCACCAGTCACAGAAAAGCATCTTACGGATGGCATGACAGTAAGAGAATTATGCAGTGCTGCCATAACCATGAGTGATAACACTGCGGCCAACTTACTTCTGACAACGATCGGAGGACCGAAGGAGCTAACCGCTTTTTTGCACAACATGGGGGATCATGTAACTCGCCTTGATCGTTGGGAACCGGAGCTGAATGAAGCCATACCAAACGACGAGCGTGACACCACGATGCCTGTAGCAATGGCAACAACGTTGCGCAAACTATTAACTGGCGAACTACTTACTCTAGCTTCCCGGCAACAATTAATAGACTGGATGGAGGCGGATAAAGTTGCAGGACCACTTCTGCGCTCGGCCCTTCCGGCTGGCTGGTTTATTGCTGATAAATCTGGAGCCGGTGAGCGTGGGTCTCGCGGTATCATTGCAGCACTGGGGCCAGATGGTAAGCCCTCCCGTATCGTAGTTATCTACACGACGGGGAGTCAGGCAACTATGGATGAACGAAATAGACAGATCGCTGAGATAGGTGCCTCACTGATTAAGCATTGGTAACTGTCAGACCAAGTTTACTCATATATACTTTAGATTGATTTAAAACTTCATTTTTAATTTAAAAGGATCTAGGTGAAGATCCTTTTTGATAATCTCATGACCAAAATCCCTTAACGTGAGTTTTCGTTCCACTGAGCGTCAGACCCCGTAGAA",
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			a := &assembly{
-				frags:  tt.fields.nodes,
-				cost:   tt.fields.cost,
-				synths: tt.fields.synths,
-			}
-			frags, err := a.fill(tt.args.seq, c)
-
-			if err != nil {
-				t.Error(err)
-			}
-
-			pcrCount := 0
-			synthCount := 0
-
-			for _, f := range frags {
-				if f.fragType == pcr {
-					pcrCount++
-				} else if f.fragType == synthetic {
-					synthCount++
-				}
-			}
-
-			if pcrCount != 3 {
-				t.Errorf("expected 3 pcr fragments, got %d", pcrCount)
-			}
-
-			if synthCount != 1 {
-				t.Errorf("expected 1 synthetic fragment, got %d", synthCount)
 			}
 		})
 	}
