@@ -74,3 +74,5 @@ uninstall:
 
 test:
 	go test ./internal/defrag
+
+.PHONY: test

@@ -106,7 +106,7 @@ func prepareFragments(targetFrags []Frag, conf *config.Config) (target Frag, sol
 	a := assembly{frags: frags}
 	solution, err = a.fill(target.Seq, conf)
 	if err != nil {
-		return Frag{}, nil, fmt.Errorf("failed to fill in the frags: %+v", err)
+		return Frag{}, nil, err
 	}
 
 	return target, solution, nil

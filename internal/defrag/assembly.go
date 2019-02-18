@@ -193,12 +193,19 @@ func (a *assembly) mockNext(i int, target string, conf *config.Config) *Frag {
 
 // duplicates runs through all the nodes in an assembly and checks whether any of
 // them have unintended homology, or "duplicate homology".
-func (a *assembly) duplicates(nodes []*Frag, minHomology, maxHomology int) (isDup bool, first, second, dup string) {
+func (a *assembly) duplicates(nodes []*Frag, min, max int) (isDup bool, first, second, dup string) {
 	c := len(nodes) // Frag count
 	for i, f := range nodes {
+		// check to make sure the fragment doesn't anneal to itself
+		if c > 1 {
+			if selfJ := f.junction(f, min, max); selfJ != "" {
+				return true, f.ID, f.ID, selfJ
+			}
+		}
+
 		for j := 2; j <= c; j++ { // skip next Frag, i+1 is supposed to anneal to i
-			junc := f.junction(nodes[(j+i)%c], minHomology, maxHomology)
-			if junc != "" && f.uniqueID != nodes[(j+i)%c].uniqueID {
+			junc := f.junction(nodes[(j+i)%c], min, max)
+			if junc != "" {
 				return true, f.ID, nodes[(j+i)%c].ID, junc
 			}
 		}
