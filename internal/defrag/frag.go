@@ -15,17 +15,17 @@ import (
 type fragType int
 
 const (
+	// linear fragment, ie the type of a fragment as it was uploaded submitted and without PCR/synthesis
+	existing fragType = iota
+
 	// circular is a circular sequence of DNA, e.g.: many of Addgene's plasmids
-	circular fragType = iota
+	circular
 
 	// pcr fragments are those prepared by pcr, often a subselection of their parent vector
 	pcr
 
 	// synthetic fragments are those that will be fully synthesized (eg: gBlocks)
 	synthetic
-
-	// linear fragment, ie the type of a fragment as it was uploaded submitted and without PCR/synthesis
-	existing
 )
 
 // Frag is a single building block stretch of DNA for assembly
@@ -207,7 +207,7 @@ func (f *Frag) overlapsViaPCR(other *Frag) bool {
 // overlapsViaHomology returns whether this Frag already has sufficient overlap with the
 // other Frag without any preparation like PCR
 func (f *Frag) overlapsViaHomology(other *Frag) bool {
-	return f.distTo(other) < -(f.conf.FragmentsMinHomology)
+	return f.distTo(other) <= -(f.conf.FragmentsMinHomology)
 }
 
 // synthDist returns the number of synthesized fragments that would need to be created
@@ -315,6 +315,9 @@ func (f *Frag) junction(other *Frag, minHomology, maxHomology int) (junction str
 	if start < 0 {
 		start = 0
 	}
+	if end < 0 {
+		end = 0
+	}
 
 	// for every possible start index
 	for i := start; i <= end; i++ {
@@ -340,49 +343,52 @@ func (f *Frag) junction(other *Frag, minHomology, maxHomology int) (junction str
 // target is the vector's full sequence. We need it to build up the target
 // vector's sequence
 func (f *Frag) synthTo(next *Frag, target string) (synths []*Frag) {
-	minHomology := f.conf.FragmentsMinHomology
+	jL := f.conf.FragmentsMinHomology // junction length
 
 	// check whether we need to make synthetic fragments to get
 	// to the next fragment in the assembly
-	fragCount := f.synthDist(next)
-	if fragCount == 0 {
+	synCount := f.synthDist(next) // fragment count
+	if synCount == 0 {
 		return nil
 	}
 
-	// length of each synthesized fragment
-	fragLength := f.distTo(next) / fragCount
-	// account for homology on either end of each synthetic fragment
-	fragLength += minHomology * 2
-	if f.conf.SynthesisMinLength > fragLength {
+	fL := f.distTo(next) / synCount // each fragment's length
+	fL += jL * 2                    // account for homology on either end of each synthetic fragment
+	if f.conf.SynthesisMinLength > fL {
 		// need to synthesize at least Synthesis.MinLength bps
-		fragLength = f.conf.SynthesisMinLength
+		fL = f.conf.SynthesisMinLength
 	}
 
 	// add to self to account for sequence across the zero-index (when sequence subselecting)
-	targetLength := len(target)
+	sl := len(target) // full sequence length
 	target = strings.ToUpper(target + target + target + target)
 
 	// slide along the range of sequence to create synthetic fragments
-	// and create one at each point, each w/ MinHomology for the fragment
+	// and create one at each point, each w/ jL for the fragment
 	// before and after it
 	synths = []*Frag{}
-	start := f.end - minHomology // start w/ homology, move left
-	for len(synths) < int(fragCount) {
-		end := start + fragLength + 1
-		seq := target[start+targetLength : end+targetLength]
-		for hairpin(seq[len(seq)-minHomology:], f.conf) > f.conf.FragmentsMaxHairpinMelt {
-			end += minHomology / 2
-			seq = target[start+targetLength : end+targetLength]
+	start := f.end - jL // start w/ homology, move left
+	for len(synths) < synCount {
+		end := start + fL + 1
+		seq := target[start+sl : end+sl]
+
+		// check for a hairpin in the junction and shift this fragment's synthesis
+		// to the right if a hairpin is found
+		for hairpin(seq[len(seq)-jL:], f.conf) > f.conf.FragmentsMaxHairpinMelt {
+			end += jL / 2
+			seq = target[start+sl : end+sl]
 		}
 
 		synths = append(synths, &Frag{
-			ID:       fmt.Sprintf("%s-synthetic-%d", f.ID, len(synths)+1),
+			ID:       fmt.Sprintf("%s-%s-synthesis-%d", f.ID, next.ID, len(synths)+1),
 			Seq:      seq,
+			start:    start,
+			end:      end,
 			fragType: synthetic,
 			conf:     f.conf,
 		})
 
-		start = end - minHomology
+		start = end - jL
 	}
 
 	return
@@ -419,7 +425,7 @@ func (f *Frag) setPrimers(last, next *Frag, seq string, conf *config.Config) (er
 	mutatePrimers(f, seq, addLeft, addRight)
 
 	// make sure the fragment's length is still long enough for PCR
-	if f.end-f.start < conf.PCRMinLength {
+	if len(f.PCRSeq) < conf.PCRMinLength {
 		return fmt.Errorf(
 			"failed to execute primer3: %s is %dbp, needs to be > %dbp",
 			f.ID,
@@ -438,6 +444,7 @@ func (f *Frag) setPrimers(last, next *Frag, seq string, conf *config.Config) (er
 			f.Primers[1],
 		)
 		f.Primers = nil
+
 		return fmt.Errorf(errMessage)
 	}
 
@@ -485,13 +492,13 @@ func mutatePrimers(f *Frag, seq string, addLeft, addRight int) (mutated *Frag) {
 	sl := len(seq)
 	template := strings.ToUpper(seq + seq + seq)
 
-	// update fragment sequence
-	f.Seq = template[f.Primers[0].Range.start+len(seq) : f.Primers[1].Range.end+len(seq)+1]
-
 	// change the Frag's start and end index to match those of the start and end index
 	// of the primers, since the range may have shifted to get better primers
 	f.start = f.Primers[0].Range.start
 	f.end = f.Primers[1].Range.end
+
+	// update fragment sequence
+	f.Seq = template[f.start+sl : f.end+sl+1]
 
 	// add bp to the left/FWD primer to match the fragment to the left
 	if addLeft > 0 {
@@ -515,7 +522,7 @@ func mutatePrimers(f *Frag, seq string, addLeft, addRight int) (mutated *Frag) {
 
 // ToString returns a string representation of a fragment's type
 func (t fragType) String() string {
-	return []string{"vector", "pcr", "synthetic", "existing"}[t]
+	return []string{"existing", "pcr", "synthetic", "vector"}[t]
 }
 
 // fragsCost returns the total cost of a slice of frags. Just the summation of their costs

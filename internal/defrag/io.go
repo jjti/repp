@@ -17,8 +17,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// stderr is for logging to Stderr (without an annoying timestamp)
-var stderr = log.New(os.Stderr, "", 0)
+var (
+	// stderr is for logging to Stderr (without an annoying timestamp)
+	stderr = log.New(os.Stderr, "", 0)
+)
 
 // Solution is a single solution to build up the target vector.
 type Solution struct {
@@ -69,7 +71,7 @@ type Flags struct {
 	dbs []string
 
 	// the backbone (optional) to insert the pieces into
-	backbone Frag
+	backbone *Frag
 
 	// slice of strings to weed out fragments from BLAST matches
 	filters []string
@@ -296,31 +298,31 @@ func (p *inputParser) dbPaths(dbList string) (paths []string, err error) {
 
 // parseBackbone takes a backbone, referenced by its id, and an enzyme to cleave the
 // backbone, and returns the linearized backbone as a Frag.
-func (p *inputParser) parseBackbone(backbone, enzyme string, dbs []string, c *config.Config) (f Frag, err error) {
+func (p *inputParser) parseBackbone(backbone, enzyme string, dbs []string, c *config.Config) (f *Frag, err error) {
 	// if no backbone was specified, return an empty Frag
 	if backbone == "" {
-		return Frag{}, nil
+		return &Frag{}, nil
 	}
 
 	// try to digest the backbone with the enzyme
 	if enzyme == "" {
-		return Frag{}, fmt.Errorf("backbone passed, %s, without an enzyme to digest it", backbone)
+		return &Frag{}, fmt.Errorf("backbone passed, %s, without an enzyme to digest it", backbone)
 	}
 
 	// confirm that the backbone exists in one of the dbs (or local fs) gather it as a Frag if it does
 	bbFrag, err := queryDatabases(backbone, dbs)
 	if err != nil {
-		return Frag{}, err
+		return &Frag{}, err
 	}
 
 	// gather the enzyme by name, err if it's unknown
 	enz, err := p.getEnzyme(enzyme)
 	if err != nil {
-		return Frag{}, err
+		return &Frag{}, err
 	}
 
 	if f, err = digest(bbFrag, enz); err != nil {
-		return Frag{}, err
+		return &Frag{}, err
 	}
 
 	return
@@ -350,7 +352,7 @@ func (p *inputParser) getFilters(filterFlag string) []string {
 }
 
 // read a FASTA file (by its path on local FS) to a slice of Fragments.
-func read(path string, feature bool) (fragments []Frag, err error) {
+func read(path string, feature bool) (fragments []*Frag, err error) {
 	if !filepath.IsAbs(path) {
 		path, err = filepath.Abs(path)
 		if err != nil {
@@ -369,7 +371,6 @@ func read(path string, feature bool) (fragments []Frag, err error) {
 		return readFasta(path, file)
 	}
 
-	fmt.Println(path)
 	if strings.HasSuffix(path, "gb") || strings.HasSuffix(path, "gbk") || strings.HasSuffix(path, "genbank") {
 		return readGenbank(path, file, feature)
 	}
@@ -378,11 +379,11 @@ func read(path string, feature bool) (fragments []Frag, err error) {
 }
 
 // readFasta parses the multifasta file to fragments.
-func readFasta(path, contents string) (fragments []Frag, err error) {
+func readFasta(path, contents string) (frags []*Frag, err error) {
 	// split by newlines
 	lines := strings.Split(contents, "\n")
 
-	// read in the fragments
+	// read in the frags
 	var headerIndices []int
 	var ids []string
 	var fragTypes []fragType
@@ -411,12 +412,13 @@ func readFasta(path, contents string) (fragments []Frag, err error) {
 		seqLines := lines[headerIndex+1 : nextLine]
 		seqJoined := strings.Join(seqLines, "")
 		seq := unwantedChars.ReplaceAllString(seqJoined, "")
+		seq = strings.ToUpper(seq)
 		seqs = append(seqs, seq)
 	}
 
-	// build and return the new fragments
+	// build and return the new frags
 	for i, id := range ids {
-		fragments = append(fragments, Frag{
+		frags = append(frags, &Frag{
 			ID:       id,
 			Seq:      seqs[i],
 			fragType: fragTypes[i],
@@ -424,8 +426,8 @@ func readFasta(path, contents string) (fragments []Frag, err error) {
 	}
 
 	// opened and parsed file but found nothing
-	if len(fragments) < 1 {
-		return fragments, fmt.Errorf("failed to parse fragment(s) from %s", path)
+	if len(frags) < 1 {
+		return frags, fmt.Errorf("failed to parse fragment(s) from %s", path)
 	}
 
 	return
@@ -433,7 +435,7 @@ func readFasta(path, contents string) (fragments []Frag, err error) {
 
 // readGenbank parses a genbank file to fragments. Returns either fragments or parseFeatures,
 // depending on the parseFeatures parameter.
-func readGenbank(path, contents string, parseFeatures bool) (fragments []Frag, err error) {
+func readGenbank(path, contents string, parseFeatures bool) (fragments []*Frag, err error) {
 	genbankSplit := strings.Split(contents, "ORIGIN")
 
 	if len(genbankSplit) != 2 {
@@ -455,7 +457,7 @@ func readGenbank(path, contents string, parseFeatures bool) (fragments []Frag, e
 		featureSplitRegex := regexp.MustCompile("\\w+\\s+\\w+")
 		featureStrings := featureSplitRegex.Split(splitOnFeatures[1], -1)
 
-		features := []Frag{}
+		features := []*Frag{}
 		for featureIndex, feature := range featureStrings {
 			rangeRegex := regexp.MustCompile("(\\d*)\\.\\.(\\d*)")
 			rangeIndexes := rangeRegex.FindStringSubmatch(feature)
@@ -474,6 +476,7 @@ func readGenbank(path, contents string, parseFeatures bool) (fragments []Frag, e
 				return nil, err
 			}
 			featureSeq := cleanedSeq[start-1 : end] // make 0-indexed
+			featureSeq = strings.ToUpper(featureSeq)
 
 			labelRegex := regexp.MustCompile("\\/label=(.*)")
 			labelMatch := labelRegex.FindStringSubmatch(feature)
@@ -484,7 +487,7 @@ func readGenbank(path, contents string, parseFeatures bool) (fragments []Frag, e
 				label = strconv.Itoa(featureIndex)
 			}
 
-			features = append(features, Frag{
+			features = append(features, &Frag{
 				ID:  label,
 				Seq: featureSeq,
 			})
@@ -501,8 +504,8 @@ func readGenbank(path, contents string, parseFeatures bool) (fragments []Frag, e
 		return nil, fmt.Errorf("failed to parse locus from %s", path)
 	}
 
-	return []Frag{
-		Frag{
+	return []*Frag{
+		&Frag{
 			ID:  id,
 			Seq: cleanedSeq,
 		},

@@ -74,25 +74,25 @@ func newPrimer3(last, this, next *Frag, seq string, conf *config.Config) primer3
 func (p *primer3) input(minHomology, maxHomology, maxEmbedLength, minLength int) (bpAddLeft, bpAddRight int, err error) {
 	// adjust the Frag's start and end index in the event that there's too much homology
 	// with the neighboring fragment
-	p.shrink(p.last, p.f, p.next, maxHomology, minLength) // could skip passing as a param, but this is a bit easier to test imo
+	p.shrink(p.last, p.f, p.next, maxHomology, minLength) // could skip passing as a param, but this is a bit easier to test
 
 	// calc the bps to add on the left and right side of this Frag
 	addLeft := p.bpToAdd(p.last, p.f)
 	addRight := p.bpToAdd(p.f, p.next)
 	growPrimers := addLeft
-	if growPrimers < addRight {
+	if addRight > growPrimers {
 		growPrimers = addRight
 	}
 
 	start := p.f.start
-	length := p.f.end - start
+	length := p.f.end - start + 1
 
 	// determine whether we need to add additional bp to the primers. if there's too much to
 	// add, or if we're adding largely different amounts to the FWD and REV primer, we set
 	// the number of bp to add as bpAddLeft and bpAddRight and do so after creating primers
 	// that anneal to the template
-	primerDiff := addLeft - addRight
-	if primerDiff > 5 || primerDiff < 5 {
+	primerDiff := math.Abs(float64(addLeft - addRight))
+	if primerDiff > 5 {
 		// if one sides has a lot to add but the other doesn't, don't increase
 		// the primer generation size in primer3. will instead concat the sequence on later
 		// because we do not want to throw off the annealing temp for the primers
@@ -107,7 +107,7 @@ func (p *primer3) input(minHomology, maxHomology, maxEmbedLength, minLength int)
 		growPrimers = 0
 	} else {
 		start -= addLeft
-		length = p.f.end - start
+		length = p.f.end - start + 1
 		length += addRight
 	}
 
@@ -143,6 +143,7 @@ func (p *primer3) input(minHomology, maxHomology, maxEmbedLength, minLength int)
 	if _, err := p.in.Write(file); err != nil {
 		return 0, 0, fmt.Errorf("failed to write primer3 input file %v: ", err)
 	}
+
 	return
 }
 
@@ -188,17 +189,15 @@ func (p *primer3) bpToAdd(left, right *Frag) int {
 
 	// we're not going to synth our way here, check that there's already enough homology
 	minHomology := left.conf.FragmentsMinHomology
-	if bpDist := left.distTo(right); bpDist > -minHomology {
-		// this Frag will add half the homology to the last fragment
-		// eg: 5 bp distance leads to 2.5bp + ~10bp additonal
-		// eg: -10bp distance leads to ~0 bp additional:
-		// 		other Frag is responsible for all of it
-		b := math.Ceil(float64(minHomology) / float64(2))
+	bpDist := left.distTo(right) + 1
 
-		return bpDist + int(b)
-	}
+	// this Frag will add half the homology to the last fragment
+	// eg: 5 bp distance leads to 2.5bp + ~10bp additonal
+	// eg: -10bp distance leads to ~0 bp additional:
+	// 		other Frag is responsible for all of it
+	b := math.Ceil(float64(minHomology) / float64(2))
 
-	return 0
+	return bpDist + int(b)
 }
 
 // buffer takes the dist from a one fragment to another and
@@ -273,7 +272,7 @@ func (p *primer3) settings(
 			if leftBuffer == 0 {
 				settings["SEQUENCE_FORCE_LEFT_START"] = strconv.Itoa(start)
 			} else if rightBuffer == 0 {
-				settings["SEQUENCE_FORCE_RIGHT_START"] = strconv.Itoa(start + length - 1)
+				settings["SEQUENCE_FORCE_RIGHT_START"] = strconv.Itoa(start + length)
 			}
 			settings["PRIMER_PRODUCT_SIZE_RANGE"] = fmt.Sprintf("%d-%d", excludeLength, length)
 			settings["SEQUENCE_PRIMER_PAIR_OK_REGION_LIST"] = fmt.Sprintf("%d,%d,%d,%d", start, leftBuffer+primerMax, rightStart, rightBuffer+primerMax)
@@ -284,7 +283,7 @@ func (p *primer3) settings(
 		// otherwise force the start and end of the PCR range
 		settings["PRIMER_TASK"] = "pick_cloning_primers"
 		settings["SEQUENCE_INCLUDED_REGION"] = fmt.Sprintf("%d,%d", start, length)
-		settings["PRIMER_PRODUCT_SIZE_RANGE"] = fmt.Sprintf("%d-%d", length-1, length)
+		settings["PRIMER_PRODUCT_SIZE_RANGE"] = fmt.Sprintf("%d-%d", length, length)
 	}
 
 	var fileBuffer bytes.Buffer
@@ -337,13 +336,11 @@ func (p *primer3) parse(target string) (err error) {
 	}
 
 	if p3Error := results["PRIMER_ERROR"]; p3Error != "" {
-		fmt.Println(file)
-		return fmt.Errorf("failed to execute primer3: %s", p3Error)
+		return fmt.Errorf("failed to execute primer3 against %s: %s", file, p3Error)
 	}
 
 	if numPairs := results["PRIMER_PAIR_NUM_RETURNED"]; numPairs == "0" {
-		fmt.Println(file)
-		return fmt.Errorf("failed to create primers")
+		return fmt.Errorf("failed to create primers using %s", file)
 	}
 
 	// read in a single primer from the output string file

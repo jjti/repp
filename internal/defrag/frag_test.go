@@ -1,7 +1,7 @@
 package defrag
 
 import (
-	"path"
+	"math"
 	"reflect"
 	"strings"
 	"testing"
@@ -213,7 +213,7 @@ func Test_Frag_costTo(t *testing.T) {
 					conf:  c,
 				},
 			},
-			(20.0 + 30.0) * 0.05,
+			(20.0 + 31.0) * 0.05,
 		},
 		{
 			"cost to self should just be for PCR",
@@ -237,7 +237,7 @@ func Test_Frag_costTo(t *testing.T) {
 				assemblies: tt.fields.assemblies,
 				conf:       c,
 			}
-			if gotCost := n.costTo(tt.args.other); gotCost != tt.wantCost {
+			if gotCost := n.costTo(tt.args.other); math.Abs(gotCost-tt.wantCost) > 0.1 {
 				t.Errorf("Frag.costTo() = %v, want %v", gotCost, tt.wantCost)
 			}
 		})
@@ -505,7 +505,6 @@ func Test_setPrimers(t *testing.T) {
 	c.FragmentsMaxHomology = 80
 	c.PCRP3MaxPenalty = 50.0
 	c.PCRMaxEmbedLength = 10
-	db := path.Join("..", "..", "test", "db", "db")
 
 	type args struct {
 		last *Frag
@@ -528,7 +527,6 @@ func Test_setPrimers(t *testing.T) {
 				start: 0,
 				end:   1050,
 				conf:  c,
-				db:    db,
 			},
 			args{
 				last: &Frag{ // close enough that no homology should be added
@@ -547,11 +545,11 @@ func Test_setPrimers(t *testing.T) {
 			},
 			[]string{
 				"CAGTCAATCTTTCACAAATTTTGT",
-				"ACAGCTTCATGTGCATGTTCTC", // rev-comp: ACATGAAGCTGTACATGGAGGG
+				"TACAGCTTCATGTGCATGTTCT", // rev-comp: ACATGAAGCTGTACATGGAGGG
 			},
 			false,
 			0,
-			1049,
+			1050,
 		},
 		{
 			"create with added homology",
@@ -560,7 +558,6 @@ func Test_setPrimers(t *testing.T) {
 				start: 500,
 				end:   800,
 				conf:  c,
-				db:    db,
 			},
 			args{
 				last: &Frag{
@@ -578,12 +575,12 @@ func Test_setPrimers(t *testing.T) {
 				Seq: "TGCTGACTGTGGCGGGTGAGCTTAGGGGGCCTCCGCTCCAGCTCGACACCGGGCAGCTGCTGAAGATCGCGAAGAGAGGGGGAGTAACAGCGGTAGAGGCAGTGCACGCCTGGCGCAATGCGCTCACCGGGGCCCCCTTGAACCTGACCCCAGACCAGGTAGTCGCAATCGCGAACAATAATGGGGGAAAGCAAGCCCTGGAAACCGTGCAAAGGTTGTTGCCGGTCCTTTGTCAAGACCACGGCCTTACACCGGAGCAAGTCGTGGCCATTGCAAGCAATGGGGGTGGCAAACAGGCTCTTGAGACGGTTCAGAGACTTCTCCCAGTTCTCTGTCAAGCCCACGGGCTGACTCCCGATCAAGTTGTAGCGATTGCGTCGCATGACGGAGGGAAACAAGCATTGGAGACTGTCCAACGGCTCCTTCCCGTGTTGTGTCAAGCCCACGGTTTGACGCCTGCACAAGTGGTCGCCATCGCCAGCCATGATGGCGGTAAGCAGGCGCTGGAAACAGTACAGCGCCTGCTGCCTGTACTGTGCCAGGATCATGGACTGACCCCAGACCAGGTAGTCGCAATCGCGAACAATAATGGGGGAAAGCAAGCCCTGGAAACCGTGCAAAGGTTGTTGCCGGTCCTTTGTCAAGACCACGGCCTTACACCGGAGCAAGTCGTGGCCATTGCAAATAATAACGGTGGCAAACAGGCTCTTGAGACGGTTCAGAGACTTCTCCCAGTTCTCTGTCAAGCCCACGGGCTGACTCCCGATCAAGTTGTAGCGATTGCGTCGCATGACGGAGGGAAACAAGCATTGGAGACTGTCCAACGGCTCCTTCCCGTGTTGTGTCAAGCCCACGGTTTGACGCCTGCACAAGTGGTCGCCATCGCCAACAACAACGGCGGTAAGCAGGCGCTGGAAACAGTACAGCGCCTGCTGCCTGTACTGTGCCAGGATCATGGACTGACCCCAGACCAGGTAGTCGCAATCGCGTCGAACATTGGGGGAAAGCAAGCCCTGGAAACCG",
 			},
 			[]string{
-				"CGGTAAGCAGGCGCTGGAAACAGTACAG",
-				"TGTTTCCCTCCGTCATGCGACGCAATCG",
+				"GCGGTAAGCAGGCGCTGGAAACAGTACAGC",
+				"CTTGTTTCCCTCCGTCATGCGACG",
 			},
 			false,
-			490,
-			804,
+			500,
+			800,
 		},
 		{
 			"embed additional sequence between fragments",
@@ -592,7 +589,6 @@ func Test_setPrimers(t *testing.T) {
 				start: 50,
 				end:   350,
 				conf:  c,
-				db:    db,
 			},
 			args{
 				last: &Frag{
@@ -610,12 +606,12 @@ func Test_setPrimers(t *testing.T) {
 				Seq: "GTAAATCCTGGGATCATTCAGTAGTAACCACAAACTTACGCTGGGGCTTCTTTGGCGGATTTTTACAGATACTAACCAGGTGATTTGAAGTAAATTAGTTGAGGATTTAGCCGCGCTATCCGGTAATCTCCAAATTAAAACATACCGTTCCATGAGGGCTAGAATTACTTACCGGCCTTCACCATGCCTGCGCTATACGCGCCCACTCTCCCGTTTATCCGTCCAAGCGGATGCAATGCGATCCTCCGCTAAGATATTCTTACGTGTAACGTAGCTATGTATTTTACAGAGCTGGCGTACGCGTTGAACACTTCACAGATGATAGGGATTCGGGTAAAGAGCGTGTTATTGGGGACTTACACAGGCGTAGACTACAATGGGCCCAACTCAATCACAGCTC",
 			},
 			[]string{
-				"TTACGCTGGGGCTTCTTTGGCGGATTTTTACAGATACT",
-				"CCTGTGTAAGTCCCCAATAACACGCTCTTTACCCGA", // rev comp is TCGGGTAAAGAGCGTGTTATTGGGGGACTTACACAGGC
+				"CTTACGCTGGGGCTTCTTTGGCGGATTTTTACAGATACT",
+				"CGCCTGTGTAAGTCCCCAATAACACGCTCTTTACCCGA", // rev comp is TCGGGTAAAGAGCGTGTTATTGGGGGACTTACACAGGC
 			},
 			false,
 			50,
-			349,
+			350,
 		},
 		{
 			"optimize when synthesizing neighbors",
@@ -624,7 +620,6 @@ func Test_setPrimers(t *testing.T) {
 				start: 125,
 				end:   700,
 				conf:  c,
-				db:    db,
 			},
 			args{
 				last: &Frag{
@@ -656,7 +651,6 @@ func Test_setPrimers(t *testing.T) {
 				start: 50,
 				end:   350,
 				conf:  c,
-				db:    db,
 			},
 			args{
 				last: &Frag{

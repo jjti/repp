@@ -65,6 +65,9 @@ type Config struct {
 	// created in the settings file during `make install`
 	Primer3Config string `mapstructure:"primer3_config-path"`
 
+	// Vebose is whether to log debug messages to the stdout
+	Verbose bool
+
 	// the maximum number of fragments in the final assembly
 	FragmentsMaxCount int `mapstructure:"fragments-max-count"`
 

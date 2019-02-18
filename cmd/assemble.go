@@ -98,6 +98,7 @@ func init() {
 
 	// settings is an optional parameter for a settings file (that overrides the fields in BaseSettingsFile)
 	assembleCmd.PersistentFlags().StringP("settings", "s", config.RootSettingsFile, "build settings")
+	assembleCmd.PersistentFlags().BoolP("verbose", "v", false, "whether to log results to stdout")
 	viper.BindPFlag("settings", assembleCmd.PersistentFlags().Lookup("settings"))
 
 	rootCmd.AddCommand(assembleCmd)

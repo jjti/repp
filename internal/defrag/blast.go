@@ -290,10 +290,10 @@ func (b *blastExec) parse(filters []string) (matches []match, err error) {
 		queryEnd, _ := strconv.Atoi(cols[2])
 		subjectStart, _ := strconv.Atoi(cols[3])
 		subjectEnd, _ := strconv.Atoi(cols[4])
-		seq := cols[5]
-		mismatching, _ := strconv.Atoi(cols[6])
-		gaps, _ := strconv.Atoi(cols[7])
-		titles := cols[8] // salltitles, eg: "fwd-terminator-2011"
+		seq := cols[5]                          // subject sequence
+		mismatching, _ := strconv.Atoi(cols[6]) // mismatch count
+		gaps, _ := strconv.Atoi(cols[7])        // gap count
+		titles := cols[8]                       // salltitles, eg: "fwd-terminator-2011"
 		forward := true
 
 		// check whether the mismatch ratio is less than the set limit
@@ -302,10 +302,11 @@ func (b *blastExec) parse(filters []string) (matches []match, err error) {
 			continue
 		}
 
-		queryStart--
+		queryStart-- // convert from 1-based to 0-based
 		queryEnd--
 		subjectStart--
 		subjectEnd--
+		seq = strings.Replace(seq, "-", "", -1) // remove gap markers
 
 		// bug where titles are being included in the entry
 		entryCols := strings.Fields(entry)
@@ -344,7 +345,7 @@ func (b *blastExec) parse(filters []string) (matches []match, err error) {
 		ms = append(ms, match{
 			entry:        entry,
 			uniqueID:     uniqueID,
-			seq:          strings.Replace(seq, "-", "", -1),
+			seq:          seq,
 			queryStart:   queryStart, // convert 1-based numbers to 0-based
 			queryEnd:     queryEnd,
 			subjectStart: subjectStart,
@@ -465,7 +466,7 @@ func sortMatches(matches []match) {
 }
 
 // queryDatabases is for finding a fragment/vector with the entry name in one of the dbs
-func queryDatabases(entry string, dbs []string) (f Frag, err error) {
+func queryDatabases(entry string, dbs []string) (f *Frag, err error) {
 	// first try to get the entry out of a local file
 	if frags, err := read(entry, false); err == nil && len(frags) > 0 {
 		return frags[0], nil // it was a local file
@@ -513,26 +514,29 @@ func queryDatabases(entry string, dbs []string) (f Frag, err error) {
 			return targetFrag, nil
 		}
 
-		return Frag{}, err
+		return &Frag{}, err
 	}
 
 	close(outFileCh)
 	close(dbSourceCh)
 
 	sep := "\n\t"
-	return Frag{}, fmt.Errorf("failed to find %s in any of:%s", entry, sep+strings.Join(dbs, sep))
+	return &Frag{}, fmt.Errorf("failed to find %s in any of:%s", entry, sep+strings.Join(dbs, sep))
 }
 
 // seqMismatch queries for any mismatching primer locations in the parent sequence
 // unlike parentMismatch, it doesn't first find the parent fragment from the db it came from
 // the sequence is passed directly as parentSeq
 func seqMismatch(primers []Primer, parentID, parentSeq string, conf *config.Config) (wasMismatch bool, m match, err error) {
-	parentFile, err := ioutil.TempFile(blastnDir, parentID+".parent-*")
+	parentFile, err := ioutil.TempFile(blastnDir, "parent-*")
 	if err != nil {
 		return false, match{}, err
 	}
 	defer os.Remove(parentFile.Name())
 
+	if parentID == "" {
+		parentID = "parent"
+	}
 	inContent := fmt.Sprintf(">%s\n%s\n", parentID, parentSeq)
 	if _, err = parentFile.WriteString(inContent); err != nil {
 		return false, m, fmt.Errorf("failed to write primer sequence to query FASTA file: %v", err)
@@ -560,7 +564,7 @@ func parentMismatch(primers []Primer, parent, db string, conf *config.Config) (w
 	// this is similar to what io.IsNotExist does
 	if err != nil {
 		if strings.Contains(err.Error(), "failed to query") {
-			fmt.Println(err) // just write the error
+			stderr.Println(err) // just write the error
 			// TODO: if we fail to find the parent, query the fullSeq as it was sent
 			return false, match{}, nil
 		}
@@ -623,9 +627,12 @@ func blastdbcmd(entry, db string) (output *os.File, err error) {
 		return nil, fmt.Errorf("warning: failed to query %s from %s\n\t%s", entry, db, err.Error())
 	}
 
-	// read in the results as a fragment and return just the seq
+	// read in the results as fragments. set their sequence to the full one returned from blastdbcmd
 	fragments, err := read(output.Name(), false)
 	if err == nil && len(fragments) >= 1 {
+		for _, f := range fragments {
+			f.fullSeq = f.Seq // set fullSeq, faster to check for primer off-targets later
+		}
 		return output, nil
 	}
 

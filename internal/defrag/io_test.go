@@ -88,36 +88,6 @@ func Test_inputParser_parseOut(t *testing.T) {
 	}
 }
 
-func Test_inputParser_getInput(t *testing.T) {
-	// move into the test directory
-	parser := inputParser{}
-
-	tests := []struct {
-		name    string
-		wantIn  string
-		wantErr bool
-	}{
-		{
-			"get fasta file from directory alone",
-			filepath.Join("..", "..", "test", "input", "109049.addgene.fa"),
-			false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			gotIn, err := parser.guessInput()
-			if gotIn != tt.wantIn {
-				t.Errorf("getInput() = %v, want %v", gotIn, tt.wantIn)
-			}
-
-			gotErr := err != nil
-			if gotErr != tt.wantErr { // yuck
-				t.Errorf("getInput() did or didn't return an error when it should have")
-			}
-		})
-	}
-}
-
 func Test_inputParser_getFilters(t *testing.T) {
 	type args struct {
 		filterFlag string
@@ -134,7 +104,7 @@ func Test_inputParser_getFilters(t *testing.T) {
 			args{
 				filterFlag: "tests,BBa_k222000,2004",
 			},
-			[]string{"tests", "bba_k222000", "2004"},
+			[]string{"TESTS", "BBA_K222000", "2004"},
 		},
 		{
 			"single year",

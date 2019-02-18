@@ -48,10 +48,10 @@ func newEnzyme(recogSeq string) enzyme {
 // remove the 5' end of the fragment post-cleaving. it will be degraded.
 // keep exposed 3' ends. good visual explanation:
 // https://warwick.ac.uk/study/csde/gsp/eportfolio/directory/pg/lsujcw/gibsonguide/
-func digest(frag Frag, enz enzyme) (digested Frag, err error) {
+func digest(frag *Frag, enz enzyme) (digested *Frag, err error) {
 	wrappedBp := 38 // largest current recognition site in the list of enzymes
 	if len(frag.Seq) < wrappedBp {
-		return Frag{}, fmt.Errorf("%s is too short for digestion", frag.ID)
+		return &Frag{}, fmt.Errorf("%s is too short for digestion", frag.ID)
 	}
 
 	if frag.fragType == circular {
@@ -89,7 +89,7 @@ func digest(frag Frag, enz enzyme) (digested Frag, err error) {
 	}
 	if cutIndex == -1 {
 		// no valid cutsites in the sequence
-		return Frag{}, fmt.Errorf("no %s cutsites found in %s", enz.recog, frag.ID)
+		return &Frag{}, fmt.Errorf("no %s cutsites found in %s", enz.recog, frag.ID)
 	}
 
 	if templateOverhangLength >= 0 {
@@ -101,7 +101,7 @@ func digest(frag Frag, enz enzyme) (digested Frag, err error) {
 		digestedSeq = frag.Seq[topIndex:] + frag.Seq[:bottomIndex]
 	}
 
-	return Frag{
+	return &Frag{
 		ID:  frag.ID,
 		Seq: digestedSeq,
 	}, nil
