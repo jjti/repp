@@ -20,6 +20,7 @@ func Test_vector_single_vector(t *testing.T) {
 		[]string{},
 		true,
 		false,
+		false,
 	)
 
 	_, _, assemblies, err := sequence(fs, c) // use addgene database
@@ -32,7 +33,6 @@ func Test_vector_single_vector(t *testing.T) {
 	}
 }
 
-// Test_sequence is for sequence from end to end TTTCTGGAATTGTGAGCG
 func Test_sequence(test *testing.T) {
 	c := config.New()
 
@@ -48,26 +48,26 @@ func Test_sequence(test *testing.T) {
 	}
 
 	tests := []testFlags{
-		// testFlags{
-		// 	path.Join("..", "..", "test", "input", "BBa_K2602025.fa"),
-		// 	path.Join("..", "..", "test", "output", "BBa_K2602025.json"),
-		// 	"pSB1A3",
-		// 	"PstI",
-		// 	"",
-		// 	[]string{},
-		// 	true,
-		// 	true,
-		// },
-		// testFlags{
-		// 	path.Join("..", "..", "test", "input", "BBa_K2779020.fa"),
-		// 	path.Join("..", "..", "test", "output", "BBa_K2779020.json"),
-		// 	"pSB1A3",
-		// 	"PstI",
-		// 	"BBa_K277",
-		// 	[]string{},
-		// 	false,
-		// 	true,
-		// },
+		testFlags{
+			path.Join("..", "..", "test", "input", "BBa_K2602025.fa"),
+			path.Join("..", "..", "test", "output", "BBa_K2602025.json"),
+			"pSB1A3",
+			"PstI",
+			"",
+			[]string{},
+			true,
+			true,
+		},
+		testFlags{
+			path.Join("..", "..", "test", "input", "BBa_K2779020.fa"),
+			path.Join("..", "..", "test", "output", "BBa_K2779020.json"),
+			"pSB1A3",
+			"PstI",
+			"BBa_K277",
+			[]string{},
+			false,
+			true,
+		},
 		testFlags{
 			path.Join("..", "..", "test", "input", "BBa_E0610.fa"),
 			path.Join("..", "..", "test", "output", "BBa_E0610.json"),
@@ -88,50 +88,50 @@ func Test_sequence(test *testing.T) {
 			true,
 			true,
 		},
-		// testFlags{
-		// 	path.Join("..", "..", "test", "input", "BBa_K077557.fa"),
-		// 	path.Join("..", "..", "test", "output", "BBa_K077557.json"),
-		// 	"pSB1C3",
-		// 	"EcoRI",
-		// 	"2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,BBa_K0077",
-		// 	[]string{},
-		// 	true,
-		// 	true,
-		// },
-		// testFlags{
-		// 	path.Join("..", "..", "test", "input", "BBa_K2651001.fa"),
-		// 	path.Join("..", "..", "test", "output", "BBa_K2651001.json"),
-		// 	"pSB1C3",
-		// 	"EcoRI",
-		// 	"BBa_K265",
-		// 	[]string{},
-		// 	true,
-		// 	true,
-		// },
-		// testFlags{
-		// 	path.Join("..", "..", "test", "input", "BBa_K2779020.fa"),
-		// 	path.Join("..", "..", "test", "output", "BBa_K2779020.json"),
-		// 	"pSB1A3",
-		// 	"PstI",
-		// 	"BBa_K277", // no year filters needed
-		// 	[]string{},
-		// 	true,
-		// 	true,
-		// },
-		// testFlags{
-		// 	path.Join("..", "..", "test", "input", "BBa_K1085023.fa"),
-		// 	path.Join("..", "..", "test", "output", "BBa_K1085023.json"),
-		// 	"pSB1C3",
-		// 	"EcoRI",
-		// 	"2009,2010,2011,2012,BBa_K108",
-		// 	[]string{},
-		// 	true,
-		// 	true,
-		// },
+		testFlags{
+			path.Join("..", "..", "test", "input", "BBa_K077557.fa"),
+			path.Join("..", "..", "test", "output", "BBa_K077557.json"),
+			"pSB1C3",
+			"EcoRI",
+			"2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,BBa_K0077",
+			[]string{},
+			true,
+			true,
+		},
+		testFlags{
+			path.Join("..", "..", "test", "input", "BBa_K2651001.fa"),
+			path.Join("..", "..", "test", "output", "BBa_K2651001.json"),
+			"pSB1C3",
+			"EcoRI",
+			"BBa_K265",
+			[]string{},
+			true,
+			true,
+		},
+		testFlags{
+			path.Join("..", "..", "test", "input", "BBa_K2779020.fa"),
+			path.Join("..", "..", "test", "output", "BBa_K2779020.json"),
+			"pSB1A3",
+			"PstI",
+			"BBa_K277", // no year filters needed
+			[]string{},
+			true,
+			true,
+		},
+		testFlags{
+			path.Join("..", "..", "test", "input", "BBa_K1085023.fa"),
+			path.Join("..", "..", "test", "output", "BBa_K1085023.json"),
+			"pSB1C3",
+			"EcoRI",
+			"2009,2010,2011,2012,BBa_K108",
+			[]string{},
+			true,
+			true,
+		},
 	}
 
 	for _, t := range tests {
-		sols := Sequence(NewFlags(t.in, t.out, t.backbone, t.enzyme, t.filters, t.dbs, t.addgene, t.igem))
+		sols := Sequence(NewFlags(t.in, t.out, t.backbone, t.enzyme, t.filters, t.dbs, t.addgene, t.igem, false))
 
 		if len(sols) < 1 {
 			test.Fail()

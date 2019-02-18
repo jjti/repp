@@ -310,8 +310,8 @@ func (f *FeatureDB) ReadCmd(cmd *cobra.Command, args []string) {
 	}
 
 	ldCutoff := len(name) / 3
-	if 2 > ldCutoff {
-		ldCutoff = 2
+	if 1 > ldCutoff {
+		ldCutoff = 1
 	}
 	containing := []string{}
 	lowDistance := []string{}

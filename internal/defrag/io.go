@@ -84,7 +84,7 @@ type Flags struct {
 type inputParser struct{}
 
 // NewFlags makes a new flags object manually. for testing.
-func NewFlags(in, out, backbone, enzymeName, filter string, dbs []string, addgene, igem bool) (*Flags, *config.Config) {
+func NewFlags(in, out, backbone, enzymeName, filter string, dbs []string, addgene, igem, dnasu bool) (*Flags, *config.Config) {
 	c := config.New()
 
 	if addgene {
@@ -92,6 +92,9 @@ func NewFlags(in, out, backbone, enzymeName, filter string, dbs []string, addgen
 	}
 	if igem {
 		dbs = append(dbs, config.IGEMDB)
+	}
+	if dnasu {
+		dbs = append(dbs, config.DNASUDB)
 	}
 
 	p := inputParser{}
@@ -151,6 +154,12 @@ func parseCmdFlags(cmd *cobra.Command, args []string, strict bool) (*Flags, *con
 		stderr.Fatalf("failed to parse igem flag: %v", err)
 	}
 
+	dnasu, err := cmd.Flags().GetBool("dnasu") // use dnasu db?
+	if strict && err != nil {
+		cmd.Help()
+		stderr.Fatalf("failed to parse dnasu flag: %v", err)
+	}
+
 	dbString, err := cmd.Flags().GetString("dbs")
 	if strict && err != nil && !addgene {
 		cmd.Help()
@@ -172,13 +181,13 @@ func parseCmdFlags(cmd *cobra.Command, args []string, strict bool) (*Flags, *con
 	// set identity for blastn searching
 	fs.identity = identity
 
-	if dbString == "" && !addgene && !igem {
-		fmt.Println("no fragment databases chosen [-adi]: using Addgene and iGEM by default")
+	if dbString == "" && !addgene && !igem && !dnasu {
+		fmt.Println("no fragment databases chosen [-adiu]: using Addgene and DNASU by default")
 		addgene = true
-		igem = true
+		dnasu = true
 	}
 	// read in the BLAST DB paths
-	if fs.dbs, err = p.parseDBs(dbString, addgene, igem); err != nil || len(fs.dbs) == 0 {
+	if fs.dbs, err = p.parseDBs(dbString, addgene, igem, dnasu); err != nil || len(fs.dbs) == 0 {
 		stderr.Fatalf("failed to find any fragment databases: %v", err)
 	}
 
@@ -254,12 +263,15 @@ func (p *inputParser) guessOutput(in string) (out string) {
 }
 
 // parseDBs returns a list of absolute paths to BLAST databases.
-func (p *inputParser) parseDBs(dbs string, addgene, igem bool) (paths []string, err error) {
+func (p *inputParser) parseDBs(dbs string, addgene, igem, dnasu bool) (paths []string, err error) {
 	if addgene {
 		dbs += "," + config.AddgeneDB
 	}
 	if igem {
 		dbs += "," + config.IGEMDB
+	}
+	if dnasu {
+		dbs += "," + config.DNASUDB
 	}
 
 	if paths, err = p.dbPaths(dbs); err != nil {

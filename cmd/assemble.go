@@ -68,6 +68,7 @@ func init() {
 	fragmentsCmd.Flags().StringP("dbs", "d", "", "comma separated list of local fragment databases")
 	fragmentsCmd.Flags().BoolP("addgene", "a", false, "use the Addgene repository")
 	fragmentsCmd.Flags().BoolP("igem", "g", false, "use the iGEM repository")
+	fragmentsCmd.Flags().BoolP("dnasu", "u", false, "use the DNASU repository")
 	fragmentsCmd.Flags().StringP("backbone", "b", "", backboneHelp)
 	fragmentsCmd.Flags().StringP("enzyme", "e", "", enzymeHelp)
 
@@ -76,6 +77,7 @@ func init() {
 	featuresCmd.Flags().StringP("dbs", "d", "", "comma separated list of local fragment databases")
 	featuresCmd.Flags().BoolP("addgene", "a", false, "use the Addgene repository")
 	featuresCmd.Flags().BoolP("igem", "g", false, "use the iGEM repository")
+	featuresCmd.Flags().BoolP("dnasu", "u", false, "use the DNASU repository")
 	featuresCmd.Flags().StringP("backbone", "b", "", backboneHelp)
 	featuresCmd.Flags().StringP("enzyme", "e", "", enzymeHelp)
 	featuresCmd.Flags().StringP("exclude", "x", "", "keywords for excluding fragments")
@@ -87,6 +89,7 @@ func init() {
 	sequenceCmd.Flags().StringP("dbs", "d", "", "list of local fragment databases")
 	sequenceCmd.Flags().BoolP("addgene", "a", false, "use the Addgene repository")
 	sequenceCmd.Flags().BoolP("igem", "g", false, "use the iGEM repository")
+	sequenceCmd.Flags().BoolP("dnasu", "u", false, "use the DNASU repository")
 	sequenceCmd.Flags().StringP("backbone", "b", "", backboneHelp)
 	sequenceCmd.Flags().StringP("enzyme", "e", "", enzymeHelp)
 	sequenceCmd.Flags().StringP("exclude", "x", "", "keywords for excluding fragments")

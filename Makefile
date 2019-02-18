@@ -50,6 +50,7 @@ endif
 	# copy BLAST databases
 	cp -r ./assets/addgene/db/** $(DEFRAGHOME) 
 	cp -r ./assets/igem/db/** $(DEFRAGHOME)
+	cp -r ./assets/dnasu/db/** $(DEFRAGHOME)
 
 	# copy features list
 	cp ./assets/snapgene/features.tsv $(DEFRAGHOME)
