@@ -102,12 +102,12 @@ func (a *assembly) log() string {
 // fill traverses frags in an assembly and adds primers or makes syntheic fragments where necessary.
 // It can fail. For example, a PCR Frag may have off-targets in the parent vector.
 func (a *assembly) fill(target string, conf *config.Config) (frags []*Frag, err error) {
-	minHomology := conf.FragmentsMinHomology
-	maxHomology := conf.FragmentsMaxHomology
+	min := conf.FragmentsMinHomology
+	max := conf.FragmentsMaxHomology
 
 	// check for and error out if there are duplicate ends between fragments,
 	// ie unintended junctions between fragments that shouldn't be annealing
-	if hasDuplicate, left, right, dupSeq := a.duplicates(a.frags, minHomology, maxHomology); hasDuplicate {
+	if hasDuplicate, left, right, dupSeq := a.duplicates(a.frags, min, max); hasDuplicate {
 		return nil, fmt.Errorf("failed to fill: duplicate junction sequence in %s and %s: %s", left, right, dupSeq)
 	}
 
@@ -115,6 +115,7 @@ func (a *assembly) fill(target string, conf *config.Config) (frags []*Frag, err 
 	// "fragment" (of circular type... it is misnomer) that matches the target sequence 100%
 	if a.len() == 1 && len(a.frags[0].Seq) >= len(target) {
 		f := a.frags[0]
+
 		return []*Frag{
 			&Frag{
 				ID:       f.ID,
@@ -126,32 +127,36 @@ func (a *assembly) fill(target string, conf *config.Config) (frags []*Frag, err 
 		}, nil
 	}
 
-	// do two loops. the first is to fill in primers. let each Frag create primers for
-	// itself that will span it to the last and next fragments (if reachable). this has to be done
-	// in two loops because synthesis depends on nodes' ranges, and nodes' ranges
-	// may change during setPrimers (we let primer3_core pick from a range of primer options)
+	// copy all the fragments. needed because ranges are mutated in assembly.fill,
+	// so distance to neightbor estimates become invalid after a neighbor is mutated
+	var origFrags []*Frag
+	for _, f := range a.frags {
+		origFrags = append(origFrags, f.copy())
+	}
+
+	// fill in primers. let each Frag create primers for itself that
+	// will span it to the last and next fragments (if reachable)
 	for i, f := range a.frags {
 		// try and make primers for the fragment (need last and next nodes)
 		var last *Frag
 		if i == 0 {
 			// mock up a last fragment that's to the left of this starting Frag
 			last = &Frag{
-				start: a.frags[len(a.frags)-1].start - len(target),
-				end:   a.frags[len(a.frags)-1].end - len(target),
+				start: origFrags[len(origFrags)-1].start - len(target),
+				end:   origFrags[len(origFrags)-1].end - len(target),
 				conf:  conf,
 			}
 		} else {
-			last = a.frags[i-1]
+			last = origFrags[i-1]
 		}
 
-		next := a.mockNext(i, target, conf)
+		next := a.mockNext(origFrags, i, target, conf)
 
 		// create primers for the Frag and add them to the Frag if it needs them
 		// to anneal to the adjacent fragments
-		needsPCR := f.fragType == circular ||
-			f.fullSeq == "" ||
-			!last.overlapsViaHomology(f) && last.overlapsViaPCR(f) ||
-			!f.overlapsViaHomology(next) && f.overlapsViaPCR(next)
+		lastPCR := !last.overlapsViaHomology(f) && last.overlapsViaPCR(f)
+		nextPCR := !f.overlapsViaHomology(next) && f.overlapsViaPCR(next)
+		needsPCR := f.fragType == circular || lastPCR || nextPCR
 
 		// if the Frag has a full target from upload or
 		if needsPCR {
@@ -165,28 +170,36 @@ func (a *assembly) fill(target string, conf *config.Config) (frags []*Frag, err 
 
 		// accumulate the prepared fragment
 		frags = append(frags, f)
+	}
+
+	// second loop to fill in gaps between fragments that need to be filled via synthesis
+	fragsWithSynth := []*Frag{}
+	for i, f := range frags {
+		fragsWithSynth = append(fragsWithSynth, f)
 
 		// add synthesized fragments between this Frag and the next (if necessary)
-		if synthedFrags := f.synthTo(a.mockNext(i, target, conf), target); synthedFrags != nil {
-			frags = append(frags, synthedFrags...)
+		next := a.mockNext(frags, i, target, conf)
+		if synthedFrags := f.synthTo(next, target); synthedFrags != nil {
+			fragsWithSynth = append(fragsWithSynth, synthedFrags...)
 		}
 	}
 
-	return
+	return fragsWithSynth, nil
 }
 
 // mockNext returns the fragment that's one beyond the one passed.
 // If there is none, it mocks one using the first fragment and changing
 // its start and end index.
-func (a *assembly) mockNext(i int, target string, conf *config.Config) *Frag {
-	if i < len(a.frags)-1 {
-		return a.frags[i+1]
+func (a *assembly) mockNext(frags []*Frag, i int, target string, conf *config.Config) *Frag {
+	if i < len(frags)-1 {
+		return frags[i+1]
 	}
 
 	// mock up a next fragment that's to the right of this terminal Frag
 	return &Frag{
-		start: a.frags[0].start + len(target),
-		end:   a.frags[0].end + len(target),
+		ID:    frags[0].ID,
+		start: frags[0].start + len(target),
+		end:   frags[0].end + len(target),
 		conf:  conf,
 	}
 }
@@ -277,7 +290,9 @@ func createAssemblies(frags []*Frag, targetLength int, conf *config.Config) (ass
 		}
 	}
 
-	fmt.Printf("%d assemblies made\n", len(assemblies))
+	if conf.Verbose {
+		fmt.Printf("%d assemblies made\n", len(assemblies))
+	}
 
 	return assemblies
 }
@@ -314,17 +329,14 @@ func groupAssembliesByCount(assemblies []assembly) ([]int, map[int][]assembly) {
 }
 
 // fillSolutions fills in assemblies and returns the pareto optimal solutions.
-func fillSolutions(
-	target string,
-	assemblyCounts []int,
-	countToAssemblies map[int][]assembly,
-	conf *config.Config) (solutions [][]*Frag) {
-
+func fillSolutions(target string, counts []int, countToAssemblies map[int][]assembly, conf *config.Config) (solutions [][]*Frag) {
 	// append a fully synthetic solution at first, nothing added should cost more than this (single vector)
 	filled := make(map[int][]*Frag)
-	minCostAssembly := addSyntheticVector(filled, target, conf)
+	minCostAssembly := math.MaxFloat64
 
-	for _, count := range assemblyCounts {
+	fmt.Println(target)
+
+	for _, count := range counts {
 		for _, assemblyToFill := range countToAssemblies[count] {
 			if assemblyToFill.cost > minCostAssembly {
 				// skip this and the rest with this count, there's another

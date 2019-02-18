@@ -1,6 +1,7 @@
 package defrag
 
 import (
+	"math"
 	"os"
 	"reflect"
 	"testing"
@@ -142,7 +143,7 @@ func Test_bpToAdd(t *testing.T) {
 					conf:  c,
 				},
 			},
-			11,
+			12,
 		},
 		{
 			"correct bp to share when negative",
@@ -188,7 +189,7 @@ func Test_mutateNodePrimers(t *testing.T) {
 				n: &Frag{
 					Seq:   "TGACCTCGGCTCCCCATTGCTACTACGGCG",
 					start: 10,
-					end:   29,
+					end:   39,
 					Primers: []Primer{
 						Primer{
 							Seq: "TGACCTCGGC",
@@ -213,9 +214,10 @@ func Test_mutateNodePrimers(t *testing.T) {
 				addRight: 6,
 			},
 			&Frag{
-				Seq:   "CTCGATGACCTCGGCTCCCCATTGCTACTACGGCGATTCTT",
-				start: 5,
-				end:   45,
+				PCRSeq: "CTCGATGACCTCGGCTCCCCATTGCTACTACGGCGATTCTT",
+				Seq:    "TGACCTCGGCTCCCCATTGCTACTACGGCG",
+				start:  10,
+				end:    39,
 				Primers: []Primer{
 					Primer{
 						Seq: "CTCGATGACCTCGGC",
@@ -267,9 +269,10 @@ func Test_mutateNodePrimers(t *testing.T) {
 				addRight: 0,
 			},
 			&Frag{
-				Seq:   "TGACCTCGGCTCCCCATTGCTACTACGGCG",
-				start: 10,
-				end:   39,
+				Seq:    "TGACCTCGGCTCCCCATTGCTACTACGGCG",
+				PCRSeq: "TGACCTCGGCTCCCCATTGCTACTACGGCG",
+				start:  10,
+				end:    39,
 				Primers: []Primer{
 					Primer{
 						Seq: "TGACCTCGGC",
@@ -365,7 +368,7 @@ func Test_hairpin(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if gotMelt := hairpin(tt.args.seq, tt.args.conf); gotMelt != tt.wantMelt {
+			if gotMelt := hairpin(tt.args.seq, tt.args.conf); math.Abs(gotMelt-tt.wantMelt) > 1 {
 				t.Errorf("hairpin() = %v, want %v", gotMelt, tt.wantMelt)
 			}
 		})

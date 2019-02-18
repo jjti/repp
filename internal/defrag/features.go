@@ -36,28 +36,31 @@ func Features(flags *Flags, conf *config.Config) [][]*Frag {
 	start := time.Now()
 
 	// turn feature names into sequences
-	insertFeatures, backboneFeature := queryFeatures(flags)
-	targetFeatures := append(insertFeatures, backboneFeature)
+	insertFeats, bbFeat := queryFeatures(flags)
+	feats := insertFeats
+	if len(bbFeat) > 0 {
+		feats = append(feats, bbFeat)
+	}
 
 	// find matches in the databases
-	fragToFeatureMatches := blastFeatures(flags, targetFeatures)
+	fragToMatches := blastFeatures(flags, feats, conf)
 
 	// build assemblies containing the matched fragments
-	syntheticVector, solutions := buildFeatureSolutions(targetFeatures, fragToFeatureMatches, flags.dbs, conf)
+	target, solutions := featureSolutions(feats, fragToMatches, flags.dbs, conf)
 
 	// write the output file
 	insertLength := 0
-	for _, f := range targetFeatures {
+	for _, f := range insertFeats {
 		insertLength += len(f[1])
 	}
-	writeJSON(flags.out, flags.in, syntheticVector, solutions, insertLength, conf, time.Since(start).Seconds())
+	writeJSON(flags.out, flags.in, target, solutions, insertLength, conf, time.Since(start).Seconds())
 
 	return solutions
 }
 
 // queryFeatures takes the list of feature names and finds them in the available databases
 func queryFeatures(flags *Flags) ([][]string, []string) {
-	var insertFeatures [][]string // slice of tuples [feature name, feature sequence]
+	var insertFeats [][]string // slice of tuples [feature name, feature sequence]
 	if readFeatures, err := read(flags.in, true); err == nil {
 		// see if the features are in a file (multi-FASTA or features in a Genbank)
 		seenFeatures := make(map[string]string) // map feature name to sequence
@@ -65,7 +68,7 @@ func queryFeatures(flags *Flags) ([][]string, []string) {
 			if seq := seenFeatures[f.ID]; seq != f.Seq {
 				stderr.Fatalf("failed to parse features, %s has two different sequences:\n\t%s\n\t%s\n", f.ID, f.Seq, seq)
 			}
-			insertFeatures = append(insertFeatures, []string{f.ID, f.Seq})
+			insertFeats = append(insertFeats, []string{f.ID, f.Seq})
 		}
 	} else {
 		// if the features weren't in a file, try and find each in the features database
@@ -78,7 +81,7 @@ func queryFeatures(flags *Flags) ([][]string, []string) {
 		}
 
 		if len(featureNames) < 1 {
-			stderr.Fatal("no features chosen. see 'defrag features --help'")
+			stderr.Fatal("no features chosen. see 'defrag assemble features --help'")
 		}
 
 		featureDB := NewFeatureDB()
@@ -92,15 +95,16 @@ func queryFeatures(flags *Flags) ([][]string, []string) {
 
 			if seq, contained := featureDB.features[f]; contained {
 				if !fwd {
+					f = f + ":REV"
 					seq = revComp(seq)
 				}
-				insertFeatures = append(insertFeatures, []string{f, seq})
+				insertFeats = append(insertFeats, []string{f, seq})
 			} else if dbFrag, err := queryDatabases(f, flags.dbs); err == nil {
 				f = strings.Replace(f, ":", "|", -1)
 				if !fwd {
 					dbFrag.Seq = revComp(dbFrag.Seq)
 				}
-				insertFeatures = append(insertFeatures, []string{f, dbFrag.Seq})
+				insertFeats = append(insertFeats, []string{f, dbFrag.Seq})
 			} else {
 				sep := "\n\t"
 				stderr.Fatalf(
@@ -115,20 +119,20 @@ func queryFeatures(flags *Flags) ([][]string, []string) {
 	}
 
 	// add in the backbone as a "feature"
-	backboneFeature := []string{}
-	if flags.backbone.ID != "" {
-		backboneFeature = []string{flags.backbone.ID, flags.backbone.Seq}
+	bbFeat := []string{}
+	if flags.backbone != nil && flags.backbone.ID != "" {
+		bbFeat = []string{flags.backbone.ID, flags.backbone.Seq}
 	}
 
-	return insertFeatures, backboneFeature
+	return insertFeats, bbFeat
 }
 
 // blastFeatures returns matches between the target features and entries in the databases with those features
-func blastFeatures(flags *Flags, targetFeatures [][]string) map[string][]featureMatch {
-	fragToFeatureMatches := make(map[string][]featureMatch) // a list from each entry (by id) to its list of matched features
+func blastFeatures(flags *Flags, feats [][]string, conf *config.Config) map[string][]featureMatch {
+	fragToMatches := make(map[string][]featureMatch) // a list from each entry (by id) to its list of matched features
 	tw := blastWriter()
 
-	for i, target := range targetFeatures {
+	for i, target := range feats {
 		matches, err := blast(target[0], target[1], false, flags.dbs, flags.filters, flags.identity, tw)
 		if err != nil {
 			stderr.Fatalln(err)
@@ -139,28 +143,25 @@ func blastFeatures(flags *Flags, targetFeatures [][]string) map[string][]feature
 			m.queryEnd = i
 			m.uniqueID = m.entry + strconv.Itoa(m.subjectStart)
 
-			if _, exists := fragToFeatureMatches[m.entry]; !exists {
-				fragToFeatureMatches[m.entry] = []featureMatch{featureMatch{featureIndex: i, match: m}}
+			if _, exists := fragToMatches[m.entry]; !exists {
+				fragToMatches[m.entry] = []featureMatch{featureMatch{featureIndex: i, match: m}}
 			} else {
-				fragToFeatureMatches[m.entry] = append(fragToFeatureMatches[m.entry], featureMatch{featureIndex: i, match: m})
+				fragToMatches[m.entry] = append(fragToMatches[m.entry], featureMatch{featureIndex: i, match: m})
 			}
 		}
 	}
 
-	tw.Flush()
+	if conf.Verbose {
+		tw.Flush()
+	}
 
-	return fragToFeatureMatches
+	return fragToMatches
 }
 
-// buildFeatureSolultions creates and fills the assemblies using the matched fragments
-func buildFeatureSolutions(
-	targetFeatures [][]string,
-	fragToFeatureMatches map[string][]featureMatch,
-	dbs []string,
-	conf *config.Config) (string, [][]*Frag) {
-	// turn matches into frags but with query start and end referring to feature index
+// featureSolutions creates and fills the assemblies using the matched fragments
+func featureSolutions(feats [][]string, fragToMatches map[string][]featureMatch, dbs []string, conf *config.Config) (string, [][]*Frag) {
 	var accMatches []match
-	for _, matches := range fragToFeatureMatches {
+	for _, matches := range fragToMatches {
 		sort.Slice(matches, func(i, j int) bool {
 			return matches[i].featureIndex < matches[j].featureIndex
 		})
@@ -171,7 +172,7 @@ func buildFeatureSolutions(
 
 		// features doubled on self to account for feature runs that cross the zero index
 		for mIndex, featureMatch := range append(matches, matches...) {
-			if featureMatch.featureIndex == (stretchStart+1)%len(targetFeatures) && mIndex < len(matches)*2-1 {
+			if featureMatch.featureIndex == (stretchStart+1)%len(feats) && mIndex < len(matches)*2-1 {
 				continue // continue the feature match stretch
 			}
 
@@ -188,19 +189,21 @@ func buildFeatureSolutions(
 		}
 	}
 
-	// filter out matches that are completely contained in others
-	accMatches = filter(accMatches, len(targetFeatures), conf.PCRMinLength)
+	// filter out matches that are completely contained in others or too short
+	accMatches = filter(accMatches, len(feats), conf.PCRMinLength)
 
-	fmt.Printf("%d matches after filtering\n", len(accMatches))
+	if conf.Verbose {
+		fmt.Printf("%d matches after filtering\n", len(accMatches))
+	}
 
 	// get the full vector length if just synthesizing each feature next to one another
-	var fullSynthSeqBuilder strings.Builder
+	var targetBuilder strings.Builder
 	featureToStart := make(map[int]int) // map from feature index to start index on fullSynthSeq
-	for i, feat := range targetFeatures {
-		featureToStart[i] = fullSynthSeqBuilder.Len()
-		fullSynthSeqBuilder.WriteString(feat[1])
+	for i, feat := range feats {
+		featureToStart[i] = targetBuilder.Len()
+		targetBuilder.WriteString(feat[1])
 	}
-	syntheticVector := fullSynthSeqBuilder.String()
+	target := targetBuilder.String()
 
 	// get the matches back out of the databases (the full parts)
 	var frags []*Frag
@@ -210,42 +213,39 @@ func buildFeatureSolutions(
 			stderr.Fatalln(err)
 		}
 
-		start := m.subjectStart
-		end := m.subjectEnd
-		if end < start {
-			end += len(frag.Seq)
-		}
-
 		frag.ID = m.entry
 		frag.uniqueID = m.uniqueID
-		frag.Seq = (frag.Seq + frag.Seq)[start : end+1]
+		frag.Seq = (frag.Seq + frag.Seq)[m.subjectStart : m.subjectEnd+1]
+		if !m.forward {
+			frag.Seq = revComp(frag.Seq)
+		}
 		frag.conf = conf
 
 		frag.start = featureToStart[m.queryStart]
-		frag.end = featureToStart[(m.queryEnd+1)%len(targetFeatures)]
+		frag.end = featureToStart[(m.queryEnd+1)%len(feats)]
 
 		if frag.end <= frag.start {
-			frag.end += len(frag.Seq)
+			frag.end += len(target) // wrap across the zero index
 		}
 
-		if m.queryStart >= len(targetFeatures) {
-			frag.start += len(syntheticVector)
-			frag.end += len(syntheticVector)
+		if m.queryStart >= len(feats) {
+			frag.start += len(target)
+			frag.end += len(target)
 		}
 
-		frags = append(frags, &frag)
+		frags = append(frags, frag)
 	}
 
 	// traverse the fragments, accumulate assemblies that span all the features
-	assemblies := createAssemblies(frags, len(syntheticVector), conf)
+	assemblies := createAssemblies(frags, len(target), conf)
 
 	// build up a map from fragment count to a sorted list of assemblies with that number
 	assemblyCounts, countToAssemblies := groupAssembliesByCount(assemblies)
 
 	// fill each assembly and accumulate the pareto optimal solutions
-	solutions := fillSolutions(syntheticVector, assemblyCounts, countToAssemblies, conf)
+	solutions := fillSolutions(target, assemblyCounts, countToAssemblies, conf)
 
-	return syntheticVector, solutions
+	return target, solutions
 }
 
 // NewFeatureDB returns a new copy of the features db

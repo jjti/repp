@@ -30,7 +30,9 @@ func Sequence(flags *Flags, conf *config.Config) [][]*Frag {
 		stderr.Fatalln(err)
 	}
 
-	fmt.Printf("%s\n\n", elapsed)
+	if conf.Verbose {
+		fmt.Printf("%s\n\n", elapsed)
+	}
 
 	return solutions
 }
@@ -74,8 +76,11 @@ func sequence(input *Flags, conf *config.Config) (insert, target *Frag, solution
 		)
 	}
 
-	target = &fragments[0]
-	fmt.Printf("Building %s\n", target.ID)
+	target = fragments[0]
+
+	if conf.Verbose {
+		fmt.Printf("Building %s\n", target.ID)
+	}
 
 	insert = target.copy()
 
@@ -87,7 +92,10 @@ func sequence(input *Flags, conf *config.Config) (insert, target *Frag, solution
 	// get all the matches against the target vector
 	tw := blastWriter()
 	matches, err := blast(target.ID, target.Seq, true, input.dbs, input.filters, 100, tw)
-	tw.Flush()
+
+	if conf.Verbose {
+		tw.Flush()
+	}
 
 	if err != nil {
 		dbMessage := strings.Join(input.dbs, ", ")
@@ -99,7 +107,10 @@ func sequence(input *Flags, conf *config.Config) (insert, target *Frag, solution
 
 	// keep only "proper" arcs (non-self-contained)
 	matches = filter(matches, len(target.Seq), conf.PCRMinLength)
-	fmt.Printf("%d matches after filtering\n", len(matches))
+
+	if conf.Verbose {
+		fmt.Printf("%d matches after filtering\n", len(matches))
+	}
 
 	// map fragment Matches to nodes
 	frags := newFrags(matches, conf)
@@ -115,29 +126,4 @@ func sequence(input *Flags, conf *config.Config) (insert, target *Frag, solution
 	solutions = fillSolutions(target.Seq, assemblyCounts, countToAssemblies, conf)
 
 	return insert, target, solutions, nil
-}
-
-// addSyntheticVector adds a new fully synthetic vector to the built map if it's cheaper
-// that any other solution of that many fragments.
-// Returns the cost of synthesis for the fragments
-func addSyntheticVector(built map[int][]*Frag, seq string, conf *config.Config) float64 {
-	start := &Frag{start: 0, end: 0, conf: conf}
-	end := &Frag{start: len(seq), end: len(seq), conf: conf}
-
-	syntheticFrags := start.synthTo(end, seq)
-	fCount := len(syntheticFrags)
-
-	if _, filled := built[fCount]; filled {
-		syntheticCost := fragsCost(syntheticFrags)
-		existingCost := fragsCost(built[fCount])
-
-		if syntheticCost < existingCost {
-			built[fCount] = syntheticFrags
-		}
-
-		return syntheticCost // return the total cost of synthesis
-	}
-	built[fCount] = syntheticFrags
-
-	return fragsCost(syntheticFrags)
 }

@@ -38,35 +38,35 @@ func Test_recogRegex(t *testing.T) {
 
 func Test_digest(t *testing.T) {
 	type args struct {
-		frag Frag
+		frag *Frag
 		enz  enzyme
 	}
 	tests := []struct {
 		name         string
 		args         args
-		wantDigested Frag
+		wantDigested *Frag
 		wantErr      bool
 	}{
 		{
 			"fail with no recognition sequence",
 			args{
-				Frag{
+				&Frag{
 					Seq: "ATGAGGTTAGCCAAAAAAGCACGTGGTGGCGCCCACCGACTGTTCCCAAACTGTAGCTCTTCGTTCCGTCAAGGCCCGACTTTCATCGCGGCCCATTCCA",
 				},
 				enzyme{recog: "GAATTC", compCutIndex: 5, seqCutIndex: 1},
 			},
-			Frag{},
+			&Frag{},
 			true,
 		},
 		{
 			"digest in template sequence, no overhang",
 			args{
-				Frag{
+				&Frag{
 					Seq: "ATGAGGTTAGCCAAAAAAGCACGTGAATTCGGTGGCGCCCACCGACTGTTCCCAAACTGTAGCTCTTCGTTCCGTCAAGGCCCGACTTTCATCGCGGCCCATTCCA",
 				},
 				enzyme{recog: "GAATTC", compCutIndex: 3, seqCutIndex: 3},
 			},
-			Frag{
+			&Frag{
 				Seq: "TTCGGTGGCGCCCACCGACTGTTCCCAAACTGTAGCTCTTCGTTCCGTCAAGGCCCGACTTTCATCGCGGCCCATTCCAATGAGGTTAGCCAAAAAAGCACGTGAA",
 			},
 			false,
@@ -74,12 +74,12 @@ func Test_digest(t *testing.T) {
 		{
 			"digest in reverse complement sequence, no overhang",
 			args{
-				Frag{
+				&Frag{
 					Seq: "ATGAGGTTAGCCAAAAAAGCACGCTGGGGGTGGCGCCCACCGACTGTTCCCAAACTGTAGCTCTTCGTTCCGTCAAGGCCCGACTTTCATCGCGGCCCATTCCA",
 				},
 				enzyme{recog: "CCCAGC", compCutIndex: 3, seqCutIndex: 3}, // rev comp GCTGGG
 			},
-			Frag{
+			&Frag{
 				Seq: "GGGGGTGGCGCCCACCGACTGTTCCCAAACTGTAGCTCTTCGTTCCGTCAAGGCCCGACTTTCATCGCGGCCCATTCCAATGAGGTTAGCCAAAAAAGCACGCT",
 			},
 			false,
@@ -87,12 +87,12 @@ func Test_digest(t *testing.T) {
 		{
 			"digest in template sequence, positive overhang",
 			args{
-				Frag{
+				&Frag{
 					Seq: "ATGAGGTTAGCCAAAAAAGCACGTGAATTCGGTGGCGCCCACCGACTGTTCCCAAACTGTAGCTCTTCGTTCCGTCAAGGCCCGACTTTCATCGCGGCCCATTCCA",
 				},
 				enzyme{recog: "GAATTC", compCutIndex: 1, seqCutIndex: 5},
 			},
-			Frag{
+			&Frag{
 				Seq: "CGGTGGCGCCCACCGACTGTTCCCAAACTGTAGCTCTTCGTTCCGTCAAGGCCCGACTTTCATCGCGGCCCATTCCAATGAGGTTAGCCAAAAAAGCACGTGAATT",
 			},
 			false,
@@ -100,12 +100,12 @@ func Test_digest(t *testing.T) {
 		{
 			"digest in template sequence, negative overhang",
 			args{
-				Frag{
+				&Frag{
 					Seq: "ATGAGGTTAGCCAAAAAAGCACGTGAATTCGGTGGCGCCCACCGACTGTTCCCAAACTGTAGCTCTTCGTTCCGTCAAGGCCCGACTTTCATCGCGGCCCATTCCA",
 				},
 				enzyme{recog: "GAATTC", compCutIndex: 5, seqCutIndex: 1},
 			},
-			Frag{
+			&Frag{
 				Seq: "CGGTGGCGCCCACCGACTGTTCCCAAACTGTAGCTCTTCGTTCCGTCAAGGCCCGACTTTCATCGCGGCCCATTCCAATGAGGTTAGCCAAAAAAGCACGTG",
 			},
 			false,
@@ -113,12 +113,12 @@ func Test_digest(t *testing.T) {
 		{
 			"digest in reverse complement sequence, positive overhang",
 			args{
-				Frag{
+				&Frag{
 					Seq: "ATGAGGTTAGCCAAAAAAGCACGTGCTGGGGGTGGCGCCCACCGACTGTTCCCAAACTGTAGCTCTTCGTTCCGTCAAGGCCCGACTTTCATCGCGGCCCATTCCA",
 				},
 				enzyme{recog: "CCCAGC", compCutIndex: 1, seqCutIndex: 5}, // rev comp = GCTGGG
 			},
-			Frag{
+			&Frag{
 				Seq: "GGGTGGCGCCCACCGACTGTTCCCAAACTGTAGCTCTTCGTTCCGTCAAGGCCCGACTTTCATCGCGGCCCATTCCAATGAGGTTAGCCAAAAAAGCACGTGCTGG",
 			},
 			false,
@@ -126,12 +126,12 @@ func Test_digest(t *testing.T) {
 		{
 			"digest in reverse complement sequence, negative overhang",
 			args{
-				Frag{
+				&Frag{
 					Seq: "ATGAGGTTAGCCAAAAAAGCACGTGCTGGGGGTGGCGCCCACCGACTGTTCCCAAACTGTAGCTCTTCGTTCCGTCAAGGCCCGACTTTCATCGCGGCCCATTCCA",
 				},
 				enzyme{recog: "CCCAGC", compCutIndex: 5, seqCutIndex: 1}, // rev comp = GCTGGG
 			},
-			Frag{
+			&Frag{
 				Seq: "GGGTGGCGCCCACCGACTGTTCCCAAACTGTAGCTCTTCGTTCCGTCAAGGCCCGACTTTCATCGCGGCCCATTCCAATGAGGTTAGCCAAAAAAGCACGTG",
 			},
 			false,
@@ -144,6 +144,7 @@ func Test_digest(t *testing.T) {
 				t.Errorf("digest() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
+
 			if !reflect.DeepEqual(gotDigested, tt.wantDigested) {
 				t.Errorf("digest() = %v, want %v", gotDigested, tt.wantDigested)
 			}

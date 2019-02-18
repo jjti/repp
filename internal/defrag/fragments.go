@@ -3,6 +3,7 @@ package defrag
 import (
 	"fmt"
 	"strings"
+	"testing"
 
 	"github.com/jjtimmons/defrag/config"
 	"github.com/spf13/cobra"
@@ -26,100 +27,103 @@ func FragmentFindCmd(cmd *cobra.Command, args []string) {
 
 // FragmentsCmd accepts a cobra commands and assembles a list of building fragments in order
 func FragmentsCmd(cmd *cobra.Command, args []string) {
-	if _, err := fragments(parseCmdFlags(cmd, args, true)); err != nil {
-		stderr.Println(err)
+	flags, conf := parseCmdFlags(cmd, args, true)
+
+	// read in the constituent fragments
+	var frags []*Frag
+	frags, err := read(flags.in, false)
+	if err != nil {
+		stderr.Fatalln(err)
 	}
+
+	// add in the backbone if it was provided
+	if flags.backbone.ID != "" {
+		frags = append([]*Frag{flags.backbone}, frags...)
+	}
+
+	target, solution := fragments(frags, conf)
+
+	// write the single list of fragments as a possible solution to the output file
+	writeJSON(flags.out, target.ID, target.Seq, [][]*Frag{solution}, len(target.Seq), conf, 0)
 }
 
 // fragments pieces together a list of fragments into a single vector
 // with the fragments in the order and orientation specified
-func fragments(input *Flags, conf *config.Config) (output []byte, err error) {
-	// read in the constituent fragments
-	inputFragments, err := read(input.in, false)
-	if err != nil {
-		return
-	}
-
-	// add in the backbone if it was provided
-	if input.backbone.ID != "" {
-		inputFragments = append([]Frag{input.backbone}, inputFragments...)
-	}
-
+func fragments(frags []*Frag, conf *config.Config) (target *Frag, solution []*Frag) {
 	// piece together the adjacent fragments
-	target, fragments, err := prepareFragments(inputFragments, conf)
-	if err != nil {
-		return
+	if len(frags) < 1 {
+		stderr.Fatalln("failed: no fragments to assemble")
 	}
 
-	// write the single list of fragments as a possible solution to the output file
-	return writeJSON(input.out, target.ID, target.Seq, [][]*Frag{fragments}, len(target.Seq), conf, 0)
-}
-
-// prepareFragments takes a list of Fragments and returns the Vector we assume the user is
-// trying to build as well as the Fragments (possibly prepared via PCR)
-func prepareFragments(targetFrags []Frag, conf *config.Config) (target Frag, solution []*Frag, err error) {
-	if len(targetFrags) < 1 {
-		return Frag{}, nil, fmt.Errorf("failed: no fragments to assemble")
-	}
-
-	// convert the fragments to frags (without a start and end and with the conf)
-	frags := make([]*Frag, len(targetFrags))
-	for i, f := range targetFrags {
-		frags[i] = &Frag{
-			ID:       f.ID,
-			Seq:      f.Seq,
-			fullSeq:  f.Seq,
-			conf:     conf,
-			start:    0,
-			end:      0,
-			fragType: existing,
-		}
-	}
-
-	// find out how much overlap the *last* Frag has with its next one
-	// set the start, end, and vector sequence based on that
-	//
-	// add all of each frags seq to the vector sequence, minus the region overlapping the next
-	minHomology := conf.FragmentsMinHomology
-	maxHomology := conf.FragmentsMaxHomology
-	junction := frags[len(frags)-1].junction(frags[0], minHomology, maxHomology)
-	var vectorSeq strings.Builder
-	for i, n := range frags {
-		// correct for this Frag's overlap with the last Frag
-		n.start = vectorSeq.Len() - len(junction)
-		n.end = n.start + len(n.Seq) - 1
-
-		// find the junction between this Frag and the next (if there is one)
-		junction = n.junction(frags[(i+1)%len(frags)], minHomology, maxHomology)
-
-		// add this Frag's sequence onto the accumulated vector sequence
-		vectorSeq.WriteString(n.Seq[0 : len(n.Seq)-len(junction)])
-	}
+	// anneal the fragments together, shift their junctions and create the vector sequence
+	vecSeq := annealFragments(conf.FragmentsMinHomology, conf.FragmentsMaxHomology, frags)
 
 	// create the assumed target vector object
-	target = Frag{
-		Seq:      vectorSeq.String(),
+	target = &Frag{
+		Seq:      vecSeq,
 		fragType: circular,
 	}
 
 	// create an assembly out of the frags (to fill/convert to fragments with primers)
 	a := assembly{frags: frags}
-	solution, err = a.fill(target.Seq, conf)
+	solution, err := a.fill(target.Seq, conf)
 	if err != nil {
-		return Frag{}, nil, err
+		stderr.Fatalln(err)
 	}
 
-	return target, solution, nil
+	return target, solution
+}
+
+// annealFragments shifts the start and end of junctions that overlap one another
+func annealFragments(min, max int, frags []*Frag) (vec string) {
+	// set the start, end, and vector sequence based on that
+	//
+	// add all of each frags seq to the vector sequence, minus the region overlapping the next
+	var vecSeq strings.Builder
+	for i, f := range frags {
+		next := frags[(i+1)%len(frags)]
+		// if we're on the last fragment, mock the first one further along the vector
+		if i == len(frags)-1 {
+			next = &Frag{
+				Seq:   next.Seq,
+				start: next.start + vecSeq.Len(),
+				end:   next.end + vecSeq.Len(),
+			}
+		}
+
+		jL := len(f.junction(next, min, max)) // junction length
+
+		contrib := f.Seq[0 : len(f.Seq)-jL] // frag's contribution to vector
+
+		// correct for this Frag's overlap with the next Frag
+		f.start = vecSeq.Len()
+		f.end = f.start + len(f.Seq) - 1
+
+		// add this Frag's sequence onto the accumulated vector sequence
+		vecSeq.WriteString(contrib)
+	}
+
+	return vecSeq.String()
 }
 
 // ValidateJunctions checks each fragment and confirms that it has sufficient homology
 // with its adjacent fragments and that the match is exact. Largely for testing
-func ValidateJunctions(frags []*Frag, conf *config.Config) {
+func ValidateJunctions(name string, frags []*Frag, conf *config.Config, t *testing.T) {
 	for i, f := range frags {
 		next := frags[(i+1)%len(frags)]
 		j := f.junction(next, conf.FragmentsMinHomology, conf.FragmentsMaxHomology)
 		if j == "" {
-			stderr.Fatalf("no junction found between %s and %s", f.ID, next.ID)
+			s1 := f.Seq
+			if f.PCRSeq != "" {
+				s1 = f.PCRSeq
+			}
+
+			s2 := next.Seq
+			if next.PCRSeq != "" {
+				s2 = next.PCRSeq
+			}
+
+			t.Errorf("%s -- no junction found between %s and %s\n%s\n\n%s", name, f.ID, next.ID, s1, s2)
 		}
 	}
 }
