@@ -12,8 +12,8 @@ func Test_assembly_add(t *testing.T) {
 
 	c.FragmentsMaxCount = 5
 	c.PCRMaxEmbedLength = 0
-	c.SynthesisMaxLength = 100
-	c.SynthesisFragmentCost = map[int]config.SynthCost{
+	c.SyntheticMaxLength = 100
+	c.CostSyntheticFragment = map[int]config.SynthCost{
 		100000: {
 			Fixed: true,
 			Cost:  0.0,
@@ -130,8 +130,8 @@ func Test_assembly_add(t *testing.T) {
 				// a Frag that's too far away for straightforward annealing
 				n: &Frag{
 					uniqueID: n1.uniqueID,
-					start:    n3.start + c.SynthesisMaxLength,
-					end:      n3.end + c.SynthesisMaxLength,
+					start:    n3.start + c.SyntheticMaxLength,
+					end:      n3.end + c.SyntheticMaxLength,
 				},
 			},
 			assembly{

@@ -545,9 +545,14 @@ func writeJSON(
 	for _, assembly := range assemblies {
 		assemblyCost := 0.0
 		assemblyFragmentIDs := make(map[string]bool)
+		gibson := false // whether it will be assembled via Gibson assembly
+
 		for _, f := range assembly {
-			// freeze fragment type
-			f.Type = f.fragType.String()
+			if f.fragType != existing {
+				gibson = true
+			}
+
+			f.Type = f.fragType.String() // freeze fragment type
 
 			if f.URL == "" && f.fragType != synthetic {
 				f.URL = parseURL(f.ID)
@@ -569,6 +574,10 @@ func writeJSON(
 
 			// accumulate assembly cost
 			assemblyCost += f.Cost
+		}
+
+		if gibson {
+			assemblyCost += conf.CostGibson
 		}
 
 		solutionCost, err := roundCost(assemblyCost)
