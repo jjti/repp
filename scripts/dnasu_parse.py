@@ -15,29 +15,29 @@ def get_parts():
         cols = p.split(",")
 
         p_id = cols[0]
-        bb_ref = cols[17]  # bb ref
+        # bb_ref = cols[17]  # bb ref
         in_ref = cols[18]  # insert ref
+        # seq_ref = cols[33]  # seq ref
 
-        id_to_ref[p_id] = [bb_ref, in_ref]
-        ref_to_seq[in_ref] = ""
+        id_to_ref[p_id] = [in_ref]
+        ref_to_seq[in_ref] = ["" for _ in range(0, 20)]
+        # ref_to_seq[bb_ref] = ""
     clone_data.close()
 
     seq_data = open("DNASU-InsertSeq.csv", "r")
     for p in seq_data.readlines()[1:]:
-        ref, _, seq = p.split(",")
-        if ref in ref_to_seq:
-            ref_to_seq[ref] += seq
+        _, ref, _, order, seq = p.split(",")
+        order = int(order)
+        if ref in ref_to_seq and not ref_to_seq[ref][order]:
+            ref_to_seq[ref][order] = seq
     seq_data.close()
 
     parts = []
     for p_id, refs in id_to_ref.items():
-        bb_ref, in_ref = refs
-
-        if bb_ref in ref_to_seq and ref_to_seq[bb_ref]:
-            parts.append((p_id + ".bb", ref_to_seq[bb_ref]))
+        in_ref = refs[0]
 
         if in_ref in ref_to_seq and ref_to_seq[in_ref]:
-            parts.append((p_id + ".in", ref_to_seq[in_ref]))
+            parts.append((p_id, "".join(ref_to_seq[in_ref])))
     return parts
 
 
@@ -47,7 +47,8 @@ def write_parts(parts):
     # write to the local filesystem
     with open("dnasu", "w") as out_file:
         for (name, seq) in parts:
-            out_file.write(">gnl|dnasu|{} circular\n{}".format(name, seq))
+            if seq:
+                out_file.write(">gnl|dnasu|{} circular\n{}".format(name, seq))
 
 
 write_parts(get_parts())
