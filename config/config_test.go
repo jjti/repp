@@ -65,7 +65,7 @@ func TestConfig_SynthCost(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := Config{
-				SynthesisFragmentCost: tt.fields.SynthesisCost,
+				CostSyntheticFragment: tt.fields.SynthesisCost,
 			}
 			if got := c.SynthFragmentCost(tt.args.fragLength); got != tt.want {
 				t.Errorf("Config.SynthCost() = %v, want %v", got, tt.want)

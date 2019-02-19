@@ -58,21 +58,36 @@ type SynthCost struct {
 // of settings available in config.yaml and those
 // available from the command line
 type Config struct {
+	// Vebose is whether to log debug messages to the stdout
+	Verbose bool
+
 	// the cost of a single Addgene vector
-	AddGeneVectorCost float64 `mapstructure:"addgene-vector-cost"`
+	CostAddgene float64 `mapstructure:"addgene-cost"`
 
 	// the cost of a single part from the iGEM registry
-	IGEMPartCost float64 `mapstructure:"igem-part-cost"`
+	CostIGEM float64 `mapstructure:"igem-cost"`
 
 	// the per vector cost of DNASU vectors
-	DNASUVectorCost float64 `mapstructure:"dnasu-vector-cost"`
+	CostDNASU float64 `mapstructure:"dnasu-cost"`
+
+	// the cost per bp of primer DNA
+	CostBP float64 `mapstructure:"pcr-bp-cost"`
+
+	// the cost of each PCR reaction
+	CostPCR float64 `mapstructure:"pcr-rxn-cost"`
+
+	// the cost each Gibson Assembly
+	CostGibson float64 `mapstructure:"gibson-assembly-cost"`
+
+	// the cost per bp of synthesized DNA as a fragment (as a step function)
+	CostSyntheticFragment map[int]SynthCost `mapstructure:"synthetic-fragment-cost"`
+
+	// the cost per bp of synthesized clonal DNA  (delivered in a vector)
+	CostSyntheticVector map[int]SynthCost `mapstructure:"synthetic-vector-cost"`
 
 	// primer3 config folder, needed for thermodynamic calculations
 	// created in the settings file during `make install`
 	Primer3Config string `mapstructure:"primer3_config-path"`
-
-	// Vebose is whether to log debug messages to the stdout
-	Verbose bool
 
 	// the maximum number of fragments in the final assembly
 	FragmentsMaxCount int `mapstructure:"fragments-max-count"`
@@ -86,14 +101,11 @@ type Config struct {
 	// maximum allowable hairpin melting temperature (celcius)
 	FragmentsMaxHairpinMelt float64 `mapstructure:"fragments-max-junction-hairpin"`
 
-	// the cost per bp of primer DNA
-	PCRBPCost float64 `mapstructure:"pcr-bp-cost"`
-
 	// PCRMinLength is the minimum size of a fragment (used to filter BLAST results)
 	PCRMinLength int `mapstructure:"pcr-min-length"`
 
 	// the maximum primer3 score allowable
-	PCRP3MaxPenalty float64 `mapstructure:"pcr-primer3-penalty-max"`
+	PCRMaxPenalty float64 `mapstructure:"pcr-primer-max-pair-penalty"`
 
 	// the maximum length of a sequence to embed up or downstream of an amplified sequence
 	PCRMaxEmbedLength int `mapstructure:"pcr-primer-max-embed-length"`
@@ -101,17 +113,11 @@ type Config struct {
 	// PCRMaxOfftargetTm is the maximum tm of an offtarget, above which PCR is abandoned
 	PCRMaxOfftargetTm float64 `mapstructure:"pcr-primer-max-offtarget-tm"`
 
-	// the cost per bp of synthesized DNA as a fragment (as a step function)
-	SynthesisFragmentCost map[int]SynthCost `mapstructure:"synthesis-fragment-cost"`
-
-	// the cost per bp of synthesized clonal DNA  (delivered in a vector)
-	SynthesisVectorCost map[int]SynthCost `mapstructure:"synthesis-gene-cost"`
-
 	// maximum length of a synthesized piece of DNA
-	SynthesisMaxLength int `mapstructure:"synthesis-max-length"`
+	SyntheticMaxLength int `mapstructure:"synthetic-max-length"`
 
 	// minimum length of a synthesized piece of DNA
-	SynthesisMinLength int `mapstructure:"synthesis-min-length"`
+	SyntheticMinLength int `mapstructure:"synthetic-min-length"`
 }
 
 // New returns a new Config struct populated by settings from
@@ -164,10 +170,10 @@ func New() *Config {
 func (c Config) SynthFragmentCost(fragLength int) float64 {
 	// by default, we try to synthesize the whole thing in one piece
 	// we may optionally need to split it into multiple
-	fragCount := math.Ceil(float64(fragLength) / float64(c.SynthesisMaxLength))
+	fragCount := math.Ceil(float64(fragLength) / float64(c.SyntheticMaxLength))
 	fragLength = int(math.Floor(float64(fragLength) / float64(fragCount)))
 
-	cost := synthCost(fragLength, c.SynthesisFragmentCost)
+	cost := synthCost(fragLength, c.CostSyntheticFragment)
 	if cost.Fixed {
 		return fragCount * cost.Cost
 	}
@@ -177,7 +183,7 @@ func (c Config) SynthFragmentCost(fragLength int) float64 {
 
 // SynthVectorCost returns the cost of synthesizing the insert and having it delivered in a vector
 func (c Config) SynthVectorCost(insertLength int) float64 {
-	cost := synthCost(insertLength, c.SynthesisVectorCost)
+	cost := synthCost(insertLength, c.CostSyntheticVector)
 	if cost.Fixed {
 		return cost.Cost
 	}

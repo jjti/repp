@@ -85,7 +85,7 @@ func Test_Frag_synthDist(t *testing.T) {
 	c := config.New()
 
 	c.PCRMaxEmbedLength = 0
-	c.SynthesisMaxLength = 100
+	c.SyntheticMaxLength = 100
 
 	type fields struct {
 		ID         string
@@ -154,8 +154,8 @@ func Test_Frag_synthDist(t *testing.T) {
 func Test_Frag_costTo(t *testing.T) {
 	c := config.New()
 	c.FragmentsMinHomology = 20
-	c.PCRBPCost = 0.03
-	c.SynthesisFragmentCost = map[int]config.SynthCost{
+	c.CostBP = 0.03
+	c.CostSyntheticFragment = map[int]config.SynthCost{
 		100000: {
 			Fixed: false,
 			Cost:  0.05,
@@ -503,7 +503,7 @@ func Test_setPrimers(t *testing.T) {
 
 	c.FragmentsMinHomology = 20
 	c.FragmentsMaxHomology = 80
-	c.PCRP3MaxPenalty = 50.0
+	c.PCRMaxPenalty = 50.0
 	c.PCRMaxEmbedLength = 10
 
 	type args struct {

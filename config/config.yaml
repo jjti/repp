@@ -1,4 +1,5 @@
-# Maximum number of building fragments in final assembly
+# Maximum number of fragments in a final assembly
+# limited by Gibson diminishing efficiency with fragment count
 fragments-max-count: 6
 
 # Minimum homology length between fragments
@@ -10,14 +11,24 @@ fragments-max-junction-length: 120
 # Maximum allowable hairpin melting temperature (celcius)
 fragments-max-junction-hairpin: 47.0
 
-# Cost per bp of PCR primer
+# Cost per Gibson assembly reaction
+# $649.00 / 50
+# from https://www.neb.com/products/e2611-gibson-assembly-master-mix#Product%20Information
+gibson-assembly-cost: 12.98
+
+# Cost per bp of PCR primer. based on IDT prices
 pcr-bp-cost: 0.6
+
+# Cost per PCR reaction
+# $54.75 / 200
+# estimated from manual at https://www.thermofisher.com/order/catalog/product/18067017
+pcr-rxn-cost: 0.27
 
 # Minimum length of a PCR fragment
 pcr-min-length: 85
 
 # Max primer3 pair penalty score
-pcr-primer3-penalty-max: 20.0
+pcr-primer-max-pair-penalty: 20.0
 
 # Max embedded length. The most bp to include upstream of a annealing portion
 # of a primer to create or extend a junction with another part
@@ -26,8 +37,14 @@ pcr-primer-max-embed-length: 20
 # Max off-target primer binding site Tm, above which a PCR is abandoned
 pcr-primer-max-offtarget-tm: 55.0
 
+# Minimum length of a synthesized building fragment
+synthetic-min-length: 1
+
+# Maximum length of a synthesized building fragment
+synthetic-max-length: 3000
+
 # Cost of synthesis (step-function)
-synthesis-fragment-cost:
+synthetic-fragment-cost:
   # IDT: gBlocks: https://www.idtdna.com/pages/products/genes-and-gene-fragments/gblocks-gene-fragments
   250:
     fixed: true
@@ -79,7 +96,7 @@ synthesis-fragment-cost:
 
 # Cost of synthesis and delivery in a vector
 # IDT: Gene synthesis: https://www.idtdna.com/pages/products/genes-and-gene-fragments/custom-gene-synthesis
-synthesis-gene-cost:
+synthetic-vector-cost:
   500:
     fixed: true
     cost: 160
@@ -92,17 +109,17 @@ synthesis-gene-cost:
     fixed: false
     cost: 0.6
 
-# Minimum length of a synthesized building fragment
-synthesis-min-length: 1
-
-# Maximum length of a synthesized building fragment
-synthesis-max-length: 3000
-
 # cost of a single addgene vector
-addgene-vector-cost: 65.0
+addgene-cost: 65.0
 
 # cost of a single igem part
-igem-part-cost: 0.0
+#
+# "The iGEM Labs program provides members with program benefits such as
+# access to the Registry of Standard Biological parts. As a member of an
+# iGEM lab, you would receive the annual DNA distribution and up to
+# 75 individual part requests. The current cost of joining the iGEM Labs
+# program is $500 per subscription year."
+igem-cost: 0.0
 
-# 55 for academic, 65 for corporate
-dnasu-vector-cost: 55.0
+# 55 for academic customers, 65 for corporate
+dnasu-cost: 55.0

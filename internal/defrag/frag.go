@@ -184,14 +184,18 @@ func (f *Frag) copy() (newFrag *Frag) {
 func (f *Frag) cost(procure bool) (c float64) {
 	if procure {
 		if strings.Contains(f.URL, "addgene") {
-			c += f.conf.AddGeneVectorCost
+			c += f.conf.CostAddgene
 		} else if strings.Contains(f.URL, "igem") {
-			c += f.conf.IGEMPartCost
+			c += f.conf.CostIGEM
+		} else if strings.Contains(f.URL, "dnasu") {
+			c += f.conf.CostDNASU
 		}
 	}
 
 	if f.fragType == pcr && f.Primers != nil {
-		c += float64(len(f.Primers[0].Seq)+len(f.Primers[1].Seq)) * f.conf.PCRBPCost
+		// cost of primers plus the cost of a single PCR reaction
+		c += float64(len(f.Primers[0].Seq)+len(f.Primers[1].Seq)) * f.conf.CostBP
+		c += f.conf.CostPCR
 	} else if f.fragType == synthetic {
 		c += f.conf.SynthFragmentCost(len(f.Seq))
 	}
@@ -233,7 +237,7 @@ func (f *Frag) synthDist(other *Frag) (synthCount int) {
 	floatDist := math.Max(1.0, float64(dist))
 
 	// split up the distance between them by the max synthesized fragment size
-	return int(math.Ceil(floatDist / float64(f.conf.SynthesisMaxLength)))
+	return int(math.Ceil(floatDist / float64(f.conf.SyntheticMaxLength)))
 }
 
 // costTo estimates the $ amount needed to get from this fragment
@@ -254,12 +258,12 @@ func (f *Frag) costTo(other *Frag) (cost float64) {
 		if f.overlapsViaHomology(other) {
 			// there's already enough overlap between this Frag and the one being tested
 			// estimating two primers, primer length assumed to be 25bp
-			return 50 * f.conf.PCRBPCost
+			return 50 * f.conf.CostBP
 		}
 
 		// we have to create some additional primer sequence to reach the next fragment
 		// estimating here that we'll add half of minHomology to both sides
-		return float64(50+f.conf.FragmentsMinHomology) * f.conf.PCRBPCost
+		return float64(50+f.conf.FragmentsMinHomology) * f.conf.CostBP
 	}
 
 	// we need to create a new synthetic fragment to get from this fragment to the next
@@ -362,9 +366,9 @@ func (f *Frag) synthTo(next *Frag, target string) (synths []*Frag) {
 
 	fL := f.distTo(next) / synCount // each fragment's length
 	fL += jL * 2                    // account for homology on either end of each synthetic fragment
-	if f.conf.SynthesisMinLength > fL {
+	if f.conf.SyntheticMinLength > fL {
 		// need to synthesize at least Synthesis.MinLength bps
-		fL = f.conf.SynthesisMinLength
+		fL = f.conf.SyntheticMinLength
 	}
 
 	// add to self to account for sequence across the zero-index (when sequence subselecting)
@@ -443,11 +447,11 @@ func (f *Frag) setPrimers(last, next *Frag, seq string, conf *config.Config) (er
 	}
 
 	// 1. check for whether the primers have too have a pair penalty score
-	if f.Primers[0].PairPenalty > conf.PCRP3MaxPenalty {
+	if f.Primers[0].PairPenalty > conf.PCRMaxPenalty {
 		errMessage := fmt.Sprintf(
 			"primers have pair primer3 penalty score of %f, should be less than %f:\f%+v\f%+v",
 			f.Primers[0].PairPenalty,
-			conf.PCRP3MaxPenalty,
+			conf.PCRMaxPenalty,
 			f.Primers[0],
 			f.Primers[1],
 		)
