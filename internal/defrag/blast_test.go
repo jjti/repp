@@ -230,7 +230,7 @@ func Test_queryDatabases(t *testing.T) {
 				dbs:   []string{config.IGEMDB, config.AddgeneDB},
 			},
 			Frag{
-				ID: "igem:pSB1A3",
+				ID: "pSB1A3",
 				db: config.IGEMDB,
 			},
 			false,

@@ -48,7 +48,7 @@ def write_parts(parts):
     with open("dnasu", "w") as out_file:
         for (name, seq) in parts:
             if seq:
-                out_file.write(">gnl|dnasu|{} circular\n{}".format(name, seq))
+                out_file.write(">{} circular\n{}".format(name, seq))
 
 
 write_parts(get_parts())

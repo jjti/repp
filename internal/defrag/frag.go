@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math"
 	"os"
-	"regexp"
 	"strings"
 
 	"github.com/jinzhu/copier"
@@ -124,38 +123,26 @@ func newFrag(m match, conf *config.Config) *Frag {
 		start:    m.queryStart,
 		end:      m.queryEnd,
 		db:       m.db,
-		URL:      parseURL(m.entry),
+		URL:      parseURL(m.entry, m.db),
 		conf:     conf,
 		fragType: fType,
 	}
 }
 
 // parseURL turns a fragment identifier into a URL to its repository
-func parseURL(id string) string {
-	if strings.Contains(id, "addgene") {
+func parseURL(entry, db string) string {
+	if strings.Contains(db, "addgene") {
 		// create a link to the source Addgene page
-		re := regexp.MustCompile("^.*addgene\\|(\\d*)")
-		match := re.FindStringSubmatch(id)
-		if len(match) > 0 {
-			return fmt.Sprintf("https://www.addgene.org/%s/", match[1])
-		}
+		return fmt.Sprintf("https://www.addgene.org/%s/", entry)
 	}
 
-	if strings.Contains(id, "igem") {
+	if strings.Contains(db, "igem") {
 		// create a source to the source iGEM page
-		re := regexp.MustCompile("^.*igem\\|(\\w*)")
-		match := re.FindStringSubmatch(id)
-		if len(match) > 0 {
-			return fmt.Sprintf("http://parts.igem.org/Part:%s", match[1])
-		}
+		return fmt.Sprintf("http://parts.igem.org/Part:%s", entry)
 	}
 
-	if strings.Contains(id, "dnasu") {
-		re := regexp.MustCompile("^.*dnasu\\|(\\d*)")
-		match := re.FindStringSubmatch(id)
-		if len(match) > 0 {
-			return fmt.Sprintf("http://dnasu.org/DNASU/GetCloneDetail.do?cloneid=%s", match[1])
-		}
+	if strings.Contains(db, "dnasu") {
+		return fmt.Sprintf("http://dnasu.org/DNASU/GetCloneDetail.do?cloneid=%s", entry)
 	}
 
 	return ""

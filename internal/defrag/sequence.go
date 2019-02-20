@@ -39,7 +39,7 @@ func Sequence(flags *Flags, conf *config.Config) [][]*Frag {
 
 // sequence builds a vector using a simple cost optimization scheme.
 //
-// the goal is to find an "optimal" assembly sequence with:
+// The goal is to find an "optimal" assembly sequence with:
 // 	1. the fewest fragments
 // 	2. the lowest overall assembly cost ($)
 // and, secondarily:
@@ -91,7 +91,8 @@ func sequence(input *Flags, conf *config.Config) (insert, target *Frag, solution
 
 	// get all the matches against the target vector
 	tw := blastWriter()
-	matches, err := blast(target.ID, target.Seq, true, input.dbs, input.filters, 100, tw)
+
+	matches, err := blast(target.ID, target.Seq, true, input.dbs, input.filters, input.identity, tw)
 
 	if conf.Verbose {
 		tw.Flush()

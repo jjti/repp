@@ -72,9 +72,7 @@ def write_parts(parts):
             topo = "circular" if circular else "linear"
             out_seq = seq + seq if circular else seq
 
-            out_file.write(
-                ">gnl|igem|{} {}-{}-{}\n{}\n".format(name, topo, year, type, out_seq)
-            )
+            out_file.write(">{} {}-{}-{}\n{}\n".format(name, topo, year, type, out_seq))
 
 
 write_parts(get_parts())
