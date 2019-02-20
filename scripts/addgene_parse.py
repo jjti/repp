@@ -40,26 +40,33 @@ def id_to_year(p_id):
     }[1]
 
 
-# split up into separate parts. each a tuple with (addgene_id, seq, circular: bool, year: int)
+# split up into separate parts. each a tuple with (addgene_id, seq, circular: bool, year: int, name)
 def get_parts(log_composites=True):
     # create element tree object
     part_json = json.load(open("addgene.json", "r"))
-
     plasmids = part_json["plasmids"]
 
     parts = []  # list of name, seq, circular tuples
+    full_seq_count = 0
     for p in plasmids:
         part_id = p["id"]
+        # name = p["name"]
 
         # vectors
         seqs = p["sequences"]
-        for s in seqs["public_addgene_full_sequences"]:
+        for s in (
+            seqs["public_addgene_full_sequences"] + seqs["public_user_full_sequences"]
+        ):
+            full_seq_count += 1
             parts.append((part_id, s["sequence"], True, id_to_year(part_id)))
             break
 
         # linear fragments
         sindex = 1
-        for s in seqs["public_addgene_partial_sequences"]:
+        for s in (
+            seqs["public_addgene_partial_sequences"]
+            + seqs["public_user_partial_sequences"]
+        ):
             parts.append(
                 (
                     "{}.{}".format(part_id, sindex),
@@ -69,6 +76,7 @@ def get_parts(log_composites=True):
                 )
             )
             sindex += 1
+    print(full_seq_count)
     return parts
 
 
@@ -77,19 +85,17 @@ def write_parts(parts):
 
     # write to the local filesystem
     with open("addgene", "w") as out_file:
-        seen_names = set()
-        for (name, seq, circular, year) in parts:
-            if name in seen_names or len(seq) < 30 or ">" in seq:
+        seen_ids = set()
+        for (p_id, seq, circular, year) in parts:
+            if p_id in seen_ids or len(seq) < 30 or ">" in seq:
                 continue
 
             topo = "circular" if circular else "linear"
             out_seq = seq + seq if circular else seq
 
-            out_file.write(
-                ">gnl|addgene|{} {}-{}\n{}\n".format(name, topo, year, out_seq)
-            )
+            out_file.write(">{} {}-{}\n{}\n".format(p_id, topo, year, out_seq))
 
-            seen_names.add(name)
+            seen_ids.add(p_id)
 
 
 write_parts(get_parts())

@@ -22,7 +22,7 @@ func FragmentFindCmd(cmd *cobra.Command, args []string) {
 	if err != nil {
 		stderr.Fatalln(err)
 	}
-	fmt.Printf("%s\t%s\t%s\n", name, frag.db, frag.Seq)
+	fmt.Printf("%s\t%s\n%s\n", name, frag.db, frag.Seq)
 }
 
 // FragmentsCmd accepts a cobra commands and assembles a list of building fragments in order
