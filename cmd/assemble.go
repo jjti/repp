@@ -20,8 +20,7 @@ var assembleCmd = &cobra.Command{
 	Use:                        "assemble",
 	Short:                      "Assemble a vector from its fragments, features or sequence",
 	SuggestionsMinimumDistance: 3,
-	Long: `
-Find fragments for assembling a vector via Gibson Assembly. Build the vector
+	Long: `Find fragments for assembling a vector via Gibson Assembly. Build the vector
 against a list of consituent fragment, feature, or a target sequence.`,
 	Aliases: []string{"make", "build"},
 }
@@ -32,8 +31,7 @@ var fragmentsCmd = &cobra.Command{
 	Short:                      "Build a vector from its constituent fragments",
 	Run:                        defrag.FragmentsCmd,
 	SuggestionsMinimumDistance: 3,
-	Long: `
-Prepare a list of fragments for assembly via Gibson Assembly. Fragments are
+	Long: `Prepare a list of fragments for assembly via Gibson Assembly. Fragments are
 checked for existing homology with their neighbors and are prepared for
 assembly with PCR.`,
 }
@@ -53,8 +51,7 @@ var sequenceCmd = &cobra.Command{
 	Short:                      "Find or build a vector from its target sequence",
 	Run:                        defrag.SequenceCmd,
 	SuggestionsMinimumDistance: 3,
-	Long: `
-Build up a vector from its target sequence using a combination of existing and
+	Long: `Build up a vector from its target sequence using a combination of existing and
 synthesized fragments.
 
 Solutions have either a minimum fragment count or assembly cost (or both).`,

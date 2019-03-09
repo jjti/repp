@@ -9,7 +9,7 @@ import (
 var annotateCmd = &cobra.Command{
 	Use:                        "annotate [seq]",
 	Run:                        defrag.Annotate,
-	Short:                      "Annotate a vector sequence against the feature db",
+	Short:                      "Annotate a circular sequence using the feature db",
 	SuggestionsMinimumDistance: 3,
 	Long:                       ``,
 }
