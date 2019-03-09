@@ -145,8 +145,6 @@ type EnzymeDB struct {
 
 // NewEnzymeDB returns a new copy of the enzymes db.
 func NewEnzymeDB() *EnzymeDB {
-	enzymes := make(map[string]string)
-
 	enzymeFile, err := os.Open(config.EnzymeDB)
 	if err != nil {
 		stderr.Fatal(err)
@@ -154,6 +152,7 @@ func NewEnzymeDB() *EnzymeDB {
 
 	// https://golang.org/pkg/bufio/#example_Scanner_lines
 	scanner := bufio.NewScanner(enzymeFile)
+	enzymes := make(map[string]string)
 	for scanner.Scan() {
 		columns := strings.Split(scanner.Text(), "	")
 		enzymes[columns[0]] = columns[1] // enzyme name = enzyme seq

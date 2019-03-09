@@ -25,7 +25,15 @@ func Sequence(flags *Flags, conf *config.Config) [][]*Frag {
 
 	// write the results to a file
 	elapsed := time.Since(start)
-	_, err = writeJSON(flags.out, target.ID, target.Seq, solutions, len(insert.Seq), conf, elapsed.Seconds())
+	_, err = writeJSON(
+		flags.out,
+		target.ID,
+		target.Seq,
+		solutions,
+		len(insert.Seq),
+		conf,
+		elapsed.Seconds(),
+	)
 	if err != nil {
 		stderr.Fatalln(err)
 	}
@@ -77,27 +85,22 @@ func sequence(input *Flags, conf *config.Config) (insert, target *Frag, solution
 	}
 
 	target = fragments[0]
-
 	if conf.Verbose {
 		fmt.Printf("Building %s\n", target.ID)
 	}
 
-	insert = target.copy()
-
 	// if a backbone was specified, add it to the sequence of the target frag
+	insert = target.copy() // store a copy for logging later
 	if input.backbone.ID != "" {
 		target.Seq += input.backbone.Seq
 	}
 
 	// get all the matches against the target vector
 	tw := blastWriter()
-
 	matches, err := blast(target.ID, target.Seq, true, input.dbs, input.filters, input.identity, tw)
-
 	if conf.Verbose {
 		tw.Flush()
 	}
-
 	if err != nil {
 		dbMessage := strings.Join(input.dbs, ", ")
 		return &Frag{}, &Frag{}, nil, fmt.Errorf("failed to blast %s against the dbs %s: %v", target.ID, dbMessage, err)
@@ -108,7 +111,6 @@ func sequence(input *Flags, conf *config.Config) (insert, target *Frag, solution
 
 	// keep only "proper" arcs (non-self-contained)
 	matches = filter(matches, len(target.Seq), conf.PCRMinLength)
-
 	if conf.Verbose {
 		fmt.Printf("%d matches after filtering\n", len(matches))
 	}

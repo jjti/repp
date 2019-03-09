@@ -22,7 +22,7 @@ type assembly struct {
 	synths int
 }
 
-// add adds Frag to the end of a sequence assembly. Used when building up a target sequence.
+// add Frag to the end of an assembly. Return a new assembly and whether it circularized
 func (a *assembly) add(f *Frag, maxCount, targetLength int) (newAssembly assembly, created, circularized bool) {
 	// check if we could complete an assembly with this new Frag
 	circularized = f.end > a.frags[0].start+targetLength
@@ -229,14 +229,12 @@ func (a *assembly) duplicates(nodes []*Frag, min, max int) (isDup bool, first, s
 
 // createAssemblies builds up circular assemblies (unfilled lists of fragments that should be combinable)
 //
-// maxNodes is the maximum number of fragments in a single assembly
-// target is the target sequence we're trying to createAssemblies up
-//
 // It is created by traversing a DAG in forward order:
-// 	foreach thisFragment (sorted in increasing start index order):
-// 	  foreach otherFragment that thisFragment overlaps with + reachSynthCount more:
-//	 	foreach assembly on thisFragment:
-//    	    add otherFragment to the assembly to create a new assembly, store on otherFragment
+//
+// foreach fragment (sorted in increasing start index order):
+//   foreach otherFragment that fragment overlaps with + reachSynthCount more:
+//	   foreach assembly on fragment:
+//       add otherFragment to the assembly to create a new assembly, store on otherFragment
 func createAssemblies(frags []*Frag, targetLength int, conf *config.Config) (assemblies []assembly) {
 	// number of additional frags try synthesizing to, in addition to those that
 	// already have enough homology for overlap without any modifications for each Frag
@@ -265,22 +263,17 @@ func createAssemblies(frags []*Frag, targetLength int, conf *config.Config) (ass
 		}
 	}
 
-	reachC := int(math.Max(5, 0.05*float64(len(frags)))) // 5 of 5%, whichever is greater
-	// for every Frag in the list of increasing start index frags
-	for i, f := range frags {
-		// for every overlapping fragment + reachC more
-		for _, j := range f.reach(frags, i, reachC) {
-			// for every assembly on the reaching fragment
-			for _, a := range f.assemblies {
+	reachC := int(math.Max(5, 0.05*float64(len(frags)))) // 5 or 5%, whichever is greater
+	for i, f := range frags {                            // for every Frag in the list of increasing start index frags
+		for _, j := range f.reach(frags, i, reachC) { // for every overlapping fragment + reachC more
+			for _, a := range f.assemblies { // for every assembly on the reaching fragment
 				newAssembly, created, circularized := a.add(frags[j], maxNodes, targetLength)
 
-				// if a new assembly wasn't created, move on
-				if !created {
+				if !created { // if a new assembly wasn't created, move on
 					continue
 				}
 
-				if circularized {
-					// we've circularized a plasmid assembly, it's ready for filling
+				if circularized { // we've circularized a vector, it's ready for filling
 					assemblies = append(assemblies, newAssembly)
 				} else {
 					// add to the other fragment's list of assemblies
@@ -302,14 +295,10 @@ func createAssemblies(frags []*Frag, targetLength int, conf *config.Config) (ass
 func groupAssembliesByCount(assemblies []assembly) ([]int, map[int][]assembly) {
 	countToAssemblies := make(map[int][]assembly)
 	for _, a := range assemblies {
-		// The "-1"s here are because the assemblies are circular and
-		// their last Frag is the same as the first. The total number
-		// of nodes/fragments in the assembly is actually one less than
-		// the assembly's length
-		if as, ok := countToAssemblies[a.len()-1]; ok {
-			countToAssemblies[a.len()-1] = append(as, a)
+		if as, ok := countToAssemblies[a.len()]; ok {
+			countToAssemblies[a.len()] = append(as, a)
 		} else {
-			countToAssemblies[a.len()-1] = []assembly{a}
+			countToAssemblies[a.len()] = []assembly{a}
 		}
 	}
 
@@ -346,25 +335,17 @@ func fillSolutions(target string, counts []int, countToAssemblies map[int][]asse
 
 			filledFragments, err := assemblyToFill.fill(target, conf)
 			if err != nil || filledFragments == nil {
-				// write the console for debugging, continue looking
-				// logger.Println(assemblyToFill.log(), "error", err.Error())
 				continue
 			}
-			// fmt.Println(assemblyToFill.log(), fragsCost(filledFragments))
 
-			// if a Frag in the assembly fails to be prepared,
-			// remove all assemblies with the Frag and try again
 			newAssemblyCost := fragsCost(filledFragments)
 
 			if newAssemblyCost >= minCostAssembly {
 				continue // wasn't actually cheaper, keep trying
 			}
 
-			// store this as the new cheapest assembly
-			minCostAssembly = newAssemblyCost
-
-			// set this is as the new cheapest of this length
-			filled[len(filledFragments)] = filledFragments
+			minCostAssembly = newAssemblyCost              // store this as the new cheapest assembly
+			filled[len(filledFragments)] = filledFragments // set this is as the new cheapest of this length
 
 			// delete all assemblies with more fragments that cost more
 			for filledCount, existingFilledFragments := range filled {
@@ -378,8 +359,7 @@ func fillSolutions(target string, counts []int, countToAssemblies map[int][]asse
 				}
 			}
 
-			// don't look at other possible assemblies, assume this will be the cheapest of this length
-			break
+			break // assume this will be the cheapest of this length
 		}
 	}
 

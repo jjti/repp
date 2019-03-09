@@ -9,7 +9,7 @@ def read_features():
     """read all SnapGene features from all feature collections
     
     Returns:
-        dict -- key = feature name, value = feature seq
+        dict[str, str] -- key = feature name, value = feature seq
     """
 
     os.chdir(os.path.join("..", "assets", "snapgene"))
@@ -24,11 +24,6 @@ def read_features():
     failures = []
     features = {}
     for file in feat_files:
-        # with io.open(file, "r+", encoding="utf8", errors="replace") as f:
-        #     data = f.read()
-        #     f.seek(0)
-        #     f.write(data)
-        #     f.truncate()
 
         with open(file, "rb") as snapgene_file:
             try:

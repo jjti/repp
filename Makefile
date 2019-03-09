@@ -76,9 +76,9 @@ uninstall:
 test:
 	go test ./internal/defrag
 
-test_e2e:
+e2e:
 	go test ./internal/defrag -tags=e2e
 
-test_all: test test_e2e
+test_all: test e2e
 
 .PHONY: test
