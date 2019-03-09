@@ -10,8 +10,7 @@ var findCmd = &cobra.Command{
 	Use:                        "find [feature,enzyme]",
 	Short:                      "Find features or enzymes",
 	SuggestionsMinimumDistance: 2,
-	Long: `
-Find features or enzymes by name.
+	Long: `Find features or enzymes by name.
 If there is no exact match, similar entries are returned`,
 	Aliases: []string{"ls", "list"},
 }
@@ -23,8 +22,7 @@ var featureFindCmd = &cobra.Command{
 	Run:                        featureDB.ReadCmd,
 	SuggestionsMinimumDistance: 2,
 	Example:                    "  defrag features find terminator",
-	Long: `
-Find features in the features database that are similar to [name].
+	Long: `Find features in the features database that are similar to [name].
 Writes each feature to the stdout with their name and sequence.
 If multiple features contain the feature name sent, each are logged.
 Otherwise, all features with names similar to the feature name are writen to stdout`,
@@ -35,11 +33,10 @@ Otherwise, all features with names similar to the feature name are writen to std
 // a backbone. Useful for if the user doesn't know which enzymes are available.
 var enzymeFindCmd = &cobra.Command{
 	Use:                        "enzyme [name]",
-	Short:                      "Find enzymes available for linearizing backbones by name",
+	Short:                      "Find enzymes available for linearizing backbones",
 	Run:                        enzymeDB.ReadCmd,
 	SuggestionsMinimumDistance: 2,
-	Long: `
-Lists out all the enzymes with the same or a similar a similar name as the argument.
+	Long: `List out all the enzymes with the same or a similar a similar name as the argument.
 
 'defrag find enzyme' without any arguments logs all enzymes available.`,
 	Aliases: []string{"enzymes"},
@@ -48,11 +45,10 @@ Lists out all the enzymes with the same or a similar a similar name as the argum
 // fragmentFindCmd is for finding a fragment by its name
 var fragmentFindCmd = &cobra.Command{
 	Use:                        "fragment [name]",
-	Short:                      "Find a fragment from the databases",
+	Short:                      "Find a fragment in the databases",
 	Run:                        defrag.FragmentFindCmd,
 	SuggestionsMinimumDistance: 2,
-	Long: `
-Finds a fragment with a given name in the available databases.`,
+	Long:                       `Find a fragment with a given name in the available databases.`,
 }
 
 // set flags

@@ -9,9 +9,8 @@ var deleteCmd = &cobra.Command{
 	Use:                        "delete [feature,enzyme]",
 	Short:                      "Delete a feature or enzyme",
 	SuggestionsMinimumDistance: 2,
-	Long: `
-Delete a feature or enzyme by name.`,
-	Aliases: []string{"rm", "remove"},
+	Long:                       `Delete a feature or enzyme by name.`,
+	Aliases:                    []string{"rm", "remove"},
 }
 
 // featuresDeleteCmd is for deleting features from the feature db
@@ -22,8 +21,7 @@ var featuresDeleteCmd = &cobra.Command{
 	SuggestionsMinimumDistance: 2,
 	Aliases:                    []string{"remove"},
 	Example:                    "  defrag delete feature \"T7 terminator\"",
-	Long: `
-Delete a feature from the features database by its name.
+	Long: `Delete a feature from the features database by its name.
 If no such feature name exists in the database, an error is logged to stderr.`,
 }
 

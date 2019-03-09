@@ -10,8 +10,7 @@ var setCmd = &cobra.Command{
 	Use:                        "set [feature,enzyme]",
 	Short:                      "Set a feature or enzyme",
 	SuggestionsMinimumDistance: 1,
-	Long: `
-Create/update a feature or enzyme with its name and sequence/recognition-site.
+	Long: `Create/update a feature or enzyme with its name and sequence/recognition-site.
 Set features can be passed to the 'defrag build features' command and enzymes can
 be passed to the --enzyme flag`,
 	Aliases: []string{"add", "update"},
