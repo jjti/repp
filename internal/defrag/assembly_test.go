@@ -301,9 +301,9 @@ func Test_countMaps(t *testing.T) {
 				assemblies: []assembly{a1, a2, a3, a4, a5},
 			},
 			map[int][]assembly{
-				1: []assembly{a1},
-				2: []assembly{a3, a2},
-				3: []assembly{a4, a5},
+				2: []assembly{a1},
+				3: []assembly{a3, a2},
+				4: []assembly{a4, a5},
 			},
 		},
 	}
