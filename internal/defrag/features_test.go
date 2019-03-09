@@ -1,7 +1,6 @@
 package defrag
 
 import (
-	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -14,46 +13,6 @@ func TestNewFeatureDB(t *testing.T) {
 
 	if len(db.features) < 1 {
 		t.Fail()
-	}
-}
-
-func Test_features(t *testing.T) {
-	test1, conf := NewFlags(
-		"p10 promoter, mEGFP, T7 terminator",
-		filepath.Join("..", "..", "test", "output", "features.json"),
-		"pSB1A3",
-		"EcoRI",
-		"",
-		[]string{},
-		true,
-		true,
-		false,
-	)
-
-	type args struct {
-		flags *Flags
-		conf  *config.Config
-	}
-	tests := []struct {
-		name string
-		args args
-	}{
-		{
-			"test end to end features creation",
-			args{
-				flags: test1,
-				conf:  conf,
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			sols := Features(tt.args.flags, tt.args.conf)
-
-			for _, s := range sols {
-				ValidateJunctions(tt.name, s, conf, t)
-			}
-		})
 	}
 }
 
