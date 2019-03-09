@@ -1,5 +1,4 @@
-// Package config is for app wide settings that are unmarshalled
-// from Viper (see: /cmd)
+// Package config is for app wide settings
 package config
 
 import (

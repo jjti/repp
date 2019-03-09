@@ -1,5 +1,3 @@
-// Package config is for app wide settings that are unmarshalled
-// from Viper (see: /cmd)
 package config
 
 import (
@@ -8,7 +6,8 @@ import (
 
 func TestConfig_SynthCost(t *testing.T) {
 	type fields struct {
-		SynthesisCost map[int]SynthCost
+		SynthesisCost      map[int]SynthCost
+		SyntheticMaxLength int
 	}
 	type args struct {
 		fragLength int
@@ -29,6 +28,7 @@ func TestConfig_SynthCost(t *testing.T) {
 				Cost:  0.50,
 			},
 		},
+		SyntheticMaxLength: 10000,
 	}
 
 	tests := []struct {
@@ -66,6 +66,7 @@ func TestConfig_SynthCost(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			c := Config{
 				CostSyntheticFragment: tt.fields.SynthesisCost,
+				SyntheticMaxLength:    tt.fields.SyntheticMaxLength,
 			}
 			if got := c.SynthFragmentCost(tt.args.fragLength); got != tt.want {
 				t.Errorf("Config.SynthCost() = %v, want %v", got, tt.want)
