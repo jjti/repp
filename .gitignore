@@ -17,9 +17,6 @@ vendor/*/**
 # mac
 *.DS_Store
 
-# bins
-bin/**
-
 # ignore source files, too large
 assets/addgene/**
 assets/igem/**
