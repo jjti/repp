@@ -263,9 +263,9 @@ func createAssemblies(frags []*Frag, targetLength int, conf *config.Config) (ass
 		}
 	}
 
-	reachC := int(math.Max(5, 0.05*float64(len(frags)))) // 5 or 5%, whichever is greater
-	for i, f := range frags {                            // for every Frag in the list of increasing start index frags
-		for _, j := range f.reach(frags, i, reachC) { // for every overlapping fragment + reachC more
+	reach := int(math.Max(5, 0.05*float64(len(frags)))) // 5 or 5%, whichever is greater
+	for i, f := range frags {                           // for every Frag in the list of increasing start index frags
+		for _, j := range f.reach(frags, i, reach) { // for every overlapping fragment + reach more
 			for _, a := range f.assemblies { // for every assembly on the reaching fragment
 				newAssembly, created, circularized := a.add(frags[j], maxNodes, targetLength)
 
@@ -322,8 +322,6 @@ func fillSolutions(target string, counts []int, countToAssemblies map[int][]asse
 	// append a fully synthetic solution at first, nothing added should cost more than this (single vector)
 	filled := make(map[int][]*Frag)
 	minCostAssembly := math.MaxFloat64
-
-	fmt.Println(target)
 
 	for _, count := range counts {
 		for _, assemblyToFill := range countToAssemblies[count] {

@@ -55,7 +55,7 @@ func Test_BLAST(t *testing.T) {
 
 // test that we can filter out overlapping regions from blast results
 // and those that are up against the edge of the fragment
-func Test_filter(t *testing.T) {
+func Test_cull(t *testing.T) {
 	// test fragment with 3 matches that should be removed
 	matches := []match{
 		// shouldn't be removed
@@ -84,7 +84,7 @@ func Test_filter(t *testing.T) {
 		},
 	}
 
-	newMatches := filter(matches, 72, 3) // keep all fragments larger than 3bp (all of them)
+	newMatches := cull(matches, 72, 3)
 
 	// make sure m2 has been removed
 	for _, m := range newMatches {

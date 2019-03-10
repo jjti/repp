@@ -509,7 +509,7 @@ func mutatePrimers(f *Frag, seq string, addLeft, addRight int) (mutated *Frag) {
 	// add bp to the right/REV primer to match the fragment to the right
 	if addRight > 0 {
 		oldEnd := f.Primers[1].Range.end + sl
-		f.Primers[1].Seq = revComp(template[oldEnd+1:oldEnd+addRight+1]) + f.Primers[1].Seq
+		f.Primers[1].Seq = reverseComplement(template[oldEnd+1:oldEnd+addRight+1]) + f.Primers[1].Seq
 		f.Primers[1].Range.end += addRight
 	}
 

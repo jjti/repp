@@ -362,19 +362,16 @@ func (b *blastExec) parse(filters []string) (matches []match, err error) {
 	return ms, nil
 }
 
-// filter "proper-izes" the matches from BLAST
+// culling removes matches that are engulfed in others
 //
-// TODO: filter further here, can remove external matches that are
-// entirely contained by internal matches but am not doing that here
-//
-// proper-izing fragment matches means removing those that are completely
+// culling fragment matches means removing those that are completely
 // self-contained in other fragments: the larger of the available fragments
 // will be the better one, since it covers a greater region and will almost
 // always be preferable to the smaller one
 //
 // also remove small fragments here that are too small to be useful during assembly
-func filter(matches []match, targetLength, minSize int) (properized []match) {
-	properized = []match{}
+func cull(matches []match, targetLength, minSize int) (culled []match) {
+	culled = []match{}
 
 	// remove fragments that are shorter the minimum cut off size
 	// separate the internal and external fragments. the internal
@@ -394,14 +391,14 @@ func filter(matches []match, targetLength, minSize int) (properized []match) {
 		}
 	}
 
-	// create properized matches (non-self contained)
-	properized = append(properize(internal), properize(external)...)
+	// create culled matches (non-self contained)
+	culled = append(properize(internal), properize(external)...)
 
-	// because we properized the matches, we may have removed a match from the
+	// because we culled the matches, we may have removed a match from the
 	// start or the end. right now, a match showing up twice in the vector
 	// is how we circularize, so have to add back matches to the start or end
 	matchCount := make(map[string]int)
-	for _, m := range properized {
+	for _, m := range culled {
 		if _, counted := matchCount[m.uniqueID]; counted {
 			matchCount[m.uniqueID]++
 		} else {
@@ -411,7 +408,7 @@ func filter(matches []match, targetLength, minSize int) (properized []match) {
 
 	// add back copied matches for those that only show up once but should cross the zero index
 	var copiedMatches []match
-	for _, m := range properized {
+	for _, m := range culled {
 		if count := matchCount[m.uniqueID]; count >= 2 {
 			continue
 		}
@@ -431,21 +428,21 @@ func filter(matches []match, targetLength, minSize int) (properized []match) {
 	}
 
 	// sort again now that we added copied matches
-	properized = append(properized, copiedMatches...)
-	sortMatches(properized)
+	culled = append(culled, copiedMatches...)
+	sortMatches(culled)
 
-	return properized
+	return culled
 }
 
 // properize remove matches that are entirely contained within others
-func properize(matches []match) (properized []match) {
+func properize(matches []match) (culled []match) {
 	sortMatches(matches)
 
 	// only include those that aren't encompassed by the one before it
 	for _, m := range matches {
-		lastMatch := len(properized) - 1
-		if lastMatch < 0 || m.queryEnd > properized[lastMatch].queryEnd {
-			properized = append(properized, m)
+		lastMatch := len(culled) - 1
+		if lastMatch < 0 || m.queryEnd > culled[lastMatch].queryEnd {
+			culled = append(culled, m)
 		}
 	}
 

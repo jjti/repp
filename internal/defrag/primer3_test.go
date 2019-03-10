@@ -303,7 +303,7 @@ func Test_mutateNodePrimers(t *testing.T) {
 	}
 }
 
-func Test_revComp(t *testing.T) {
+func Test_reverseComplement(t *testing.T) {
 	type args struct {
 		seq string
 	}
@@ -322,7 +322,7 @@ func Test_revComp(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := revComp(tt.args.seq); got != tt.want {
+			if got := reverseComplement(tt.args.seq); got != tt.want {
 				t.Errorf("revComp() = %v, want %v", got, tt.want)
 			}
 		})

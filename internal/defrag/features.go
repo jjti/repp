@@ -96,13 +96,13 @@ func queryFeatures(flags *Flags) ([][]string, []string) {
 			if seq, contained := featureDB.features[f]; contained {
 				if !fwd {
 					f = f + ":REV"
-					seq = revComp(seq)
+					seq = reverseComplement(seq)
 				}
 				insertFeats = append(insertFeats, []string{f, seq})
 			} else if dbFrag, err := queryDatabases(f, flags.dbs); err == nil {
 				f = strings.Replace(f, ":", "|", -1)
 				if !fwd {
-					dbFrag.Seq = revComp(dbFrag.Seq)
+					dbFrag.Seq = reverseComplement(dbFrag.Seq)
 				}
 				insertFeats = append(insertFeats, []string{f, dbFrag.Seq})
 			} else {
@@ -190,7 +190,7 @@ func featureSolutions(feats [][]string, fragToMatches map[string][]featureMatch,
 	}
 
 	// filter out matches that are completely contained in others or too short
-	accMatches = filter(accMatches, len(feats), conf.PCRMinLength)
+	accMatches = cull(accMatches, len(feats), conf.PCRMinLength)
 
 	if conf.Verbose {
 		fmt.Printf("%d matches after filtering\n", len(accMatches))
@@ -217,7 +217,7 @@ func featureSolutions(feats [][]string, fragToMatches map[string][]featureMatch,
 		frag.uniqueID = m.uniqueID
 		frag.Seq = (frag.Seq + frag.Seq)[m.subjectStart : m.subjectEnd+1]
 		if !m.forward {
-			frag.Seq = revComp(frag.Seq)
+			frag.Seq = reverseComplement(frag.Seq)
 		}
 		frag.conf = conf
 
