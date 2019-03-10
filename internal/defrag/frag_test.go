@@ -697,8 +697,8 @@ func Test_setPrimers(t *testing.T) {
 					t.Errorf("setPrimers() FWD primer not contained in the args's Seq: %s", primer.Seq)
 				}
 
-				if !primer.Strand && !strings.Contains(strings.ToUpper(tt.args.Seq), revComp(primer.Seq)) {
-					t.Errorf("setPrimers() REV primer not contained in the args's Seq: %s", revComp(primer.Seq))
+				if !primer.Strand && !strings.Contains(strings.ToUpper(tt.args.Seq), reverseComplement(primer.Seq)) {
+					t.Errorf("setPrimers() REV primer not contained in the args's Seq: %s", reverseComplement(primer.Seq))
 				}
 
 				if primer.Strand && primer.Seq != tt.wantPrimers[0] {

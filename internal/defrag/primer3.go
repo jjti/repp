@@ -427,8 +427,8 @@ func hairpin(seq string, conf *config.Config) (melt float64) {
 	return temp
 }
 
-// revComp returns the reverse complement of a template sequence
-func revComp(seq string) string {
+// reverseComplement returns the reverse complement of a template sequence
+func reverseComplement(seq string) string {
 	seq = strings.ToUpper(seq)
 
 	revCompMap := map[rune]byte{

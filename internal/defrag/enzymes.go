@@ -67,7 +67,7 @@ func digest(frag *Frag, enz enzyme) (digested *Frag, err error) {
 	// turn recognition site (with ambigous bps) into a recognition seq
 	reg := regexp.MustCompile(recogRegex(enz.recog))
 	seq := frag.Seq + frag.Seq[0:wrappedBp]
-	revCompSeq := revComp(frag.Seq) + revComp(frag.Seq[0:wrappedBp])
+	revCompSeq := reverseComplement(frag.Seq) + reverseComplement(frag.Seq[0:wrappedBp])
 
 	// positive if template strand has overhang
 	// negative if rev comp strand has overhang
