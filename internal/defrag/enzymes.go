@@ -17,9 +17,28 @@ import (
 // enzyme is a single enzyme that can be used to linearize a backbone before
 // inserting a sequence.
 type enzyme struct {
+	name         string
 	recog        string
 	seqCutIndex  int
 	compCutIndex int
+}
+
+// Backbone is for information on a linearized backbone in the output payload
+type Backbone struct {
+	// URL of the backbone fragment's source
+	URL string `json:"url"`
+
+	// Seq is the sequence of the backbone (unlinearized)
+	Seq string `json:"seq"`
+
+	// Enzyme is the name of the enzyme used to linearize the backbone
+	Enzyme string `json:"enzyme"`
+
+	// RecognitionIndex is the index of the first bp of the recognition sequence
+	RecognitionIndex int `json:"recognitionIndex"`
+
+	// Forward if on the top strand, false if on the reverse complement strand
+	Forward bool `json:"forward"`
 }
 
 // parses a recognition sequence into a hangInd, cutInd for overhang calculation.
@@ -48,10 +67,10 @@ func newEnzyme(recogSeq string) enzyme {
 // remove the 5' end of the fragment post-cleaving. it will be degraded.
 // keep exposed 3' ends. good visual explanation:
 // https://warwick.ac.uk/study/csde/gsp/eportfolio/directory/pg/lsujcw/gibsonguide/
-func digest(frag *Frag, enz enzyme) (digested *Frag, err error) {
+func digest(frag *Frag, enz enzyme) (digested *Frag, backbone *Backbone, err error) {
 	wrappedBp := 38 // largest current recognition site in the list of enzymes
 	if len(frag.Seq) < wrappedBp {
-		return &Frag{}, fmt.Errorf("%s is too short for digestion", frag.ID)
+		return &Frag{}, &Backbone{}, fmt.Errorf("%s is too short for digestion", frag.ID)
 	}
 
 	if frag.fragType == circular {
@@ -69,46 +88,54 @@ func digest(frag *Frag, enz enzyme) (digested *Frag, err error) {
 	seq := frag.Seq + frag.Seq[0:wrappedBp]
 	revCompSeq := reverseComplement(frag.Seq) + reverseComplement(frag.Seq[0:wrappedBp])
 
-	// positive if template strand has overhang
+	// positive if seq strand has overhang
 	// negative if rev comp strand has overhang
-	templateOverhangLength := enz.seqCutIndex - enz.compCutIndex
-	cutIndex := -1
+	overhangLength := enz.seqCutIndex - enz.compCutIndex
+	recogIndex := -1
 	digestedSeq := ""
+	fwd := true
 	if reg.MatchString(seq) {
-		// template
-		cutIndex = reg.FindStringIndex(seq)[0] // first int is the start of match
-	}
-	if reg.MatchString(revCompSeq) {
+		recogIndex = reg.FindStringIndex(seq)[0] // first int is the start of match
+	} else if reg.MatchString(revCompSeq) {
 		// reverse complement
 		revCutIndex := reg.FindStringIndex(revCompSeq)[0]
 		revCutIndex = len(frag.Seq) - revCutIndex - len(enz.recog) // flip it to account for being on rev comp
 		revCutIndex = (revCutIndex + len(frag.Seq)) % len(frag.Seq)
-		if revCutIndex >= 0 && (revCutIndex < cutIndex || cutIndex < 0) {
-			cutIndex = revCutIndex // take whichever occurs sooner in the sequence
+		if revCutIndex >= 0 && (revCutIndex < recogIndex || recogIndex < 0) {
+			recogIndex = revCutIndex // take whichever occurs sooner in the sequence
+			fwd = false
 		}
 	}
-	if cutIndex == -1 {
+	if recogIndex == -1 {
 		// no valid cutsites in the sequence
-		return &Frag{}, fmt.Errorf("no %s cutsites found in %s", enz.recog, frag.ID)
+		return &Frag{}, &Backbone{}, fmt.Errorf("no %s cutsites found in %s", enz.recog, frag.ID)
 	}
 
-	if templateOverhangLength >= 0 {
-		cutIndex = (cutIndex + enz.seqCutIndex) % len(frag.Seq)
+	if overhangLength >= 0 {
+		cutIndex := (recogIndex + enz.seqCutIndex) % len(frag.Seq)
 		digestedSeq = frag.Seq[cutIndex:] + frag.Seq[:cutIndex]
 	} else {
-		bottomIndex := (cutIndex + enz.seqCutIndex) % len(frag.Seq)
-		topIndex := (cutIndex + enz.compCutIndex) % len(frag.Seq)
+		bottomIndex := (recogIndex + enz.seqCutIndex) % len(frag.Seq)
+		topIndex := (recogIndex + enz.compCutIndex) % len(frag.Seq)
 		digestedSeq = frag.Seq[topIndex:] + frag.Seq[:bottomIndex]
 	}
 
 	return &Frag{
-		ID:  frag.ID,
-		Seq: digestedSeq,
-	}, nil
+			ID:  frag.ID,
+			Seq: digestedSeq,
+		},
+		&Backbone{
+			URL:              parseURL(frag.ID, frag.db),
+			Seq:              frag.Seq,
+			Enzyme:           enz.name,
+			RecognitionIndex: recogIndex,
+			Forward:          fwd,
+		},
+		nil
 }
 
 // recogRegex turns a recognition sequence into a regex sequence for searching
-// sequence for searching the template sequence for digestion sites.
+// sequence for searching the sequence for digestion sites.
 func recogRegex(recog string) (decoded string) {
 	regexDecode := map[rune]string{
 		'A': "A",
@@ -190,7 +217,7 @@ func (f *EnzymeDB) ReadCmd(cmd *cobra.Command, args []string) {
 
 	name := args[0]
 
-	// if there's an exact match, just long that one
+	// if there's an exact match, just log that one
 	if seq, exists := f.enzymes[name]; exists {
 		fmt.Printf("%s	%s\n", name, seq)
 		return

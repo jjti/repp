@@ -90,7 +90,7 @@ func (p *primer3) input(minHomology, maxHomology, maxEmbedLength, minLength int)
 	// determine whether we need to add additional bp to the primers. if there's too much to
 	// add, or if we're adding largely different amounts to the FWD and REV primer, we set
 	// the number of bp to add as bpAddLeft and bpAddRight and do so after creating primers
-	// that anneal to the template
+	// that anneal to the seq
 	primerDiff := math.Abs(float64(addLeft - addRight))
 	if primerDiff > 5 {
 		// if one sides has a lot to add but the other doesn't, don't increase
@@ -101,7 +101,7 @@ func (p *primer3) input(minHomology, maxHomology, maxEmbedLength, minLength int)
 		growPrimers = 0
 	} else if growPrimers > 36-26 {
 		// we can't exceed 36 bp here (primer3 upper-limit), just create primers for the portion that
-		// anneals to the template and add the other portion/seqs on later (in mutateNodePrimers)
+		// anneals to the seq and add the other portion/seqs on later (in mutateNodePrimers)
 		bpAddLeft = addLeft
 		bpAddRight = addRight
 		growPrimers = 0
@@ -427,7 +427,7 @@ func hairpin(seq string, conf *config.Config) (melt float64) {
 	return temp
 }
 
-// reverseComplement returns the reverse complement of a template sequence
+// reverseComplement returns the reverse complement of a sequence
 func reverseComplement(seq string) string {
 	seq = strings.ToUpper(seq)
 

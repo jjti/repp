@@ -45,6 +45,7 @@ func Test_digest(t *testing.T) {
 		name         string
 		args         args
 		wantDigested *Frag
+		wantBackbone *Backbone
 		wantErr      bool
 	}{
 		{
@@ -56,23 +57,30 @@ func Test_digest(t *testing.T) {
 				enzyme{recog: "GAATTC", compCutIndex: 5, seqCutIndex: 1},
 			},
 			&Frag{},
+			&Backbone{},
 			true,
 		},
 		{
-			"digest in template sequence, no overhang",
+			"digest in sequence no overhang",
 			args{
 				&Frag{
 					Seq: "ATGAGGTTAGCCAAAAAAGCACGTGAATTCGGTGGCGCCCACCGACTGTTCCCAAACTGTAGCTCTTCGTTCCGTCAAGGCCCGACTTTCATCGCGGCCCATTCCA",
 				},
-				enzyme{recog: "GAATTC", compCutIndex: 3, seqCutIndex: 3},
+				enzyme{name: "TEST", recog: "GAATTC", compCutIndex: 3, seqCutIndex: 3},
 			},
 			&Frag{
 				Seq: "TTCGGTGGCGCCCACCGACTGTTCCCAAACTGTAGCTCTTCGTTCCGTCAAGGCCCGACTTTCATCGCGGCCCATTCCAATGAGGTTAGCCAAAAAAGCACGTGAA",
 			},
+			&Backbone{
+				Seq:              "ATGAGGTTAGCCAAAAAAGCACGTGAATTCGGTGGCGCCCACCGACTGTTCCCAAACTGTAGCTCTTCGTTCCGTCAAGGCCCGACTTTCATCGCGGCCCATTCCA",
+				Enzyme:           "TEST",
+				RecognitionIndex: 24,
+				Forward:          true,
+			},
 			false,
 		},
 		{
-			"digest in reverse complement sequence, no overhang",
+			"digest in reverse complement sequence no overhang",
 			args{
 				&Frag{
 					Seq: "ATGAGGTTAGCCAAAAAAGCACGCTGGGGGTGGCGCCCACCGACTGTTCCCAAACTGTAGCTCTTCGTTCCGTCAAGGCCCGACTTTCATCGCGGCCCATTCCA",
@@ -82,10 +90,15 @@ func Test_digest(t *testing.T) {
 			&Frag{
 				Seq: "GGGGGTGGCGCCCACCGACTGTTCCCAAACTGTAGCTCTTCGTTCCGTCAAGGCCCGACTTTCATCGCGGCCCATTCCAATGAGGTTAGCCAAAAAAGCACGCT",
 			},
+			&Backbone{
+				Seq:              "ATGAGGTTAGCCAAAAAAGCACGCTGGGGGTGGCGCCCACCGACTGTTCCCAAACTGTAGCTCTTCGTTCCGTCAAGGCCCGACTTTCATCGCGGCCCATTCCA",
+				RecognitionIndex: 22,
+				Forward:          false,
+			},
 			false,
 		},
 		{
-			"digest in template sequence, positive overhang",
+			"digest in sequence positive overhang",
 			args{
 				&Frag{
 					Seq: "ATGAGGTTAGCCAAAAAAGCACGTGAATTCGGTGGCGCCCACCGACTGTTCCCAAACTGTAGCTCTTCGTTCCGTCAAGGCCCGACTTTCATCGCGGCCCATTCCA",
@@ -95,10 +108,15 @@ func Test_digest(t *testing.T) {
 			&Frag{
 				Seq: "CGGTGGCGCCCACCGACTGTTCCCAAACTGTAGCTCTTCGTTCCGTCAAGGCCCGACTTTCATCGCGGCCCATTCCAATGAGGTTAGCCAAAAAAGCACGTGAATT",
 			},
+			&Backbone{
+				Seq:              "ATGAGGTTAGCCAAAAAAGCACGTGAATTCGGTGGCGCCCACCGACTGTTCCCAAACTGTAGCTCTTCGTTCCGTCAAGGCCCGACTTTCATCGCGGCCCATTCCA",
+				RecognitionIndex: 24,
+				Forward:          true,
+			},
 			false,
 		},
 		{
-			"digest in template sequence, negative overhang",
+			"digest in sequence, negative overhang",
 			args{
 				&Frag{
 					Seq: "ATGAGGTTAGCCAAAAAAGCACGTGAATTCGGTGGCGCCCACCGACTGTTCCCAAACTGTAGCTCTTCGTTCCGTCAAGGCCCGACTTTCATCGCGGCCCATTCCA",
@@ -107,6 +125,11 @@ func Test_digest(t *testing.T) {
 			},
 			&Frag{
 				Seq: "CGGTGGCGCCCACCGACTGTTCCCAAACTGTAGCTCTTCGTTCCGTCAAGGCCCGACTTTCATCGCGGCCCATTCCAATGAGGTTAGCCAAAAAAGCACGTG",
+			},
+			&Backbone{
+				Seq:              "ATGAGGTTAGCCAAAAAAGCACGTGAATTCGGTGGCGCCCACCGACTGTTCCCAAACTGTAGCTCTTCGTTCCGTCAAGGCCCGACTTTCATCGCGGCCCATTCCA",
+				RecognitionIndex: 24,
+				Forward:          true,
 			},
 			false,
 		},
@@ -121,6 +144,11 @@ func Test_digest(t *testing.T) {
 			&Frag{
 				Seq: "GGGTGGCGCCCACCGACTGTTCCCAAACTGTAGCTCTTCGTTCCGTCAAGGCCCGACTTTCATCGCGGCCCATTCCAATGAGGTTAGCCAAAAAAGCACGTGCTGG",
 			},
+			&Backbone{
+				Seq:              "ATGAGGTTAGCCAAAAAAGCACGTGCTGGGGGTGGCGCCCACCGACTGTTCCCAAACTGTAGCTCTTCGTTCCGTCAAGGCCCGACTTTCATCGCGGCCCATTCCA",
+				RecognitionIndex: 24,
+				Forward:          false,
+			},
 			false,
 		},
 		{
@@ -134,12 +162,17 @@ func Test_digest(t *testing.T) {
 			&Frag{
 				Seq: "GGGTGGCGCCCACCGACTGTTCCCAAACTGTAGCTCTTCGTTCCGTCAAGGCCCGACTTTCATCGCGGCCCATTCCAATGAGGTTAGCCAAAAAAGCACGTG",
 			},
+			&Backbone{
+				Seq:              "ATGAGGTTAGCCAAAAAAGCACGTGCTGGGGGTGGCGCCCACCGACTGTTCCCAAACTGTAGCTCTTCGTTCCGTCAAGGCCCGACTTTCATCGCGGCCCATTCCA",
+				RecognitionIndex: 24,
+				Forward:          false,
+			},
 			false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotDigested, err := digest(tt.args.frag, tt.args.enz)
+			gotDigested, gotBackbone, err := digest(tt.args.frag, tt.args.enz)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("digest() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -147,6 +180,10 @@ func Test_digest(t *testing.T) {
 
 			if !reflect.DeepEqual(gotDigested, tt.wantDigested) {
 				t.Errorf("digest() = %v, want %v", gotDigested, tt.wantDigested)
+			}
+
+			if !reflect.DeepEqual(gotBackbone, tt.wantBackbone) {
+				t.Errorf("digest() = %v, want %v", gotBackbone, tt.wantBackbone)
 			}
 		})
 	}
