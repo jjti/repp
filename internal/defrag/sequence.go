@@ -9,12 +9,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// SequenceCmd takes a cobra command (with its flags) and runs Vector
+// SequenceCmd takes a cobra command (with its flags) and runs Vector.
 func SequenceCmd(cmd *cobra.Command, args []string) {
 	Sequence(parseCmdFlags(cmd, args, true))
 }
 
-// Sequence is for running an end to end vector design using a target sequence
+// Sequence is for running an end to end vector design using a target sequence.
 func Sequence(flags *Flags, conf *config.Config) [][]*Frag {
 	start := time.Now()
 
@@ -31,8 +31,9 @@ func Sequence(flags *Flags, conf *config.Config) [][]*Frag {
 		target.Seq,
 		solutions,
 		len(insert.Seq),
-		conf,
 		elapsed.Seconds(),
+		flags.backboneMeta,
+		conf,
 	)
 	if err != nil {
 		stderr.Fatalln(err)

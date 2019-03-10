@@ -327,15 +327,15 @@ func (b *blastExec) parse(filters []string) (matches []match, err error) {
 
 		// filter on titles
 		matchesFilter := false
-		search := strings.ToUpper(entry + " " + titles)
+		titles += entry
 		for _, f := range filters {
-			if strings.Contains(search, f) {
+			if strings.Contains(titles, f) {
 				matchesFilter = true
 				break
 			}
 		}
 		if matchesFilter {
-			continue // has been filtered out because of "filter" CLI flag
+			continue // has been filtered out because of the "exclude" CLI flag
 		}
 
 		// get a unique identifier to distinguish this match/fragment from the others
@@ -354,7 +354,7 @@ func (b *blastExec) parse(filters []string) (matches []match, err error) {
 			mismatching:  mismatching + gaps,
 			internal:     b.internal,
 			db:           b.db, // store for checking off-targets later
-			title:        search,
+			title:        titles,
 			forward:      forward,
 		})
 	}

@@ -53,7 +53,16 @@ func Features(flags *Flags, conf *config.Config) [][]*Frag {
 	for _, f := range insertFeats {
 		insertLength += len(f[1])
 	}
-	writeJSON(flags.out, flags.in, target, solutions, insertLength, conf, time.Since(start).Seconds())
+	writeJSON(
+		flags.out,
+		flags.in,
+		target,
+		solutions,
+		insertLength,
+		time.Since(start).Seconds(),
+		flags.backboneMeta,
+		conf,
+	)
 
 	return solutions
 }

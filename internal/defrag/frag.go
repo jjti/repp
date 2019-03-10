@@ -87,10 +87,10 @@ type ranged struct {
 
 // Primer is a single Primer used to create a PCR fragment
 type Primer struct {
-	// Seq of the primer (In 5' to 3' direction)
+	// Seq of the primer (in 5' to 3' direction)
 	Seq string `json:"seq"`
 
-	// Strand of the primer; true if template, false if complement
+	// Strand of the primer; true if top strand, false if complement
 	Strand bool `json:"strand"`
 
 	// Penalty score
@@ -489,7 +489,7 @@ func (f *Frag) setPrimers(last, next *Frag, seq string, conf *config.Config) (er
 // returning Frag for testing
 func mutatePrimers(f *Frag, seq string, addLeft, addRight int) (mutated *Frag) {
 	sl := len(seq)
-	template := strings.ToUpper(seq + seq + seq)
+	seq = strings.ToUpper(seq + seq + seq)
 
 	// change the Frag's start and end index to match those of the start and end index
 	// of the primers, since the range may have shifted to get better primers
@@ -497,24 +497,24 @@ func mutatePrimers(f *Frag, seq string, addLeft, addRight int) (mutated *Frag) {
 	f.end = f.Primers[1].Range.end
 
 	// update fragment sequence
-	f.Seq = template[f.start+sl : f.end+sl+1]
+	f.Seq = seq[f.start+sl : f.end+sl+1]
 
 	// add bp to the left/FWD primer to match the fragment to the left
 	if addLeft > 0 {
 		oldStart := f.Primers[0].Range.start + sl
-		f.Primers[0].Seq = template[oldStart-addLeft:oldStart] + f.Primers[0].Seq
+		f.Primers[0].Seq = seq[oldStart-addLeft:oldStart] + f.Primers[0].Seq
 		f.Primers[0].Range.start -= addLeft
 	}
 
 	// add bp to the right/REV primer to match the fragment to the right
 	if addRight > 0 {
 		oldEnd := f.Primers[1].Range.end + sl
-		f.Primers[1].Seq = reverseComplement(template[oldEnd+1:oldEnd+addRight+1]) + f.Primers[1].Seq
+		f.Primers[1].Seq = reverseComplement(seq[oldEnd+1:oldEnd+addRight+1]) + f.Primers[1].Seq
 		f.Primers[1].Range.end += addRight
 	}
 
 	// update fragment sequence
-	f.PCRSeq = template[f.Primers[0].Range.start+sl : f.Primers[1].Range.end+sl+1]
+	f.PCRSeq = seq[f.Primers[0].Range.start+sl : f.Primers[1].Range.end+sl+1]
 
 	return f
 }

@@ -57,6 +57,9 @@ type Output struct {
 
 	// Solutions builds
 	Solutions []Solution `json:"solutions"`
+
+	// Backbone is the user linearized a backbone fragment
+	Backbone *Backbone `json:"backbone,omitempty"`
 }
 
 // Flags conatins parsed cobra Flags like "in", "out", "dbs", etc that are used by multiple commands.
@@ -73,6 +76,9 @@ type Flags struct {
 	// the backbone (optional) to insert the pieces into
 	backbone *Frag
 
+	// backbone meta (name, enzyme used to cut it, cut index)
+	backboneMeta *Backbone
+
 	// slice of strings to weed out fragments from BLAST matches
 	filters []string
 
@@ -84,7 +90,9 @@ type Flags struct {
 type inputParser struct{}
 
 // NewFlags makes a new flags object manually. for testing.
-func NewFlags(in, out, backbone, enzymeName, filter string, dbs []string, addgene, igem, dnasu bool) (*Flags, *config.Config) {
+func NewFlags(
+	in, out, backbone, enzymeName, filter string,
+	dbs []string, addgene, igem, dnasu bool) (*Flags, *config.Config) {
 	c := config.New()
 
 	if addgene {
@@ -98,7 +106,7 @@ func NewFlags(in, out, backbone, enzymeName, filter string, dbs []string, addgen
 	}
 
 	p := inputParser{}
-	parsedBB, err := p.parseBackbone(backbone, enzymeName, dbs, c)
+	parsedBB, bbMeta, err := p.parseBackbone(backbone, enzymeName, dbs, c)
 	if err != nil {
 		stderr.Fatal(err)
 	}
@@ -108,12 +116,13 @@ func NewFlags(in, out, backbone, enzymeName, filter string, dbs []string, addgen
 	}
 
 	return &Flags{
-		in:       in,
-		out:      out,
-		dbs:      dbs,
-		backbone: parsedBB,
-		filters:  p.getFilters(filter),
-		identity: 100,
+		in:           in,
+		out:          out,
+		dbs:          dbs,
+		backbone:     parsedBB,
+		backboneMeta: bbMeta,
+		filters:      p.getFilters(filter),
+		identity:     100,
 	}, c
 }
 
@@ -199,7 +208,7 @@ func parseCmdFlags(cmd *cobra.Command, args []string, strict bool) (*Flags, *con
 	enzymeName, _ := cmd.Flags().GetString("enzyme")
 
 	// try to digest the backbone with the enzyme
-	fs.backbone, err = p.parseBackbone(backbone, enzymeName, fs.dbs, c)
+	fs.backbone, fs.backboneMeta, err = p.parseBackbone(backbone, enzymeName, fs.dbs, c)
 	if strict && err != nil {
 		stderr.Fatal(err)
 	}
@@ -311,31 +320,38 @@ func (p *inputParser) dbPaths(dbList string) (paths []string, err error) {
 
 // parseBackbone takes a backbone, referenced by its id, and an enzyme to cleave the
 // backbone, and returns the linearized backbone as a Frag.
-func (p *inputParser) parseBackbone(backbone, enzyme string, dbs []string, c *config.Config) (f *Frag, err error) {
+func (p *inputParser) parseBackbone(
+	bbName, enzyme string,
+	dbs []string,
+	c *config.Config,
+) (f *Frag, backbone *Backbone, err error) {
 	// if no backbone was specified, return an empty Frag
-	if backbone == "" {
-		return &Frag{}, nil
+	if bbName == "" {
+		return &Frag{}, &Backbone{}, nil
 	}
 
 	// try to digest the backbone with the enzyme
 	if enzyme == "" {
-		return &Frag{}, fmt.Errorf("backbone passed, %s, without an enzyme to digest it", backbone)
+		return &Frag{},
+			&Backbone{},
+			fmt.Errorf("backbone passed, %s, without an enzyme to digest it", bbName)
 	}
 
 	// confirm that the backbone exists in one of the dbs (or local fs) gather it as a Frag if it does
-	bbFrag, err := queryDatabases(backbone, dbs)
+	bbFrag, err := queryDatabases(bbName, dbs)
 	if err != nil {
-		return &Frag{}, err
+		return &Frag{}, &Backbone{}, err
 	}
 
 	// gather the enzyme by name, err if it's unknown
 	enz, err := p.getEnzyme(enzyme)
+	enz.name = enzyme
 	if err != nil {
-		return &Frag{}, err
+		return &Frag{}, &Backbone{}, err
 	}
 
-	if f, err = digest(bbFrag, enz); err != nil {
-		return &Frag{}, err
+	if f, backbone, err = digest(bbFrag, enz); err != nil {
+		return &Frag{}, &Backbone{}, err
 	}
 
 	return
@@ -380,11 +396,15 @@ func read(path string, feature bool) (fragments []*Frag, err error) {
 	file := string(dat)
 
 	path = strings.ToLower(path)
-	if strings.HasSuffix(path, "fa") || strings.HasSuffix(path, "fasta") || file[0] == '>' {
+	if strings.HasSuffix(path, "fa") ||
+		strings.HasSuffix(path, "fasta") ||
+		file[0] == '>' {
 		return readFasta(path, file)
 	}
 
-	if strings.HasSuffix(path, "gb") || strings.HasSuffix(path, "gbk") || strings.HasSuffix(path, "genbank") {
+	if strings.HasSuffix(path, "gb") ||
+		strings.HasSuffix(path, "gbk") ||
+		strings.HasSuffix(path, "genbank") {
 		return readGenbank(path, file, feature)
 	}
 
@@ -532,11 +552,16 @@ func writeJSON(
 	targetSeq string,
 	assemblies [][]*Frag,
 	insertSeqLength int,
+	seconds float64,
+	backbone *Backbone,
 	conf *config.Config,
-	seconds float64) (output []byte, err error) {
+) (output []byte, err error) {
 	// store save time, using same format as log.Println https://golang.org/pkg/log/#Println
 	t := time.Now() // https://gobyexample.com/time-formatting-parsing
-	time := fmt.Sprintf("%d/%02d/%02d %02d:%02d:%02d", t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
+	time := fmt.Sprintf(
+		"%d/%02d/%02d %02d:%02d:%02d",
+		t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second(),
+	)
 	roundCost := func(cost float64) (float64, error) {
 		return strconv.ParseFloat(fmt.Sprintf("%.2f", cost), 64)
 	}
@@ -615,6 +640,7 @@ func writeJSON(
 		TargetSeq:           strings.ToUpper(targetSeq),
 		Execution:           seconds,
 		Solutions:           solutions,
+		Backbone:            backbone,
 		VectorSynthesisCost: fullSynthCost,
 		InsertSynthesisCost: insertSynthCost,
 	}

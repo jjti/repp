@@ -44,7 +44,16 @@ func FragmentsCmd(cmd *cobra.Command, args []string) {
 	target, solution := fragments(frags, conf)
 
 	// write the single list of fragments as a possible solution to the output file
-	writeJSON(flags.out, target.ID, target.Seq, [][]*Frag{solution}, len(target.Seq), conf, 0)
+	writeJSON(
+		flags.out,
+		target.ID,
+		target.Seq,
+		[][]*Frag{solution},
+		len(target.Seq),
+		0,
+		flags.backboneMeta,
+		conf,
+	)
 }
 
 // fragments pieces together a list of fragments into a single vector
