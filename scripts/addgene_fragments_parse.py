@@ -76,7 +76,6 @@ def get_parts(log_composites=True):
                 )
             )
             sindex += 1
-    print(full_seq_count)
     return parts
 
 

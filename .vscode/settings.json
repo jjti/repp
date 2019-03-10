@@ -1,18 +1,7 @@
 {
   "code-runner.executorMap": {
-    "python": "python3",
-    "go": "/usr/local/go/bin/go test -timeout 30s $fullFileName"
+    "python": "python3"
   },
-  "files.exclude": {
-    "**/.git": true,
-    "**/.svn": true,
-    "**/.hg": true,
-    "**/CVS": true,
-    "**/.DS_Store": true,
-    "assets/addgene/repo": true
-  },
-  "git.ignoreLimitWarning": true,
   "go.useLanguageServer": true,
-  "python.formatting.provider": "black",
-  "python.pythonPath": "/usr/local/opt/python@2/bin/python2.7"
+  "python.formatting.provider": "black"
 }
