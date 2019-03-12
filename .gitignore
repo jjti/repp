@@ -1,6 +1,3 @@
-# Tools like primer3 and BLAST
-vendor/*/**
-
 # Binaries for programs and plugins
 *.exe
 *.exe~

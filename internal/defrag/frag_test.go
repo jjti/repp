@@ -716,3 +716,39 @@ func Test_setPrimers(t *testing.T) {
 		})
 	}
 }
+
+func Test_fragType_String(t *testing.T) {
+	tests := []struct {
+		name string
+		t    fragType
+		want string
+	}{
+		{
+			"existing fragType",
+			0,
+			"existing",
+		},
+		{
+			"circular fragType",
+			1,
+			"vector",
+		},
+		{
+			"pcr frag",
+			2,
+			"pcr",
+		},
+		{
+			"synthetic frag",
+			3,
+			"synthetic",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.t.String(); got != tt.want {
+				t.Errorf("fragType.String() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

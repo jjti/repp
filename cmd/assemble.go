@@ -55,6 +55,7 @@ var sequenceCmd = &cobra.Command{
 synthesized fragments.
 
 Solutions have either a minimum fragment count or assembly cost (or both).`,
+	Aliases: []string{"vector"},
 }
 
 // set flags
@@ -100,6 +101,7 @@ func init() {
 	assembleCmd.PersistentFlags().StringP("settings", "s", config.RootSettingsFile, "build settings")
 	assembleCmd.PersistentFlags().BoolP("verbose", "v", false, "whether to log results to stdout")
 	viper.BindPFlag("settings", assembleCmd.PersistentFlags().Lookup("settings"))
+	viper.BindPFlag("verbose", assembleCmd.PersistentFlags().Lookup("verbose"))
 
 	rootCmd.AddCommand(assembleCmd)
 }
