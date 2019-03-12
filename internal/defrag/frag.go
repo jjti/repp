@@ -474,6 +474,8 @@ func (f *Frag) setPrimers(last, next *Frag, seq string, conf *config.Config) (er
 		return err
 	}
 
+	f.fragType = pcr
+
 	os.Remove(psExec.in.Name()) // delete the temporary input and output files
 	os.Remove(psExec.out.Name())
 
@@ -521,7 +523,7 @@ func mutatePrimers(f *Frag, seq string, addLeft, addRight int) (mutated *Frag) {
 
 // ToString returns a string representation of a fragment's type
 func (t fragType) String() string {
-	return []string{"existing", "pcr", "synthetic", "vector"}[t]
+	return []string{"existing", "vector", "pcr", "synthetic"}[t]
 }
 
 // fragsCost returns the total cost of a slice of frags. Just the summation of their costs

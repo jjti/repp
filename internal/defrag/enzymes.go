@@ -38,7 +38,7 @@ type Backbone struct {
 	RecognitionIndex int `json:"recognitionIndex"`
 
 	// Forward if on the top strand, false if on the reverse complement strand
-	Forward bool `json:"forward"`
+	Forward bool `json:"strand"`
 }
 
 // parses a recognition sequence into a hangInd, cutInd for overhang calculation.

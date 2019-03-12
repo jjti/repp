@@ -1,21 +1,24 @@
 GOCMD=go
+
 APP=/usr/local/bin/defrag
-APPHOME=$${HOME}/.defrag
+APPDATA=$${HOME}/.defrag
+
 SETTINGS=./config/config.yaml
 TEMPSETTINGS=./config.temp.yaml
 PLATFORM:=$(shell uname)
 
 .PHONY: test
 
-ifeq ($(OS),Windows_NT)
+ifeq ($(PLATFORM),Windows_NT)
 	$(error "defrag" does not support Windows)
 endif
 
 install:
-	mkdir -p $(APPHOME)
+	mkdir -p $(APPDATA)
 	cp $(SETTINGS) $(TEMPSETTINGS)
 
 ifeq ($(PLATFORM),Linux)
+	apt-get update
 	apt-get install ncbi-blast+ primer3
 	echo "\nprimer3_config-path: /etc/primer3_config/" >> $(TEMPSETTINGS)
 	cp ./bin/linux $(APP)
@@ -34,13 +37,14 @@ endif
 	echo "\nprimer3_config-path: /usr/local/share/primer3/primer3_config/" >> $(TEMPSETTINGS)
 	cp ./bin/darwin $(APP)
 endif
-	mv $(TEMPSETTINGS) $(APPHOME)/config.yaml
 
-	cp -r ./assets/addgene/db/** $(APPHOME) 
-	cp -r ./assets/igem/db/** $(APPHOME)
-	cp -r ./assets/dnasu/db/** $(APPHOME)
-	cp ./assets/snapgene/features.tsv $(APPHOME)
-	cp ./assets/neb/enzymes.tsv $(APPHOME)
+	mv $(TEMPSETTINGS) $(APPDATA)/config.yaml
+
+	cp -r ./assets/addgene/db/** $(APPDATA) 
+	cp -r ./assets/igem/db/** $(APPDATA)
+	cp -r ./assets/dnasu/db/** $(APPDATA)
+	cp ./assets/snapgene/features.tsv $(APPDATA)
+	cp ./assets/neb/enzymes.tsv $(APPDATA)
 	
 build:
 	go get
@@ -50,9 +54,12 @@ build:
 dbs:
 	cd assets && sh makeblastdbs.sh
 
-uninstall:
+clean:
+	rm $(APPDATA)/*
+
+uninstall: clean
 	rm $(APP)
-	rm -rf $(APPHOME)
+	rm -rf $(APPDATA)
 
 test:
 	go test ./internal/defrag

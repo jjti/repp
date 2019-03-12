@@ -62,7 +62,7 @@ type Output struct {
 	Backbone *Backbone `json:"backbone,omitempty"`
 }
 
-// Flags conatins parsed cobra Flags like "in", "out", "dbs", etc that are used by multiple commands.
+// Flags contains parsed cobra Flags like "in", "out", "dbs", etc that are used by multiple commands.
 type Flags struct {
 	// the name of the file to write the input to
 	in string

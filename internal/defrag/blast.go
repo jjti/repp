@@ -122,7 +122,13 @@ func (m *match) copyWithQueryRange(start, end int) match {
 }
 
 // blast the seq against all dbs and acculate matches.
-func blast(name, seq string, circular bool, dbs, filters []string, identity int, tw *tabwriter.Writer) (matches []match, err error) {
+func blast(
+	name, seq string,
+	circular bool,
+	dbs, filters []string,
+	identity int,
+	tw *tabwriter.Writer,
+) (matches []match, err error) {
 	in, err := ioutil.TempFile(blastnDir, name+"in-*")
 	if err != nil {
 		return nil, err
@@ -218,7 +224,7 @@ func (b *blastExec) run() (err error) {
 		"-out", b.out.Name(),
 		"-outfmt", "7 sseqid qstart qend sstart send sseq mismatch gaps stitle",
 		"-perc_identity", fmt.Sprintf("%d", b.identity),
-		"-culling_limit", "5", // "If the query range of a hit is enveloped by that of at least this many higher-scoring hits, delete the hit"
+		"-culling_limit", "2", // "If the query range of a hit is enveloped by that of at least this many higher-scoring hits, delete the hit"
 		"-num_threads", strconv.Itoa(threads),
 		"-max_target_seqs", "500", // default is 500
 	}
@@ -328,6 +334,7 @@ func (b *blastExec) parse(filters []string) (matches []match, err error) {
 		// filter on titles
 		matchesFilter := false
 		titles += entry
+		titles = strings.ToUpper(titles)
 		for _, f := range filters {
 			if strings.Contains(titles, f) {
 				matchesFilter = true
