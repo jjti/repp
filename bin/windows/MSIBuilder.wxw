@@ -1,0 +1,55 @@
+<?xml version='1.0' encoding='windows-1252'?>
+<Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
+  <Product Name='Foobar 1.0' Id='863056C5-A7C5-4239-A9B7-0A3F986036CA' UpgradeCode='0348C0BD-600C-4AA4-AA21-5E4DDBDC4ADA'
+    Language='1033' Codepage='1252' Version='1.0.0' Manufacturer='jjtimmons.'>
+
+    <Package Id='*' Keywords='Installer' Description='Repository Based Vector Design' Manufacturer='jjtimmons.'
+      InstallerVersion='100' Languages='1033' Compressed='yes' SummaryCodepage='1252' />
+
+    <Directory Id='TARGETDIR' Name='SourceDir'>
+      <Directory Id='ProgramFilesFolder' Name='PFiles'>
+        <Directory Id='defrag' Name='defrag'>
+          <Directory Id='INSTALLDIR' Name='Defrag 1.0'>
+
+            <Component Id='MainExecutable' Guid='6325336A-06A5-47D0-A788-97D20698BB08'>
+              <File Id='defragEXE' Name='defrag.exe' DiskId='1' Source='defrag.exe' KeyPath='yes'>
+              </File>
+            </Component>
+
+            <Component Id='HelperLibrary' Guid='B434CA24-BB3B-4EAF-8577-E0026FDE7DE8'>
+              <File Id='HelperDLL' Name='Helper.dll' DiskId='1' Source='Helper.dll' KeyPath='yes' />
+            </Component>
+
+            <Component Id='Manual' Guid='96D60448-57FF-43F7-B6E6-E3DD699456DB'>
+              <File Id='Manual' Name='Manual.pdf' DiskId='1' Source='Manual.pdf' KeyPath='yes'>
+                <Shortcut Id="startmenuManual" Directory="ProgramMenuDir" Name="Instruction Manual" Advertise="yes" />
+              </File>
+            </Component>
+
+          </Directory>
+        </Directory>
+      </Directory>
+
+      <Directory Id="ProgramMenuFolder" Name="Programs">
+        <Directory Id="ProgramMenuDir" Defrag="Foobar 1.0">
+          <Component Id="ProgramMenuDir" Guid="0EE49776-70EB-4799-9F5B-CA61795C2049">
+            <RemoveFolder Id='ProgramMenuDir' On='uninstall' />
+            <RegistryValue Root='HKCU' Key='Software\[Manufacturer]\[ProductName]' Type='string' Value='' KeyPath='yes' />
+          </Component>
+        </Directory>
+      </Directory>
+
+      <Directory Id="DesktopFolder" Name="Desktop" />
+    </Directory>
+
+    <Feature Id='Complete' Level='1'>
+      <ComponentRef Id='MainExecutable' />
+      <ComponentRef Id='HelperLibrary' />
+      <ComponentRef Id='Manual' />
+      <ComponentRef Id='ProgramMenuDir' />
+    </Feature>
+
+    <Icon Id="Foobar10.exe" SourceFile="defrag.exe" />
+
+  </Product>
+</Wix>

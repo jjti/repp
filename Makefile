@@ -1,65 +1,69 @@
-GOCMD=go
-
-APP=/usr/local/bin/defrag
-APPDATA=$${HOME}/.defrag
+LOCAL_BIN=/usr/local/bin
+APP=$(LOCAL_BIN)/defrag
+APP_DATA=$${HOME}/.defrag
+PRIMER3_CONF=$(APP_DATA)/primer3_config/
 
 SETTINGS=./config/config.yaml
-TEMPSETTINGS=./config.temp.yaml
+TEMP_SETTINGS=./config.temp.yaml
+
 PLATFORM:=$(shell uname)
 
 .PHONY: test
 
 ifeq ($(PLATFORM),Windows_NT)
-	$(error "defrag" does not support Windows)
+	$(error Windows not supported via make)
 endif
 
 install:
-	mkdir -p $(APPDATA)
-	cp $(SETTINGS) $(TEMPSETTINGS)
+	mkdir -p $(APP_DATA)
 
+	# copy app and primer3 settings
+	cp $(SETTINGS) $(TEMP_SETTINGS)
+	echo primer3_config-path: $(PRIMER3_CONF) >> $(TEMP_SETTINGS)
+	mv $(TEMP_SETTINGS) $(APP_DATA)/config.yaml
+	cp -r ./vendor/primer3_config $(PRIMER3_CONF)
+
+	# copy DNA, feature, and enzyme databases
+	cp -r ./assets/addgene/db/** $(APP_DATA) 
+	cp -r ./assets/igem/db/** $(APP_DATA)
+	cp -r ./assets/dnasu/db/** $(APP_DATA)
+	cp ./assets/snapgene/features.tsv $(APP_DATA)
+	cp ./assets/neb/enzymes.tsv $(APP_DATA)
+
+	# copy binaries to /usr/local/bin
 ifeq ($(PLATFORM),Linux)
-	apt-get update
-	apt-get install ncbi-blast+ primer3
-	echo "\nprimer3_config-path: /etc/primer3_config/" >> $(TEMPSETTINGS)
 	cp ./bin/linux $(APP)
+	cp -n ./vendor/linux/blastn $(LOCAL_BIN) || true
+	cp -n ./vendor/linux/ntthal $(LOCAL_BIN) || true
+	cp -n ./vendor/linux/primer3_core $(LOCAL_BIN) || true
+	cp -n ./vendor/linux/blastdbcmd $(LOCAL_BIN) || true
 endif
 
 ifeq ($(PLATFORM),Darwin)
-ifeq (, $(shell which brew))
-	/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
-endif
-ifeq (, $(shell which blastn))
-	brew install blast
-endif
-ifeq (, $(shell which primer3_core))
-	brew install primer3
-endif
-	echo "\nprimer3_config-path: /usr/local/share/primer3/primer3_config/" >> $(TEMPSETTINGS)
 	cp ./bin/darwin $(APP)
+	cp -n ./vendor/darwin/blastn $(LOCAL_BIN) || true
+	cp -n ./vendor/darwin/ntthal $(LOCAL_BIN) || true
+	cp -n ./vendor/darwin/primer3_core $(LOCAL_BIN) || true
+	cp -n ./vendor/darwin/blastdbcmd $(LOCAL_BIN) || true
 endif
 
-	mv $(TEMPSETTINGS) $(APPDATA)/config.yaml
 
-	cp -r ./assets/addgene/db/** $(APPDATA) 
-	cp -r ./assets/igem/db/** $(APPDATA)
-	cp -r ./assets/dnasu/db/** $(APPDATA)
-	cp ./assets/snapgene/features.tsv $(APPDATA)
-	cp ./assets/neb/enzymes.tsv $(APPDATA)
 	
 build:
 	go get
 	env GOOS=linux go build -o ./bin/linux -v
 	env GOOS=darwin go build -o ./bin/darwin -v
+	env GOOS=windows go build -o ./bin/windows/defrag.exe -v
 
 dbs:
 	cd assets && sh makeblastdbs.sh
 
 clean:
-	rm $(APPDATA)/*
+	rm $(APP_DATA)/*
 
 uninstall: clean
 	rm $(APP)
-	rm -rf $(APPDATA)
+	rm -rf $(APP_DATA)
 
 test:
 	go test ./internal/defrag
