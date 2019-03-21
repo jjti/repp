@@ -203,7 +203,7 @@ func (b *blastExec) input() error {
 	// and we want to find matches across the zero-index
 	querySeq := b.seq
 	if b.circular {
-		querySeq += b.seq
+		querySeq = querySeq + b.seq
 	}
 
 	_, err := b.in.WriteString(fmt.Sprintf(">%s\n%s\n", b.name, querySeq))
@@ -225,9 +225,8 @@ func (b *blastExec) run() (err error) {
 		"-out", b.out.Name(),
 		"-outfmt", "7 sseqid qstart qend sstart send sseq mismatch gaps stitle",
 		"-perc_identity", fmt.Sprintf("%d", b.identity),
-		"-culling_limit", "2", // "If the query range of a hit is enveloped by that of at least this many higher-scoring hits, delete the hit"
+		"-culling_limit", "50", // "If the query range of a hit is enveloped by that of at least this many higher-scoring hits, delete the hit"
 		"-num_threads", strconv.Itoa(threads),
-		"-max_target_seqs", "500", // default is 500
 	}
 
 	if b.identity >= 99 {

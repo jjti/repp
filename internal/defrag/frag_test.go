@@ -375,7 +375,7 @@ func Test_new(t *testing.T) {
 			},
 			&Frag{
 				ID:         "testMatch",
-				fragType:   existing,
+				fragType:   pcr,
 				Seq:        "ATGCTAGCTAGTG",
 				uniqueID:   "0testMatch",
 				start:      0,

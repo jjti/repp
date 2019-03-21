@@ -42,7 +42,6 @@ var featuresCmd = &cobra.Command{
 	Short:                      "Find or build a vector from its constituent features",
 	Run:                        defrag.FeaturesCmd, // TODO
 	SuggestionsMinimumDistance: 3,
-	Long:                       "",
 }
 
 // sequenceCmd is for assembling a vector (single circular sequence) from its target sequence

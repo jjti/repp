@@ -28,6 +28,16 @@ func Test_sequence(test *testing.T) {
 
 	tests := []testFlags{
 		testFlags{
+			path.Join("..", "..", "test", "input", "110056.fa"),
+			path.Join("..", "..", "test", "output", "110056.json"),
+			"",
+			"",
+			"2019,2018",
+			[]string{},
+			true,
+			true,
+		},
+		testFlags{
 			path.Join("..", "..", "test", "input", "BBa_K2602025.fa"),
 			path.Join("..", "..", "test", "output", "BBa_K2602025.json"),
 			"pSB1A3",
@@ -68,16 +78,6 @@ func Test_sequence(test *testing.T) {
 			true,
 		},
 		testFlags{
-			path.Join("..", "..", "test", "input", "BBa_K077557.fa"),
-			path.Join("..", "..", "test", "output", "BBa_K077557.json"),
-			"pSB1C3",
-			"EcoRI",
-			"2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,BBa_K077",
-			[]string{},
-			true,
-			true,
-		},
-		testFlags{
 			path.Join("..", "..", "test", "input", "BBa_K2651001.fa"),
 			path.Join("..", "..", "test", "output", "BBa_K2651001.json"),
 			"pSB1C3",
@@ -113,11 +113,11 @@ func Test_sequence(test *testing.T) {
 		sols := Sequence(NewFlags(t.in, t.out, t.backbone, t.enzyme, t.filters, t.dbs, t.addgene, t.igem, false))
 
 		if len(sols) < 1 {
-			test.Fail()
+			test.Errorf("no solutions for %s", t.in)
 		}
 
 		for _, s := range sols {
-			ValidateJunctions(t.in, s, c, test)
+			validateJunctions(t.in, s, c, test)
 		}
 	}
 }
@@ -156,7 +156,7 @@ func Test_features(t *testing.T) {
 			sols := Features(tt.args.flags, tt.args.conf)
 
 			for _, s := range sols {
-				ValidateJunctions(tt.name, s, conf, t)
+				validateJunctions(tt.name, s, conf, t)
 			}
 		})
 	}

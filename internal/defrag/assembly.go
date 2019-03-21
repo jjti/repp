@@ -156,7 +156,7 @@ func (a *assembly) fill(target string, conf *config.Config) (frags []*Frag, err 
 		// to anneal to the adjacent fragments
 		lastPCR := !last.overlapsViaHomology(f) && last.overlapsViaPCR(f)
 		nextPCR := !f.overlapsViaHomology(next) && f.overlapsViaPCR(next)
-		needsPCR := f.fragType == circular || lastPCR || nextPCR
+		needsPCR := f.fragType == circular || f.fragType == pcr || lastPCR || nextPCR
 
 		// if the Frag has a full target from upload or
 		if needsPCR {
