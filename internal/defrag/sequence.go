@@ -2,12 +2,51 @@ package defrag
 
 import (
 	"fmt"
+	"os"
+	"strconv"
 	"strings"
+	"text/tabwriter"
 	"time"
 
 	"github.com/jjtimmons/defrag/config"
 	"github.com/spf13/cobra"
 )
+
+// SequenceFindCmd is for BLAST'ing a sequence against the dbs and finding matches
+func SequenceFindCmd(cmd *cobra.Command, args []string) {
+	if len(args) < 1 {
+		cmd.Help()
+		stderr.Fatalln("\nno sequence passed.")
+	}
+	seq := args[0]
+
+	flags, _ := parseCmdFlags(cmd, args, false)
+	tw := blastWriter()
+	matches, err := blast("", seq, false, flags.dbs, flags.filters, flags.identity, tw)
+	if err != nil {
+		stderr.Fatalln(err)
+	}
+
+	if len(matches) == 0 {
+		stderr.Fatalln("no matches found")
+	}
+
+	key := func(m match) string {
+		return m.entry + strconv.Itoa(m.queryStart)
+	}
+
+	seenIds := make(map[string]bool)
+	writer := tabwriter.NewWriter(os.Stdout, 0, 4, 3, ' ', 0)
+	fmt.Fprintf(writer, "entry\tqstart\tqend\tsstart\tsend\tdatabase\tURL\t\n")
+	for _, m := range matches {
+		if _, seen := seenIds[key(m)]; seen {
+			continue
+		}
+		fmt.Fprintf(writer, "%s\t%d\t%d\t%d\t%d\t%s\t%s\n", m.entry, m.queryStart, m.queryEnd, m.subjectStart, m.subjectEnd, m.db, parseURL(m.entry, m.db))
+		seenIds[key(m)] = true
+	}
+	writer.Flush()
+}
 
 // SequenceCmd takes a cobra command (with its flags) and runs Vector.
 func SequenceCmd(cmd *cobra.Command, args []string) {

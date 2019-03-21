@@ -41,10 +41,15 @@ def id_to_year(p_id):
 
 
 # split up into separate parts. each a tuple with (addgene_id, seq, circular: bool, year: int, name)
-def get_parts(log_composites=True):
+def get_parts(log_composites=True, from_year=-1):
     # create element tree object
     part_json = json.load(open("addgene.json", "r"))
     plasmids = part_json["plasmids"]
+
+    def fix(s):
+        """some seqs have multilines, split and join here"""
+
+        return s.replace("\n", "").replace("\r", "")
 
     parts = []  # list of name, seq, circular tuples
     full_seq_count = 0
@@ -58,7 +63,7 @@ def get_parts(log_composites=True):
             seqs["public_addgene_full_sequences"] + seqs["public_user_full_sequences"]
         ):
             full_seq_count += 1
-            parts.append((part_id, s["sequence"], True, id_to_year(part_id)))
+            parts.append((part_id, fix(s["sequence"]), True, id_to_year(part_id)))
             break
 
         # linear fragments
@@ -68,22 +73,27 @@ def get_parts(log_composites=True):
             + seqs["public_user_partial_sequences"]
         ):
             parts.append(
-                (
-                    "{}.{}".format(part_id, sindex),
-                    s["sequence"],
-                    False,
-                    id_to_year(part_id),
-                )
+                (f"{part_id}.{sindex}", fix(s["sequence"]), False, id_to_year(part_id))
             )
             sindex += 1
+
+    if from_year > 0:
+        parts = [p for p in parts if p[3] == from_year]
+
+    # remove ambiguous bp
+    parts = [p for p in parts if "N" not in p[1]]
+    parts = [p for p in parts if "\t" not in p[1]]
+
     return parts
 
 
-def write_parts(parts):
-    os.chdir(os.path.join("db"))
+def write_parts(parts, to=""):
+    output = os.path.join("db", "addgene")
+    if to:
+        output = to
 
     # write to the local filesystem
-    with open("addgene", "w") as out_file:
+    with open(output, "w") as out_file:
         seen_ids = set()
         for (p_id, seq, circular, year) in parts:
             if p_id in seen_ids or len(seq) < 30 or ">" in seq:
@@ -92,9 +102,12 @@ def write_parts(parts):
             topo = "circular" if circular else "linear"
             out_seq = seq + seq if circular else seq
 
-            out_file.write(">{} {}-{}\n{}\n".format(p_id, topo, year, out_seq))
+            out_file.write(f">{p_id} {topo}-{year}\n{out_seq}\n")
 
             seen_ids.add(p_id)
 
 
-write_parts(get_parts())
+if __name__ == "__main__":
+    # write_parts(get_parts(from_year=2018), to=os.path.join("2018.fasta"))
+
+    write_parts(get_parts())

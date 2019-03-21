@@ -7,7 +7,6 @@ import (
 
 // findCmd is for finding features or enzymes by their name.
 var findCmd = &cobra.Command{
-	Use:                        "find [feature,enzyme]",
 	Short:                      "Find features or enzymes",
 	SuggestionsMinimumDistance: 2,
 	Long: `Find features or enzymes by name.
@@ -48,7 +47,17 @@ var fragmentFindCmd = &cobra.Command{
 	Short:                      "Find a fragment in the databases",
 	Run:                        defrag.FragmentFindCmd,
 	SuggestionsMinimumDistance: 2,
-	Long:                       `Find a fragment with a given name in the available databases.`,
+	Long:                       `Find a fragment with a given name in the databases requested.`,
+}
+
+// sequenceFindCmd is for finding a sequence in the dbs
+var sequenceFindCmd = &cobra.Command{
+	Use:                        "sequence [name]",
+	Short:                      "Find a sequence in the databases",
+	Run:                        defrag.SequenceFindCmd,
+	SuggestionsMinimumDistance: 2,
+	Long:                       `Find a sequence's matches in the databases requested.`,
+	Aliases:                    []string{"seq"},
 }
 
 // set flags
@@ -56,10 +65,17 @@ func init() {
 	fragmentFindCmd.Flags().StringP("dbs", "d", "", "comma separated list of local fragment databases")
 	fragmentFindCmd.Flags().BoolP("addgene", "a", false, "use the Addgene repository")
 	fragmentFindCmd.Flags().BoolP("igem", "g", false, "use the iGEM repository")
+	fragmentFindCmd.Flags().BoolP("dnasu", "u", false, "use the DNASU respository")
+
+	sequenceFindCmd.Flags().StringP("dbs", "d", "", "comma separated list of local fragment databases")
+	sequenceFindCmd.Flags().BoolP("addgene", "a", false, "use the Addgene repository")
+	sequenceFindCmd.Flags().BoolP("igem", "g", false, "use the iGEM repository")
+	sequenceFindCmd.Flags().BoolP("dnasu", "u", false, "use the DNASU respository")
 
 	findCmd.AddCommand(featureFindCmd)
 	findCmd.AddCommand(enzymeFindCmd)
 	findCmd.AddCommand(fragmentFindCmd)
+	findCmd.AddCommand(sequenceFindCmd)
 
 	rootCmd.AddCommand(findCmd)
 }
