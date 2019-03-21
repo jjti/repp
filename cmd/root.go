@@ -19,7 +19,6 @@ var rootCmd = &cobra.Command{
 	Use: "defrag",
 	Short: `Build vectors using DNA sequences available in public repositories.
 Specify vectors using their sequence, features, or fragments`,
-	Long:    ``,
 	Version: "0.1.0",
 }
 

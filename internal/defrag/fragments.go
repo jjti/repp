@@ -115,9 +115,9 @@ func annealFragments(min, max int, frags []*Frag) (vec string) {
 	return vecSeq.String()
 }
 
-// ValidateJunctions checks each fragment and confirms that it has sufficient homology
+// validateJunctions checks each fragment and confirms that it has sufficient homology
 // with its adjacent fragments and that the match is exact. Largely for testing
-func ValidateJunctions(name string, frags []*Frag, conf *config.Config, t *testing.T) {
+func validateJunctions(name string, frags []*Frag, conf *config.Config, t *testing.T) {
 	for i, f := range frags {
 		next := frags[(i+1)%len(frags)]
 		j := f.junction(next, conf.FragmentsMinHomology, conf.FragmentsMaxHomology)

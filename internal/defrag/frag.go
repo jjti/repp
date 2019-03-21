@@ -111,7 +111,7 @@ type Primer struct {
 
 // newFrag creates a Frag from a match
 func newFrag(m match, conf *config.Config) *Frag {
-	fType := existing
+	fType := pcr
 	if m.circular {
 		fType = circular
 	}

@@ -11,7 +11,6 @@ var annotateCmd = &cobra.Command{
 	Run:                        defrag.Annotate,
 	Short:                      "Annotate a circular sequence using the feature db",
 	SuggestionsMinimumDistance: 3,
-	Long:                       ``,
 }
 
 // set flags

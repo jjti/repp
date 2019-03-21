@@ -42,8 +42,7 @@ type Output struct {
 	// Target's sequence
 	TargetSeq string `json:"seq"`
 
-	// Time, ex:
-	// "2018-01-01 20:41:00"
+	// Time, ex: "2018-01-01 20:41:00"
 	Time string `json:"time"`
 
 	// Execution is the number of seconds it took to execute the command
@@ -632,6 +631,10 @@ func writeJSON(
 	insertSynthCost, err := roundCost(conf.SynthFragmentCost(insertSeqLength))
 	if err != nil {
 		return nil, err
+	}
+
+	if backbone.Seq == "" {
+		backbone = nil
 	}
 
 	out := Output{
