@@ -72,7 +72,7 @@ func Test_sequence(test *testing.T) {
 			path.Join("..", "..", "test", "output", "BBa_K077557.json"),
 			"pSB1C3",
 			"EcoRI",
-			"2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,BBa_K0077",
+			"2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,BBa_K077",
 			[]string{},
 			true,
 			true,

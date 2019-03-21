@@ -192,6 +192,7 @@ func blast(
 func blastWriter() *tabwriter.Writer {
 	tw := tabwriter.NewWriter(os.Stdout, 0, 4, 3, ' ', 0)
 	fmt.Fprintf(tw, "entry\tmatches\tdatabase\t\n")
+
 	return tw
 }
 
@@ -244,6 +245,7 @@ func (b *blastExec) run() (err error) {
 			"-penalty", "-2",
 			"-gapopen", "1",
 			"-gapextend", "2",
+			"-evalue", "100",
 		)
 	} else {
 		flags = append(flags,
@@ -251,6 +253,7 @@ func (b *blastExec) run() (err error) {
 			"-penalty", "-1",
 			"-gapopen", "1",
 			"-gapextend", "2",
+			"-evalue", "1000",
 		)
 	}
 
