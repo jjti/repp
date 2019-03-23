@@ -121,6 +121,11 @@ func (m *match) copyWithQueryRange(start, end int) match {
 	}
 }
 
+// log the match in string format
+func (m *match) log() {
+	fmt.Printf("%s %d %d\n", m.entry, m.queryStart, m.queryEnd)
+}
+
 // blast the seq against all dbs and acculate matches.
 func blast(
 	name, seq string,
@@ -439,6 +444,10 @@ func cull(matches []match, targetLength, minSize int) (culled []match) {
 	// sort again now that we added copied matches
 	culled = append(culled, copiedMatches...)
 	sortMatches(culled)
+
+	// for _, m := range culled {
+	// 	m.log()
+	// }
 
 	return culled
 }

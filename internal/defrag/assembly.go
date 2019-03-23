@@ -88,7 +88,7 @@ func (a *assembly) len() int {
 }
 
 // log returns a description of the assembly (the entires in it and its cost).
-func (a *assembly) log() string {
+func (a *assembly) log() {
 	logString := ""
 	if len(a.frags) >= 1 {
 		for _, f := range a.frags {
@@ -96,7 +96,7 @@ func (a *assembly) log() string {
 		}
 	}
 
-	return fmt.Sprintf("%s- $%.2f", logString, a.cost)
+	fmt.Println(fmt.Sprintf("%s- $%.2f", logString, a.cost))
 }
 
 // fill traverses frags in an assembly and adds primers or makes syntheic fragments where necessary.
@@ -327,27 +327,30 @@ func fillSolutions(target string, counts []int, countToAssemblies map[int][]asse
 		for _, assemblyToFill := range countToAssemblies[count] {
 			if assemblyToFill.cost > minCostAssembly {
 				// skip this and the rest with this count, there's another
-				// cheaper option with fewer fragments
+				// cheaper option with the same number or fewer fragments (estimated)
 				break
 			}
 
 			filledFragments, err := assemblyToFill.fill(target, conf)
 			if err != nil || filledFragments == nil {
+				// assemblyToFill.log()
+				// fmt.Println("error")
 				continue
 			}
 
 			newAssemblyCost := fragsCost(filledFragments)
 
+			// assemblyToFill.log()
+			// fmt.Printf("actual %f\n", newAssemblyCost)
+
 			if newAssemblyCost >= minCostAssembly {
 				continue // wasn't actually cheaper, keep trying
 			}
-
-			minCostAssembly = newAssemblyCost              // store this as the new cheapest assembly
-			filled[len(filledFragments)] = filledFragments // set this is as the new cheapest of this length
+			minCostAssembly = newAssemblyCost // store this as the new cheapest assembly
 
 			// delete all assemblies with more fragments that cost more
 			for filledCount, existingFilledFragments := range filled {
-				if filledCount <= len(filledFragments) {
+				if filledCount < len(filledFragments) {
 					continue
 				}
 
@@ -357,7 +360,8 @@ func fillSolutions(target string, counts []int, countToAssemblies map[int][]asse
 				}
 			}
 
-			break // assume this will be the cheapest of this length
+			// set this is as the new cheapest of this length
+			filled[len(filledFragments)] = filledFragments
 		}
 	}
 

@@ -13,6 +13,8 @@
 # mac
 *.DS_Store
 
+bin/*
+
 # ignore source files, too large
 assets/addgene/**
 assets/igem/**

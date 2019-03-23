@@ -152,7 +152,7 @@ func sequence(input *Flags, conf *config.Config) (insert, target *Frag, solution
 	// keep only "proper" arcs (non-self-contained)
 	matches = cull(matches, len(target.Seq), conf.PCRMinLength)
 	if conf.Verbose {
-		fmt.Printf("%d matches after filtering\n", len(matches))
+		fmt.Printf("%d matches after culling\n", len(matches))
 	}
 
 	// map fragment Matches to nodes

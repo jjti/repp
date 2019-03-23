@@ -146,8 +146,13 @@ func parseCmdFlags(cmd *cobra.Command, args []string, strict bool) (*Flags, *con
 		}
 	}
 
-	if fs.out, err = cmd.Flags().GetString("out"); strict && err != nil {
+	if fs.out, err = cmd.Flags().GetString("out"); strict && (fs.out == "" || err != nil) {
 		fs.out = p.guessOutput(fs.in) // guess at an output name
+
+		if fs.out == "" {
+			cmd.Help()
+			stderr.Fatal("no output path")
+		}
 	}
 
 	addgene, err := cmd.Flags().GetBool("addgene") // use addgene db?
@@ -268,7 +273,7 @@ func (p *inputParser) parseFeatureInput(args []string) (out string) {
 func (p *inputParser) guessOutput(in string) (out string) {
 	ext := filepath.Ext(in)
 	noExt := in[0 : len(in)-len(ext)]
-	return noExt + ".defrag.json"
+	return noExt + ".output.json"
 }
 
 // parseDBs returns a list of absolute paths to BLAST databases.
