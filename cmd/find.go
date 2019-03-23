@@ -7,6 +7,7 @@ import (
 
 // findCmd is for finding features or enzymes by their name.
 var findCmd = &cobra.Command{
+	Use:                        "find",
 	Short:                      "Find features or enzymes",
 	SuggestionsMinimumDistance: 2,
 	Long: `Find features or enzymes by name.

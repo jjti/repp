@@ -28,6 +28,16 @@ func Test_sequence(test *testing.T) {
 
 	tests := []testFlags{
 		testFlags{
+			path.Join("..", "..", "test", "input", "BBa_K227013.fa"),
+			path.Join("..", "..", "test", "output", "BBa_K227013.json"),
+			"pSB1A3",
+			"PstI",
+			"2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,2019,BBa_K22",
+			[]string{},
+			true,
+			true,
+		},
+		testFlags{
 			path.Join("..", "..", "test", "input", "110056.fa"),
 			path.Join("..", "..", "test", "output", "110056.json"),
 			"",

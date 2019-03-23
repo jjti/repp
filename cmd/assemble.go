@@ -12,7 +12,7 @@ var (
 in one of the dbs or a file on the local filesystem.`
 
 	enzymeHelp = `enzyme to linearize the backbone with (backbone must be specified).
-'defrag enzymes' prints a list of recognized enzymes.`
+'defrag ls enzymes' prints a list of recognized enzymes.`
 )
 
 // assembleCmd is for finding building a vector from its fragments, features, or sequence

@@ -202,7 +202,7 @@ func featureSolutions(feats [][]string, fragToMatches map[string][]featureMatch,
 	accMatches = cull(accMatches, len(feats), conf.PCRMinLength)
 
 	if conf.Verbose {
-		fmt.Printf("%d matches after filtering\n", len(accMatches))
+		fmt.Printf("%d matches after culling\n", len(accMatches))
 	}
 
 	// get the full vector length if just synthesizing each feature next to one another

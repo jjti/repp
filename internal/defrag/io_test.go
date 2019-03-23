@@ -76,7 +76,7 @@ func Test_inputParser_parseOut(t *testing.T) {
 			args{
 				in: "./test_file.fa",
 			},
-			"./test_file.defrag.json",
+			"./test_file.output.json",
 		},
 	}
 	for _, tt := range tests {
