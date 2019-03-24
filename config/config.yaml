@@ -38,12 +38,14 @@ pcr-primer-max-embed-length: 20
 pcr-primer-max-offtarget-tm: 55.0
 
 # Minimum length of a synthesized building fragment
-synthetic-min-length: 1
+synthetic-min-length: 125
 
 # Maximum length of a synthesized building fragment
 synthetic-max-length: 3000
 
 # Cost of synthesis (step-function)
+# the key here is the upper limit on the synthesis to that range
+# so 500: is synthesis from whatever length is less than that key up to it
 synthetic-fragment-cost:
   # IDT: gBlocks: https://www.idtdna.com/pages/products/genes-and-gene-fragments/gblocks-gene-fragments
   250:

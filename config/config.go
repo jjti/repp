@@ -205,9 +205,18 @@ func synthCost(seqLength int, costs map[int]SynthCost) SynthCost {
 
 	synthCostKey := 0
 	for _, keyLength := range costLengthKeys {
-		if keyLength > seqLength {
+		if keyLength >= seqLength {
 			synthCostKey = keyLength
 			break
+		}
+	}
+
+	// we're not able to make a fragment/gene this large
+	// return an extremely large number
+	if synthCostKey == 0 {
+		return SynthCost{
+			Fixed: true,
+			Cost:  math.MaxInt16,
 		}
 	}
 
