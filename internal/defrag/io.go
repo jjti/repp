@@ -578,7 +578,7 @@ func writeJSON(
 		gibson := false // whether it will be assembled via Gibson assembly
 
 		for _, f := range assembly {
-			if f.fragType != existing {
+			if f.fragType != existing && f.fragType != circular {
 				gibson = true
 			}
 
@@ -633,10 +633,13 @@ func writeJSON(
 		return nil, err
 	}
 
-	insertSynthCost, err := roundCost(conf.SynthFragmentCost(insertSeqLength))
+	// estimate the cost of making the insert, with overhang for the backbone,
+	// from the synthesis provider and then the Gibson assembly cost
+	insertSynthCost, err := roundCost(conf.SynthFragmentCost(insertSeqLength + conf.FragmentsMinHomology*2))
 	if err != nil {
 		return nil, err
 	}
+	insertSynthCost += conf.CostGibson
 
 	if backbone.Seq == "" {
 		backbone = nil
