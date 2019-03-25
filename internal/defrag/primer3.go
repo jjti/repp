@@ -71,7 +71,7 @@ func newPrimer3(last, this, next *Frag, seq string, conf *config.Config) primer3
 // existing homology to begin with (the two nodes should share ~50/50)
 //
 // returning the number of bp that have to be artifically added to the left and right primers
-func (p *primer3) input(minHomology, maxHomology, maxEmbedLength, minLength int) (bpAddLeft, bpAddRight int, err error) {
+func (p *primer3) input(minHomology, maxHomology, maxEmbedLength, minLength, pcrBuffer int) (bpAddLeft, bpAddRight int, err error) {
 	// adjust the Frag's start and end index in the event that there's too much homology
 	// with the neighboring fragment
 	p.shrink(p.last, p.f, p.next, maxHomology, minLength) // could skip passing as a param, but this is a bit easier to test
@@ -121,8 +121,8 @@ func (p *primer3) input(minHomology, maxHomology, maxEmbedLength, minLength int)
 	//
 	// also adjust start and length in case there's TOO large an overhang and we need
 	// to trim it in one direction or the other
-	leftBuffer := p.buffer(p.last.distTo(p.f), minHomology, maxEmbedLength)
-	rightBuffer := p.buffer(p.f.distTo(p.next), minHomology, maxEmbedLength)
+	leftBuffer := p.buffer(p.last.distTo(p.f), minHomology, maxEmbedLength, pcrBuffer)
+	rightBuffer := p.buffer(p.f.distTo(p.next), minHomology, maxEmbedLength, pcrBuffer)
 
 	// create the settings map from all instructions
 	file, err := p.settings(
@@ -205,10 +205,10 @@ func (p *primer3) bpToAdd(left, right *Frag) int {
 //
 // dist is positive if there's a gap between the start/end of a fragment and the start/end of
 // the other and negative if they overlap
-func (p *primer3) buffer(dist, minHomology, maxEmbedLength int) (buffer int) {
+func (p *primer3) buffer(dist, minHomology, maxEmbedLength, pcrBuffer int) (buffer int) {
 	if dist > maxEmbedLength {
 		// we'll synthesize because the gap is so large, add 100bp of buffer
-		return 100 // TODO: move "100" to settings
+		return pcrBuffer // TODO: move "100" to settings
 	}
 
 	if dist < -minHomology {
