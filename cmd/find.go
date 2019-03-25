@@ -72,6 +72,8 @@ func init() {
 	sequenceFindCmd.Flags().BoolP("addgene", "a", false, "use the Addgene repository")
 	sequenceFindCmd.Flags().BoolP("igem", "g", false, "use the iGEM repository")
 	sequenceFindCmd.Flags().BoolP("dnasu", "u", false, "use the DNASU respository")
+	sequenceFindCmd.Flags().StringP("exclude", "x", "", "keywords for excluding fragments")
+	sequenceFindCmd.Flags().IntP("identity", "t", 100, "match %-identity threshold (see 'blastn -help')")
 
 	findCmd.AddCommand(featureFindCmd)
 	findCmd.AddCommand(enzymeFindCmd)

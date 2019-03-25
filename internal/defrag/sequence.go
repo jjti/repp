@@ -3,6 +3,7 @@ package defrag
 import (
 	"fmt"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 	"text/tabwriter"
@@ -22,7 +23,7 @@ func SequenceFindCmd(cmd *cobra.Command, args []string) {
 
 	flags, _ := parseCmdFlags(cmd, args, false)
 	tw := blastWriter()
-	matches, err := blast("", seq, false, flags.dbs, flags.filters, flags.identity, tw)
+	matches, err := blast("find_cmd", seq, true, flags.dbs, flags.filters, flags.identity, tw)
 	if err != nil {
 		stderr.Fatalln(err)
 	}
@@ -31,8 +32,14 @@ func SequenceFindCmd(cmd *cobra.Command, args []string) {
 		stderr.Fatalln("no matches found")
 	}
 
+	// sort so the largest matches are first
+	sort.Slice(matches, func(i, j int) bool {
+		return (matches[i].subjectEnd - matches[i].subjectStart) > (matches[j].queryEnd - matches[j].queryStart)
+	})
+
+	// to avoid logging the same matches multiple times
 	key := func(m match) string {
-		return m.entry + strconv.Itoa(m.queryStart)
+		return m.entry + strconv.Itoa(m.subjectStart) + strconv.Itoa(m.subjectEnd)
 	}
 
 	seenIds := make(map[string]bool)
@@ -42,6 +49,11 @@ func SequenceFindCmd(cmd *cobra.Command, args []string) {
 		if _, seen := seenIds[key(m)]; seen {
 			continue
 		}
+
+		if m.subjectEnd-m.subjectStart < 20 {
+			continue
+		}
+
 		fmt.Fprintf(writer, "%s\t%d\t%d\t%d\t%d\t%s\t%s\n", m.entry, m.queryStart, m.queryEnd, m.subjectStart, m.subjectEnd, m.db, parseURL(m.entry, m.db))
 		seenIds[key(m)] = true
 	}

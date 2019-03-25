@@ -218,7 +218,7 @@ func (b *blastExec) input() error {
 
 // run calls the external blastn binary on the input file.
 func (b *blastExec) run() (err error) {
-	threads := runtime.NumCPU() - 1
+	threads := runtime.NumCPU()
 	if threads < 1 {
 		threads = 1
 	}
@@ -234,16 +234,23 @@ func (b *blastExec) run() (err error) {
 		"-num_threads", strconv.Itoa(threads),
 	}
 
-	if b.identity >= 99 {
+	if b.identity > 99 {
+		flags = append(flags,
+			"-reward", "1", // most negative penalty I could find in blast_stat.c
+			"-penalty", "-5", // needed because mismatches were being included in the end of pSB1A3 matches
+			"-gapopen", "6",
+			"-gapextend", "6",
+		)
+	} else if b.identity >= 98 {
 		// https://www.ncbi.nlm.nih.gov/books/NBK279684/
 		// Table D1
 		flags = append(flags,
 			"-reward", "1",
 			"-penalty", "-3",
-			"-gapopen", "2",
-			"-gapextend", "2",
+			"-gapopen", "3",
+			"-gapextend", "3",
 		)
-	} else if b.identity < 99 && b.identity > 90 {
+	} else if b.identity > 90 {
 		flags = append(flags,
 			"-reward", "1",
 			"-penalty", "-2",
@@ -312,6 +319,7 @@ func (b *blastExec) parse(filters []string) (matches []match, err error) {
 		// check whether the mismatch ratio is less than the set limit
 		matchRatio := float32(len(seq)-(mismatching+gaps)) / float32(len(seq))
 		if matchRatio < identityThreshold {
+			// fmt.Printf("getting rid of %s", entry)
 			continue
 		}
 
@@ -445,6 +453,12 @@ func cull(matches []match, targetLength, minSize int) (culled []match) {
 	culled = append(culled, copiedMatches...)
 	sortMatches(culled)
 
+	// fmt.Println("matches")
+	// for _, m := range matches {
+	// 	m.log()
+	// }
+
+	// fmt.Println("after culling")
 	// for _, m := range culled {
 	// 	m.log()
 	// }
