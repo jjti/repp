@@ -49,12 +49,12 @@ var sequenceCmd = &cobra.Command{
 	Use:                        "sequence",
 	Short:                      "Find or build a vector from its target sequence",
 	Run:                        defrag.SequenceCmd,
-	SuggestionsMinimumDistance: 3,
+	SuggestionsMinimumDistance: 2,
 	Long: `Build up a vector from its target sequence using a combination of existing and
 synthesized fragments.
 
 Solutions have either a minimum fragment count or assembly cost (or both).`,
-	Aliases: []string{"vector"},
+	Aliases: []string{"seq", "vector"},
 }
 
 // set flags

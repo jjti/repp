@@ -73,14 +73,11 @@ func digest(frag *Frag, enz enzyme) (digested *Frag, backbone *Backbone, err err
 		return &Frag{}, &Backbone{}, fmt.Errorf("%s is too short for digestion", frag.ID)
 	}
 
-	if frag.fragType == circular {
-		// double check that it's circular, first 20 bp should show up at least twice
-		firstBpsRegex := regexp.MustCompile(frag.Seq[:20])
-		firstBpsCount := firstBpsRegex.FindAllStringIndex(frag.Seq, -1)
-
-		if len(firstBpsCount) > 1 {
-			frag.Seq = frag.Seq[:len(frag.Seq)/2] // undo the doubling of sequence for circular parts
-		}
+	firstHalf := frag.Seq[:len(frag.Seq)/2]
+	secondHalf := frag.Seq[len(frag.Seq)/2:]
+	if firstHalf == secondHalf {
+		// it's a circular fragment that's doubled in the database
+		frag.Seq = frag.Seq[:len(frag.Seq)/2] // undo the doubling of sequence for circular parts
 	}
 
 	// turn recognition site (with ambigous bps) into a recognition seq
