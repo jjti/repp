@@ -3,7 +3,7 @@
 fragments-max-count: 6
 
 # Minimum homology length between fragments
-fragments-min-junction-length: 20
+fragments-min-junction-length: 15
 
 # Maximum homology length between fragments
 fragments-max-junction-length: 120
@@ -25,7 +25,7 @@ pcr-bp-cost: 0.6
 pcr-rxn-cost: 0.27
 
 # Minimum length of a PCR fragment
-pcr-min-length: 85
+pcr-min-length: 60
 
 # Max primer3 pair penalty score
 pcr-primer-max-pair-penalty: 20.0
@@ -36,6 +36,10 @@ pcr-primer-max-embed-length: 20
 
 # Max off-target primer binding site Tm, above which a PCR is abandoned
 pcr-primer-max-offtarget-tm: 55.0
+
+# The length of PCR buffer. The length of the ranges to allow Primer3 to
+# choose primers in if neighbors are both synthetic, for example
+pcr-buffer-length: 100
 
 # Minimum length of a synthesized building fragment
 synthetic-min-length: 125

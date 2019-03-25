@@ -218,7 +218,7 @@ func (b *blastExec) input() error {
 
 // run calls the external blastn binary on the input file.
 func (b *blastExec) run() (err error) {
-	threads := runtime.NumCPU()
+	threads := runtime.NumCPU() - 1
 	if threads < 1 {
 		threads = 1
 	}

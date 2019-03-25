@@ -407,6 +407,7 @@ func (f *Frag) setPrimers(last, next *Frag, seq string, conf *config.Config) (er
 		conf.FragmentsMaxHomology,
 		conf.PCRMaxEmbedLength,
 		conf.PCRMinLength,
+		conf.PCRBufferLength,
 	)
 	if err != nil {
 		return
@@ -491,7 +492,7 @@ func (f *Frag) setPrimers(last, next *Frag, seq string, conf *config.Config) (er
 // returning Frag for testing
 func mutatePrimers(f *Frag, seq string, addLeft, addRight int) (mutated *Frag) {
 	sl := len(seq)
-	seq = strings.ToUpper(seq + seq + seq)
+	seq = strings.ToUpper(seq + seq + seq + seq)
 
 	// change the Frag's start and end index to match those of the start and end index
 	// of the primers, since the range may have shifted to get better primers

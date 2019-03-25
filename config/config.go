@@ -112,6 +112,10 @@ type Config struct {
 	// PCRMaxOfftargetTm is the maximum tm of an offtarget, above which PCR is abandoned
 	PCRMaxOfftargetTm float64 `mapstructure:"pcr-primer-max-offtarget-tm"`
 
+	// PCRBufferLength is the length of buffer from the ends of a match in which
+	// to allow Primer3 to look for a primer
+	PCRBufferLength int `mapstructure:"pcr-buffer-length"`
+
 	// maximum length of a synthesized piece of DNA
 	SyntheticMaxLength int `mapstructure:"synthetic-max-length"`
 
