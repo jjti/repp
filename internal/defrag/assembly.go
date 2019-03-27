@@ -53,7 +53,7 @@ func (a *assembly) add(f *Frag, maxCount, targetLength int) (newAssembly assembl
 	// if so, the cost of procurement is not incurred twice
 	nodeContained := false
 	for _, included := range a.frags {
-		if included.ID == f.ID {
+		if included.ID == f.ID && included.fragType == f.fragType {
 			nodeContained = true
 			break
 		}
@@ -75,6 +75,10 @@ func (a *assembly) add(f *Frag, maxCount, targetLength int) (newAssembly assembl
 		newFrags = append(newFrags, f.copy())
 	}
 
+	if f.ID == "pSB1A3" {
+		// fmt.Println("seen")
+	}
+
 	return assembly{
 		frags:  newFrags,
 		cost:   a.cost + annealCost,
@@ -92,7 +96,7 @@ func (a *assembly) log() {
 	logString := ""
 	if len(a.frags) >= 1 {
 		for _, f := range a.frags {
-			logString += f.ID + " "
+			logString += f.ID + ":" + f.fragType.String() + " "
 		}
 	}
 
@@ -164,8 +168,6 @@ func (a *assembly) fill(target string, conf *config.Config) (frags []*Frag, err 
 				return nil, fmt.Errorf("failed to pcr %s: %v", f.ID, err)
 			}
 			f.fragType = pcr // is now a pcr type
-		} else {
-			f.fragType = existing // no change needed
 		}
 
 		// accumulate the prepared fragment
@@ -239,6 +241,11 @@ func createAssemblies(frags []*Frag, targetLength int, conf *config.Config) (ass
 	// number of additional frags try synthesizing to, in addition to those that
 	// already have enough homology for overlap without any modifications for each Frag
 	maxNodes := conf.FragmentsMaxCount
+
+	// sort by start index again
+	sort.Slice(frags, func(i, j int) bool {
+		return frags[i].start < frags[j].start
+	})
 
 	// create a starting assembly on each Frag including just itself
 	for i, f := range frags {
@@ -325,6 +332,7 @@ func fillSolutions(target string, counts []int, countToAssemblies map[int][]asse
 
 	for _, count := range counts {
 		for _, assemblyToFill := range countToAssemblies[count] {
+			// assemblyToFill.log()
 			if assemblyToFill.cost > minCostAssembly {
 				// skip this and the rest with this count, there's another
 				// cheaper option with the same number or fewer fragments (estimated)

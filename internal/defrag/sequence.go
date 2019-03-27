@@ -157,9 +157,6 @@ func sequence(input *Flags, conf *config.Config) (insert, target *Frag, solution
 		dbMessage := strings.Join(input.dbs, ", ")
 		return &Frag{}, &Frag{}, nil, fmt.Errorf("failed to blast %s against the dbs %s: %v", target.ID, dbMessage, err)
 	}
-	if len(matches) < 1 {
-		return &Frag{}, &Frag{}, nil, fmt.Errorf("did not find any matches for %s", target.ID)
-	}
 
 	// keep only "proper" arcs (non-self-contained)
 	matches = cull(matches, len(target.Seq), conf.PCRMinLength)
@@ -169,6 +166,19 @@ func sequence(input *Flags, conf *config.Config) (insert, target *Frag, solution
 
 	// map fragment Matches to nodes
 	frags := newFrags(matches, conf)
+
+	// add the backbone in as fragments (copy twice)
+	input.backbone.conf = conf
+	input.backbone.start = len(insert.Seq)
+	input.backbone.end = input.backbone.start + len(input.backbone.Seq) - 1
+	input.backbone.uniqueID = "backbone" + strconv.Itoa(input.backbone.start)
+	frags = append(frags, input.backbone)
+
+	copiedBB := input.backbone.copy()
+	copiedBB.start += len(target.Seq)
+	copiedBB.end += len(target.Seq)
+	copiedBB.uniqueID = input.backbone.uniqueID
+	frags = append(frags, copiedBB)
 
 	// build up a slice of assemblies that could, within the upper-limit on
 	// fragment count, be assembled to make the target vector

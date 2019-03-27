@@ -118,8 +118,11 @@ func digest(frag *Frag, enz enzyme) (digested *Frag, backbone *Backbone, err err
 	}
 
 	return &Frag{
-			ID:  frag.ID,
-			Seq: digestedSeq,
+			ID:       frag.ID,
+			uniqueID: "backbone",
+			Seq:      digestedSeq,
+			fragType: linear,
+			db:       frag.db,
 		},
 		&Backbone{
 			URL:              parseURL(frag.ID, frag.db),
