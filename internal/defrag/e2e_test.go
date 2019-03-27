@@ -1,5 +1,3 @@
-// +build e2e
-
 package defrag
 
 import (
@@ -28,13 +26,13 @@ func Test_sequence(test *testing.T) {
 
 	tests := []testFlags{
 		testFlags{
-			path.Join("..", "..", "test", "input", "BBa_K227013.fa"),
-			path.Join("..", "..", "test", "output", "BBa_K227013.json"),
+			path.Join("..", "..", "test", "input", "backbone.fa"),
+			path.Join("..", "..", "test", "output", "backbone.json"),
 			"pSB1A3",
 			"PstI",
-			"2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,2019,BBa_K22",
+			"2018,2019",
 			[]string{},
-			true,
+			false,
 			true,
 		},
 		testFlags{
@@ -54,7 +52,7 @@ func Test_sequence(test *testing.T) {
 			"PstI",
 			"",
 			[]string{},
-			true,
+			false,
 			true,
 		},
 		testFlags{
@@ -74,7 +72,7 @@ func Test_sequence(test *testing.T) {
 			"EcoRI",
 			"2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,BBa_E061",
 			[]string{},
-			true,
+			false,
 			true,
 		},
 		testFlags{
@@ -189,7 +187,7 @@ func Test_fragments(t *testing.T) {
 		wantFragments    []*Frag
 	}{
 		{
-			"fragments with existing overlap",
+			"fragments with linear overlap",
 			args{
 				[]*Frag{
 					&Frag{
@@ -213,15 +211,15 @@ func Test_fragments(t *testing.T) {
 			[]*Frag{
 				&Frag{
 					Seq:      "ACGTGCTAGCTACATCGATCGTAGCTAGCTAGCATCG",
-					fragType: existing,
+					fragType: linear,
 				},
 				&Frag{
 					Seq:      "AGCTAGCATCGACTGATCACTAGCATCGACTAGCTAG",
-					fragType: existing,
+					fragType: linear,
 				},
 				&Frag{
 					Seq:      "TCGACTAGCTAGAACTGATCTAGACGTGCTAGCTACA",
-					fragType: existing,
+					fragType: linear,
 				},
 			},
 		},

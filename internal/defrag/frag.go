@@ -15,7 +15,7 @@ type fragType int
 
 const (
 	// linear fragment, ie the type of a fragment as it was uploaded submitted and without PCR/synthesis
-	existing fragType = iota
+	linear fragType = iota
 
 	// circular is a circular sequence of DNA, e.g.: many of Addgene's plasmids
 	circular
@@ -30,7 +30,7 @@ const (
 // Frag is a single building block stretch of DNA for assembly
 type Frag struct {
 	// ID is a unique identifier for this fragment
-	ID string `json:"-"`
+	ID string `json:"id,omitempty"`
 
 	// type of the fragment in string representation for export
 	Type string `json:"type"`
@@ -239,7 +239,15 @@ func (f *Frag) synthDist(other *Frag) (synthCount int) {
 // This does not add in the cost of procurement, which is added to the assembly cost
 // in assembly.add()
 func (f *Frag) costTo(other *Frag) (cost float64) {
-	dist := f.distTo(other)
+	needsPCR := f.fragType == pcr || f.fragType == circular
+	pcrCost := float64(2*f.conf.FragmentsMinHomology) * f.conf.CostBP
+
+	if other == f {
+		if needsPCR {
+			return pcrCost
+		}
+		return 0
+	}
 
 	if f.overlapsViaPCR(other) {
 		if f.overlapsViaHomology(other) {
@@ -256,8 +264,15 @@ func (f *Frag) costTo(other *Frag) (cost float64) {
 	// we need to create a new synthetic fragment to get from this fragment to the next
 	// to account for both the bps between them as well as the additional bps we need to add
 	// for homology between the two
-	fragLength := f.conf.FragmentsMinHomology + dist
-	return f.conf.SynthFragmentCost(fragLength)
+	dist := f.distTo(other)
+	fragLength := (f.conf.FragmentsMinHomology * 2) + dist
+	synthCost := f.conf.SynthFragmentCost(fragLength)
+
+	// also account for whether this frag will require PCR
+	if needsPCR {
+		return synthCost + pcrCost
+	}
+	return synthCost
 }
 
 // reach returns a slice of Frag indexes that overlap with, or are the first synth_count nodes
@@ -322,6 +337,10 @@ func (f *Frag) junction(other *Frag, minHomology, maxHomology int) (junction str
 	for i := start; i <= end; i++ {
 		// traverse from that index to the end of the seq
 		for k, j := i, 0; k < len(s1); j, k = j+1, k+1 {
+			if j >= len(s2) {
+				break
+			}
+
 			if s1[k] != s2[j] {
 				break
 			}
@@ -522,9 +541,9 @@ func mutatePrimers(f *Frag, seq string, addLeft, addRight int) (mutated *Frag) {
 	return f
 }
 
-// ToString returns a string representation of a fragment's type
+// String returns a string representation of a fragment's type
 func (t fragType) String() string {
-	return []string{"existing", "vector", "pcr", "synthetic"}[t]
+	return []string{"linear", "vector", "pcr", "synthetic"}[t]
 }
 
 // fragsCost returns the total cost of a slice of frags. Just the summation of their costs

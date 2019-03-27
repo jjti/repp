@@ -431,7 +431,7 @@ func readFasta(path, contents string) (frags []*Frag, err error) {
 			if strings.Contains(line, "circular") {
 				fragTypes = append(fragTypes, circular)
 			} else {
-				fragTypes = append(fragTypes, existing)
+				fragTypes = append(fragTypes, linear)
 			}
 		}
 	}
@@ -578,7 +578,7 @@ func writeJSON(
 		gibson := false // whether it will be assembled via Gibson assembly
 
 		for _, f := range assembly {
-			if f.fragType != existing && f.fragType != circular {
+			if f.fragType != linear && f.fragType != circular {
 				gibson = true
 			}
 
@@ -586,6 +586,10 @@ func writeJSON(
 
 			if f.URL == "" && f.fragType != synthetic {
 				f.URL = parseURL(f.ID, f.db)
+			}
+
+			if f.URL != "" {
+				f.ID = "" // just log one or the other
 			}
 
 			// round to two decimal places
