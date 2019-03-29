@@ -277,7 +277,7 @@ func (f *Frag) costTo(other *Frag) (cost float64) {
 
 // reach returns a slice of Frag indexes that overlap with, or are the first synth_count nodes
 // away from this one within a slice of ordered nodes
-func (f *Frag) reach(nodes []*Frag, i, synthCount int) (reachable []int) {
+func (f *Frag) reach(nodes []*Frag, i int) (reachable []int) {
 	reachable = []int{}
 
 	// accumulate the nodes that overlap with this one
@@ -289,15 +289,9 @@ func (f *Frag) reach(nodes []*Frag, i, synthCount int) (reachable []int) {
 			return reachable
 		}
 
-		// these nodes overlap by enough (via PCR or existing homology)
-		if f.overlapsViaPCR(nodes[i]) {
-			reachable = append(reachable, i)
-		} else if synthCount > 0 {
-			// there's not enough existing overlap, but we can synthesize to it
-			synthCount--
-			reachable = append(reachable, i)
-		} else {
-			break
+		reachable = append(reachable, i)
+		if nodes[i].uniqueID == f.uniqueID {
+			break // do not go any further
 		}
 	}
 
