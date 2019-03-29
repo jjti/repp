@@ -213,7 +213,7 @@ func Test_Frag_costTo(t *testing.T) {
 					conf:  c,
 				},
 			},
-			(20.0 + 31.0) * 0.05,
+			3.5,
 		},
 		{
 			"cost to self should just be for PCR",
@@ -251,39 +251,46 @@ func Test_Frag_reach(t *testing.T) {
 	c.PCRMaxEmbedLength = 0
 
 	n11 := &Frag{
-		start: 0,
-		end:   10,
-		conf:  c,
+		uniqueID: "11",
+		start:    0,
+		end:      10,
+		conf:     c,
 	}
 	n12 := &Frag{
-		start: 5,
-		end:   15,
-		conf:  c,
+		uniqueID: "12",
+		start:    5,
+		end:      15,
+		conf:     c,
 	}
 	n13 := &Frag{
-		start: 6,
-		end:   16,
-		conf:  c,
+		uniqueID: "13",
+		start:    6,
+		end:      16,
+		conf:     c,
 	}
 	n14 := &Frag{
-		start: 7,
-		end:   17,
-		conf:  c,
+		uniqueID: "14",
+		start:    7,
+		end:      17,
+		conf:     c,
 	}
 	n15 := &Frag{
-		start: 15,
-		end:   20,
-		conf:  c,
+		uniqueID: "15",
+		start:    15,
+		end:      20,
+		conf:     c,
 	}
 	n16 := &Frag{
-		start: 16,
-		end:   21,
-		conf:  c,
+		uniqueID: "16",
+		start:    16,
+		end:      21,
+		conf:     c,
 	}
 	n17 := &Frag{
-		start: 17,
-		end:   22,
-		conf:  c,
+		uniqueID: "17",
+		start:    17,
+		end:      22,
+		conf:     c,
 	}
 
 	type fields struct {
@@ -294,9 +301,8 @@ func Test_Frag_reach(t *testing.T) {
 		assemblies []assembly
 	}
 	type args struct {
-		nodes      []*Frag
-		i          int
-		synthCount int
+		nodes []*Frag
+		i     int
 	}
 	tests := []struct {
 		name          string
@@ -313,11 +319,10 @@ func Test_Frag_reach(t *testing.T) {
 			args{
 				[]*Frag{n11, n12, n13, n14, n15, n16, n17},
 				0,
-				2, // limit to 2 "synthable" nodes
 			},
 			// get all the over-lappable nodes plus two more that
 			// can be synthesized to
-			[]int{1, 2, 3, 4, 5},
+			[]int{1, 2, 3, 4, 5, 6},
 		},
 		{
 			"return nothing at end",
@@ -328,7 +333,6 @@ func Test_Frag_reach(t *testing.T) {
 			args{
 				[]*Frag{n11, n12, n13, n14, n15, n16, n17},
 				6,
-				2, // limit to 3 "synthable" nodes
 			},
 			// nothing is reachable
 			[]int{},
@@ -344,7 +348,7 @@ func Test_Frag_reach(t *testing.T) {
 				assemblies: tt.fields.assemblies,
 				conf:       c,
 			}
-			if gotReachable := n.reach(tt.args.nodes, tt.args.i, tt.args.synthCount); !reflect.DeepEqual(gotReachable, tt.wantReachable) {
+			if gotReachable := n.reach(tt.args.nodes, tt.args.i); !reflect.DeepEqual(gotReachable, tt.wantReachable) {
 				t.Errorf("Frag.reach() = %v, want %v", gotReachable, tt.wantReachable)
 			}
 		})
@@ -724,9 +728,9 @@ func Test_fragType_String(t *testing.T) {
 		want string
 	}{
 		{
-			"existing fragType",
+			"linear fragType",
 			0,
-			"existing",
+			"linear",
 		},
 		{
 			"circular fragType",
