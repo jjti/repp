@@ -159,9 +159,9 @@ func sequence(input *Flags, conf *config.Config) (insert, target *Frag, solution
 	}
 
 	// keep only "proper" arcs (non-self-contained)
-	matches = cull(matches, len(target.Seq), conf.PCRMinLength)
+	matches = cull(matches, len(insert.Seq), conf.PCRMinLength)
 	if conf.Verbose {
-		fmt.Printf("%d matches after culling\n", len(matches))
+		fmt.Printf("%d matches after culling\n", len(matches)/2)
 	}
 
 	// map fragment Matches to nodes
@@ -182,7 +182,7 @@ func sequence(input *Flags, conf *config.Config) (insert, target *Frag, solution
 
 	// build up a slice of assemblies that could, within the upper-limit on
 	// fragment count, be assembled to make the target vector
-	assemblies := createAssemblies(frags, len(target.Seq), conf)
+	assemblies := createAssemblies(frags, len(insert.Seq), conf)
 
 	// build up a map from fragment count to a sorted list of assemblies with that number
 	assemblyCounts, countToAssemblies := groupAssembliesByCount(assemblies)
