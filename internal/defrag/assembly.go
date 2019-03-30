@@ -37,7 +37,8 @@ func (a *assembly) add(f *Frag, maxCount, targetLength int) (newAssembly assembl
 		newCount++
 	}
 
-	if newCount > maxCount {
+	assemblyEnd := a.frags[len(a.frags)-1].end
+	if newCount > maxCount || f.end-assemblyEnd < f.conf.PCRMinLength {
 		return assembly{}, false, false
 	}
 
@@ -73,10 +74,6 @@ func (a *assembly) add(f *Frag, maxCount, targetLength int) (newAssembly assembl
 	}
 	if !selfAnnealing {
 		newFrags = append(newFrags, f.copy())
-	}
-
-	if f.ID == "pSB1A3" {
-		// fmt.Println("seen")
 	}
 
 	return assembly{
@@ -208,9 +205,9 @@ func (a *assembly) mockNext(frags []*Frag, i int, target string, conf *config.Co
 
 // duplicates runs through all the nodes in an assembly and checks whether any of
 // them have unintended homology, or "duplicate homology".
-func (a *assembly) duplicates(nodes []*Frag, min, max int) (isDup bool, first, second, dup string) {
-	c := len(nodes) // Frag count
-	for i, f := range nodes {
+func (a *assembly) duplicates(frags []*Frag, min, max int) (isDup bool, first, second, dup string) {
+	c := len(frags) // Frag count
+	for i, f := range frags {
 		// check to make sure the fragment doesn't anneal to itself
 		if c > 1 {
 			if selfJ := f.junction(f, min, max); selfJ != "" {
@@ -219,9 +216,9 @@ func (a *assembly) duplicates(nodes []*Frag, min, max int) (isDup bool, first, s
 		}
 
 		for j := 2; j <= c; j++ { // skip next Frag, i+1 is supposed to anneal to i
-			junc := f.junction(nodes[(j+i)%c], min, max)
+			junc := f.junction(frags[(j+i)%c], min, max)
 			if junc != "" {
-				return true, f.ID, nodes[(j+i)%c].ID, junc
+				return true, f.ID, frags[(j+i)%c].ID, junc
 			}
 		}
 	}
@@ -330,8 +327,9 @@ func fillSolutions(target string, counts []int, countToAssemblies map[int][]asse
 	minCostAssembly := math.MaxFloat64
 
 	for _, count := range counts {
+		// fmt.Println(strconv.Itoa(count))
 		for _, assemblyToFill := range countToAssemblies[count] {
-			assemblyToFill.log()
+			// assemblyToFill.log()
 			if assemblyToFill.cost > minCostAssembly {
 				// skip this and the rest with this count, there's another
 				// cheaper option with the same number or fewer fragments (estimated)
@@ -341,7 +339,7 @@ func fillSolutions(target string, counts []int, countToAssemblies map[int][]asse
 			filledFragments, err := assemblyToFill.fill(target, conf)
 			if err != nil || filledFragments == nil {
 				// assemblyToFill.log()
-				// fmt.Println("error")
+				// fmt.Println(err.Error())
 				continue
 			}
 
@@ -349,7 +347,6 @@ func fillSolutions(target string, counts []int, countToAssemblies map[int][]asse
 
 			// assemblyToFill.log()
 			// fmt.Printf("actual %f\n", newAssemblyCost)
-
 			if newAssemblyCost >= minCostAssembly {
 				continue // wasn't actually cheaper, keep trying
 			}

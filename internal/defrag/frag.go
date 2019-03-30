@@ -150,9 +150,24 @@ func parseURL(entry, db string) string {
 
 // newFlags is the plural of newFlag
 func newFrags(matches []match, conf *config.Config) []*Frag {
+	min := conf.FragmentsMinHomology
+	max := conf.FragmentsMaxHomology
+
 	var frags []*Frag
 	for _, m := range matches {
-		frags = append(frags, newFrag(m, conf))
+		f := newFrag(m, conf)
+
+		// try and shrink to avoid a duplicate junction with self
+		selfJunction := f.junction(f, min, max)
+		if selfJunction != "" {
+			f.end -= len(selfJunction)
+			if f.end-f.start < conf.PCRMinLength {
+				continue
+			}
+			f.Seq = f.Seq[:len(f.Seq)-len(selfJunction)]
+		}
+
+		frags = append(frags, f)
 	}
 	return frags
 }
@@ -372,7 +387,6 @@ func (f *Frag) synthTo(next *Frag, target string) (synths []*Frag) {
 	}
 
 	// add to self to account for sequence across the zero-index (when sequence subselecting)
-	sl := len(target) // full sequence length
 	target = strings.ToUpper(target + target + target + target)
 
 	// slide along the range of sequence to create synthetic fragments
@@ -382,13 +396,13 @@ func (f *Frag) synthTo(next *Frag, target string) (synths []*Frag) {
 	start := f.end - jL // start w/ homology, move left
 	for len(synths) < synCount {
 		end := start + fL + 1
-		seq := target[start+sl : end+sl]
+		seq := target[start:end]
 
 		// check for a hairpin in the junction and shift this fragment's synthesis
 		// to the right if a hairpin is found
 		for hairpin(seq[len(seq)-jL:], f.conf) > f.conf.FragmentsMaxHairpinMelt {
 			end += jL / 2
-			seq = target[start+sl : end+sl]
+			seq = target[start:end]
 		}
 
 		synths = append(synths, &Frag{

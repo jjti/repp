@@ -12,6 +12,7 @@ func Test_assembly_add(t *testing.T) {
 
 	c.FragmentsMaxCount = 5
 	c.PCRMaxEmbedLength = 0
+	c.PCRMinLength = 0
 	c.SyntheticMaxLength = 100
 	c.CostSyntheticFragment = map[int]config.SynthCost{
 		100000: {
@@ -47,9 +48,9 @@ func Test_assembly_add(t *testing.T) {
 		conf:     c,
 	}
 
-	// create the nodes for testing
+	// create the frags for testing
 	type fields struct {
-		nodes    []*Frag
+		frags    []*Frag
 		cost     float64
 		synths   int
 		maxCount int
@@ -68,7 +69,7 @@ func Test_assembly_add(t *testing.T) {
 		{
 			"add with overlap",
 			fields{
-				nodes:  []*Frag{n1},
+				frags:  []*Frag{n1},
 				cost:   0,
 				synths: 0,
 			},
@@ -86,7 +87,7 @@ func Test_assembly_add(t *testing.T) {
 		{
 			"add with synthesis",
 			fields{
-				nodes:  []*Frag{n1},
+				frags:  []*Frag{n1},
 				cost:   10.0,
 				synths: 0,
 			},
@@ -104,7 +105,7 @@ func Test_assembly_add(t *testing.T) {
 		{
 			"add with completion/circularization",
 			fields{
-				nodes:  []*Frag{n1, n2, n3},
+				frags:  []*Frag{n1, n2, n3},
 				cost:   10.0,
 				synths: 0,
 			},
@@ -122,7 +123,7 @@ func Test_assembly_add(t *testing.T) {
 		{
 			"add with completion requiring synthesis",
 			fields{
-				nodes:  []*Frag{n1, n2},
+				frags:  []*Frag{n1, n2},
 				cost:   16.4,
 				synths: 0,
 			},
@@ -132,6 +133,7 @@ func Test_assembly_add(t *testing.T) {
 					uniqueID: n1.uniqueID,
 					start:    n3.start + c.SyntheticMaxLength,
 					end:      n3.end + c.SyntheticMaxLength,
+					conf:     c,
 				},
 			},
 			assembly{
@@ -145,7 +147,7 @@ func Test_assembly_add(t *testing.T) {
 		{
 			"don't exceed fragment limit",
 			fields{
-				nodes:  []*Frag{n1, n2, n3, n2, n3},
+				frags:  []*Frag{n1, n2, n3, n2, n3},
 				cost:   10.0,
 				synths: 0,
 			},
@@ -160,7 +162,7 @@ func Test_assembly_add(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			a := &assembly{
-				frags:  tt.fields.nodes,
+				frags:  tt.fields.frags,
 				cost:   tt.fields.cost,
 				synths: tt.fields.synths,
 			}
@@ -194,7 +196,7 @@ func Test_assembly_len(t *testing.T) {
 	}
 
 	type fields struct {
-		nodes    []*Frag
+		frags    []*Frag
 		cost     float64
 		synths   int
 		maxCount int
@@ -207,7 +209,7 @@ func Test_assembly_len(t *testing.T) {
 		{
 			"length without synths",
 			fields{
-				nodes:  []*Frag{n1, n2},
+				frags:  []*Frag{n1, n2},
 				synths: 0,
 			},
 			2,
@@ -215,7 +217,7 @@ func Test_assembly_len(t *testing.T) {
 		{
 			"length with synths",
 			fields{
-				nodes:  []*Frag{n1, n2},
+				frags:  []*Frag{n1, n2},
 				synths: 2,
 			},
 			4,
@@ -224,7 +226,7 @@ func Test_assembly_len(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			a := &assembly{
-				frags:  tt.fields.nodes,
+				frags:  tt.fields.frags,
 				cost:   tt.fields.cost,
 				synths: tt.fields.synths,
 			}
@@ -318,12 +320,12 @@ func Test_countMaps(t *testing.T) {
 
 func Test_assembly_duplicates(t *testing.T) {
 	type fields struct {
-		nodes  []*Frag
+		frags  []*Frag
 		cost   float64
 		synths int
 	}
 	type args struct {
-		nodes       []*Frag
+		frags       []*Frag
 		minHomology int
 		maxHomology int
 	}
@@ -338,7 +340,7 @@ func Test_assembly_duplicates(t *testing.T) {
 			"no false positive",
 			fields{},
 			args{
-				nodes: []*Frag{
+				frags: []*Frag{
 					&Frag{
 						Seq: "ATACCTACTATGGATGACGTAGCAAC",
 					},
@@ -362,7 +364,7 @@ func Test_assembly_duplicates(t *testing.T) {
 			"assembly with a self-annealing Frag",
 			fields{},
 			args{
-				nodes: []*Frag{
+				frags: []*Frag{
 					&Frag{
 						Seq: "CAGATGACGATGGCAACTGAGATGAGACCAGATGACGATG", // <- Frag (if much larger) has the chance to circularize
 					},
@@ -386,18 +388,22 @@ func Test_assembly_duplicates(t *testing.T) {
 			"assembly with a duplicate junction",
 			fields{},
 			args{
-				nodes: []*Frag{
+				frags: []*Frag{
 					&Frag{
-						Seq: "ATGATGCCACGTGCAACTGAGATGAGACCAGATGACGATG", // <- same junction
+						Seq:   "ATGATGCCACGTGCAACTGAGATGAGACCAGATGACGATG", // <- same junction
+						start: 0,
 					},
 					&Frag{
-						Seq: "CAGATGACGATGTCGTTGATATACCTACTGGAGAGCACAG",
+						Seq:   "CAGATGACGATGTCGTTGATATACCTACTGGAGAGCACAG",
+						start: 0,
 					},
 					&Frag{
-						Seq: "TGGAGAGCACAGATGGATGACGTAATGACAGATGACGATG", // <- same junction
+						Seq:   "TGGAGAGCACAGATGGATGACGTAATGACAGATGACGATG", // <- same junction
+						start: 0,
 					},
 					&Frag{
-						Seq: "CAGATGACGATGACCGCAACTCGTTGATGATGCCAC",
+						Seq:   "CAGATGACGATGACCGCAACTCGTTGATGATGCCAC",
+						start: 0,
 					},
 				},
 				minHomology: 5,
@@ -410,7 +416,7 @@ func Test_assembly_duplicates(t *testing.T) {
 			"another false positive to avoid",
 			fields{},
 			args{
-				nodes: []*Frag{
+				frags: []*Frag{
 					&Frag{
 						Seq: "ACGTGCTAGCTACATCGATCGTAGCTAGCTAGCATCG", // this shouldn't be flagged as anything
 					},
@@ -431,11 +437,11 @@ func Test_assembly_duplicates(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			a := &assembly{
-				frags:  tt.fields.nodes,
+				frags:  tt.fields.frags,
 				cost:   tt.fields.cost,
 				synths: tt.fields.synths,
 			}
-			isDuplicate, _, _, duplicateSeq := a.duplicates(tt.args.nodes, tt.args.minHomology, tt.args.maxHomology)
+			isDuplicate, _, _, duplicateSeq := a.duplicates(tt.args.frags, tt.args.minHomology, tt.args.maxHomology)
 
 			if isDuplicate != tt.want {
 				t.Errorf("assembly.duplicates() = %v, want %v", isDuplicate, tt.want)

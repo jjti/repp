@@ -428,40 +428,22 @@ func cull(matches []match, targetLength, minSize int) (culled []match) {
 		}
 	}
 
-	// add back copied matches for those that only show up once but should cross the zero index
-	var copiedMatches []match
-	for _, m := range culled {
-		if count := matchCount[m.uniqueID]; count >= 2 {
-			continue
-		}
+	// sort again now that we added copied matches
+	sortMatches(culled)
 
-		// first half of the queried seq range (2 seq lengths)
-		if m.queryEnd < targetLength {
-			copiedMatches = append(
-				copiedMatches,
-				m.copyWithQueryRange(m.queryStart+targetLength, m.queryEnd+targetLength),
-			)
-		} else if m.queryStart > targetLength {
-			copiedMatches = append(
-				copiedMatches,
-				m.copyWithQueryRange(m.queryStart-targetLength, m.queryEnd-targetLength),
-			)
+	fmt.Println("matches")
+	for _, m := range matches {
+		if m.queryStart < targetLength {
+			m.log()
 		}
 	}
 
-	// sort again now that we added copied matches
-	culled = append(culled, copiedMatches...)
-	sortMatches(culled)
-
-	// fmt.Println("matches")
-	// for _, m := range matches {
-	// 	m.log()
-	// }
-
-	// fmt.Println("after culling")
-	// for _, m := range culled {
-	// 	m.log()
-	// }
+	fmt.Println("after culling")
+	for _, m := range culled {
+		if m.queryStart < targetLength {
+			m.log()
+		}
+	}
 
 	return culled
 }

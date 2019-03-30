@@ -38,8 +38,10 @@ pcr-primer-max-embed-length: 20
 pcr-primer-max-offtarget-tm: 55.0
 
 # The length of PCR buffer. The length of the ranges to allow Primer3 to
-# choose primers in if neighbors are both synthetic, for example
-pcr-buffer-length: 100
+# choose primers in if neighbors are both synthetic. The larger this number,
+# the "better" the primers may be, but at the cost of a more expensive vector
+# (more synthesis)
+pcr-buffer-length: 20
 
 # Minimum length of a synthesized building fragment
 synthetic-min-length: 125

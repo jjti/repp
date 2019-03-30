@@ -99,7 +99,7 @@ func (p *primer3) input(minHomology, maxHomology, maxEmbedLength, minLength, pcr
 		bpAddLeft = addLeft
 		bpAddRight = addRight
 		growPrimers = 0
-	} else if growPrimers > 36-26 {
+	} else if growPrimers > 36-30 {
 		// we can't exceed 36 bp here (primer3 upper-limit), just create primers for the portion that
 		// anneals to the seq and add the other portion/seqs on later (in mutateNodePrimers)
 		bpAddLeft = addLeft
@@ -114,7 +114,7 @@ func (p *primer3) input(minHomology, maxHomology, maxEmbedLength, minLength, pcr
 	// sizes to make the primers and target size (min, opt, and max)
 	primerMin := 18 + growPrimers // defaults to 18
 	primerOpt := 20 + growPrimers
-	primerMax := 26 + growPrimers // defaults to 23
+	primerMax := 30 + growPrimers // defaults to 23
 
 	// check whether we have wiggle room on the left or right hand sides to move the
 	// primers inward (let primer3 pick better primers)
@@ -235,7 +235,7 @@ func (p *primer3) settings(
 		"PRIMER_THERMODYNAMIC_PARAMETERS_PATH": p3conf,
 		"PRIMER_NUM_RETURN":                    "1",
 		"PRIMER_PICK_ANYWAY":                   "1",
-		"SEQUENCE_TEMPLATE":                    seq + seq + seq,         // triple sequence
+		"SEQUENCE_TEMPLATE":                    seq + seq + seq + seq,
 		"PRIMER_MIN_SIZE":                      strconv.Itoa(primerMin), // default 18
 		"PRIMER_OPT_SIZE":                      strconv.Itoa(primerOpt),
 		"PRIMER_MAX_SIZE":                      strconv.Itoa(primerMax),
@@ -274,16 +274,16 @@ func (p *primer3) settings(
 			} else if rightBuffer == 0 {
 				settings["SEQUENCE_FORCE_RIGHT_START"] = strconv.Itoa(start + length)
 			}
+			// settings["SEQUENCE_PRIMER_PAIR_OK_REGION_LIST"] = fmt.Sprintf("%d,%d,%d,%d;", start, leftBuffer+primerMax, rightStart, rightBuffer+primerMax)
 			settings["PRIMER_PRODUCT_SIZE_RANGE"] = fmt.Sprintf("%d-%d", excludeLength, length)
-			settings["SEQUENCE_PRIMER_PAIR_OK_REGION_LIST"] = fmt.Sprintf("%d,%d,%d,%d", start, leftBuffer+primerMax, rightStart, rightBuffer+primerMax)
 		}
 	}
 
-	if settings["SEQUENCE_PRIMER_PAIR_OK_REGION_LIST"] == "" {
+	if settings["PRIMER_PRODUCT_SIZE_RANGE"] == "" {
 		// otherwise force the start and end of the PCR range
 		settings["PRIMER_TASK"] = "pick_cloning_primers"
 		settings["SEQUENCE_INCLUDED_REGION"] = fmt.Sprintf("%d,%d", start, length)
-		settings["PRIMER_PRODUCT_SIZE_RANGE"] = fmt.Sprintf("%d-%d", length, length)
+		// settings["PRIMER_PRODUCT_SIZE_RANGE"] = fmt.Sprintf("%d-%d", length, length)
 	}
 
 	var fileBuffer bytes.Buffer
