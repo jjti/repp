@@ -330,26 +330,31 @@ func fillAssemblies(target string, counts []int, countToAssemblies map[int][]ass
 	minCostAssembly := math.MaxFloat64
 
 	for _, count := range counts {
+		if count != 4 {
+			continue
+		}
+
 		for _, assemblyToFill := range countToAssemblies[count] {
-			// assemblyToFill.log()
+			assemblyToFill.log()
 			if assemblyToFill.cost > minCostAssembly {
 				// skip this and the rest with this count, there's another
 				// cheaper option with the same number or fewer fragments (estimated)
+				fmt.Println("too expensive break")
 				break
 			}
 
 			filledFragments, err := assemblyToFill.fill(target, conf)
 			if err != nil || filledFragments == nil {
 				// assemblyToFill.log()
-				// fmt.Println("error", err.Error())
+				fmt.Println("error", err.Error())
 				continue
 			}
 
 			newAssemblyCost := fragsCost(filledFragments)
 
-			if newAssemblyCost >= minCostAssembly {
-				break
-				// continue // wasn't actually cheaper, keep trying
+			if newAssemblyCost >= minCostAssembly || len(filledFragments) > conf.FragmentsMaxCount {
+				fmt.Println("too expensive continue")
+				continue // wasn't actually cheaper, keep trying
 			}
 			minCostAssembly = newAssemblyCost // store this as the new cheapest assembly
 
@@ -366,6 +371,7 @@ func fillAssemblies(target string, counts []int, countToAssemblies map[int][]ass
 			}
 
 			// set this is as the new cheapest of this length
+			fmt.Println("kept")
 			filled[len(filledFragments)] = filledFragments
 		}
 	}
