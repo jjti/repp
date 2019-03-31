@@ -262,10 +262,7 @@ func Test_vector_single_vector(t *testing.T) {
 		false,
 	)
 
-	_, _, assemblies, err := sequence(fs, c) // use addgene database
-	if err != nil {
-		t.Error(err)
-	}
+	assemblies := Sequence(fs, c) // use addgene database
 
 	if !strings.Contains(assemblies[0][0].ID, "109049") {
 		t.Fatal("failed to use 109049 to build the vector")

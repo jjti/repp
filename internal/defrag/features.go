@@ -252,7 +252,7 @@ func featureSolutions(feats [][]string, fragToMatches map[string][]featureMatch,
 	assemblyCounts, countToAssemblies := groupAssembliesByCount(assemblies)
 
 	// fill each assembly and accumulate the pareto optimal solutions
-	solutions := fillSolutions(target, assemblyCounts, countToAssemblies, conf)
+	solutions := fillAssemblies(target, assemblyCounts, countToAssemblies, conf)
 
 	return target, solutions
 }

@@ -157,12 +157,13 @@ func (p *primer3) shrink(last, f, next *Frag, maxHomology int, minLength int) *F
 
 	if distLeft := last.distTo(f); distLeft < -maxHomology {
 		// there's too much homology on the left side, we should move the Frag's start inward
-		shiftInLeft = (-distLeft) - maxHomology
+		// the /2 is because each of the two fragments will be shifting inwards
+		shiftInLeft = ((-distLeft) - maxHomology) / 2
 	}
 
 	if distRight := f.distTo(next); distRight < -maxHomology {
 		// there's too much homology on the right side, we should move the Frag's end inward
-		shiftInRight = (-distRight) - maxHomology
+		shiftInRight = ((-distRight) - maxHomology) / 2
 	}
 
 	// make sure the fragment doesn't become less than the minimum length
@@ -274,7 +275,8 @@ func (p *primer3) settings(
 			} else if rightBuffer == 0 {
 				settings["SEQUENCE_FORCE_RIGHT_START"] = strconv.Itoa(start + length)
 			}
-			// settings["SEQUENCE_PRIMER_PAIR_OK_REGION_LIST"] = fmt.Sprintf("%d,%d,%d,%d;", start, leftBuffer+primerMax, rightStart, rightBuffer+primerMax)
+
+			// settings["SEQUENCE_PRIMER_PAIR_OK_REGION_LIST"] = fmt.Sprintf("%d,%d,%d,%d ;", start, leftBuffer+primerMax, rightStart, rightBuffer+primerMax)
 			settings["PRIMER_PRODUCT_SIZE_RANGE"] = fmt.Sprintf("%d-%d", excludeLength, length)
 		}
 	}

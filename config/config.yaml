@@ -28,7 +28,7 @@ pcr-rxn-cost: 0.27
 pcr-min-length: 60
 
 # Max primer3 pair penalty score
-pcr-primer-max-pair-penalty: 20.0
+pcr-primer-max-pair-penalty: 30.0
 
 # Max embedded length. The most bp to include upstream of a annealing portion
 # of a primer to create or extend a junction with another part
