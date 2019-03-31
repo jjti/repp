@@ -182,13 +182,13 @@ func sequence(input *Flags, conf *config.Config) (insert, target *Frag, solution
 
 	// build up a slice of assemblies that could, within the upper-limit on
 	// fragment count, be assembled to make the target vector
-	assemblies := createAssemblies(frags, len(insert.Seq), conf)
+	assemblies := createAssemblies(frags, len(target.Seq), conf)
 
 	// build up a map from fragment count to a sorted list of assemblies with that number
 	assemblyCounts, countToAssemblies := groupAssembliesByCount(assemblies)
 
 	// fill in pareto optimal assembly solutions
-	solutions = fillSolutions(target.Seq, assemblyCounts, countToAssemblies, conf)
+	solutions = fillAssemblies(target.Seq, assemblyCounts, countToAssemblies, conf)
 
 	return insert, target, solutions, nil
 }

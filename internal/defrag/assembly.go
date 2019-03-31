@@ -30,14 +30,17 @@ func (a *assembly) add(f *Frag, maxCount, targetLength int) (newAssembly assembl
 	// check if this is the first fragment annealing to itself
 	selfAnnealing := f.uniqueID == a.frags[0].uniqueID
 
+	// the last fragment in the assembly
+	last := a.frags[len(a.frags)-1]
+
 	// calc the number of synthesis fragments needed to get to this next Frag
-	synths := a.frags[len(a.frags)-1].synthDist(f)
+	synths := last.synthDist(f)
 	newCount := a.len() + synths
 	if !selfAnnealing {
 		newCount++
 	}
 
-	assemblyEnd := a.frags[len(a.frags)-1].end
+	assemblyEnd := last.end
 	if newCount > maxCount || f.end-assemblyEnd < f.conf.PCRMinLength {
 		return assembly{}, false, false
 	}
@@ -45,7 +48,7 @@ func (a *assembly) add(f *Frag, maxCount, targetLength int) (newAssembly assembl
 	created = true
 
 	// calc the estimated dollar cost of getting to the next Frag
-	annealCost := a.frags[len(a.frags)-1].costTo(f)
+	annealCost := last.costTo(f)
 	if selfAnnealing && synths == 0 {
 		annealCost = 0 // does not cost extra to anneal to the first fragment
 	}
@@ -320,14 +323,13 @@ func groupAssembliesByCount(assemblies []assembly) ([]int, map[int][]assembly) {
 	return counts, countToAssemblies
 }
 
-// fillSolutions fills in assemblies and returns the pareto optimal solutions.
-func fillSolutions(target string, counts []int, countToAssemblies map[int][]assembly, conf *config.Config) (solutions [][]*Frag) {
+// fillAssemblies fills in assemblies and returns the pareto optimal solutions.
+func fillAssemblies(target string, counts []int, countToAssemblies map[int][]assembly, conf *config.Config) (solutions [][]*Frag) {
 	// append a fully synthetic solution at first, nothing added should cost more than this (single vector)
 	filled := make(map[int][]*Frag)
 	minCostAssembly := math.MaxFloat64
 
 	for _, count := range counts {
-		// fmt.Println(strconv.Itoa(count))
 		for _, assemblyToFill := range countToAssemblies[count] {
 			// assemblyToFill.log()
 			if assemblyToFill.cost > minCostAssembly {
@@ -339,16 +341,15 @@ func fillSolutions(target string, counts []int, countToAssemblies map[int][]asse
 			filledFragments, err := assemblyToFill.fill(target, conf)
 			if err != nil || filledFragments == nil {
 				// assemblyToFill.log()
-				// fmt.Println(err.Error())
+				// fmt.Println("error", err.Error())
 				continue
 			}
 
 			newAssemblyCost := fragsCost(filledFragments)
 
-			// assemblyToFill.log()
-			// fmt.Printf("actual %f\n", newAssemblyCost)
 			if newAssemblyCost >= minCostAssembly {
-				continue // wasn't actually cheaper, keep trying
+				break
+				// continue // wasn't actually cheaper, keep trying
 			}
 			minCostAssembly = newAssemblyCost // store this as the new cheapest assembly
 

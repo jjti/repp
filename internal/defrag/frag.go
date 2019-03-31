@@ -255,11 +255,12 @@ func (f *Frag) synthDist(other *Frag) (synthCount int) {
 // in assembly.add()
 func (f *Frag) costTo(other *Frag) (cost float64) {
 	needsPCR := f.fragType == pcr || f.fragType == circular
-	pcrCost := float64(2*f.conf.FragmentsMinHomology) * f.conf.CostBP
+	pcrNoHomology := 50.0 * f.conf.CostBP // pcr no homology
+	pcrHomology := (50.0 + float64(f.conf.FragmentsMinHomology)) * f.conf.CostBP
 
 	if other == f {
 		if needsPCR {
-			return pcrCost
+			return pcrNoHomology
 		}
 		return 0
 	}
@@ -268,24 +269,24 @@ func (f *Frag) costTo(other *Frag) (cost float64) {
 		if f.overlapsViaHomology(other) {
 			// there's already enough overlap between this Frag and the one being tested
 			// estimating two primers, primer length assumed to be 25bp
-			return 50 * f.conf.CostBP
+			return pcrNoHomology
 		}
 
 		// we have to create some additional primer sequence to reach the next fragment
 		// estimating here that we'll add half of minHomology to both sides
-		return float64(50+f.conf.FragmentsMinHomology) * f.conf.CostBP
+		return pcrHomology
 	}
 
 	// we need to create a new synthetic fragment to get from this fragment to the next
 	// to account for both the bps between them as well as the additional bps we need to add
 	// for homology between the two
 	dist := f.distTo(other)
-	fragLength := (f.conf.FragmentsMinHomology * 2) + dist
-	synthCost := f.conf.SynthFragmentCost(fragLength)
+	dist += f.conf.FragmentsMinHomology * 2
+	synthCost := f.conf.SynthFragmentCost(dist)
 
 	// also account for whether this frag will require PCR
 	if needsPCR {
-		return synthCost + pcrCost
+		return synthCost + pcrNoHomology
 	}
 	return synthCost
 }
