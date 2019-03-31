@@ -155,15 +155,9 @@ func (p *primer3) shrink(last, f, next *Frag, maxHomology int, minLength int) *F
 	var shiftInLeft int
 	var shiftInRight int
 
-	if distLeft := last.distTo(f); distLeft < -maxHomology {
-		// there's too much homology on the left side, we should move the Frag's start inward
-		// the /2 is because each of the two fragments will be shifting inwards
-		shiftInLeft = ((-distLeft) - maxHomology) / 2
-	}
-
 	if distRight := f.distTo(next); distRight < -maxHomology {
 		// there's too much homology on the right side, we should move the Frag's end inward
-		shiftInRight = ((-distRight) - maxHomology) / 2
+		shiftInRight = (-distRight) - maxHomology
 	}
 
 	// make sure the fragment doesn't become less than the minimum length

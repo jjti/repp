@@ -431,19 +431,19 @@ func cull(matches []match, targetLength, minSize int) (culled []match) {
 	// sort again now that we added copied matches
 	sortMatches(culled)
 
-	// fmt.Println("matches")
-	// for _, m := range matches {
-	// 	if m.queryStart < targetLength {
-	// 		m.log()
-	// 	}
-	// }
+	fmt.Println("matches")
+	for _, m := range matches {
+		if m.queryStart < targetLength {
+			m.log()
+		}
+	}
 
-	// fmt.Println("after culling")
-	// for _, m := range culled {
-	// 	if m.queryStart < targetLength {
-	// 		m.log()
-	// 	}
-	// }
+	fmt.Println("after culling")
+	for _, m := range culled {
+		// if m.queryStart < targetLength {
+		m.log()
+		// }
+	}
 
 	return culled
 }
