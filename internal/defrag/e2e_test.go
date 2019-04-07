@@ -12,7 +12,7 @@ import (
 	"github.com/jjtimmons/defrag/config"
 )
 
-func Test_sequence(test *testing.T) {
+func Test_sequence_e2e(test *testing.T) {
 	c := config.New()
 
 	type testFlags struct {
@@ -264,7 +264,7 @@ func Test_vector_single_vector(t *testing.T) {
 
 	assemblies := Sequence(fs, c) // use addgene database
 
-	if !strings.Contains(assemblies[0][0].ID, "109049") {
+	if !strings.Contains(assemblies[0][0].URL, "109049") {
 		t.Fatal("failed to use 109049 to build the vector")
 	}
 }
