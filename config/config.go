@@ -9,6 +9,10 @@ import (
 	"path/filepath"
 	"sort"
 
+	"github.com/mitchellh/mapstructure"
+
+	"gopkg.in/yaml.v2"
+
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/viper"
 )
@@ -131,19 +135,34 @@ type Config struct {
 // TODO: add back the config file path setting
 func New() *Config {
 	// read in the default/base settings file first
+	viper.SetConfigType("yaml")
 	viper.SetConfigFile(RootSettingsFile)
 	if err := viper.ReadInConfig(); err != nil {
 		log.Fatal(err)
 	}
 
 	if userSettings := viper.GetString("settings"); userSettings != "" && userSettings != RootSettingsFile {
-		viper.SetConfigFile(userSettings) // user has specified a new path for a settings file
-
-		// read in user defined settings file
-		if err := viper.MergeInConfig(); err == nil {
-			// fmt.Println("Using config file: ", viper.ConfigFileUsed())
-		} else {
+		viper.SetConfigFile(userSettings)             // user has specified a new path for a settings file
+		if err := viper.MergeInConfig(); err != nil { // read in user defined settings file
 			log.Fatal(err)
+		}
+
+		file, _ := os.Open(userSettings)
+		userData := make(map[string]interface{})
+		if err := yaml.NewDecoder(file).Decode(userData); err != nil {
+			log.Fatal(err)
+		}
+
+		userConfig := &Config{}
+		if err := mapstructure.Decode(userData, userConfig); err != nil {
+			log.Fatal(err)
+		}
+
+		if userConfig.CostSyntheticFragment != nil {
+			viper.Set("synthetic-fragment-cost", userConfig.CostSyntheticFragment)
+		}
+		if userConfig.CostSyntheticVector != nil {
+			viper.Set("synthetic-vector-cost", userConfig.CostSyntheticVector)
 		}
 	}
 
@@ -220,7 +239,7 @@ func synthCost(seqLength int, costs map[int]SynthCost) SynthCost {
 	if synthCostKey == 0 {
 		return SynthCost{
 			Fixed: true,
-			Cost:  math.MaxInt16,
+			Cost:  math.MaxInt32,
 		}
 	}
 
