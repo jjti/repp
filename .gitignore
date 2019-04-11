@@ -17,10 +17,7 @@
 bin/*
 
 # ignore source files, too large
-assets/addgene/**
-assets/igem/**
-assets/snapgene/**
-assets/dnasu/**
+assets/*
 
 # test output files
 test/output/**
