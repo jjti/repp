@@ -13,6 +13,7 @@
 # mac
 *.DS_Store
 
+# ignore output binaries
 bin/*
 
 # ignore source files, too large
@@ -23,3 +24,6 @@ assets/dnasu/**
 
 # test output files
 test/output/**
+
+# ignore the vendor dependencies
+vendor/*
