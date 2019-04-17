@@ -19,11 +19,7 @@ func Annotate(cmd *cobra.Command, args []string) {
 
 	identity, err := cmd.Flags().GetInt("identity")
 	if err != nil {
-<<<<<<< HEAD
 		identity = 100 // might be something other than `rvec vector`
-=======
-		identity = 100 // might be something other than `defrag vector`
->>>>>>> 6f3450c4125f17d3ff1136ff8c157a24a9b4d467
 	}
 
 	p := inputParser{}
