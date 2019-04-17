@@ -1,6 +1,12 @@
+<<<<<<< HEAD
 # rvec
 
 > _rvec_: (of software) ~reduce the fragmentation of (a file)~ _create vectors_ by concatenating parts stored in separate locations on a disk.
+=======
+# defrag
+
+> _defrag_: (of software) ~reduce the fragmentation of (a file)~ _create vectors_ by concatenating parts stored in separate locations on a disk.
+>>>>>>> 6f3450c4125f17d3ff1136ff8c157a24a9b4d467
 
 Finds pareto optimal solutions for vector construction using existing DNA fragments in local and/or remote repositories.
 
@@ -9,19 +15,31 @@ Finds pareto optimal solutions for vector construction using existing DNA fragme
 Assemble a list of fragments via Gibson Assembly. Generate primers and synthetic sequences (to avoid complexities).
 
 ```bash
+<<<<<<< HEAD
 rvec fragments -i building_fragments.fa -o vector.json
+=======
+defrag fragments -i building_fragments.fa -o vector.json
+>>>>>>> 6f3450c4125f17d3ff1136ff8c157a24a9b4d467
 ```
 
 Find fragments to assemble a vector sequence. Use local and/or remote repositories. Rank assemblies by cost and number of fragments.
 
 ```bash
+<<<<<<< HEAD
 rvec vector -i seq.fa -o vectors.json --dbs "local-repo-1.fa local-repo-2.fa" --addgene --igem
+=======
+defrag vector -i seq.fa -o vectors.json --dbs "local-repo-1.fa local-repo-2.fa" --addgene --igem
+>>>>>>> 6f3450c4125f17d3ff1136ff8c157a24a9b4d467
 ```
 
 Find fragments to assemble a vector from a list of features by name. iGEM part names or accession numbers.
 
 ```bash
+<<<<<<< HEAD
 rvec features pSB1C3 FJ172221 -o vector.json
+=======
+defrag features pSB1C3 FJ172221 -o vector.json
+>>>>>>> 6f3450c4125f17d3ff1136ff8c157a24a9b4d467
 ```
 
 ## Features
