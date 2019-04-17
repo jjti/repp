@@ -1,11 +1,6 @@
 LOCAL_BIN=/usr/local/bin
-<<<<<<< HEAD
 APP=$(LOCAL_BIN)/rvec
 APP_DATA=$${HOME}/.rvec
-=======
-APP=$(LOCAL_BIN)/defrag
-APP_DATA=$${HOME}/.defrag
->>>>>>> 6f3450c4125f17d3ff1136ff8c157a24a9b4d467
 PRIMER3_CONF=$(APP_DATA)/primer3_config/
 
 SETTINGS=./config/config.yaml
@@ -77,14 +72,7 @@ uninstall: clean
 	rm -rf $(APP_DATA)
 
 test:
-<<<<<<< HEAD
 	go test ./internal/rvec
 
 e2e:
 	go test ./internal/rvec -tags=e2e
-=======
-	go test ./internal/defrag
-
-e2e:
-	go test ./internal/defrag -tags=e2e
->>>>>>> 6f3450c4125f17d3ff1136ff8c157a24a9b4d467

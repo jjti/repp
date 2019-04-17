@@ -1,10 +1,6 @@
 // +build e2e
 
-<<<<<<< HEAD
 package rvec
-=======
-package defrag
->>>>>>> 6f3450c4125f17d3ff1136ff8c157a24a9b4d467
 
 import (
 	"path"
@@ -13,11 +9,7 @@ import (
 	"strings"
 	"testing"
 
-<<<<<<< HEAD
 	"github.com/jjtimmons/rvec/config"
-=======
-	"github.com/jjtimmons/defrag/config"
->>>>>>> 6f3450c4125f17d3ff1136ff8c157a24a9b4d467
 )
 
 func Test_sequence_e2e(test *testing.T) {
