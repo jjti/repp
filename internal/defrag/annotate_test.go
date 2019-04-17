@@ -1,4 +1,4 @@
-package defrag
+package rvec
 
 import "testing"
 

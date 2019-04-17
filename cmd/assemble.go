@@ -1,8 +1,8 @@
 package cmd
 
 import (
-	"github.com/jjtimmons/defrag/config"
-	"github.com/jjtimmons/defrag/internal/defrag"
+	"github.com/jjtimmons/rvec/config"
+	"github.com/jjtimmons/rvec/internal/rvec"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -12,7 +12,7 @@ var (
 in one of the dbs or a file on the local filesystem.`
 
 	enzymeHelp = `enzyme to linearize the backbone with (backbone must be specified).
-'defrag ls enzymes' prints a list of recognized enzymes.`
+'rvec ls enzymes' prints a list of recognized enzymes.`
 )
 
 // assembleCmd is for finding building a vector from its fragments, features, or sequence
@@ -29,7 +29,7 @@ against a list of consituent fragment, feature, or a target sequence.`,
 var fragmentsCmd = &cobra.Command{
 	Use:                        "fragments",
 	Short:                      "Build a vector from its constituent fragments",
-	Run:                        defrag.FragmentsCmd,
+	Run:                        rvec.FragmentsCmd,
 	SuggestionsMinimumDistance: 3,
 	Long: `Prepare a list of fragments for assembly via Gibson Assembly. Fragments are
 checked for existing homology with their neighbors and are prepared for
@@ -40,7 +40,7 @@ assembly with PCR.`,
 var featuresCmd = &cobra.Command{
 	Use:                        "features [feature] ... [featureN]",
 	Short:                      "Find or build a vector from its constituent features",
-	Run:                        defrag.FeaturesCmd, // TODO
+	Run:                        rvec.FeaturesCmd, // TODO
 	SuggestionsMinimumDistance: 3,
 }
 
@@ -48,7 +48,7 @@ var featuresCmd = &cobra.Command{
 var sequenceCmd = &cobra.Command{
 	Use:                        "sequence",
 	Short:                      "Find or build a vector from its target sequence",
-	Run:                        defrag.SequenceCmd,
+	Run:                        rvec.SequenceCmd,
 	SuggestionsMinimumDistance: 2,
 	Long: `Build up a vector from its target sequence using a combination of existing and
 synthesized fragments.

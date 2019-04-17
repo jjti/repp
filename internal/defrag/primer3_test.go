@@ -1,4 +1,4 @@
-package defrag
+package rvec
 
 import (
 	"math"
@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/jjtimmons/defrag/config"
+	"github.com/jjtimmons/rvec/config"
 )
 
 func Test_p3Exec_shrink(t *testing.T) {

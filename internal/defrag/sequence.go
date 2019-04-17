@@ -1,4 +1,4 @@
-package defrag
+package rvec
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/jjtimmons/defrag/config"
+	"github.com/jjtimmons/rvec/config"
 	"github.com/spf13/cobra"
 )
 

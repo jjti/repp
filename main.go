@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/jjtimmons/defrag/cmd"
+	"github.com/jjtimmons/rvec/cmd"
 )
 
 func main() {

@@ -1,11 +1,11 @@
-package defrag
+package rvec
 
 import (
 	"reflect"
 	"strings"
 	"testing"
 
-	"github.com/jjtimmons/defrag/config"
+	"github.com/jjtimmons/rvec/config"
 )
 
 func TestNewFeatureDB(t *testing.T) {

@@ -1,4 +1,4 @@
-package defrag
+package rvec
 
 import (
 	"fmt"
@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/jinzhu/copier"
-	"github.com/jjtimmons/defrag/config"
+	"github.com/jjtimmons/rvec/config"
 )
 
 // fragType is the Frag building type to be used in the assembly

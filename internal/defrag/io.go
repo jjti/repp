@@ -1,4 +1,4 @@
-package defrag
+package rvec
 
 import (
 	"encoding/json"
@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jjtimmons/defrag/config"
+	"github.com/jjtimmons/rvec/config"
 	"github.com/spf13/cobra"
 )
 
@@ -126,7 +126,7 @@ func NewFlags(
 }
 
 // parseCmdFlags gathers the in path, out path, etc from a cobra cmd object
-// returns Flags and a Config struct for defrag.Vector or defrag.Fragments.
+// returns Flags and a Config struct for rvec.Vector or rvec.Fragments.
 func parseCmdFlags(cmd *cobra.Command, args []string, strict bool) (*Flags, *config.Config) {
 	var err error
 	fs := &Flags{} // parsed flags
@@ -189,7 +189,7 @@ func parseCmdFlags(cmd *cobra.Command, args []string, strict bool) (*Flags, *con
 
 	identity, err := cmd.Flags().GetInt("identity")
 	if err != nil {
-		identity = 100 // might be something other than `defrag vector`
+		identity = 100 // might be something other than `rvec vector`
 	}
 	// set identity for blastn searching
 	fs.identity = identity
@@ -254,7 +254,7 @@ func (p *inputParser) parseFeatureInput(args []string) (out string) {
 	}
 
 	// if it's a features command, concatenate the arguments in case they're feature names
-	// with 'defrag features' the arguments are the feature names to use
+	// with 'rvec features' the arguments are the feature names to use
 	if commaSeparated {
 		spacedSeparated := strings.Join(args, " ")
 		splitByComma := strings.Split(spacedSeparated, ",")
@@ -369,7 +369,7 @@ func (p *inputParser) getEnzyme(enzymeName string) (enzyme, error) {
 	}
 
 	return enzyme{}, fmt.Errorf(
-		`failed to find enzyme with name %s use "defrag enzymes" for a list of recognized enzymes`,
+		`failed to find enzyme with name %s use "rvec enzymes" for a list of recognized enzymes`,
 		enzymeName,
 	)
 }

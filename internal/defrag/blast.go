@@ -1,4 +1,4 @@
-package defrag
+package rvec
 
 import (
 	"fmt"
@@ -11,7 +11,7 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/jjtimmons/defrag/config"
+	"github.com/jjtimmons/rvec/config"
 )
 
 var (

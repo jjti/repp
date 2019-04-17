@@ -1,4 +1,4 @@
-package defrag
+package rvec
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/jjtimmons/defrag/config"
+	"github.com/jjtimmons/rvec/config"
 )
 
 // assembly is a slice of nodes ordered by the nodes

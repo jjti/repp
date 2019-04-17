@@ -1,11 +1,11 @@
-package defrag
+package rvec
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
-	"github.com/jjtimmons/defrag/config"
+	"github.com/jjtimmons/rvec/config"
 	"github.com/spf13/cobra"
 )
 

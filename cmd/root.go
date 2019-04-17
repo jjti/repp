@@ -1,22 +1,22 @@
-// Package cmd is for command line interactions with the defrag application
+// Package cmd is for command line interactions with the rvec application
 package cmd
 
 import (
 	"log"
 
-	"github.com/jjtimmons/defrag/internal/defrag"
+	"github.com/jjtimmons/rvec/internal/rvec"
 	"github.com/spf13/cobra"
 )
 
 var (
-	featureDB = defrag.NewFeatureDB()
+	featureDB = rvec.NewFeatureDB()
 
-	enzymeDB = defrag.NewEnzymeDB()
+	enzymeDB = rvec.NewEnzymeDB()
 )
 
 // rootCmd represents the base command when called without any subcommands.
 var rootCmd = &cobra.Command{
-	Use: "defrag",
+	Use: "rvec",
 	Short: `Build vectors using DNA sequences available in public repositories.
 Specify vectors using their sequence, features, or fragments`,
 	Version: "0.1.0",

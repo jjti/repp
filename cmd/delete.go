@@ -20,7 +20,7 @@ var featuresDeleteCmd = &cobra.Command{
 	Run:                        featureDB.DeleteCmd,
 	SuggestionsMinimumDistance: 2,
 	Aliases:                    []string{"remove"},
-	Example:                    "  defrag delete feature \"T7 terminator\"",
+	Example:                    "  rvec delete feature \"T7 terminator\"",
 	Long: `Delete a feature from the features database by its name.
 If no such feature name exists in the database, an error is logged to stderr.`,
 }

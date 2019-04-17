@@ -1,4 +1,4 @@
-package defrag
+package rvec
 
 import (
 	"bufio"
@@ -11,11 +11,11 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/jjtimmons/defrag/config"
+	"github.com/jjtimmons/rvec/config"
 	"github.com/spf13/cobra"
 )
 
-// FeatureDB is a struct for accessing defrags features db
+// FeatureDB is a struct for accessing rvecs features db
 type FeatureDB struct {
 	features map[string]string // features is a map between a features name and its sequence
 }
@@ -30,8 +30,8 @@ func FeaturesCmd(cmd *cobra.Command, args []string) {
 	Features(parseCmdFlags(cmd, args, true))
 }
 
-// Features assembles a vector with all the Features requested with the 'defrag Features [feature ...]' command
-// defrag assemble Features p10 promoter, mEGFP, T7 terminator
+// Features assembles a vector with all the Features requested with the 'rvec Features [feature ...]' command
+// rvec assemble Features p10 promoter, mEGFP, T7 terminator
 func Features(flags *Flags, conf *config.Config) [][]*Frag {
 	start := time.Now()
 
@@ -90,7 +90,7 @@ func queryFeatures(flags *Flags) ([][]string, []string) {
 		}
 
 		if len(featureNames) < 1 {
-			stderr.Fatal("no features chosen. see 'defrag assemble features --help'")
+			stderr.Fatal("no features chosen. see 'rvec assemble features --help'")
 		}
 
 		featureDB := NewFeatureDB()
@@ -118,7 +118,7 @@ func queryFeatures(flags *Flags) ([][]string, []string) {
 				sep := "\n\t"
 				stderr.Fatalf(
 					"failed to find '%s' in the features database (%s) or any of:"+
-						"%s\ncheck features database with 'defrag features find [feature name]'",
+						"%s\ncheck features database with 'rvec features find [feature name]'",
 					f,
 					config.FeatureDB,
 					sep+strings.Join(flags.dbs, sep)+sep,

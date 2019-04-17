@@ -1,4 +1,4 @@
-package defrag
+package rvec
 
 import (
 	"math"
@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/jjtimmons/defrag/config"
+	"github.com/jjtimmons/rvec/config"
 )
 
 func Test_Frag_distTo(t *testing.T) {

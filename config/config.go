@@ -24,26 +24,26 @@ var (
 	// WDir is the working directory of the repository
 	WDir = filepath.Join(wdir, "..")
 
-	// defragDir is the root directory where defrag settings and database files live
-	defragDir = filepath.Join(home, ".defrag")
+	// rvecDir is the root directory where rvec settings and database files live
+	rvecDir = filepath.Join(home, ".rvec")
 
 	// RootSettingsFile is the default settings file path for the config package
-	RootSettingsFile = filepath.Join(defragDir, "config.yaml")
+	RootSettingsFile = filepath.Join(rvecDir, "config.yaml")
 
 	// IGEMDB is the path to the iGEM db
-	IGEMDB = filepath.Join(defragDir, "igem")
+	IGEMDB = filepath.Join(rvecDir, "igem")
 
 	// AddgeneDB is the path to the Addgene db
-	AddgeneDB = filepath.Join(defragDir, "addgene")
+	AddgeneDB = filepath.Join(rvecDir, "addgene")
 
 	// DNASUDB is the path to the DNASU db
-	DNASUDB = filepath.Join(defragDir, "dnasu")
+	DNASUDB = filepath.Join(rvecDir, "dnasu")
 
 	// FeatureDB is the path to the features db
-	FeatureDB = filepath.Join(defragDir, "features.tsv")
+	FeatureDB = filepath.Join(rvecDir, "features.tsv")
 
 	// EnzymeDB is the path to the enzymes db file
-	EnzymeDB = filepath.Join(defragDir, "enzymes.tsv")
+	EnzymeDB = filepath.Join(rvecDir, "enzymes.tsv")
 )
 
 // SynthCost contains data of the cost of synthesizing DNA up to a certain

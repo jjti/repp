@@ -1,4 +1,4 @@
-package defrag
+package rvec
 
 import (
 	"fmt"
@@ -19,7 +19,7 @@ func Annotate(cmd *cobra.Command, args []string) {
 
 	identity, err := cmd.Flags().GetInt("identity")
 	if err != nil {
-		identity = 100 // might be something other than `defrag vector`
+		identity = 100 // might be something other than `rvec vector`
 	}
 
 	p := inputParser{}

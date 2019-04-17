@@ -1,4 +1,4 @@
-package defrag
+package rvec
 
 import (
 	"bytes"
@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/jjtimmons/defrag/config"
+	"github.com/jjtimmons/rvec/config"
 )
 
 // primer3Dir is a temporary directory holding primer3 input and output

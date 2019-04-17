@@ -1,10 +1,10 @@
-package defrag
+package rvec
 
 import (
 	"reflect"
 	"testing"
 
-	"github.com/jjtimmons/defrag/config"
+	"github.com/jjtimmons/rvec/config"
 )
 
 func Test_assembly_add(t *testing.T) {

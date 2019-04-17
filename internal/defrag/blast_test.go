@@ -1,4 +1,4 @@
-package defrag
+package rvec
 
 import (
 	"path"
@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/jjtimmons/defrag/config"
+	"github.com/jjtimmons/rvec/config"
 )
 
 // test the ability to find test fragments in a mock database

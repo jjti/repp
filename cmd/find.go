@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/jjtimmons/defrag/internal/defrag"
+	"github.com/jjtimmons/rvec/internal/rvec"
 	"github.com/spf13/cobra"
 )
 
@@ -21,7 +21,7 @@ var featureFindCmd = &cobra.Command{
 	Short:                      "Find features in the features database",
 	Run:                        featureDB.ReadCmd,
 	SuggestionsMinimumDistance: 2,
-	Example:                    "  defrag features find terminator",
+	Example:                    "  rvec features find terminator",
 	Long: `Find features in the features database that are similar to [name].
 Writes each feature to the stdout with their name and sequence.
 If multiple features contain the feature name sent, each are logged.
@@ -38,7 +38,7 @@ var enzymeFindCmd = &cobra.Command{
 	SuggestionsMinimumDistance: 2,
 	Long: `List out all the enzymes with the same or a similar a similar name as the argument.
 
-'defrag find enzyme' without any arguments logs all enzymes available.`,
+'rvec find enzyme' without any arguments logs all enzymes available.`,
 	Aliases: []string{"enzymes"},
 }
 
@@ -46,7 +46,7 @@ var enzymeFindCmd = &cobra.Command{
 var fragmentFindCmd = &cobra.Command{
 	Use:                        "fragment [name]",
 	Short:                      "Find a fragment in the databases",
-	Run:                        defrag.FragmentFindCmd,
+	Run:                        rvec.FragmentFindCmd,
 	SuggestionsMinimumDistance: 2,
 	Long:                       `Find a fragment with a given name in the databases requested.`,
 }
@@ -55,7 +55,7 @@ var fragmentFindCmd = &cobra.Command{
 var sequenceFindCmd = &cobra.Command{
 	Use:                        "sequence [name]",
 	Short:                      "Find a sequence in the databases",
-	Run:                        defrag.SequenceFindCmd,
+	Run:                        rvec.SequenceFindCmd,
 	SuggestionsMinimumDistance: 2,
 	Long:                       `Find a sequence's matches in the databases requested.`,
 	Aliases:                    []string{"seq"},
