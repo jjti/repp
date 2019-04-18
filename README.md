@@ -1,8 +1,10 @@
 # rvec
 
-> _rvec_: (of software) ~reduce the fragmentation of (a file)~ _create vectors_ by concatenating parts stored in separate locations on a disk.
-
 Finds pareto optimal solutions for vector construction using existing DNA fragments in local and/or remote repositories.
+
+## Installation
+
+`make install`
 
 ## Commands
 

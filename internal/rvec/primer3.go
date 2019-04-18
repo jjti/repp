@@ -59,7 +59,7 @@ func newPrimer3(last, this, next *Frag, seq string, conf *config.Config) primer3
 		in:             in,
 		out:            out,
 		primer3Path:    "primer3_core",
-		primer3ConfDir: conf.Primer3Config,
+		primer3ConfDir: config.Primer3Config,
 		primer3Dir:     primer3Dir,
 	}
 }
@@ -406,7 +406,7 @@ func hairpin(seq string, conf *config.Config) (melt float64) {
 		"-r",       // temperature only
 		"-t", "50", // gibson assembly is at 50 degrees
 		"-s1", seq,
-		"-path", conf.Primer3Config,
+		"-path", config.Primer3Config,
 	)
 
 	ntthalOut, err := ntthalCmd.CombinedOutput()

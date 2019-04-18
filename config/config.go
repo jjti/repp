@@ -30,6 +30,9 @@ var (
 	// RootSettingsFile is the default settings file path for the config package
 	RootSettingsFile = filepath.Join(rvecDir, "config.yaml")
 
+	// Primer3Config is the path to the embedded primer3 config directory
+	Primer3Config = filepath.Join(rvecDir, "primer3_config") + string(os.PathSeparator)
+
 	// IGEMDB is the path to the iGEM db
 	IGEMDB = filepath.Join(rvecDir, "igem")
 
@@ -87,10 +90,6 @@ type Config struct {
 
 	// the cost per bp of synthesized clonal DNA  (delivered in a vector)
 	CostSyntheticVector map[int]SynthCost `mapstructure:"synthetic-vector-cost"`
-
-	// primer3 config folder, needed for thermodynamic calculations
-	// created in the settings file during `make install`
-	Primer3Config string `mapstructure:"primer3_config-path"`
 
 	// the maximum number of fragments in the final assembly
 	FragmentsMaxCount int `mapstructure:"fragments-max-count"`
