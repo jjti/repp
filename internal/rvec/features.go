@@ -28,6 +28,7 @@ type featureMatch struct {
 // FeaturesCmd accepts a cobra commands and assembles a vector containing all the features
 func FeaturesCmd(cmd *cobra.Command, args []string) {
 	Features(parseCmdFlags(cmd, args, true))
+	os.Exit(0)
 }
 
 // Features assembles a vector with all the Features requested with the 'rvec Features [feature ...]' command

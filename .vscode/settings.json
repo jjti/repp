@@ -1,7 +1,0 @@
-{
-  "code-runner.executorMap": {
-    "python": "python3"
-  },
-  "go.useLanguageServer": true,
-  "python.formatting.provider": "black"
-}

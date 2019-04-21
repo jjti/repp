@@ -38,6 +38,16 @@ func Test_sequence_e2e(test *testing.T) {
 			true,
 		},
 		testFlags{
+			path.Join("..", "..", "test", "input", "BBa_K2224001.fa"),
+			path.Join("..", "..", "test", "output", "BBa_K2224001.json"),
+			"pSB1A3",
+			"PstI",
+			"2017,2018,2019",
+			[]string{},
+			false,
+			true,
+		},
+		testFlags{
 			path.Join("..", "..", "test", "input", "110056.fa"),
 			path.Join("..", "..", "test", "output", "110056.json"),
 			"",

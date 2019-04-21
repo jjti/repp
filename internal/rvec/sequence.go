@@ -63,6 +63,7 @@ func SequenceFindCmd(cmd *cobra.Command, args []string) {
 // SequenceCmd takes a cobra command (with its flags) and runs Vector.
 func SequenceCmd(cmd *cobra.Command, args []string) {
 	Sequence(parseCmdFlags(cmd, args, true))
+	os.Exit(0)
 }
 
 // Sequence is for running an end to end vector design using a target sequence.

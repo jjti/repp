@@ -87,7 +87,7 @@ def get_parts(log_composites=True, from_year=-1):
     return parts
 
 
-def write_parts(parts, to=""):
+def write_parts(parts, to="", only_topo=""):
     output = os.path.join("db", "addgene")
     if to:
         output = to
@@ -100,6 +100,9 @@ def write_parts(parts, to=""):
                 continue
 
             topo = "circular" if circular else "linear"
+            if only_topo and topo != only_topo:
+                continue
+
             out_seq = seq + seq if circular else seq
 
             out_file.write(f">{p_id} {topo}-{year}\n{out_seq}\n")
@@ -108,6 +111,6 @@ def write_parts(parts, to=""):
 
 
 if __name__ == "__main__":
-    # write_parts(get_parts(from_year=2018), to=os.path.join("2018.fasta"))
+    # write_parts(get_parts(from_year=2018), to="2018.addgene.fasta", only_topo="circular", )
 
     write_parts(get_parts())

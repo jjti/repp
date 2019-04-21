@@ -195,7 +195,7 @@ func parseCmdFlags(cmd *cobra.Command, args []string, strict bool) (*Flags, *con
 	fs.identity = identity
 
 	if dbString == "" && !addgene && !igem && !dnasu {
-		fmt.Println("no fragment databases chosen [-adiu]: using Addgene, DNASU, and iGEM by default")
+		fmt.Println("no fragment databases chosen [-agu]: using Addgene, DNASU, and iGEM by default")
 		addgene = true
 		igem = true
 		dnasu = true

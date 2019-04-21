@@ -2,6 +2,7 @@ package rvec
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 
@@ -22,6 +23,10 @@ func FragmentFindCmd(cmd *cobra.Command, args []string) {
 	if err != nil {
 		stderr.Fatalln(err)
 	}
+	if frag.fragType == circular {
+		frag.Seq = frag.Seq[:len(frag.Seq)/2+1]
+	}
+
 	fmt.Printf("%s\t%s\n%s\n", name, frag.db, frag.Seq)
 }
 
@@ -54,6 +59,8 @@ func FragmentsCmd(cmd *cobra.Command, args []string) {
 		flags.backboneMeta,
 		conf,
 	)
+
+	os.Exit(0)
 }
 
 // fragments pieces together a list of fragments into a single vector
