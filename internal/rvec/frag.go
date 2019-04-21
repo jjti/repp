@@ -133,7 +133,8 @@ func newFrag(m match, conf *config.Config) *Frag {
 func parseURL(entry, db string) string {
 	if strings.Contains(db, "addgene") {
 		// create a link to the source Addgene page
-		return fmt.Sprintf("https://www.addgene.org/%s/", entry)
+		entries := strings.Split(entry, ".")
+		return fmt.Sprintf("https://www.addgene.org/%s/", entries[0])
 	}
 
 	if strings.Contains(db, "igem") {

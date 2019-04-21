@@ -24,7 +24,7 @@ func FragmentFindCmd(cmd *cobra.Command, args []string) {
 		stderr.Fatalln(err)
 	}
 	if frag.fragType == circular {
-		frag.Seq = frag.Seq[:len(frag.Seq)/2+1]
+		frag.Seq = frag.Seq[:len(frag.Seq)/2]
 	}
 
 	fmt.Printf("%s\t%s\n%s\n", name, frag.db, frag.Seq)
