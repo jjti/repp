@@ -1,8 +1,9 @@
 import os
 import re
+import statistics
 
-# output directory for igem
-os.chdir(os.path.join("assets", "igem"))
+FILE_DIR = os.path.dirname(os.path.abspath(__file__))
+os.chdir(os.path.join(FILE_DIR, "..", "assets", "igem"))
 
 
 def clean_file():
@@ -16,12 +17,14 @@ def clean_file():
 # clean_file()
 
 # split up into separate parts. each a tuple with (BBa_name, seq, circular: bool, year: int)
-def get_parts(log_composites=True):
+def get_parts(log_composites=True, log_year_count=False):
     # create element tree object
     parts_string = open("xml_parts.parsed.xml", "r").read()
     seen_names = set()
     composites = []
     parts = []  # list of name, seq, circular tuples
+    year_count = {year: 0 for year in range(2003, 2020)}
+    year_seq_length = {year: [] for year in range(2003, 2020)}
     for row in parts_string.split("<row>"):
         if '"discontinued">1<' in row or '"sample_status">Not in stock' in row:
             continue
@@ -51,6 +54,10 @@ def get_parts(log_composites=True):
         if year_match:
             year = year_match[1]
 
+        if log_year_count and year and seq:
+            year_count[int(year)] += 1
+            year_seq_length[int(year)].append(len(seq))
+
         if name and type and seq and len(seq) > 10 and name not in seen_names and year:
             is_circular = "backbone" in type or "plasmid" in type
             parts.append((name, seq, is_circular, year, type))
@@ -58,6 +65,14 @@ def get_parts(log_composites=True):
 
         if log_composites and "composite" in type:
             composites.append(name)
+    
+    if log_year_count:
+        for year, count in year_count.items():
+            if count:
+                print(year, count)
+        for year, lengths in year_seq_length.items():
+            if lengths:
+                print(year, statistics.mean(lengths))
 
     # print(" ".join(composites))
     return parts
@@ -75,4 +90,5 @@ def write_parts(parts):
             out_file.write(">{} {}-{}-{}\n{}\n".format(name, topo, year, type, out_seq))
 
 
-write_parts(get_parts())
+# write_parts(get_parts())
+get_parts(log_year_count=True)

@@ -69,6 +69,12 @@ type Frag struct {
 	// end of this Frag on the target vector
 	end int
 
+	// start of the frag's first feature
+	featureStart int
+
+	// end of the frag's last covered feature
+	featureEnd int
+
 	// assemblies that span from this Frag to the end of the vector
 	assemblies []assembly
 

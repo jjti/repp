@@ -9,12 +9,10 @@ import (
 	"path/filepath"
 	"sort"
 
-	"github.com/mitchellh/mapstructure"
-
-	"gopkg.in/yaml.v2"
-
 	"github.com/mitchellh/go-homedir"
+	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
+	"gopkg.in/yaml.v2"
 )
 
 var (

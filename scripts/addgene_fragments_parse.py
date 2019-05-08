@@ -1,8 +1,10 @@
 import json
 import os
 import re
+import statistics
 
-os.chdir(os.path.join("assets", "addgene"))
+FILE_DIR = os.path.dirname(os.path.abspath(__file__))
+os.chdir(os.path.join(FILE_DIR, "..", "assets", "addgene"))
 
 
 def id_to_year(p_id):
@@ -41,7 +43,7 @@ def id_to_year(p_id):
 
 
 # split up into separate parts. each a tuple with (addgene_id, seq, circular: bool, year: int, name)
-def get_parts(log_composites=True, from_year=-1):
+def get_parts(log_composites=True, from_year=-1, log_year_count=False):
     # create element tree object
     part_json = json.load(open("addgene.json", "r"))
     plasmids = part_json["plasmids"]
@@ -52,10 +54,16 @@ def get_parts(log_composites=True, from_year=-1):
         return s.replace("\n", "").replace("\r", "")
 
     parts = []  # list of name, seq, circular tuples
+    year_count = {year: 0 for year in range(2004, 2020)}
+    year_seq_length = {year: [] for year in range(2003, 2020)}
     full_seq_count = 0
     for p in plasmids:
         part_id = p["id"]
+        year = id_to_year(part_id)
         # name = p["name"]
+
+        if log_year_count:
+            year_count[year] += 1
 
         # vectors
         seqs = p["sequences"]
@@ -63,7 +71,8 @@ def get_parts(log_composites=True, from_year=-1):
             seqs["public_addgene_full_sequences"] + seqs["public_user_full_sequences"]
         ):
             full_seq_count += 1
-            parts.append((part_id, fix(s["sequence"]), True, id_to_year(part_id)))
+            parts.append((part_id, fix(s["sequence"]), True, year))
+            year_seq_length[year].append(len(fix(s["sequence"])))
             break
 
         # linear fragments
@@ -73,9 +82,16 @@ def get_parts(log_composites=True, from_year=-1):
             + seqs["public_user_partial_sequences"]
         ):
             parts.append(
-                (f"{part_id}.{sindex}", fix(s["sequence"]), False, id_to_year(part_id))
+                (f"{part_id}.{sindex}", fix(s["sequence"]), False, year)
             )
             sindex += 1
+    
+    if log_year_count:
+        for year, count in year_count.items():
+            print(year, count)
+        for year, lengths in year_seq_length.items():
+            if lengths:
+                print(year, statistics.median(lengths))
 
     if from_year > 0:
         parts = [p for p in parts if p[3] == from_year]
@@ -113,4 +129,6 @@ def write_parts(parts, to="", only_topo=""):
 if __name__ == "__main__":
     # write_parts(get_parts(from_year=2018), to="2018.addgene.fasta", only_topo="circular", )
 
-    write_parts(get_parts())
+    # write_parts(get_parts())
+
+    get_parts(log_year_count=True)

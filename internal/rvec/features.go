@@ -204,6 +204,9 @@ func featureSolutions(feats [][]string, fragToMatches map[string][]featureMatch,
 
 	if conf.Verbose {
 		fmt.Printf("%d matches after culling\n", len(accMatches))
+		for _, m := range accMatches {
+			m.log()
+		}
 	}
 
 	// get the full vector length if just synthesizing each feature next to one another
@@ -231,6 +234,9 @@ func featureSolutions(feats [][]string, fragToMatches map[string][]featureMatch,
 		}
 		frag.conf = conf
 
+		frag.featureStart = m.queryStart
+		frag.featureEnd = m.queryEnd
+
 		frag.start = featureToStart[m.queryStart]
 		frag.end = featureToStart[(m.queryEnd+1)%len(feats)]
 
@@ -247,7 +253,7 @@ func featureSolutions(feats [][]string, fragToMatches map[string][]featureMatch,
 	}
 
 	// traverse the fragments, accumulate assemblies that span all the features
-	assemblies := createAssemblies(frags, len(target), conf)
+	assemblies := createAssemblies(frags, len(target), len(feats), true, conf)
 
 	// build up a map from fragment count to a sorted list of assemblies with that number
 	assemblyCounts, countToAssemblies := groupAssembliesByCount(assemblies)

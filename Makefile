@@ -45,6 +45,8 @@ build:
 	env GOOS=darwin go build -o ./bin/darwin -v
 	env GOOS=windows go build -o ./bin/windows.exe -v
 
+all: build install
+
 dbs:
 	cd assets && sh makeblastdbs.sh
 

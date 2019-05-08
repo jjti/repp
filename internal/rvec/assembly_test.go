@@ -166,7 +166,7 @@ func Test_assembly_add(t *testing.T) {
 				cost:   tt.fields.cost,
 				synths: tt.fields.synths,
 			}
-			gotNewAssembly, gotCreated, gotComplete := a.add(tt.args.n, 5, sl)
+			gotNewAssembly, gotCreated, gotComplete := a.add(tt.args.n, 5, sl, false)
 			if !reflect.DeepEqual(gotNewAssembly, tt.wantNewAssembly) {
 				t.Errorf("assembly.add() gotNewAssembly = %v, want %v", gotNewAssembly, tt.wantNewAssembly)
 			}

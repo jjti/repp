@@ -23,9 +23,21 @@ type assembly struct {
 }
 
 // add Frag to the end of an assembly. Return a new assembly and whether it circularized
-func (a *assembly) add(f *Frag, maxCount, targetLength int) (newAssembly assembly, created, circularized bool) {
+func (a *assembly) add(f *Frag, maxCount, targetLength int, features bool) (newAssembly assembly, created, circularized bool) {
+	firstStart := a.frags[0].start
+	start := f.start
+	end := f.end
+	lastEnd := a.frags[len(a.frags)-1].end
+
+	if features {
+		firstStart = a.frags[0].featureStart
+		start = f.featureStart
+		end = f.featureEnd
+		lastEnd = a.frags[len(a.frags)-1].featureEnd
+	}
+
 	// check if we could complete an assembly with this new Frag
-	circularized = f.end > a.frags[0].start+targetLength
+	circularized = end >= firstStart+targetLength-1
 
 	// check if this is the first fragment annealing to itself
 	selfAnnealing := f.uniqueID == a.frags[0].uniqueID
@@ -35,13 +47,17 @@ func (a *assembly) add(f *Frag, maxCount, targetLength int) (newAssembly assembl
 
 	// calc the number of synthesis fragments needed to get to this next Frag
 	synths := last.synthDist(f)
+	if features && start > lastEnd {
+		synths = start - lastEnd - 1
+	}
+
 	newCount := a.len() + synths
 	if !selfAnnealing {
 		newCount++
 	}
 
-	assemblyEnd := last.end
-	if newCount > maxCount || f.end-assemblyEnd < f.conf.PCRMinLength {
+	assemblyEnd := lastEnd
+	if newCount > maxCount || (end-assemblyEnd < f.conf.PCRMinLength && !features) {
 		return assembly{}, false, false
 	}
 
@@ -49,6 +65,9 @@ func (a *assembly) add(f *Frag, maxCount, targetLength int) (newAssembly assembl
 
 	// calc the estimated dollar cost of getting to the next Frag
 	annealCost := last.costTo(f)
+	if features {
+		annealCost = 10.0
+	}
 	if selfAnnealing && synths == 0 {
 		annealCost = 0 // does not cost extra to anneal to the first fragment
 	}
@@ -79,6 +98,9 @@ func (a *assembly) add(f *Frag, maxCount, targetLength int) (newAssembly assembl
 		newFrags = append(newFrags, f.copy())
 	}
 
+	a.log()
+	fmt.Println(circularized, newCount, targetLength, f.end, f.featureEnd)
+
 	return assembly{
 		frags:  newFrags,
 		cost:   a.cost + annealCost,
@@ -91,7 +113,7 @@ func (a *assembly) len() int {
 	return len(a.frags) + a.synths
 }
 
-// log returns a description of the assembly (the entires in it and its cost).
+// log logs a description of the assembly (the entires in it and its cost).
 func (a *assembly) log() {
 	logString := ""
 	if len(a.frags) >= 1 {
@@ -237,7 +259,7 @@ func (a *assembly) duplicates(frags []*Frag, min, max int) (isDup bool, first, s
 //   foreach otherFragment that fragment overlaps with + reachSynthCount more:
 //	   foreach assembly on fragment:
 //       add otherFragment to the assembly to create a new assembly, store on otherFragment
-func createAssemblies(frags []*Frag, targetLength int, conf *config.Config) (assemblies []assembly) {
+func createAssemblies(frags []*Frag, vectorLength, targetLength int, features bool, conf *config.Config) (assemblies []assembly) {
 	// number of additional frags try synthesizing to, in addition to those that
 	// already have enough homology for overlap without any modifications for each Frag
 	maxNodes := conf.FragmentsMaxCount
@@ -251,7 +273,7 @@ func createAssemblies(frags []*Frag, targetLength int, conf *config.Config) (ass
 	for i, f := range frags {
 		// edge case where the Frag spans the entire target vector... 100% match
 		// it is the target vector. just return that as the assembly
-		if len(f.Seq) >= targetLength {
+		if len(f.Seq) >= vectorLength {
 			return []assembly{
 				assembly{
 					frags:  []*Frag{f.copy()},
@@ -273,13 +295,14 @@ func createAssemblies(frags []*Frag, targetLength int, conf *config.Config) (ass
 	for i, f := range frags { // for every Frag in the list of increasing start index frags
 		for _, j := range f.reach(frags, i) { // for every overlapping fragment + reach more
 			for _, a := range f.assemblies { // for every assembly on the reaching fragment
-				newAssembly, created, circularized := a.add(frags[j], maxNodes, targetLength)
+				newAssembly, created, circularized := a.add(frags[j], maxNodes, targetLength, features)
 
 				if !created { // if a new assembly wasn't created, move on
 					continue
 				}
 
 				if circularized { // we've circularized a vector, it's ready for filling
+					newAssembly.log()
 					assemblies = append(assemblies, newAssembly)
 				} else {
 					// add to the other fragment's list of assemblies
@@ -330,9 +353,7 @@ func fillAssemblies(target string, counts []int, countToAssemblies map[int][]ass
 	minCostAssembly := math.MaxFloat64
 
 	for _, count := range counts {
-		// fmt.Println(count)
 		for _, assemblyToFill := range countToAssemblies[count] {
-			// assemblyToFill.log()
 			if assemblyToFill.cost > minCostAssembly {
 				// skip this and the rest with this count, there's another
 				// cheaper option with the same number or fewer fragments (estimated)
@@ -342,8 +363,8 @@ func fillAssemblies(target string, counts []int, countToAssemblies map[int][]ass
 
 			filledFragments, err := assemblyToFill.fill(target, conf)
 			if err != nil || filledFragments == nil {
-				// assemblyToFill.log()
-				// fmt.Println("error", err.Error())
+				assemblyToFill.log()
+				fmt.Println("error", err.Error())
 				continue
 			}
 
