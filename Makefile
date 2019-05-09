@@ -43,7 +43,7 @@ build:
 	go get
 	env GOOS=linux go build -o ./bin/linux -v
 	env GOOS=darwin go build -o ./bin/darwin -v
-	env GOOS=windows go build -o ./bin/windows.exe -v
+	env GOOS=windows go build -o ./bin/rvec.exe -v
 
 all: build install
 

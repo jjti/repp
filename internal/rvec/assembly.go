@@ -98,9 +98,6 @@ func (a *assembly) add(f *Frag, maxCount, targetLength int, features bool) (newA
 		newFrags = append(newFrags, f.copy())
 	}
 
-	a.log()
-	fmt.Println(circularized, newCount, targetLength, f.end, f.featureEnd)
-
 	return assembly{
 		frags:  newFrags,
 		cost:   a.cost + annealCost,
@@ -199,7 +196,9 @@ func (a *assembly) fill(target string, conf *config.Config) (frags []*Frag, err 
 	// second loop to fill in gaps between fragments that need to be filled via synthesis
 	fragsWithSynth := []*Frag{}
 	for i, f := range frags {
-		fragsWithSynth = append(fragsWithSynth, f)
+		if f.ID != "" || f.Cost != 0.0 {
+			fragsWithSynth = append(fragsWithSynth, f)
+		}
 
 		// add synthesized fragments between this Frag and the next (if necessary)
 		next := a.mockNext(frags, i, target, conf)
@@ -302,7 +301,6 @@ func createAssemblies(frags []*Frag, vectorLength, targetLength int, features bo
 				}
 
 				if circularized { // we've circularized a vector, it's ready for filling
-					newAssembly.log()
 					assemblies = append(assemblies, newAssembly)
 				} else {
 					// add to the other fragment's list of assemblies

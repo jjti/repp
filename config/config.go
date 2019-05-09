@@ -16,11 +16,7 @@ import (
 )
 
 var (
-	wdir, _ = os.Executable()
 	home, _ = homedir.Dir()
-
-	// WDir is the working directory of the repository
-	WDir = filepath.Join(wdir, "..")
 
 	// rvecDir is the root directory where rvec settings and database files live
 	rvecDir = filepath.Join(home, ".rvec")
