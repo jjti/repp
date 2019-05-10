@@ -45,6 +45,9 @@ build:
 	env GOOS=darwin go build -o ./bin/darwin -v
 	env GOOS=windows go build -o ./bin/rvec.exe -v
 
+windows:
+	cd scripts && makensis windows_installer.nsi
+
 all: build install
 
 dbs:
@@ -60,6 +63,3 @@ uninstall: clean
 
 test:
 	go test ./internal/rvec
-
-e2e:
-	go test ./internal/rvec -tags=e2e

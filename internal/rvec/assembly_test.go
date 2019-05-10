@@ -100,7 +100,7 @@ func Test_assembly_add(t *testing.T) {
 				synths: 1,
 			},
 			true,
-			false,
+			true,
 		},
 		{
 			"add with completion/circularization",

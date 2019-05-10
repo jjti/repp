@@ -4,8 +4,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// setCmd is for piecing together a list of input fragments into a vector
-// and preparing the fragments to assemble into that vector
+// setCmd is for piecing together a list of input fragments into a plasmid
+// and preparing the fragments to assemble into that plasmid
 var setCmd = &cobra.Command{
 	Use:                        "set [feature,enzyme]",
 	Short:                      "Set a feature or enzyme",

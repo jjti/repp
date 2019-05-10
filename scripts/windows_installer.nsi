@@ -9,8 +9,8 @@ OutFile "..\bin\rvec_install.exe"
 ; installation directory
 InstallDir $PROFILE\.rvec
 
-; stuff to install
-Section ""
+; create an installer exe
+Section "install"
 
 ; add the directory to Path
 ${EnvVarUpdate} $0 "PATH"  "A" "HKCU" $INSTDIR
@@ -40,5 +40,13 @@ File "..\assets\neb\enzymes.tsv"
 
 ; blastn, primer3_core, ntthal, other dlls
 File /nonfatal /a /r "..\vendor\windows\"
+
+SectionEnd
+
+; create an uninstaller exe
+Section "uninstall"
+
+; remove the directory from the user's Path
+${un.EnvVarUpdate} $0 "PATH"  "R" "HKCU" $INSTDIR
 
 SectionEnd

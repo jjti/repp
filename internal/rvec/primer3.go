@@ -101,7 +101,7 @@ func (p *primer3) input(minHomology, maxHomology, maxEmbedLength, minLength, pcr
 		growPrimers = 0
 	} else if growPrimers > 36-30 {
 		// we can't exceed 36 bp here (primer3 upper-limit), just create primers for the portion that
-		// anneals to the seq and add the other portion/seqs on later (in mutateNodePrimers)
+		// anneals to the seq and add the other portion/seqs on later (in mutatePrimers)
 		bpAddLeft = addLeft
 		bpAddRight = addRight
 		growPrimers = 0
@@ -150,7 +150,9 @@ func (p *primer3) input(minHomology, maxHomology, maxEmbedLength, minLength, pcr
 // shrink adjusts the start and end of a Frag in the scenario where
 // it excessively overlaps a neighboring fragment. For example, if there's
 // 700bp of overlap, this will trim it back so we just PCR a subselection of
-// the Frag and keep the overlap beneath the upper limit
+// the Frag and keep the overlap beneath the upper limit.
+// Only the end if shrunk. Only shifting from right side.
+// Otherwise, two neighboring fragments will both shrink and there won't be an overlap
 func (p *primer3) shrink(last, f, next *Frag, maxHomology int, minLength int) *Frag {
 	var shiftInLeft int
 	var shiftInRight int

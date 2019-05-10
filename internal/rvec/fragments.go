@@ -92,8 +92,7 @@ func fragments(frags []*Frag, conf *config.Config) (target *Frag, solution []*Fr
 
 // annealFragments shifts the start and end of junctions that overlap one another
 func annealFragments(min, max int, frags []*Frag) (vec string) {
-	// set the start, end, and vector sequence based on that
-	//
+	// set the start, end, and vector sequence
 	// add all of each frags seq to the vector sequence, minus the region overlapping the next
 	var vecSeq strings.Builder
 	for i, f := range frags {

@@ -15,20 +15,20 @@ in one of the dbs or a file on the local filesystem.`
 'rvec ls enzymes' prints a list of recognized enzymes.`
 )
 
-// assembleCmd is for finding building a vector from its fragments, features, or sequence
+// assembleCmd is for finding building a plasmid from its fragments, features, or sequence
 var assembleCmd = &cobra.Command{
 	Use:                        "assemble",
-	Short:                      "Assemble a vector from its fragments, features or sequence",
+	Short:                      "Assemble a plasmid from its fragments, features or sequence",
 	SuggestionsMinimumDistance: 3,
-	Long: `Find fragments for assembling a vector via Gibson Assembly. Build the vector
+	Long: `Find fragments for assembling a plasmid via Gibson Assembly. Build the plasmid
 against a list of consituent fragment, feature, or a target sequence.`,
 	Aliases: []string{"make", "build"},
 }
 
-// fragmentsCmd is for piecing together a list of input fragments into a vector
+// fragmentsCmd is for piecing together a list of input fragments into a plasmid
 var fragmentsCmd = &cobra.Command{
 	Use:                        "fragments",
-	Short:                      "Build a vector from its constituent fragments",
+	Short:                      "Build a plasmid from its constituent fragments",
 	Run:                        rvec.FragmentsCmd,
 	SuggestionsMinimumDistance: 3,
 	Long: `Prepare a list of fragments for assembly via Gibson Assembly. Fragments are
@@ -36,25 +36,25 @@ checked for existing homology with their neighbors and are prepared for
 assembly with PCR.`,
 }
 
-// featuresCmd is for building a vector from its list of contained features
+// featuresCmd is for building a plasmid from its list of contained features
 var featuresCmd = &cobra.Command{
 	Use:                        "features [feature] ... [featureN]",
-	Short:                      "Find or build a vector from its constituent features",
+	Short:                      "Find or build a plasmid from its constituent features",
 	Run:                        rvec.FeaturesCmd, // TODO
 	SuggestionsMinimumDistance: 3,
 }
 
-// sequenceCmd is for assembling a vector (single circular sequence) from its target sequence
+// sequenceCmd is for assembling a plasmid (single circular sequence) from its target sequence
 var sequenceCmd = &cobra.Command{
 	Use:                        "sequence",
-	Short:                      "Find or build a vector from its target sequence",
+	Short:                      "Find or build a plasmid from its target sequence",
 	Run:                        rvec.SequenceCmd,
 	SuggestionsMinimumDistance: 2,
-	Long: `Build up a vector from its target sequence using a combination of existing and
+	Long: `Build up a plasmid from its target sequence using a combination of existing and
 synthesized fragments.
 
 Solutions have either a minimum fragment count or assembly cost (or both).`,
-	Aliases: []string{"seq", "vector"},
+	Aliases: []string{"seq", "plasmid"},
 }
 
 // set flags

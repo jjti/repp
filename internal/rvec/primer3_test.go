@@ -9,7 +9,7 @@ import (
 	"github.com/jjtimmons/rvec/config"
 )
 
-func Test_p3Exec_shrink(t *testing.T) {
+func Test_primer3_shrink(t *testing.T) {
 	type fields struct {
 		n      *Frag
 		last   *Frag
@@ -36,7 +36,7 @@ func Test_p3Exec_shrink(t *testing.T) {
 	}{
 		{
 			"shrink Frag with an excessive amount of homology",
-			fields{}, // not relevant, nothing used from p3Exec
+			fields{}, // not relevant, nothing used from primer3
 			args{
 				last: &Frag{
 					start: 0,
@@ -44,7 +44,7 @@ func Test_p3Exec_shrink(t *testing.T) {
 				},
 				n: &Frag{
 					Seq:   "GGGGGAACGCTGAAGATCTCTTCTTCTCATGACTGAACTCGCGAGGGTCGTGATGTCGGTTCCTTCAAAGGTTAAAGAACAAAGGCTTACTGTGCGCAGAGGAACGCCCATTTAGCGGCTGGCGTCTTGAATCCTCGGTCCCCCTTGTCTTTCCAGATTAATCCATTTCCCTCATTCACGAGCTTACCAAGTCAACATTGGTATATGAATGCGACCTTGAAGAGGCCGCTTAAAAATGGCAGTGGTTGAT",
-					start: 50,
+					start: 90,
 					end:   300,
 				},
 				next: &Frag{
@@ -55,7 +55,7 @@ func Test_p3Exec_shrink(t *testing.T) {
 				minLength:   20,
 			},
 			&Frag{
-				Seq:   "GCGAGGGTCGTGATGTCGGTTCCTTCAAAGGTTAAAGAACAAAGGCTTACTGTGCGCAGAGGAACGCCCATTTAGCGGCTGGCGTCTTGAATCCTCGGTCCCCCTTGTCTTTCCAGATTAATCCATTTCCCTCATTCACGAGCTTACCAAGTCAACATTGGTATATGAAT",
+				Seq:   "GGGGGAACGCTGAAGATCTCTTCTTCTCATGACTGAACTCGCGAGGGTCGTGATGTCGGTTCCTTCAAAGGTTAAAGAACAAAGGCTTACTGTGCGCAGAGGAACGCCCATTTAGCGGCTGGCGTCTTGAATCCTCGGTCCCCCTTGTCTTTCCAGATTAATCCATTTCCCTCATTCACGAGCTTACCAAGTCAACATTGGTATATGAAT",
 				start: 90,
 				end:   260,
 			},
@@ -75,7 +75,7 @@ func Test_p3Exec_shrink(t *testing.T) {
 				primer3Dir:     tt.fields.p3Dir,
 			}
 			if got := p.shrink(tt.args.last, tt.args.n, tt.args.next, tt.args.maxHomology, tt.args.minLength); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("p3Exec.shrink() = %v, want %v", got, tt.want)
+				t.Errorf("primer3.shrink() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -171,7 +171,7 @@ func Test_bpToAdd(t *testing.T) {
 	}
 }
 
-func Test_mutateNodePrimers(t *testing.T) {
+func Test_mutatePrimers(t *testing.T) {
 	type args struct {
 		n        *Frag
 		Seq      string
@@ -329,6 +329,7 @@ func Test_reverseComplement(t *testing.T) {
 	}
 }
 
+// these estimated hairpin tms jump around when the primer3 version changes
 func Test_hairpin(t *testing.T) {
 	c := config.New()
 
@@ -342,12 +343,12 @@ func Test_hairpin(t *testing.T) {
 		wantMelt float64
 	}{
 		{
-			"find hairpin of ~86 degrees",
+			"find hairpin of ~75 degrees",
 			args{
 				"TGTGCACTCATCATCATCATCGGGGGGGGGGGGTGAACACTATCCCCCCCCCCCCCCA",
 				c,
 			},
-			86.0,
+			75.0,
 		},
 		{
 			"return 0 when no hairpin found",
@@ -363,7 +364,7 @@ func Test_hairpin(t *testing.T) {
 				"TGTGcactcatcatcaacacaactacgtcgatcagctacgatcgatcgatgctgatcgatatttatatcgagctagctacggatcatcGGGGGGGGGGGGTGAACACTATCCCCCCCCCCCCCCA",
 				c,
 			},
-			86.0,
+			75.0,
 		},
 	}
 	for _, tt := range tests {

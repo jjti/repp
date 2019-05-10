@@ -2,7 +2,6 @@ package rvec
 
 import (
 	"reflect"
-	"strings"
 	"testing"
 
 	"github.com/jjtimmons/rvec/config"
@@ -78,7 +77,7 @@ func Test_blastFeatures(t *testing.T) {
 				flags: &Flags{
 					dbs:      []string{config.AddgeneDB, config.IGEMDB},
 					filters:  []string{},
-					identity: 100.0,
+					identity: 96.0,
 				},
 				targetFeatures: [][]string{
 					[]string{"SV40 origin", "ATCCCGCCCCTAACTCCGCCCAGTTCCGCCCATTCTCCGCCCCATGGCTGACTAATTTTTTTTATTTATGCAGAGGCCGAGGCCGCCTCGGCCTCTGAGCTATTCCAGAAGTAGTGAGGAGGCTTTTTTGGAGGCC"},
@@ -101,7 +100,7 @@ func Test_blastFeatures(t *testing.T) {
 			for _, m := range matches {
 				containsTargetSeq := false
 				for _, wantedSeq := range tt.args.targetFeatures {
-					if strings.Contains(m.seq, wantedSeq[1]) {
+					if ld(m.seq, wantedSeq[1], true) < 5 {
 						containsTargetSeq = true
 					}
 				}

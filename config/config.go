@@ -61,13 +61,13 @@ type Config struct {
 	// Vebose is whether to log debug messages to the stdout
 	Verbose bool
 
-	// the cost of a single Addgene vector
+	// the cost of a single Addgene plasmid
 	CostAddgene float64 `mapstructure:"addgene-cost"`
 
 	// the cost of a single part from the iGEM registry
 	CostIGEM float64 `mapstructure:"igem-cost"`
 
-	// the per vector cost of DNASU vectors
+	// the per plasmid cost of DNASU plasmids
 	CostDNASU float64 `mapstructure:"dnasu-cost"`
 
 	// the cost per bp of primer DNA
@@ -82,8 +82,8 @@ type Config struct {
 	// the cost per bp of synthesized DNA as a fragment (as a step function)
 	CostSyntheticFragment map[int]SynthCost `mapstructure:"synthetic-fragment-cost"`
 
-	// the cost per bp of synthesized clonal DNA  (delivered in a vector)
-	CostSyntheticVector map[int]SynthCost `mapstructure:"synthetic-vector-cost"`
+	// the cost per bp of synthesized clonal DNA  (delivered in a plasmid)
+	CostSynthVector map[int]SynthCost `mapstructure:"synthetic-plasmid-cost"`
 
 	// the maximum number of fragments in the final assembly
 	FragmentsMaxCount int `mapstructure:"fragments-max-count"`
@@ -154,8 +154,8 @@ func New() *Config {
 		if userConfig.CostSyntheticFragment != nil {
 			viper.Set("synthetic-fragment-cost", userConfig.CostSyntheticFragment)
 		}
-		if userConfig.CostSyntheticVector != nil {
-			viper.Set("synthetic-vector-cost", userConfig.CostSyntheticVector)
+		if userConfig.CostSynthVector != nil {
+			viper.Set("synthetic-plasmid-cost", userConfig.CostSynthVector)
 		}
 	}
 
@@ -196,9 +196,9 @@ func (c Config) SynthFragmentCost(fragLength int) float64 {
 	return fragCount * float64(fragLength) * cost.Cost
 }
 
-// SynthVectorCost returns the cost of synthesizing the insert and having it delivered in a vector
+// SynthVectorCost returns the cost of synthesizing the insert and having it delivered in a plasmid
 func (c Config) SynthVectorCost(insertLength int) float64 {
-	cost := synthCost(insertLength, c.CostSyntheticVector)
+	cost := synthCost(insertLength, c.CostSynthVector)
 	if cost.Fixed {
 		return cost.Cost
 	}

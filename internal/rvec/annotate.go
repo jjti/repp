@@ -11,15 +11,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// Annotate is for annotating a vector sequence given the features in the feature database.
-// If an output path is provided, the annotated vector is writen to that file. Otherwise,
+// Annotate is for annotating a plasmid sequence given the features in the feature database.
+// If an output path is provided, the annotated plasmid is writen to that file. Otherwise,
 // the feature matches are written to stdout.
 func Annotate(cmd *cobra.Command, args []string) {
 	output, _ := cmd.Flags().GetString("out")
 
 	identity, err := cmd.Flags().GetInt("identity")
 	if err != nil {
-		identity = 96 // might be something other than `rvec vector`
+		identity = 96 // might be something other than `rvec plasmid`
 	}
 
 	p := inputParser{}
@@ -30,14 +30,14 @@ func Annotate(cmd *cobra.Command, args []string) {
 	}
 
 	name := ""
-	query := "" // the vector sequence that we're querying
+	query := "" // the plasmid sequence that we're querying
 	if len(args) > 0 {
 		query = args[0]
 	} else {
 		in, err := cmd.Flags().GetString("in")
 		if in == "" || err != nil {
 			cmd.Help()
-			stderr.Fatalln("must pass a file with a vector sequence or the vector sequence as an argument.")
+			stderr.Fatalln("must pass a file with a plasmid sequence or the plasmid sequence as an argument.")
 		}
 
 		frags, err := read(in, false)

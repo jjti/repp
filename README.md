@@ -1,6 +1,6 @@
 # rvec
 
-Finds pareto optimal solutions for vector construction using existing DNA fragments in local and/or remote repositories.
+Finds pareto optimal solutions for plasmid construction using existing DNA fragments in local and/or remote repositories.
 
 ## Installation
 
@@ -11,19 +11,19 @@ Finds pareto optimal solutions for vector construction using existing DNA fragme
 Assemble a list of fragments via Gibson Assembly. Generate primers and synthetic sequences (to avoid complexities).
 
 ```bash
-rvec fragments -i building_fragments.fa -o vector.json
+rvec fragments -i building_fragments.fa -o plasmid.json
 ```
 
-Find fragments to assemble a vector sequence. Use local and/or remote repositories. Rank assemblies by cost and number of fragments.
+Find fragments to assemble a plasmid sequence. Use local and/or remote repositories. Rank assemblies by cost and number of fragments.
 
 ```bash
-rvec vector -i seq.fa -o vectors.json --dbs "local-repo-1.fa local-repo-2.fa" --addgene --igem
+rvec plasmid -i seq.fa -o plasmids.json --dbs "local-repo-1.fa local-repo-2.fa" --addgene --igem
 ```
 
-Find fragments to assemble a vector from a list of features by name. iGEM part names or accession numbers.
+Find fragments to assemble a plasmid from a list of features by name. iGEM part names or accession numbers.
 
 ```bash
-rvec features pSB1C3 FJ172221 -o vector.json
+rvec features pSB1C3 FJ172221 -o plasmid.json
 ```
 
 ## Features

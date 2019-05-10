@@ -196,7 +196,7 @@ func (a *assembly) fill(target string, conf *config.Config) (frags []*Frag, err 
 	// second loop to fill in gaps between fragments that need to be filled via synthesis
 	fragsWithSynth := []*Frag{}
 	for i, f := range frags {
-		if f.ID != "" || f.Cost != 0.0 {
+		if f.Seq != "" {
 			fragsWithSynth = append(fragsWithSynth, f)
 		}
 
@@ -361,8 +361,8 @@ func fillAssemblies(target string, counts []int, countToAssemblies map[int][]ass
 
 			filledFragments, err := assemblyToFill.fill(target, conf)
 			if err != nil || filledFragments == nil {
-				assemblyToFill.log()
-				fmt.Println("error", err.Error())
+				// assemblyToFill.log()
+				// fmt.Println("error", err.Error())
 				continue
 			}
 

@@ -39,7 +39,7 @@ pcr-primer-max-offtarget-tm: 55.0
 
 # The length of PCR buffer. The length of the ranges to allow Primer3 to
 # choose primers in if neighbors are both synthetic. The larger this number,
-# the "better" the primers may be, but at the cost of a more expensive vector
+# the "better" the primers may be, but at the cost of a more expensive plasmid
 # (more synthesis)
 pcr-buffer-length: 20
 
@@ -102,9 +102,9 @@ synthetic-fragment-cost:
     fixed: true
     cost: 549.0
 
-# Cost of synthesis and delivery in a vector
+# Cost of synthesis and delivery in a plasmid
 # IDT: Gene synthesis: https://www.idtdna.com/pages/products/genes-and-gene-fragments/custom-gene-synthesis
-synthetic-vector-cost:
+synthetic-plasmid-cost:
   500:
     fixed: true
     cost: 160
@@ -117,7 +117,7 @@ synthetic-vector-cost:
     fixed: false
     cost: 0.6
 
-# cost of a single addgene vector
+# cost of a single addgene plasmid
 addgene-cost: 65.0
 
 # cost of a single igem part

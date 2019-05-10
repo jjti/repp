@@ -143,12 +143,19 @@ func blastFeatures(flags *Flags, feats [][]string, conf *config.Config) map[stri
 	tw := blastWriter()
 
 	for i, target := range feats {
-		matches, err := blast(target[0], target[1], false, flags.dbs, flags.filters, flags.identity, tw)
+		targetFeature := target[1]
+		matches, err := blast(target[0], targetFeature, false, flags.dbs, flags.filters, flags.identity, tw)
 		if err != nil {
 			stderr.Fatalln(err)
 		}
 
 		for _, m := range matches {
+			// needs to be at least identity % as long as the queried feature
+			mLen := float32(m.subjectEnd - m.subjectStart)
+			if mLen/float32(len(targetFeature)) < float32(flags.identity) {
+				continue
+			}
+
 			m.queryStart = i
 			m.queryEnd = i
 			m.uniqueID = m.entry + strconv.Itoa(m.subjectStart)

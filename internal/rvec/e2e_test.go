@@ -1,5 +1,3 @@
-// +build e2e
-
 package rvec
 
 import (
@@ -241,16 +239,21 @@ func Test_fragments(t *testing.T) {
 			gotTargetVector, gotFragments := fragments(tt.args.inputFragments, tt.args.conf)
 
 			if !reflect.DeepEqual(gotTargetVector.Seq, tt.wantTargetVector.Seq) {
-				t.Errorf("assembleFWD() gotTargetVector = %v, want %v", gotTargetVector, tt.wantTargetVector)
+				t.Errorf("fragments() gotTargetVector = %v, want %v", gotTargetVector, tt.wantTargetVector)
+			}
+
+			if len(gotFragments) != len(tt.wantFragments) {
+				t.Errorf("fragments() got %d fragments, expected %d", len(gotFragments), len(tt.wantFragments))
+				return
 			}
 
 			for i, wantF := range tt.wantFragments {
 				if wantF.Seq != gotFragments[i].Seq {
-					t.Errorf("assembleFWD() gotFragment.Seq = %v, want %v", gotFragments[i].Seq, wantF.Seq)
+					t.Errorf("fragments() gotFragment.Seq = %v, want %v", gotFragments[i].Seq, wantF.Seq)
 				}
 
 				if wantF.fragType != gotFragments[i].fragType {
-					t.Errorf("assembleFWD() gotFragment.Type = %v, want %v", gotFragments[i].fragType, wantF.fragType)
+					t.Errorf("fragments() gotFragment.Type = %v, want %v", gotFragments[i].fragType, wantF.fragType)
 				}
 			}
 		})
