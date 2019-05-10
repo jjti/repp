@@ -62,4 +62,4 @@ uninstall: clean
 	rm -rf $(APP_DATA)
 
 test:
-	go test ./internal/rvec
+	go test -timeout 200s ./internal/rvec
