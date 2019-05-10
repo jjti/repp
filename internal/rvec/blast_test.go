@@ -147,7 +147,7 @@ func Test_parentMismatch(t *testing.T) {
 	testDB, _ := filepath.Abs(path.Join("..", "..", "test", "db", "db"))
 
 	conf := config.New()
-	conf.PCRMaxOfftargetTm = 40.0
+	conf.PCRMaxOfftargetTm = 35.0
 
 	type args struct {
 		primer string
@@ -164,7 +164,7 @@ func Test_parentMismatch(t *testing.T) {
 			"avoids false positive",
 			args{
 				"GTTGGAGTCCACGTTCTTT",
-				"gnl|addgene|113726",
+				"gnl|addgene|107006",
 			},
 			false,
 			match{},
@@ -257,6 +257,38 @@ func Test_queryDatabases(t *testing.T) {
 			}
 			if gotF.ID != tt.wantF.ID || gotF.db != tt.wantF.db {
 				t.Errorf("queryDatabases() = %v, want %v", gotF, tt.wantF)
+			}
+		})
+	}
+}
+
+func Test_blastdbcmd(t *testing.T) {
+	testDB, _ := filepath.Abs(path.Join("..", "..", "test", "db", "db"))
+
+	type args struct {
+		entry string
+		db    string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			"find 107006",
+			args{
+				entry: "gnl|addgene|107006",
+				db:    testDB,
+			},
+			false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := blastdbcmd(tt.args.entry, tt.args.db)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("blastdbcmd() error = %v, wantErr %v", err, tt.wantErr)
+				return
 			}
 		})
 	}
