@@ -30,14 +30,17 @@ type match struct {
 	// unique id for the match (entry name + start index % seqL). also used by fragments
 	uniqueID string
 
-	// seq of the match on the target vector
-	seq string
+	// seq of the match on the subject match
+	querySeq string
 
 	// queryStart of the queried seq match (0-indexed)
 	queryStart int
 
 	// queryEnd of the queried seq match (0-indexed)
 	queryEnd int
+
+	// sequence of the match in the subject sequence
+	seq string
 
 	// start index of the match on the subject fragment (entry) (0-indexed)
 	subjectStart int
@@ -92,15 +95,20 @@ type blastExec struct {
 
 	// the percentage identity for BLAST queries
 	identity int
+
+	// the expect value of a BLAST query (defaults to 10)
+	evalue int
 }
 
 // length returns the length of the match on the queried fragment.
 func (m *match) length() int {
 	queryLength := m.queryEnd - m.queryStart + 1
 	subjectLength := m.subjectEnd - m.subjectStart + 1
+
 	if queryLength > subjectLength {
 		return queryLength
 	}
+
 	return subjectLength
 }
 
@@ -242,33 +250,39 @@ func (b *blastExec) run() (err error) {
 			"-gapextend", "6",
 		)
 	} else if b.identity >= 98 {
-		// https://www.ncbi.nlm.nih.gov/books/NBK279684/
-		// Table D1
+		// Table D1 https://www.ncbi.nlm.nih.gov/books/NBK279684/
 		flags = append(flags,
 			"-reward", "1",
 			"-penalty", "-3",
 			"-gapopen", "3",
 			"-gapextend", "3",
 		)
-	} else if b.identity > 90 {
+	} else if b.identity >= 90 {
+		// Table D1 https://www.ncbi.nlm.nih.gov/books/NBK279684/
 		flags = append(flags,
 			"-reward", "1",
 			"-penalty", "-2",
 			"-gapopen", "1",
 			"-gapextend", "2",
-			"-evalue", "100",
 		)
 	} else {
+		// Table D1 https://www.ncbi.nlm.nih.gov/books/NBK279684/
 		flags = append(flags,
 			"-reward", "1",
 			"-penalty", "-1",
 			"-gapopen", "1",
 			"-gapextend", "2",
-			"-evalue", "1000",
 		)
 	}
 
-	// create the blast command
+	if b.evalue != 0 {
+		flags = append(flags, "-evalue", strconv.Itoa(b.evalue))
+	} else if b.identity < 90 {
+		flags = append(flags, "-evalue", "1000")
+	} else if b.identity < 98 {
+		flags = append(flags, "-evalue", "100")
+	}
+
 	// https://www.ncbi.nlm.nih.gov/books/NBK279682/
 	blastCmd := exec.Command("blastn", flags...)
 
@@ -289,6 +303,7 @@ func (b *blastExec) parse(filters []string) (matches []match, err error) {
 	}
 	fileS := string(file)
 
+	fullQuery := b.seq + b.seq
 	identityThreshold := float32(b.identity)/100.0 - 0.0001
 
 	// read it into Matches
@@ -323,11 +338,11 @@ func (b *blastExec) parse(filters []string) (matches []match, err error) {
 			continue
 		}
 
-		queryStart-- // convert from 1-based to 0-based
+		seq = strings.Replace(seq, "-", "", -1) // remove gap markers
+		queryStart--                            // convert from 1-based to 0-based
 		queryEnd--
 		subjectStart--
 		subjectEnd--
-		seq = strings.Replace(seq, "-", "", -1) // remove gap markers
 
 		// bug where titles are being included in the entry
 		entryCols := strings.Fields(entry)
@@ -363,19 +378,23 @@ func (b *blastExec) parse(filters []string) (matches []match, err error) {
 		// get a unique identifier to distinguish this match/fragment from the others
 		uniqueID := entry + strconv.Itoa(queryStart%len(b.seq))
 
+		// gather the query sequence
+		querySeq := fullQuery[queryStart : queryEnd+1]
+
 		// create and append the new match
 		ms = append(ms, match{
 			entry:        entry,
 			uniqueID:     uniqueID,
-			seq:          seq,
-			queryStart:   queryStart, // convert 1-based numbers to 0-based
+			querySeq:     querySeq,
+			queryStart:   queryStart,
 			queryEnd:     queryEnd,
+			seq:          seq,
 			subjectStart: subjectStart,
 			subjectEnd:   subjectEnd,
 			circular:     strings.Contains(entry+titles, "circular"),
 			mismatching:  mismatching + gaps,
 			internal:     b.internal,
-			db:           b.db, // store for checking off-targets later
+			db:           b.db,
 			title:        titles,
 			forward:      forward,
 		})
@@ -532,6 +551,7 @@ func queryDatabases(entry string, dbs []string) (f *Frag, err error) {
 	close(dbSourceCh)
 
 	sep := "\n\t"
+
 	return &Frag{}, fmt.Errorf("failed to find %s in any of:%s", entry, sep+strings.Join(dbs, sep))
 }
 
@@ -669,21 +689,23 @@ func mismatch(primer string, parentFile *os.File, c *config.Config) (wasMismatch
 	}
 	defer os.Remove(out.Name())
 
-	// create blast input file
+	// create input file
 	inContent := fmt.Sprintf(">primer\n%s\n", primer)
 	if _, err = in.WriteString(inContent); err != nil {
 		return false, m, fmt.Errorf("failed to write primer sequence to query FASTA file: %v", err)
 	}
 
-	// blast the query sequence against the parentFile sequence
+	// BLAST the query sequence against the parentFile sequence
 	b := blastExec{
-		in:      in,
-		out:     out,
-		subject: parentFile.Name(),
-		seq:     primer,
+		in:       in,
+		out:      out,
+		subject:  parentFile.Name(),
+		seq:      primer,
+		identity: 65,    // see Primer-BLAST https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3412702/
+		evalue:   30000, // see Primer-BLAST
 	}
 
-	// execute blast
+	// execute BLAST
 	if err = b.runAgainst(); err != nil {
 		return false, m, fmt.Errorf("failed to run blast against parent: %v", err)
 	}
@@ -704,12 +726,11 @@ func mismatch(primer string, parentFile *os.File, c *config.Config) (wasMismatch
 	if strings.Contains(string(parentFileContents), "circular") {
 		// if the match is against a circular fragment, we expect to see the primer's binding location
 		// twice because circular fragments' sequences are doubled in the DBs
-		// TODO: one exception here is if the primer is on a range that crosses the zero index
 		primerCount++
 	}
 
 	for _, m := range matches {
-		if isMismatch(m, c) {
+		if isMismatch(primer, m, c) {
 			primerCount--
 		}
 
@@ -742,27 +763,39 @@ func (b *blastExec) runAgainst() (err error) {
 	return
 }
 
-// isMismatch reutns whether the match constitutes a mismatch
+// isMismatch returns whether the match constitutes a mismatch
 // between it and the would be primer sequence
 //
-// source: http://depts.washington.edu/bakerpg/primertemp/
-//
-// The equation used for the melting temperature is:
-// Tm = 81.5 + 0.41(%GC) - 675/N - % mismatch, where N = total number of bases.
-//
-// seq <36bp
-// oligotm -tp 1 -sc 1 seq
-func isMismatch(m match, c *config.Config) bool {
-	primer := strings.ToUpper(m.seq)
-	primerL := float64(len(primer))
+// estimate the ntthal and check against the max offtarget tm
+// from the settings
+func isMismatch(primer string, m match, c *config.Config) bool {
+	// we want the reverse complement of one to the other
+	ectopic := m.seq
+	if m.forward {
+		ectopic = reverseComplement(ectopic)
+	}
 
-	noA := strings.Replace(primer, "a", "", -1)
-	noT := strings.Replace(noA, "t", "", -1)
-	gcPerc := float64(len(noT)) / primerL
-	tmNoMismatch := 81.5 + 0.41*gcPerc - 675/float64(len(primer))
-	tmWithMismatch := tmNoMismatch - float64(m.mismatching)/primerL
+	ntthalCmd := exec.Command(
+		"ntthal",
+		"-a", "END1", // end of primer sequence
+		"-r", // temperature only
+		"-s1", primer,
+		"-s2", ectopic,
+		"-path", config.Primer3Config,
+	)
 
-	return tmWithMismatch > c.PCRMaxOfftargetTm
+	ntthalOut, err := ntthalCmd.CombinedOutput()
+	if err != nil {
+		stderr.Fatal(err)
+	}
+
+	ntthalOutString := string(ntthalOut)
+	temp, err := strconv.ParseFloat(strings.TrimSpace(ntthalOutString), 64)
+	if err != nil {
+		stderr.Fatalln(err)
+	}
+
+	return temp > c.PCRMaxOfftargetTm
 }
 
 func init() {

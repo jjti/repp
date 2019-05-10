@@ -96,7 +96,6 @@ func Test_cull(t *testing.T) {
 	if len(newMatches) != 3 {
 		t.Errorf("%d filtered matches found on test fragment, 3 expected: %v", len(newMatches), newMatches)
 	}
-
 }
 
 func Test_isMismatch(t *testing.T) {
@@ -104,7 +103,8 @@ func Test_isMismatch(t *testing.T) {
 	c.PCRMaxOfftargetTm = 40.0
 
 	type args struct {
-		match match
+		sequence string
+		match    match
 	}
 	tests := []struct {
 		name string
@@ -114,9 +114,10 @@ func Test_isMismatch(t *testing.T) {
 		{
 			"find a mismatching primer",
 			args{
+				sequence: "gtccgcgtcgtcgtcat",
 				match: match{
-					seq:         "atgacgacgacgcggac",
-					mismatching: 0,
+					seq:     "atgacgacgacgcggac",
+					forward: false,
 				},
 			},
 			true,
@@ -124,9 +125,10 @@ func Test_isMismatch(t *testing.T) {
 		{
 			"no false positive mistmatch",
 			args{
+				sequence: "gtccgcgtcgtcgtcat",
 				match: match{
-					seq:         "atgacgacgacgac",
-					mismatching: 0,
+					seq:     "atgacgacgacgac",
+					forward: false,
 				},
 			},
 			false,
@@ -134,7 +136,7 @@ func Test_isMismatch(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := isMismatch(tt.args.match, c); got != tt.want {
+			if got := isMismatch(tt.args.sequence, tt.args.match, c); got != tt.want {
 				t.Errorf("isMismatch() = %v, want %v", got, tt.want)
 			}
 		})
@@ -180,6 +182,7 @@ func Test_parentMismatch(t *testing.T) {
 				entry:       "addgene:107006",
 				uniqueID:    "addgene:1070060",
 				seq:         "AGTATAGTAGGTAGTCATTCTT",
+				querySeq:    "AGTATAGGATAGGTAGTCATTCTT",
 				queryStart:  0,
 				queryEnd:    23,
 				mismatching: 2,
