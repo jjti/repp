@@ -280,7 +280,7 @@ func (b *blastExec) run() (err error) {
 	} else if b.identity < 90 {
 		flags = append(flags, "-evalue", "1000")
 	} else if b.identity < 98 {
-		flags = append(flags, "-evalue", "100")
+		flags = append(flags, "-evalue", "500")
 	}
 
 	// https://www.ncbi.nlm.nih.gov/books/NBK279682/

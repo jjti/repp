@@ -632,7 +632,7 @@ func writeJSON(
 	})
 
 	// get the cost of full synthesis (comes in vector)
-	fullSynthCost, err := roundCost(conf.SynthVectorCost(insertSeqLength))
+	fullSynthCost, err := roundCost(conf.SynthPlasmidCost(insertSeqLength))
 	if err != nil {
 		return nil, err
 	}

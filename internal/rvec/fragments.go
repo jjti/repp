@@ -123,7 +123,7 @@ func annealFragments(min, max int, frags []*Frag) (vec string) {
 
 // validateJunctions checks each fragment and confirms that it has sufficient homology
 // with its adjacent fragments and that the match is exact. Largely for testing
-func validateJunctions(name string, frags []*Frag, conf *config.Config, t *testing.T) {
+func validateJunctions(frags []*Frag, conf *config.Config) error {
 	for i, f := range frags {
 		next := frags[(i+1)%len(frags)]
 		j := f.junction(next, conf.FragmentsMinHomology, conf.FragmentsMaxHomology)
@@ -138,7 +138,16 @@ func validateJunctions(name string, frags []*Frag, conf *config.Config, t *testi
 				s2 = next.PCRSeq
 			}
 
-			t.Errorf("%s -- no junction found between %s and %s\n%s\n\n%s", name, f.ID, next.ID, s1, s2)
+			return fmt.Errorf("no junction found between %s and %s\n%s\n\n%s", f.ID, next.ID, s1, s2)
 		}
+	}
+
+	return nil
+}
+
+// validateJunctionsTest logs validation errors to the testing object
+func validateJunctionsTest(frags []*Frag, conf *config.Config, t *testing.T) {
+	if err := validateJunctions(frags, conf); err != nil {
+		t.Error(err)
 	}
 }

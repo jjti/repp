@@ -207,6 +207,13 @@ func (a *assembly) fill(target string, conf *config.Config) (frags []*Frag, err 
 		}
 	}
 
+	// validate that fragments will anneal to one another
+	if conf.Verbose {
+		if err := validateJunctions(frags, conf); err != nil {
+			return nil, err
+		}
+	}
+
 	return fragsWithSynth, nil
 }
 

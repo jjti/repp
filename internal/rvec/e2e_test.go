@@ -135,7 +135,7 @@ func Test_sequence_e2e(test *testing.T) {
 		}
 
 		for _, s := range sols {
-			validateJunctions(t.in, s, c, test)
+			validateJunctionsTest(s, c, test)
 		}
 	}
 }
@@ -174,7 +174,7 @@ func Test_features(t *testing.T) {
 			sols := Features(tt.args.flags, tt.args.conf)
 
 			for _, s := range sols {
-				validateJunctions(tt.name, s, conf, t)
+				validateJunctionsTest(s, conf, t)
 			}
 		})
 	}
