@@ -125,7 +125,7 @@ func sequence(input *Flags, conf *config.Config) (insert, target *Frag, solution
 	// read the target sequence (the first in the slice is used)
 	fragments, err := read(input.in, false)
 	if err != nil {
-		return &Frag{}, &Frag{}, nil, fmt.Errorf("failed to read fragments from %s: %v", input.in, err)
+		return &Frag{}, &Frag{}, nil, fmt.Errorf("failed to read target sequence from %s: %v", input.in, err)
 	}
 
 	if len(fragments) > 1 {

@@ -22,6 +22,30 @@ var (
 	stderr = log.New(os.Stderr, "", 0)
 )
 
+// Flags contains parsed cobra Flags like "in", "out", "dbs", etc that are used by multiple commands.
+type Flags struct {
+	// the name of the file to write the input from
+	in string
+
+	// the name of the file to write the output to
+	out string
+
+	// a list of dbs to run BLAST against (their names' on the filesystem)
+	dbs []string
+
+	// the backbone (optional) to insert the pieces into
+	backbone *Frag
+
+	// backbone meta (name, enzyme used to cut it, cut index)
+	backboneMeta *Backbone
+
+	// slice of strings to weed out fragments from BLAST matches
+	filters []string
+
+	// percentage identity for finding building fragments in BLAST databases
+	identity int
+}
+
 // Solution is a single solution to build up the target vector.
 type Solution struct {
 	// Count is the number of fragments in this solution
@@ -59,30 +83,6 @@ type Output struct {
 
 	// Backbone is the user linearized a backbone fragment
 	Backbone *Backbone `json:"backbone,omitempty"`
-}
-
-// Flags contains parsed cobra Flags like "in", "out", "dbs", etc that are used by multiple commands.
-type Flags struct {
-	// the name of the file to write the input to
-	in string
-
-	// the name of the file to write the output to
-	out string
-
-	// a list of dbs to run BLAST against (their names' on the filesystem)
-	dbs []string
-
-	// the backbone (optional) to insert the pieces into
-	backbone *Frag
-
-	// backbone meta (name, enzyme used to cut it, cut index)
-	backboneMeta *Backbone
-
-	// slice of strings to weed out fragments from BLAST matches
-	filters []string
-
-	// percentage identity for finding building fragments in BLAST databases
-	identity int
 }
 
 // inputParser contains methods for parsing flags from the input &cobra.Command.
@@ -133,12 +133,17 @@ func parseCmdFlags(cmd *cobra.Command, args []string, strict bool) (*Flags, *con
 	p := inputParser{}
 	c := config.New()
 
-	if fs.in, err = cmd.Flags().GetString("in"); err != nil {
+	if fs.in, err = cmd.Flags().GetString("in"); fs.in == "" || err != nil {
 		cmdName := strings.ToLower(cmd.Name())
 		if cmdName == "features" {
 			fs.in = p.parseFeatureInput(args)
 		} else if cmdName == "annotate" {
 			fs.in = ""
+		} else if cmdName == "sequence" && len(args) > 0 {
+			fs.in = "./input.fa"
+			if err = ioutil.WriteFile(fs.in, []byte(fmt.Sprintf(">target_sequence\n%s", args[0])), 0644); err != nil {
+				stderr.Fatal(err)
+			}
 		} else if fs.in, err = p.guessInput(); strict && err != nil {
 			// check whether an input fail was specified
 			cmd.Help()

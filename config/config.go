@@ -85,12 +85,6 @@ type Config struct {
 	// the cost per bp of synthesized clonal DNA  (delivered in a plasmid)
 	CostSynthPlasmid map[int]SynthCost `mapstructure:"synthetic-plasmid-cost"`
 
-	// sorted synthetic fragment map cost keys
-	SynFragmentCosts []int
-
-	// sorted synthetic plasmid map cost keys
-	SynPlasmidCosts []int
-
 	// the maximum number of fragments in the final assembly
 	FragmentsMaxCount int `mapstructure:"fragments-max-count"`
 
@@ -178,27 +172,15 @@ func New() *Config {
 		log.Fatal("no primer3_core executable available in PATH, try `make install`")
 	}
 
+	if _, err := exec.LookPath("ntthal"); err != nil {
+		log.Fatal("no ntthal executable available in PATH, try `make install`")
+	}
+
 	// build Config
 	config := &Config{}
 	if err := viper.Unmarshal(&config); err != nil {
 		log.Fatalf("failed to decode settings file %s: %v", viper.ConfigFileUsed(), err)
 	}
-
-	// gather synthetic fragment costs, store
-	synFragmentCosts := make([]int, len(config.CostSyntheticFragment))
-	for key := range config.CostSyntheticFragment {
-		synFragmentCosts = append(synFragmentCosts, key)
-	}
-	sort.Ints(synFragmentCosts)
-	config.SynFragmentCosts = synFragmentCosts
-
-	// father synthetic vector costs
-	synPlasmidCosts := make([]int, len(config.CostSynthPlasmid))
-	for key := range config.CostSynthPlasmid {
-		synPlasmidCosts = append(synPlasmidCosts, key)
-	}
-	sort.Ints(synPlasmidCosts)
-	config.SynPlasmidCosts = synPlasmidCosts
 
 	return config
 }
@@ -210,7 +192,7 @@ func (c Config) SynthFragmentCost(fragLength int) float64 {
 	fragCount := math.Ceil(float64(fragLength) / float64(c.SyntheticMaxLength))
 	fragLength = int(math.Floor(float64(fragLength) / float64(fragCount)))
 
-	cost := synthCost(fragLength, c.CostSyntheticFragment, c.SynFragmentCosts)
+	cost := synthCost(fragLength, c.CostSyntheticFragment)
 	if cost.Fixed {
 		return fragCount * cost.Cost
 	}
@@ -220,7 +202,7 @@ func (c Config) SynthFragmentCost(fragLength int) float64 {
 
 // SynthPlasmidCost returns the cost of synthesizing the insert and having it delivered in a plasmid
 func (c Config) SynthPlasmidCost(insertLength int) float64 {
-	cost := synthCost(insertLength, c.CostSynthPlasmid, c.SynPlasmidCosts)
+	cost := synthCost(insertLength, c.CostSynthPlasmid)
 	if cost.Fixed {
 		return cost.Cost
 	}
@@ -229,14 +211,20 @@ func (c Config) SynthPlasmidCost(insertLength int) float64 {
 }
 
 // synthCost returns the cost of synthesizing a piece of DNA
-func synthCost(seqLength int, costs map[int]SynthCost, costKeys []int) SynthCost {
+func synthCost(seqLength int, costs map[int]SynthCost) SynthCost {
 	// find the smallest synth length greater than fragLength
 	// Ex: a synthesis provider may say it's 32 cents up to 500bp and
 	// 60 cents up to 2000bp. So, for a 750bp sequence, we want to use
 	// the 2000bp price
 	// TODO: add error here for if there's no cost for seqLength (too large)
+	costLengthKeys := make([]int, len(costs))
+	for key := range costs {
+		costLengthKeys = append(costLengthKeys, key)
+	}
+	sort.Ints(costLengthKeys)
+
 	synthCostKey := 0
-	for _, keyLength := range costKeys {
+	for _, keyLength := range costLengthKeys {
 		if keyLength >= seqLength {
 			synthCostKey = keyLength
 			break
