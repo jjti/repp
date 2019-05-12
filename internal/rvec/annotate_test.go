@@ -8,6 +8,7 @@ func Test_annotate(t *testing.T) {
 		seq      string
 		output   string
 		identity int
+		dbs      []string
 		filters  []string
 		enclosed bool
 	}
@@ -23,13 +24,14 @@ func Test_annotate(t *testing.T) {
 				"",
 				100,
 				[]string{},
+				[]string{},
 				true,
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			annotate(tt.args.name, tt.args.seq, tt.args.output, tt.args.identity, tt.args.filters, tt.args.enclosed, false)
+			annotate(tt.args.name, tt.args.seq, tt.args.output, tt.args.identity, tt.args.dbs, tt.args.filters, tt.args.enclosed, false)
 		})
 	}
 }

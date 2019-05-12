@@ -107,7 +107,7 @@ type Config struct {
 	PCRMaxEmbedLength int `mapstructure:"pcr-primer-max-embed-length"`
 
 	// PCRMaxOfftargetTm is the maximum tm of an offtarget, above which PCR is abandoned
-	PCRMaxOfftargetTm float64 `mapstructure:"pcr-primer-max-offtarget-tm"`
+	PCRMaxOfftargetTm float64 `mapstructure:"pcr-primer-max-ectopic-tm"`
 
 	// PCRBufferLength is the length of buffer from the ends of a match in which
 	// to allow Primer3 to look for a primer

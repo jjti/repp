@@ -95,8 +95,6 @@ func parseCmdFlags(cmd *cobra.Command, args []string, strict bool) (*Flags, *con
 		cmdName := strings.ToLower(cmd.Name())
 		if cmdName == "features" {
 			fs.in = p.parseFeatureInput(args)
-		} else if cmdName == "annotate" {
-			fs.in = ""
 		} else if cmdName == "sequence" && len(args) > 0 {
 			fs.in = "./input.fa"
 			if err = ioutil.WriteFile(fs.in, []byte(fmt.Sprintf(">target_sequence\n%s", args[0])), 0644); err != nil {

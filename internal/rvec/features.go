@@ -44,10 +44,10 @@ func Features(flags *Flags, conf *config.Config) [][]*Frag {
 	}
 
 	// find matches in the databases
-	fragToMatches := blastFeatures(flags, feats, conf)
+	featureMatches := blastFeatures(flags, feats, conf)
 
 	// build assemblies containing the matched fragments
-	target, solutions := featureSolutions(feats, fragToMatches, flags.dbs, conf)
+	target, solutions := featureSolutions(feats, featureMatches, flags, conf)
 
 	// write the output file
 	insertLength := 0
@@ -139,12 +139,10 @@ func queryFeatures(flags *Flags) ([][]string, []string) {
 
 // blastFeatures returns matches between the target features and entries in the databases with those features
 func blastFeatures(flags *Flags, feats [][]string, conf *config.Config) map[string][]featureMatch {
-	fragToMatches := make(map[string][]featureMatch) // a list from each entry (by id) to its list of matched features
-	tw := blastWriter()
-
+	featureMatches := make(map[string][]featureMatch) // a map from from each entry (by id) to its list of matched features
 	for i, target := range feats {
 		targetFeature := target[1]
-		matches, err := blast(target[0], targetFeature, false, flags.dbs, flags.filters, flags.identity, tw)
+		matches, err := blast(target[0], targetFeature, false, flags.dbs, flags.filters, flags.identity, blastWriter())
 		if err != nil {
 			stderr.Fatalln(err)
 		}
@@ -152,7 +150,7 @@ func blastFeatures(flags *Flags, feats [][]string, conf *config.Config) map[stri
 		for _, m := range matches {
 			// needs to be at least identity % as long as the queried feature
 			mLen := float32(m.subjectEnd - m.subjectStart)
-			if mLen/float32(len(targetFeature)) < float32(flags.identity) {
+			if mLen/float32(len(targetFeature)) < float32(flags.identity)/100.0 {
 				continue
 			}
 
@@ -160,63 +158,49 @@ func blastFeatures(flags *Flags, feats [][]string, conf *config.Config) map[stri
 			m.queryEnd = i
 			m.uniqueID = m.entry + strconv.Itoa(m.subjectStart)
 
-			if _, exists := fragToMatches[m.entry]; !exists {
-				fragToMatches[m.entry] = []featureMatch{featureMatch{featureIndex: i, match: m}}
+			if _, exists := featureMatches[m.entry]; !exists {
+				featureMatches[m.entry] = []featureMatch{featureMatch{featureIndex: i, match: m}}
 			} else {
-				fragToMatches[m.entry] = append(fragToMatches[m.entry], featureMatch{featureIndex: i, match: m})
+				featureMatches[m.entry] = append(featureMatches[m.entry], featureMatch{featureIndex: i, match: m})
 			}
 		}
 	}
 
-	if conf.Verbose {
-		tw.Flush()
-	}
-
-	return fragToMatches
+	return featureMatches
 }
 
 // featureSolutions creates and fills the assemblies using the matched fragments
-func featureSolutions(feats [][]string, fragToMatches map[string][]featureMatch, dbs []string, conf *config.Config) (string, [][]*Frag) {
-	var accMatches []match
-	for _, matches := range fragToMatches {
-		sort.Slice(matches, func(i, j int) bool {
-			return matches[i].featureIndex < matches[j].featureIndex
-		})
-
-		// expand the range the matches range based on its continuous feature stretches
-		m := matches[0].match
-		stretchStart := matches[0].featureIndex
-
-		// features doubled on self to account for feature runs that cross the zero index
-		for mIndex, featureMatch := range append(matches, matches...) {
-			if featureMatch.featureIndex == (stretchStart+1)%len(feats) && mIndex < len(matches)*2-1 {
-				continue // continue the feature match stretch
-			}
-
-			// cannot extend this stretch, create a new fragment
-			m.queryStart = stretchStart
-			m.queryEnd = featureMatch.featureIndex
-			m.subjectEnd = matches[mIndex%len(matches)].match.subjectEnd
-
-			accMatches = append(accMatches, featureMatch.match)
-
-			// start on the next stretch
-			m = matches[(mIndex+1)%len(matches)].match
-			stretchStart = matches[(mIndex+1)%len(matches)].featureIndex
-		}
-	}
+func featureSolutions(feats [][]string, featureMatches map[string][]featureMatch, flags *Flags, conf *config.Config) (string, [][]*Frag) {
+	// merge matches into one another if they can combine to cover a range
+	extendedMatches := extendMatches(feats, featureMatches)
 
 	// filter out matches that are completely contained in others or too short
-	accMatches = cull(accMatches, len(feats), conf.PCRMinLength)
+	fmt.Printf("%d matched fragments\n", len(featureMatches))
+	fmt.Printf("%d matches before culling\n", len(extendedMatches))
+
+	// remove extended matches fully enclosed by others
+	extendedMatches = cull(extendedMatches, len(feats), 1)
+
+	// create a subject file from the matches' source fragments
+	subjectDB, frags := subjectDatabase(extendedMatches, flags.dbs)
+
+	// re-BLAST the features against the new subject database
+	featureMatches = reBlastFeatures(flags, feats, conf, subjectDB, frags)
+
+	// merge matches into one another if they can combine to cover a range
+	extendedMatches = extendMatches(feats, featureMatches)
+
+	// remove extended matches fully enclosed by others
+	extendedMatches = cull(extendedMatches, len(feats), 1)
 
 	if conf.Verbose {
-		fmt.Printf("%d matches after culling\n", len(accMatches))
-		for _, m := range accMatches {
-			m.log()
-		}
+		fmt.Printf("%d matches after culling\n", len(extendedMatches))
+		// for _, m := range extendedMatches {
+		// 	m.log()
+		// }
 	}
 
-	// get the full vector length if just synthesizing each feature next to one another
+	// get the full vector length as if just synthesizing each feature next to one another
 	var targetBuilder strings.Builder
 	featureToStart := make(map[int]int) // map from feature index to start index on fullSynthSeq
 	for i, feat := range feats {
@@ -226,9 +210,9 @@ func featureSolutions(feats [][]string, fragToMatches map[string][]featureMatch,
 	target := targetBuilder.String()
 
 	// get the matches back out of the databases (the full parts)
-	var frags []*Frag
-	for _, m := range accMatches {
-		frag, err := queryDatabases(m.entry, dbs)
+	frags = []*Frag{}
+	for _, m := range extendedMatches {
+		frag, err := queryDatabases(m.entry, flags.dbs)
 		if err != nil {
 			stderr.Fatalln(err)
 		}
@@ -269,6 +253,146 @@ func featureSolutions(feats [][]string, fragToMatches map[string][]featureMatch,
 	solutions := fillAssemblies(target, assemblyCounts, countToAssemblies, conf)
 
 	return target, solutions
+}
+
+// extendMatches groups and extends matches against the subject sequence
+func extendMatches(feats [][]string, featureMatches map[string][]featureMatch) (extendedMatches []match) {
+	for _, matches := range featureMatches {
+		sort.Slice(matches, func(i, j int) bool {
+			return matches[i].match.subjectStart < matches[j].match.subjectStart
+		})
+
+		// expand the ranges of the matches range based on their continuous feature stretches
+		m := matches[0].match
+		firstOfStretch := matches[0].featureIndex
+		lastOfStretch := matches[0].featureIndex
+		numFeatures := 1 // number of features in this extended match
+
+		// features doubled on self to account for feature runs that cross the zero index
+		for i, featureMatch := range append(matches, matches...) {
+			first := i == 0
+			last := i == len(matches)*2-1
+
+			if first {
+				continue // still on the first match
+			}
+
+			if featureMatch.featureIndex == (lastOfStretch+1)%len(feats) && !last {
+				lastOfStretch = featureMatch.featureIndex
+				numFeatures++
+				if numFeatures < len(feats) {
+					continue // continue to extend the feature match stretch
+				}
+			}
+
+			// cannot extend this stretch, create a new fragment
+			m.queryStart = firstOfStretch
+			m.queryEnd = lastOfStretch
+			m.subjectEnd = matches[(i-1)%len(matches)].match.subjectEnd
+
+			extendedMatches = append(extendedMatches, m)
+
+			// start on the next stretch
+			m = featureMatch.match
+			firstOfStretch = featureMatch.featureIndex
+			lastOfStretch = featureMatch.featureIndex
+			numFeatures = 1
+		}
+	}
+
+	return extendedMatches
+}
+
+// create a subject database to query specifically for all
+// features. Needed because the first BLAST may not return
+// all feature matches on each fragment
+func subjectDatabase(extendedMatches []match, dbs []string) (subjectName string, frags []*Frag) {
+	subject := ""
+	for _, m := range extendedMatches {
+		frag, err := queryDatabases(m.entry, dbs)
+		if err != nil {
+			stderr.Fatalln(err)
+		}
+		subject += fmt.Sprintf(">%s\n%s\n", frag.ID, frag.Seq)
+		frags = append(frags, frag)
+	}
+
+	in, err := ioutil.TempFile(blastnDir, "feature-subject-*")
+	if err != nil {
+		stderr.Fatal(err)
+	}
+
+	in.WriteString(subject)
+
+	return in.Name(), frags
+}
+
+// reBlastFeatures returns matches between the target features and entries in the databases with those features
+func reBlastFeatures(flags *Flags, feats [][]string, conf *config.Config, subjectDB string, frags []*Frag) map[string][]featureMatch {
+	featureMatches := make(map[string][]featureMatch) // a map from from each entry (by id) to its list of matched features
+	for i, target := range feats {
+		targetFeature := target[1]
+		matches, err := blastAgainst(target[0], targetFeature, subjectDB, false, flags.identity, blastWriter())
+		if err != nil {
+			stderr.Fatalln(err)
+		}
+
+		for _, m := range matches {
+			// needs to be at least identity % as long as the queried feature
+			mLen := float32(m.subjectEnd - m.subjectStart)
+			if mLen/float32(len(targetFeature)) < float32(flags.identity)/100.0 {
+				continue
+			}
+
+			m.queryStart = i
+			m.queryEnd = i
+			m.uniqueID = m.entry + strconv.Itoa(m.subjectStart)
+
+			if _, exists := featureMatches[m.entry]; !exists {
+				featureMatches[m.entry] = []featureMatch{featureMatch{featureIndex: i, match: m}}
+			} else {
+				featureMatches[m.entry] = append(featureMatches[m.entry], featureMatch{featureIndex: i, match: m})
+			}
+		}
+	}
+
+	for i, target := range feats {
+		targetFeature := target[1]
+		for _, frag := range frags {
+			fragSeq := strings.ToUpper(frag.Seq + frag.Seq)
+			featureIndex := strings.Index(fragSeq, targetFeature)
+
+			if featureIndex > 0 {
+				manualMatch := match{
+					entry:        frag.ID,
+					uniqueID:     fmt.Sprintf("%s%d", frag.ID, featureIndex),
+					querySeq:     targetFeature,
+					queryStart:   i,
+					queryEnd:     i,
+					seq:          targetFeature,
+					subjectStart: featureIndex,
+					subjectEnd:   featureIndex + len(targetFeature),
+					db:           frag.db,
+					title:        target[0],
+					circular:     frag.fragType == circular,
+					forward:      true,
+				}
+
+				alreadySeen := false
+				for _, m := range featureMatches[frag.ID] {
+					if m.featureIndex == i && m.match.subjectStart == manualMatch.subjectStart {
+						alreadySeen = true
+						break
+					}
+				}
+				if !alreadySeen {
+					featureMatches[frag.ID] = append(featureMatches[frag.ID], featureMatch{featureIndex: i, match: manualMatch})
+				}
+			}
+		}
+	}
+
+	return featureMatches
 }
 
 // NewFeatureDB returns a new copy of the features db

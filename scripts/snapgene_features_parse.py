@@ -1,8 +1,12 @@
 import io
 import os
+import sys
 
 # install dgparse from https://github.com/DeskGen/dgparse
 import dgparse
+
+if sys.version_info[0] > 2:
+    raise Exception("Python 2 required for dgparse dependency.")
 
 
 def read_features():
@@ -33,7 +37,7 @@ def read_features():
 
                     name = dna_feature["name"].encode("utf-8").strip()
                     seq = dna_feature["pattern"]["bases"]
-                    if len(seq) > 1 and "™" not in name:
+                    if len(seq) > 1:
                         features[name] = seq
             except:
                 # raise

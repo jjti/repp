@@ -51,11 +51,40 @@ func Annotate(cmd *cobra.Command, args []string) {
 	toCull, _ := cmd.Flags().GetBool("cull")
 	namesOnly, _ := cmd.Flags().GetBool("names")
 
-	annotate(name, query, output, identity, excludeFilters, toCull, namesOnly)
+	addgene, err := cmd.Flags().GetBool("addgene") // use addgene db?
+	if err != nil {
+		cmd.Help()
+		stderr.Fatalf("failed to parse addgene flag: %v", err)
+	}
+
+	igem, err := cmd.Flags().GetBool("igem") // use igem db?
+	if err != nil {
+		cmd.Help()
+		stderr.Fatalf("failed to parse igem flag: %v", err)
+	}
+
+	dnasu, err := cmd.Flags().GetBool("dnasu") // use dnasu db?
+	if err != nil {
+		cmd.Help()
+		stderr.Fatalf("failed to parse dnasu flag: %v", err)
+	}
+
+	dbString, err := cmd.Flags().GetString("dbs")
+	if err != nil && !addgene {
+		cmd.Help()
+		stderr.Fatalf("failed to parse building fragments: %v", err)
+	}
+
+	dbs, err := p.parseDBs(dbString, addgene, igem, dnasu)
+	if err != nil {
+		stderr.Fatalf("failed to find any fragment databases: %v", err)
+	}
+
+	annotate(name, query, output, identity, dbs, excludeFilters, toCull, namesOnly)
 }
 
 // annotate is for executing blast against the query sequence.
-func annotate(name, seq, output string, identity int, filters []string, toCull, namesOnly bool) {
+func annotate(name, seq, output string, identity int, dbs, filters []string, toCull, namesOnly bool) {
 	handleErr := func(err error) {
 		if err != nil {
 			stderr.Fatalln(err)
@@ -75,9 +104,9 @@ func annotate(name, seq, output string, identity int, filters []string, toCull, 
 	featIndex := 0
 	var featureSubjects strings.Builder
 	indexToFeature := make(map[int]string)
-	for feat, seq := range fDB.features {
+	for feat, featSeq := range fDB.features {
 		indexToFeature[featIndex] = feat
-		featureSubjects.WriteString(fmt.Sprintf(">%d\n%s\n", featIndex, seq))
+		featureSubjects.WriteString(fmt.Sprintf(">%d\n%s\n", featIndex, featSeq))
 		featIndex++
 	}
 	subjectFile, err := ioutil.TempFile(blastnDir, name+"features-*")
@@ -97,51 +126,74 @@ func annotate(name, seq, output string, identity int, filters []string, toCull, 
 		circular: true,
 	}
 
-	handleErr(b.input())
-	handleErr(b.runAgainst())
-	features, err := b.parse(filters)
-	handleErr(err)
+	features := []match{}
+	if len(dbs) < 1 {
+		// if the user selected another db, don't use the internal one
+		handleErr(b.input())
+		handleErr(b.runAgainst())
+		features, err = b.parse(filters)
+		handleErr(err)
 
-	// get rid of features that start past the zero index, wrap that those that go around it
-	// get rid of features matches that aren't 100% of the feature in the feature database
-	var cleanedFeatures []match
-	for _, f := range features {
-		if f.queryStart >= len(seq) {
-			continue
-		}
+		// get rid of features that start past the zero index, wrap that those that go around it
+		// get rid of features matches that aren't 100% of the feature in the feature database
+		var cleanedFeatures []match
+		for _, f := range features {
+			if f.queryStart >= len(seq) {
+				continue
+			}
 
-		featureIndex, _ := strconv.Atoi(f.entry)
-		f.entry = indexToFeature[featureIndex]
-		if len(f.seq) < len(fDB.features[f.entry]) {
-			continue
-		}
+			featureIndex, _ := strconv.Atoi(f.entry)
+			f.entry = indexToFeature[featureIndex]
+			if len(f.seq) < len(fDB.features[f.entry]) {
+				continue
+			}
 
-		f.queryEnd %= len(seq)
-		if f.queryEnd == 0 {
-			f.queryEnd = len(seq)
+			f.queryEnd %= len(seq)
+			if f.queryEnd == 0 {
+				f.queryEnd = len(seq)
+			}
+
+			cleanedFeatures = append(cleanedFeatures, f)
 		}
-		cleanedFeatures = append(cleanedFeatures, f)
+		features = cleanedFeatures
+	} else {
+		features, err = blast(name, seq, false, dbs, filters, identity, blastWriter())
+		handleErr(err)
 	}
-	features = cleanedFeatures
+
+	if len(features) < 1 {
+		stderr.Fatal("no features found")
+	}
 
 	sortMatches(features)
 	if toCull {
-		features = cull(features, len(seq), 10)
+		features = cull(features, len(seq), 5)
+		for _, f := range features {
+			f.log()
+		}
 	}
 
 	if namesOnly {
 		featuresNames := []string{}
 		for _, feature := range features {
-			featuresNames = append(featuresNames, feature.entry)
+			dir := ""
+			if !feature.forward {
+				dir += ":rev"
+			}
+			featuresNames = append(featuresNames, feature.entry+dir)
 		}
 		fmt.Println(strings.Join(featuresNames, ", "))
 	} else if output != "" {
 		writeGenbank(output, name, seq, []*Frag{}, features)
 	} else {
 		tw := tabwriter.NewWriter(os.Stdout, 0, 4, 3, ' ', 0)
-		fmt.Fprintf(tw, "\nfeatures (%d)\tstart\tend\t\n", len(features))
+		fmt.Fprintf(tw, "\nfeatures (%d)\tstart\tend\tdirection\t\n", len(features))
 		for _, feat := range features {
-			fmt.Fprintf(tw, "%s\t%d\t%d\t\n", feat.entry, feat.queryStart+1, feat.queryEnd+1)
+			dir := "FWD"
+			if !feat.forward {
+				dir = "REV"
+			}
+			fmt.Fprintf(tw, "%s\t%d\t%d\t%s\t\n", feat.entry, feat.queryStart+1, feat.queryEnd+1, dir)
 		}
 		tw.Flush()
 	}

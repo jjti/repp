@@ -142,13 +142,13 @@ func blast(
 	identity int,
 	tw *tabwriter.Writer,
 ) (matches []match, err error) {
-	in, err := ioutil.TempFile(blastnDir, name+"in-*")
+	in, err := ioutil.TempFile(blastnDir, "in-*")
 	if err != nil {
 		return nil, err
 	}
 	defer os.Remove(in.Name())
 
-	out, err := ioutil.TempFile(blastnDir, name+"out-*")
+	out, err := ioutil.TempFile(blastnDir, "out-*")
 	if err != nil {
 		return nil, err
 	}
@@ -156,7 +156,7 @@ func blast(
 
 	for _, db := range dbs {
 		internal := true
-		if strings.Contains(db, "addgene") || strings.Contains(db, "igem") {
+		if strings.Contains(db, "addgene") || strings.Contains(db, "igem") || strings.Contains(db, "dnasu") {
 			internal = false
 		}
 
@@ -201,6 +201,64 @@ func blast(
 	return matches, nil
 }
 
+// blast an entry against a pre-made subject database
+func blastAgainst(
+	name, seq, subject string,
+	circular bool,
+	identity int,
+	tw *tabwriter.Writer,
+) (matches []match, err error) {
+	in, err := ioutil.TempFile(blastnDir, "in-*")
+	if err != nil {
+		return nil, err
+	}
+	defer os.Remove(in.Name())
+
+	out, err := ioutil.TempFile(blastnDir, "out-*")
+	if err != nil {
+		return nil, err
+	}
+	defer os.Remove(out.Name())
+
+	internal := true
+	if strings.Contains(name, "addgene") || strings.Contains(name, "igem") || strings.Contains(name, "dnasu") {
+		internal = false
+	}
+
+	b := &blastExec{
+		name:     name,
+		seq:      seq,
+		circular: circular,
+		subject:  subject,
+		in:       in,
+		out:      out,
+		internal: internal,
+		identity: identity,
+	}
+
+	// make sure the subject file exists
+	if _, err := os.Stat(subject); os.IsNotExist(err) {
+		return nil, fmt.Errorf("failed to find a BLAST subject at %s", subject)
+	}
+
+	// create the input file
+	if err := b.input(); err != nil {
+		return nil, fmt.Errorf("failed to write a BLAST input file at %s: %v", b.in.Name(), err)
+	}
+
+	// execute BLAST
+	if err := b.runAgainst(); err != nil {
+		return nil, fmt.Errorf("failed executing BLAST: %v", err)
+	}
+
+	// parse the output file to Matches against the Frag
+	if matches, err = b.parse([]string{}); err != nil {
+		return nil, fmt.Errorf("failed to parse BLAST output: %v", err)
+	}
+
+	return matches, nil
+}
+
 // blastWriter returns a new tabwriter specifically for blast database calls.
 func blastWriter() *tabwriter.Writer {
 	tw := tabwriter.NewWriter(os.Stdout, 0, 4, 3, ' ', 0)
@@ -239,6 +297,7 @@ func (b *blastExec) run() (err error) {
 		"-outfmt", "7 sseqid qstart qend sstart send sseq mismatch gaps stitle",
 		"-perc_identity", fmt.Sprintf("%d", b.identity),
 		"-culling_limit", "50", // "If the query range of a hit is enveloped by that of at least this many higher-scoring hits, delete the hit"
+		// "-max_target_seqs", "5000",
 		"-num_threads", strconv.Itoa(threads),
 	}
 
@@ -278,9 +337,9 @@ func (b *blastExec) run() (err error) {
 	if b.evalue != 0 {
 		flags = append(flags, "-evalue", strconv.Itoa(b.evalue))
 	} else if b.identity < 90 {
-		flags = append(flags, "-evalue", "1000")
+		flags = append(flags, "-evalue", "5000")
 	} else if b.identity < 98 {
-		flags = append(flags, "-evalue", "500")
+		flags = append(flags, "-evalue", "1000")
 	}
 
 	// https://www.ncbi.nlm.nih.gov/books/NBK279682/
