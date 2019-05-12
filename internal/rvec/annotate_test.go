@@ -29,7 +29,7 @@ func Test_annotate(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			annotate(tt.args.name, tt.args.seq, tt.args.output, tt.args.identity, tt.args.filters, tt.args.enclosed)
+			annotate(tt.args.name, tt.args.seq, tt.args.output, tt.args.identity, tt.args.filters, tt.args.enclosed, false)
 		})
 	}
 }
