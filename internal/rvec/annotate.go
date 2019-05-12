@@ -48,13 +48,14 @@ func Annotate(cmd *cobra.Command, args []string) {
 		query = frags[0].Seq
 	}
 
-	enclosed, _ := cmd.Flags().GetBool("enclosed")
+	toCull, _ := cmd.Flags().GetBool("cull")
+	namesOnly, _ := cmd.Flags().GetBool("names")
 
-	annotate(name, query, output, identity, excludeFilters, enclosed)
+	annotate(name, query, output, identity, excludeFilters, toCull, namesOnly)
 }
 
 // annotate is for executing blast against the query sequence.
-func annotate(name, seq, output string, identity int, filters []string, enclosed bool) {
+func annotate(name, seq, output string, identity int, filters []string, toCull, namesOnly bool) {
 	handleErr := func(err error) {
 		if err != nil {
 			stderr.Fatalln(err)
@@ -124,11 +125,17 @@ func annotate(name, seq, output string, identity int, filters []string, enclosed
 	features = cleanedFeatures
 
 	sortMatches(features)
-	if !enclosed {
-		features = properize(features)
+	if toCull {
+		features = cull(features, len(seq), 10)
 	}
 
-	if output != "" {
+	if namesOnly {
+		featuresNames := []string{}
+		for _, feature := range features {
+			featuresNames = append(featuresNames, feature.entry)
+		}
+		fmt.Println(strings.Join(featuresNames, ", "))
+	} else if output != "" {
 		writeGenbank(output, name, seq, []*Frag{}, features)
 	} else {
 		tw := tabwriter.NewWriter(os.Stdout, 0, 4, 3, ' ', 0)
