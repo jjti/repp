@@ -6,4 +6,6 @@ import (
 
 func main() {
 	cmd.Execute() // initialize cobra commands
+
+	// log.Println(http.ListenAndServe("localhost:6060", nil))
 }

@@ -63,7 +63,7 @@ func SequenceFindCmd(cmd *cobra.Command, args []string) {
 // SequenceCmd takes a cobra command (with its flags) and runs Vector.
 func SequenceCmd(cmd *cobra.Command, args []string) {
 	Sequence(parseCmdFlags(cmd, args, true))
-	os.Exit(0)
+	// os.Exit(0)
 }
 
 // Sequence is for running an end to end vector design using a target sequence.
@@ -160,7 +160,7 @@ func sequence(input *Flags, conf *config.Config) (insert, target *Frag, solution
 	}
 
 	// keep only "proper" arcs (non-self-contained)
-	matches = cull(matches, len(insert.Seq), conf.PCRMinLength)
+	matches = cull(matches, len(target.Seq), conf.PCRMinLength)
 	if conf.Verbose {
 		fmt.Printf("%d matches after culling\n", len(matches)/2)
 	}

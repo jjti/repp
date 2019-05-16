@@ -206,6 +206,7 @@ func (a *assembly) fill(target string, conf *config.Config) (frags []*Frag, err 
 			fragsWithSynth = append(fragsWithSynth, synthedFrags...)
 		}
 	}
+	frags = fragsWithSynth
 
 	// validate that fragments will anneal to one another
 	if conf.Verbose {
@@ -214,7 +215,7 @@ func (a *assembly) fill(target string, conf *config.Config) (frags []*Frag, err 
 		}
 	}
 
-	return fragsWithSynth, nil
+	return frags, nil
 }
 
 // mockNext returns the fragment that's one beyond the one passed.
@@ -394,7 +395,6 @@ func fillAssemblies(target string, counts []int, countToAssemblies map[int][]ass
 			}
 
 			// set this is as the new cheapest of this length
-			// fmt.Println("kept")
 			filled[len(filledFragments)] = filledFragments
 		}
 	}

@@ -24,7 +24,7 @@ install:
 	cp ./assets/neb/enzymes.tsv $(APP_DATA)
 
 ifeq ($(PLATFORM),Linux)
-	install -C ./bin/linux $(APP)
+	install ./bin/linux $(APP)
 	install -C ./vendor/linux/blastn $(LOCAL_BIN)
 	install -C ./vendor/linux/ntthal $(LOCAL_BIN)
 	install -C ./vendor/linux/primer3_core $(LOCAL_BIN)
@@ -32,7 +32,7 @@ ifeq ($(PLATFORM),Linux)
 endif
 
 ifeq ($(PLATFORM),Darwin)
-	install -C ./bin/darwin $(APP)
+	install ./bin/darwin $(APP)
 	install -C ./vendor/darwin/blastn $(LOCAL_BIN)
 	install -C ./vendor/darwin/ntthal $(LOCAL_BIN)
 	install -C ./vendor/darwin/primer3_core $(LOCAL_BIN)
@@ -40,7 +40,8 @@ ifeq ($(PLATFORM),Darwin)
 endif
 
 build:
-	go get
+	rm ./bin/*
+	go get -d
 	env GOOS=linux go build -o ./bin/linux -v
 	env GOOS=darwin go build -o ./bin/darwin -v
 	env GOOS=windows go build -o ./bin/rvec.exe -v
@@ -52,10 +53,6 @@ all: build install
 
 dbs:
 	cd assets && sh makeblastdbs.sh
-
-clean:
-	rm -rf $(PRIMER3_CONF)
-	rm $(APP_DATA)/*
 
 uninstall: clean
 	rm $(APP)

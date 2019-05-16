@@ -10,6 +10,14 @@ import (
 	"github.com/jjtimmons/rvec/config"
 )
 
+var (
+	// madePrimers, formerly made primers
+	madePrimers = make(map[string][]Primer)
+
+	// primerErrs, errors found during prior builds
+	primerErrs = make(map[string]error)
+)
+
 // fragType is the Frag building type to be used in the assembly
 type fragType int
 
@@ -111,7 +119,7 @@ type Primer struct {
 	// GC % max
 	GC float64 `json:"gc"`
 
-	// Range that the primer spans on the
+	// Range that the primer spans on the fragment
 	Range ranged `json:"-"`
 }
 
@@ -432,6 +440,17 @@ func (f *Frag) synthTo(next *Frag, target string) (synths []*Frag) {
 //	1. the primers have an unacceptably high primer3 penalty score
 //	2. the primers have off-targets in their source vector/fragment
 func (f *Frag) setPrimers(last, next *Frag, seq string, conf *config.Config) (err error) {
+	pHash := primerHash(last, f, next)
+	if oldPrimers, contained := madePrimers[pHash]; contained {
+		f.Primers = oldPrimers
+		mutatePrimers(f, seq, 0, 0) // set PCRSeq
+		return nil
+	}
+
+	if oldErr, contained := primerErrs[pHash]; contained {
+		return oldErr
+	}
+
 	psExec := newPrimer3(last, f, next, seq, conf)
 
 	// make input file and write to the fs
@@ -445,14 +464,17 @@ func (f *Frag) setPrimers(last, next *Frag, seq string, conf *config.Config) (er
 		conf.PCRBufferLength,
 	)
 	if err != nil {
+		primerErrs[pHash] = err
 		return
 	}
 
 	if err = psExec.run(); err != nil {
+		primerErrs[pHash] = err
 		return
 	}
 
 	if err = psExec.parse(seq); err != nil {
+		primerErrs[pHash] = err
 		return
 	}
 
@@ -461,17 +483,20 @@ func (f *Frag) setPrimers(last, next *Frag, seq string, conf *config.Config) (er
 
 	// make sure the fragment's length is still long enough for PCR
 	if len(f.PCRSeq) < conf.PCRMinLength {
-		return fmt.Errorf(
+		err = fmt.Errorf(
 			"failed to execute primer3: %s is %dbp, needs to be > %dbp",
 			f.ID,
 			f.end-f.start,
 			conf.PCRMinLength,
 		)
+		f.Primers = nil
+		primerErrs[pHash] = err
+		return
 	}
 
 	// 1. check for whether the primers have too have a pair penalty score
 	if f.Primers[0].PairPenalty > conf.PCRMaxPenalty {
-		errMessage := fmt.Sprintf(
+		err = fmt.Errorf(
 			"primers have pair primer3 penalty score of %f, should be less than %f:\f%+v\f%+v",
 			f.Primers[0].PairPenalty,
 			conf.PCRMaxPenalty,
@@ -479,8 +504,8 @@ func (f *Frag) setPrimers(last, next *Frag, seq string, conf *config.Config) (er
 			f.Primers[1],
 		)
 		f.Primers = nil
-
-		return fmt.Errorf(errMessage)
+		primerErrs[pHash] = err
+		return
 	}
 
 	// 2. check for whether either of the primers have an off-target/mismatch
@@ -489,14 +514,21 @@ func (f *Frag) setPrimers(last, next *Frag, seq string, conf *config.Config) (er
 
 	if f.fullSeq != "" {
 		// we have the full sequence (it was included in the forward design)
-		mismatchExists, mm, err = seqMismatch(f.Primers, f.ID, f.fullSeq, conf)
+		mismatchResult := seqMismatch(f.Primers, f.ID, f.fullSeq, conf)
+		mismatchExists = mismatchResult.wasMismatch
+		mm = mismatchResult.m
+		err = mismatchResult.err
 	} else if f.db != "" {
 		// otherwise, query the fragment from the DB (try to find it) and then check for mismatches
-		mismatchExists, mm, err = parentMismatch(f.Primers, f.ID, f.db, conf)
+		mismatchResult := parentMismatch(f.Primers, f.ID, f.db, conf)
+		mismatchExists = mismatchResult.wasMismatch
+		mm = mismatchResult.m
+		err = mismatchResult.err
 	}
 
 	if err != nil {
 		f.Primers = nil
+		primerErrs[pHash] = err
 		return err
 	}
 	if mismatchExists {
@@ -507,13 +539,16 @@ func (f *Frag) setPrimers(last, next *Frag, seq string, conf *config.Config) (er
 			f.Primers[1].Seq,
 		)
 		f.Primers = nil
-		return err
+		primerErrs[pHash] = err
+		return
 	}
 
 	f.fragType = pcr
 
 	os.Remove(psExec.in.Name()) // delete the temporary input and output files
 	os.Remove(psExec.out.Name())
+
+	madePrimers[pHash] = f.Primers
 
 	return
 }
@@ -569,4 +604,9 @@ func fragsCost(frags []*Frag) (cost float64) {
 	}
 
 	return
+}
+
+// primerHash returns a unique hash for a PCR run
+func primerHash(last, f, next *Frag) string {
+	return fmt.Sprintf("%s%d%d%d%d", f.uniqueID, last.end, f.start, f.end, next.start)
 }

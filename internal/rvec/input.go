@@ -295,17 +295,36 @@ func (p *inputParser) parseBackbone(
 		return &Frag{}, &Backbone{}, nil
 	}
 
+	// confirm that the backbone exists in one of the dbs (or local fs) gather it as a Frag if it does
+	bbFrag, err := queryDatabases(bbName, dbs)
+	if err != nil {
+		return &Frag{}, &Backbone{}, err
+	}
+
+	// check if it's an iGEM backbone (don't digest)
+	if igemBackbone(bbFrag.ID) {
+		return &Frag{
+				ID:       bbFrag.ID,
+				uniqueID: "backbone",
+				Seq:      bbFrag.Seq[:len(bbFrag.Seq)/2],
+				fragType: linear,
+				db:       bbFrag.db,
+			},
+			&Backbone{
+				URL:              parseURL(bbFrag.ID, bbFrag.db),
+				Seq:              bbFrag.Seq,
+				Enzyme:           "",
+				RecognitionIndex: 0,
+				Forward:          true,
+			},
+			nil
+	}
+
 	// try to digest the backbone with the enzyme
 	if enzyme == "" {
 		return &Frag{},
 			&Backbone{},
 			fmt.Errorf("backbone passed, %s, without an enzyme to digest it", bbName)
-	}
-
-	// confirm that the backbone exists in one of the dbs (or local fs) gather it as a Frag if it does
-	bbFrag, err := queryDatabases(bbName, dbs)
-	if err != nil {
-		return &Frag{}, &Backbone{}, err
 	}
 
 	// gather the enzyme by name, err if it's unknown
@@ -508,4 +527,17 @@ func readGenbank(path, contents string, parseFeatures bool) (fragments []*Frag, 
 			Seq: cleanedSeq,
 		},
 	}, nil
+}
+
+// igemBackbone returns a backbone, as it was in the database,
+// if it corresponds to an iGEM backbone. They are not digested.
+// see: http://parts.igem.org/Help:Prefix-Suffix
+func igemBackbone(backbone string) bool {
+	for _, bb := range []string{"pSB1A3", "pSB1T3", "pSB1K3", "pSB1C3"} {
+		if bb == backbone {
+			return true
+		}
+	}
+
+	return false
 }
