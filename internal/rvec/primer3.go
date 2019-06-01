@@ -309,6 +309,10 @@ func (p *primer3) run() (err error) {
 //
 // target is the target sequence we're building for. We need it to modulo the primer ranges
 func (p *primer3) parse(target string) (err error) {
+	// delete the temporary input and output primer3 files
+	defer os.Remove(p.in.Name())
+	defer os.Remove(p.out.Name())
+
 	fileBytes, err := ioutil.ReadFile(p.out.Name())
 	if err != nil {
 		return
@@ -377,10 +381,6 @@ func (p *primer3) parse(target string) (err error) {
 		parsePrimer("LEFT"),
 		parsePrimer("RIGHT"),
 	}
-
-	// delete the temporary input and output primer3 files
-	os.Remove(p.in.Name())
-	os.Remove(p.out.Name())
 
 	return
 }

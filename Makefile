@@ -12,6 +12,13 @@ ifeq ($(PLATFORM),Windows_NT)
 	$(error Windows not supported via make)
 endif
 
+build:
+	rm -f ./bin/* 
+	go get -d
+	env GOOS=linux go build -o ./bin/linux -v
+	env GOOS=darwin go build -o ./bin/darwin -v
+	env GOOS=windows go build -o ./bin/rvec.exe -v
+
 install:
 	mkdir -p $(APP_DATA)
 
@@ -38,13 +45,6 @@ ifeq ($(PLATFORM),Darwin)
 	install -C ./vendor/darwin/primer3_core $(LOCAL_BIN)
 	install -C ./vendor/darwin/blastdbcmd $(LOCAL_BIN)
 endif
-
-build:
-	rm -f ./bin/* 
-	go get -d
-	env GOOS=linux go build -o ./bin/linux -v
-	env GOOS=darwin go build -o ./bin/darwin -v
-	env GOOS=windows go build -o ./bin/rvec.exe -v
 
 windows:
 	cd scripts && makensis windows_installer.nsi
