@@ -2,9 +2,7 @@ package rvec
 
 import (
 	"fmt"
-	"os"
 	"strings"
-	"testing"
 
 	"github.com/jjtimmons/rvec/config"
 	"github.com/spf13/cobra"
@@ -59,8 +57,6 @@ func FragmentsCmd(cmd *cobra.Command, args []string) {
 		flags.backboneMeta,
 		conf,
 	)
-
-	os.Exit(0)
 }
 
 // fragments pieces together a list of fragments into a single vector
@@ -99,20 +95,28 @@ func annealFragments(min, max int, frags []*Frag) (vec string) {
 		next := frags[(i+1)%len(frags)]
 		// if we're on the last fragment, mock the first one further along the vector
 		if i == len(frags)-1 {
+			nextSeq := next.Seq
+			if next.PCRSeq != "" {
+				nextSeq = next.PCRSeq
+			}
 			next = &Frag{
-				Seq:   next.Seq,
+				Seq:   nextSeq,
 				start: next.start + vecSeq.Len(),
 				end:   next.end + vecSeq.Len(),
 			}
 		}
 
-		jL := len(f.junction(next, min, max)) // junction length
+		j := len(f.junction(next, min, max)) // junction length
 
-		contrib := f.Seq[0 : len(f.Seq)-jL] // frag's contribution to vector
+		fragSeq := f.Seq
+		if f.PCRSeq != "" {
+			fragSeq = f.PCRSeq
+		}
+		contrib := fragSeq[0 : len(fragSeq)-j] // frag's contribution to vector
 
 		// correct for this Frag's overlap with the next Frag
 		f.start = vecSeq.Len()
-		f.end = f.start + len(f.Seq) - 1
+		f.end = f.start + len(fragSeq) - 1
 
 		// add this Frag's sequence onto the accumulated vector sequence
 		vecSeq.WriteString(contrib)
@@ -138,16 +142,18 @@ func validateJunctions(frags []*Frag, conf *config.Config) error {
 				s2 = next.PCRSeq
 			}
 
-			return fmt.Errorf("no junction found between %s and %s\n%s\n\n%s", f.ID, next.ID, s1, s2)
+			left := f.ID
+			if left == "" {
+				left = f.URL
+			}
+			right := next.ID
+			if right == "" {
+				right = next.URL
+			}
+
+			return fmt.Errorf("no junction found between %s and %s\n%s\n\n%s", left, right, s1, s2)
 		}
 	}
 
 	return nil
-}
-
-// validateJunctionsTest logs validation errors to the testing object
-func validateJunctionsTest(frags []*Frag, conf *config.Config, t *testing.T) {
-	if err := validateJunctions(frags, conf); err != nil {
-		t.Error(err)
-	}
 }

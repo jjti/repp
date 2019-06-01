@@ -13,10 +13,7 @@ import (
 	"github.com/jjtimmons/rvec/config"
 )
 
-// primer3Dir is a temporary directory holding primer3 input and output
-var primer3Dir = ""
-
-// primer3 is a utility struct for executing primer3 to create primers for a part
+// primer3 is a utility struct for executing primer3 to create primers on a fragment
 type primer3 struct {
 	// Frag that we're trying to create primers for
 	f *Frag
@@ -41,15 +38,12 @@ type primer3 struct {
 
 	// path to primer3 config folder (with trailing separator)
 	primer3ConfDir string
-
-	// path to the primer3 io output
-	primer3Dir string
 }
 
 // newPrimer3 creates a primer3 struct from a fragment
 func newPrimer3(last, this, next *Frag, seq string, conf *config.Config) primer3 {
-	in, _ := ioutil.TempFile(primer3Dir, this.ID+".in-*")
-	out, _ := ioutil.TempFile(primer3Dir, this.ID+".out-*")
+	in, _ := ioutil.TempFile("", "primer3-in-*")
+	out, _ := ioutil.TempFile("", "primer3-out-*")
 
 	return primer3{
 		f:              this,
@@ -60,7 +54,6 @@ func newPrimer3(last, this, next *Frag, seq string, conf *config.Config) primer3
 		out:            out,
 		primer3Path:    "primer3_core",
 		primer3ConfDir: config.Primer3Config,
-		primer3Dir:     primer3Dir,
 	}
 }
 
@@ -173,8 +166,8 @@ func (p *primer3) shrink(last, f, next *Frag, maxHomology int, minLength int) *F
 	return f
 }
 
-// bpToAdd calculates the number of bp to add the end of a left Frag to create a junction
-// with the rightmost Frag
+// bpToAdd returns the number of bp to add the end of the left Frag to create a junction
+// with the right Frag
 func (p *primer3) bpToAdd(left, right *Frag) int {
 	if !left.overlapsViaPCR(right) {
 		return 0 // we're going to synthesize there, don't add bp via PCR
@@ -184,9 +177,11 @@ func (p *primer3) bpToAdd(left, right *Frag) int {
 		return 0 // there is already enough overlap via PCR
 	}
 
-	// we're not going to synth our way here, check that there's already enough homology
 	minHomology := left.conf.FragmentsMinHomology
-	bpDist := left.distTo(right) + 1
+	bpDist := left.distTo(right) + 1 // if there's a gap
+	if bpDist < 0 {
+		bpDist = 0
+	}
 
 	// this Frag will add half the homology to the last fragment
 	// eg: 5 bp distance leads to 2.5bp + ~10bp additonal
@@ -232,7 +227,7 @@ func (p *primer3) settings(
 		"PRIMER_THERMODYNAMIC_PARAMETERS_PATH": p3conf,
 		"PRIMER_NUM_RETURN":                    "1",
 		"PRIMER_PICK_ANYWAY":                   "1",
-		"SEQUENCE_TEMPLATE":                    seq + seq + seq + seq,
+		"SEQUENCE_TEMPLATE":                    seq + seq + seq + seq,   // TODO
 		"PRIMER_MIN_SIZE":                      strconv.Itoa(primerMin), // default 18
 		"PRIMER_OPT_SIZE":                      strconv.Itoa(primerOpt),
 		"PRIMER_MAX_SIZE":                      strconv.Itoa(primerMax),
@@ -277,11 +272,11 @@ func (p *primer3) settings(
 		}
 	}
 
+	// otherwise force the start and end of the PCR range
 	if settings["PRIMER_PRODUCT_SIZE_RANGE"] == "" {
-		// otherwise force the start and end of the PCR range
 		settings["PRIMER_TASK"] = "pick_cloning_primers"
 		settings["SEQUENCE_INCLUDED_REGION"] = fmt.Sprintf("%d,%d", start, length)
-		// settings["PRIMER_PRODUCT_SIZE_RANGE"] = fmt.Sprintf("%d-%d", length, length)
+		settings["PRIMER_PRODUCT_SIZE_RANGE"] = fmt.Sprintf("%d-%d", length, length)
 	}
 
 	var fileBuffer bytes.Buffer
@@ -310,7 +305,7 @@ func (p *primer3) run() (err error) {
 	return
 }
 
-// parse the output into primers
+// parse the output into primers. add to fragment
 //
 // target is the target sequence we're building for. We need it to modulo the primer ranges
 func (p *primer3) parse(target string) (err error) {
@@ -383,6 +378,10 @@ func (p *primer3) parse(target string) (err error) {
 		parsePrimer("RIGHT"),
 	}
 
+	// delete the temporary input and output primer3 files
+	os.Remove(p.in.Name())
+	os.Remove(p.out.Name())
+
 	return
 }
 
@@ -448,13 +447,4 @@ func reverseComplement(seq string) string {
 	}
 
 	return string(revCompBytes)
-}
-
-func init() {
-	var err error
-
-	primer3Dir, err = ioutil.TempDir("", "primer3")
-	if err != nil {
-		stderr.Fatal(err)
-	}
 }

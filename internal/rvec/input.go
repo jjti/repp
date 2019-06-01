@@ -79,7 +79,7 @@ func NewFlags(
 		backbone:     parsedBB,
 		backboneMeta: bbMeta,
 		filters:      p.getFilters(filter),
-		identity:     100,
+		identity:     98,
 	}, c
 }
 
@@ -96,7 +96,7 @@ func parseCmdFlags(cmd *cobra.Command, args []string, strict bool) (*Flags, *con
 		if cmdName == "features" {
 			fs.in = p.parseFeatureInput(args)
 		} else if cmdName == "sequence" && len(args) > 0 {
-			fs.in = "./input.fa"
+			fs.in = "input.fa"
 			if err = ioutil.WriteFile(fs.in, []byte(fmt.Sprintf(">target_sequence\n%s", args[0])), 0644); err != nil {
 				stderr.Fatal(err)
 			}

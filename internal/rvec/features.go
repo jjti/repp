@@ -28,7 +28,6 @@ type featureMatch struct {
 // FeaturesCmd accepts a cobra commands and assembles a vector containing all the features
 func FeaturesCmd(cmd *cobra.Command, args []string) {
 	Features(parseCmdFlags(cmd, args, true))
-	os.Exit(0)
 }
 
 // Features assembles a vector with all the Features requested with the 'rvec Features [feature ...]' command
@@ -45,6 +44,14 @@ func Features(flags *Flags, conf *config.Config) [][]*Frag {
 
 	// find matches in the databases
 	featureMatches := blastFeatures(flags, feats, conf)
+
+	if len(featureMatches) == 0 {
+		featNames := []string{}
+		for _, feat := range insertFeats {
+			featNames = append(featNames, feat[0])
+		}
+		stderr.Fatalf("failed to find fragments with the specified features: %s", strings.Join(featNames, ", "))
+	}
 
 	// build assemblies containing the matched fragments
 	target, solutions := featureSolutions(feats, featureMatches, flags, conf)
@@ -149,8 +156,8 @@ func blastFeatures(flags *Flags, feats [][]string, conf *config.Config) map[stri
 
 		for _, m := range matches {
 			// needs to be at least identity % as long as the queried feature
-			mLen := float32(m.subjectEnd - m.subjectStart)
-			if mLen/float32(len(targetFeature)) < float32(flags.identity)/100.0 {
+			mLen := float64(m.subjectEnd - m.subjectStart)
+			if mLen/float64(len(targetFeature)) < float64(flags.identity)/100.0 {
 				continue
 			}
 
@@ -183,6 +190,7 @@ func featureSolutions(feats [][]string, featureMatches map[string][]featureMatch
 
 	// create a subject file from the matches' source fragments
 	subjectDB, frags := subjectDatabase(extendedMatches, flags.dbs)
+	defer os.Remove(subjectDB)
 
 	// re-BLAST the features against the new subject database
 	featureMatches = reBlastFeatures(flags, feats, conf, subjectDB, frags)
@@ -219,7 +227,7 @@ func featureSolutions(feats [][]string, featureMatches map[string][]featureMatch
 
 		frag.ID = m.entry
 		frag.uniqueID = m.uniqueID
-		frag.Seq = (frag.Seq + frag.Seq)[m.subjectStart : m.subjectEnd+1]
+		frag.Seq = (frag.Seq + frag.Seq + frag.Seq)[m.subjectStart : m.subjectEnd+1]
 		if !m.forward {
 			frag.Seq = reverseComplement(frag.Seq)
 		}
@@ -251,6 +259,11 @@ func featureSolutions(feats [][]string, featureMatches map[string][]featureMatch
 
 	// fill each assembly and accumulate the pareto optimal solutions
 	solutions := fillAssemblies(target, assemblyCounts, countToAssemblies, conf)
+
+	// update the target to the first filled assembly
+	if len(solutions) > 0 {
+		target = annealFragments(conf.FragmentsMinHomology, conf.FragmentsMaxHomology, solutions[0])
+	}
 
 	return target, solutions
 }
@@ -317,7 +330,7 @@ func subjectDatabase(extendedMatches []match, dbs []string) (subjectName string,
 		frags = append(frags, frag)
 	}
 
-	in, err := ioutil.TempFile(blastnDir, "feature-subject-*")
+	in, err := ioutil.TempFile("", "feature-subject-*")
 	if err != nil {
 		stderr.Fatal(err)
 	}
@@ -339,8 +352,8 @@ func reBlastFeatures(flags *Flags, feats [][]string, conf *config.Config, subjec
 
 		for _, m := range matches {
 			// needs to be at least identity % as long as the queried feature
-			mLen := float32(m.subjectEnd - m.subjectStart)
-			if mLen/float32(len(targetFeature)) < float32(flags.identity)/100.0 {
+			mLen := float64(m.subjectEnd - m.subjectStart)
+			if mLen/float64(len(targetFeature)) < float64(flags.identity)/100.0 {
 				continue
 			}
 

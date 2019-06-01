@@ -135,7 +135,11 @@ func Test_sequence_e2e(test *testing.T) {
 		}
 
 		for _, s := range sols {
-			validateJunctionsTest(s, c, test)
+			e := validateJunctions(s, c)
+			if e != nil {
+				test.Logf("failed making %s\n", t.in)
+				test.Error(e)
+			}
 		}
 	}
 }
@@ -174,7 +178,10 @@ func Test_features(t *testing.T) {
 			sols := Features(tt.args.flags, tt.args.conf)
 
 			for _, s := range sols {
-				validateJunctionsTest(s, conf, t)
+				e := validateJunctions(s, conf)
+				if e != nil {
+					t.Error(e)
+				}
 			}
 		})
 	}

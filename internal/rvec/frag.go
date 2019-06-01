@@ -236,7 +236,7 @@ func (f *Frag) overlapsViaPCR(other *Frag) bool {
 // overlapsViaHomology returns whether this Frag already has sufficient overlap with the
 // other Frag without any preparation like PCR
 func (f *Frag) overlapsViaHomology(other *Frag) bool {
-	return f.distTo(other) <= -(f.conf.FragmentsMinHomology)
+	return f.distTo(other) <= -f.conf.FragmentsMinHomology
 }
 
 // synthDist returns the number of synthesized fragments that would need to be created
@@ -560,9 +560,9 @@ func (f *Frag) setPrimers(last, next *Frag, seq string, conf *config.Config) (er
 // it also updates the range, start + end, of the Frag to match that of the primers
 //
 // returning Frag for testing
-func mutatePrimers(f *Frag, seq string, addLeft, addRight int) (mutated *Frag) {
+func mutatePrimers(f *Frag, seq string, addLeft, addRight int) *Frag {
 	sl := len(seq)
-	seq = strings.ToUpper(seq + seq + seq + seq)
+	seq = strings.ToUpper(seq + seq + seq + seq) // TODO
 
 	// change the Frag's start and end index to match those of the start and end index
 	// of the primers, since the range may have shifted to get better primers

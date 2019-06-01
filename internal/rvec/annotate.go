@@ -91,11 +91,11 @@ func annotate(name, seq, output string, identity int, dbs, filters []string, toC
 		}
 	}
 
-	in, err := ioutil.TempFile(blastnDir, name+"in-*")
+	in, err := ioutil.TempFile("", "annotate-in-*")
 	handleErr(err)
 	defer os.Remove(in.Name())
 
-	out, err := ioutil.TempFile(blastnDir, name+"out-*")
+	out, err := ioutil.TempFile("", "annotate-out-*")
 	handleErr(err)
 	defer os.Remove(out.Name())
 
@@ -109,7 +109,7 @@ func annotate(name, seq, output string, identity int, dbs, filters []string, toC
 		featureSubjects.WriteString(fmt.Sprintf(">%d\n%s\n", featIndex, featSeq))
 		featIndex++
 	}
-	subjectFile, err := ioutil.TempFile(blastnDir, name+"features-*")
+	subjectFile, err := ioutil.TempFile("", "features-*")
 	handleErr(err)
 	defer os.Remove(subjectFile.Name())
 
@@ -168,9 +168,9 @@ func annotate(name, seq, output string, identity int, dbs, filters []string, toC
 	sortMatches(features)
 	if toCull {
 		features = cull(features, len(seq), 5)
-		for _, f := range features {
-			f.log()
-		}
+		// for _, f := range features {
+		// 	f.log()
+		// }
 	}
 
 	if namesOnly {

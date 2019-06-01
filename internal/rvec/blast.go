@@ -14,16 +14,8 @@ import (
 	"github.com/jjtimmons/rvec/config"
 )
 
-var (
-	// blastnDir is a temporary directory for all blastn output
-	blastnDir = ""
-
-	// blastdbcmd is a temporary directory for all blastdbcmd output
-	blastdbcmdDir = ""
-
-	// mismatchResults is a map from primer key to mismatch check results
-	mismatchResults = make(map[string]mismatchResult)
-)
+// mismatchResults is a map from primer key to mismatch check results
+var mismatchResults = make(map[string]mismatchResult)
 
 // match is a blast "hit" in the blastdb.
 type match struct {
@@ -156,13 +148,13 @@ func blast(
 	identity int,
 	tw *tabwriter.Writer,
 ) ([]match, error) {
-	in, err := ioutil.TempFile(blastnDir, "in-*")
+	in, err := ioutil.TempFile("", "blast-in-*")
 	if err != nil {
 		return nil, err
 	}
 	defer os.Remove(in.Name())
 
-	out, err := ioutil.TempFile(blastnDir, "out-*")
+	out, err := ioutil.TempFile("", "blast-out-*")
 	if err != nil {
 		return nil, err
 	}
@@ -223,13 +215,13 @@ func blastAgainst(
 	identity int,
 	tw *tabwriter.Writer,
 ) (matches []match, err error) {
-	in, err := ioutil.TempFile(blastnDir, "in-*")
+	in, err := ioutil.TempFile("", "blast-in-*")
 	if err != nil {
 		return nil, err
 	}
 	defer os.Remove(in.Name())
 
-	out, err := ioutil.TempFile(blastnDir, "out-*")
+	out, err := ioutil.TempFile("", "blast-out-*")
 	if err != nil {
 		return nil, err
 	}
@@ -378,7 +370,7 @@ func (b *blastExec) parse(filters []string) (matches []match, err error) {
 	fileS := string(file)
 
 	fullQuery := b.seq + b.seq
-	identityThreshold := float32(b.identity)/100.0 - 0.0001
+	identityThreshold := float64(b.identity)/100.0 - 0.0001
 
 	// read it into Matches
 	var ms []match
@@ -406,7 +398,7 @@ func (b *blastExec) parse(filters []string) (matches []match, err error) {
 		forward := true
 
 		// check whether the mismatch ratio is less than the set limit
-		matchRatio := float32(len(seq)-(mismatching+gaps)) / float32(len(seq))
+		matchRatio := float64(len(seq)-(mismatching+gaps)) / float64(len(seq))
 		if matchRatio < identityThreshold {
 			// fmt.Printf("getting rid of %s", entry)
 			continue
@@ -603,7 +595,6 @@ func queryDatabases(entry string, dbs []string) (f *Frag, err error) {
 		if outFile == "" {
 			continue // failed to query from this DB
 		}
-
 		defer os.Remove(outFile)
 
 		if frags, err := read(outFile, false); err == nil {
@@ -634,7 +625,7 @@ func queryDatabases(entry string, dbs []string) (f *Frag, err error) {
 // unlike parentMismatch, it doesn't first find the parent fragment from the db it came from
 // the sequence is passed directly as parentSeq
 func seqMismatch(primers []Primer, parentID, parentSeq string, conf *config.Config) mismatchResult {
-	parentFile, err := ioutil.TempFile(blastnDir, "parent-*")
+	parentFile, err := ioutil.TempFile("", "parent-*")
 	if err != nil {
 		return mismatchResult{false, match{}, err}
 	}
@@ -698,14 +689,14 @@ func parentMismatch(primers []Primer, parent, db string, conf *config.Config) mi
 // entry here is the ID that's associated with the fragment in its source DB (db)
 func blastdbcmd(entry, db string) (output *os.File, err error) {
 	// path to the entry batch file to hold the entry accession
-	entryFile, err := ioutil.TempFile(blastdbcmdDir, "in-*")
+	entryFile, err := ioutil.TempFile("", "blastcmd-in-*")
 	if err != nil {
 		return nil, err
 	}
 	defer os.Remove(entryFile.Name())
 
 	// path to the output sequence file from querying the entry's sequence from the BLAST db
-	output, err = ioutil.TempFile(blastdbcmdDir, "out-*")
+	output, err = ioutil.TempFile("", "blastcmd-out-*")
 	if err != nil {
 		return nil, err
 	}
@@ -751,14 +742,14 @@ func blastdbcmd(entry, db string) (output *os.File, err error) {
 // The fragment to query against is stored in parentFile
 func mismatch(primer string, parentFile *os.File, c *config.Config) (wasMismatch bool, m match, err error) {
 	// path to the entry batch file to hold the entry accession
-	in, err := ioutil.TempFile(blastnDir, "primer.in-*")
+	in, err := ioutil.TempFile("", "primer3-in-*")
 	if err != nil {
 		return false, match{}, err
 	}
 	defer os.Remove(in.Name())
 
 	// path to the output sequence file from querying the entry's sequence from the BLAST db
-	out, err := ioutil.TempFile(blastnDir, "primer.out-*")
+	out, err := ioutil.TempFile("", "primer3-out-*")
 	if err != nil {
 		return false, match{}, err
 	}
@@ -871,18 +862,4 @@ func isMismatch(primer string, m match, c *config.Config) bool {
 	}
 
 	return temp > c.PCRMaxOfftargetTm
-}
-
-func init() {
-	var err error
-
-	blastnDir, err = ioutil.TempDir("", "blastn")
-	if err != nil {
-		stderr.Fatal(err)
-	}
-
-	blastdbcmdDir, err = ioutil.TempDir("", "blastdbcmd")
-	if err != nil {
-		stderr.Fatal(err)
-	}
 }

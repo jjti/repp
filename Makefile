@@ -40,7 +40,7 @@ ifeq ($(PLATFORM),Darwin)
 endif
 
 build:
-	rm ./bin/*
+	rm -f ./bin/* 
 	go get -d
 	env GOOS=linux go build -o ./bin/linux -v
 	env GOOS=darwin go build -o ./bin/darwin -v

@@ -78,7 +78,7 @@ func init() {
 	featuresCmd.Flags().StringP("backbone", "b", "", backboneHelp)
 	featuresCmd.Flags().StringP("enzyme", "e", "", enzymeHelp)
 	featuresCmd.Flags().StringP("exclude", "x", "", "keywords for excluding fragments")
-	featuresCmd.Flags().IntP("identity", "p", 96, "%-identity threshold (see 'blastn -help')")
+	featuresCmd.Flags().IntP("identity", "p", 98, "%-identity threshold (see 'blastn -help')")
 
 	// Flags for specifying the paths to the input file, input fragment files, and output file
 	sequenceCmd.Flags().StringP("in", "i", "", "input FASTA with target sequence")
@@ -90,7 +90,7 @@ func init() {
 	sequenceCmd.Flags().StringP("backbone", "b", "", backboneHelp)
 	sequenceCmd.Flags().StringP("enzyme", "e", "", enzymeHelp)
 	sequenceCmd.Flags().StringP("exclude", "x", "", "keywords for excluding fragments")
-	sequenceCmd.Flags().IntP("identity", "p", 100, "%-identity threshold (see 'blastn -help')")
+	sequenceCmd.Flags().IntP("identity", "p", 98, "%-identity threshold (see 'blastn -help')")
 
 	assembleCmd.AddCommand(fragmentsCmd)
 	assembleCmd.AddCommand(featuresCmd)

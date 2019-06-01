@@ -72,7 +72,6 @@ func Test_primer3_shrink(t *testing.T) {
 				out:            tt.fields.out,
 				primer3Path:    tt.fields.p3Path,
 				primer3ConfDir: tt.fields.p3Conf,
-				primer3Dir:     tt.fields.p3Dir,
 			}
 			if got := p.shrink(tt.args.last, tt.args.n, tt.args.next, tt.args.maxHomology, tt.args.minLength); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("primer3.shrink() = %v, want %v", got, tt.want)

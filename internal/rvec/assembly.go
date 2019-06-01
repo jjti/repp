@@ -131,7 +131,7 @@ func (a *assembly) fill(target string, conf *config.Config) (frags []*Frag, err 
 	// check for and error out if there are duplicate ends between fragments,
 	// ie unintended junctions between fragments that shouldn't be annealing
 	if hasDuplicate, left, right, dupSeq := a.duplicates(a.frags, min, max); hasDuplicate {
-		return nil, fmt.Errorf("failed to fill: duplicate junction sequence in %s and %s: %s", left, right, dupSeq)
+		return nil, fmt.Errorf("duplicate junction between %s and %s: %s", left, right, dupSeq)
 	}
 
 	// edge case where a single Frag fills the whole target vector. Return just a single
@@ -242,12 +242,12 @@ func (a *assembly) duplicates(frags []*Frag, min, max int) (isDup bool, first, s
 	for i, f := range frags {
 		// check to make sure the fragment doesn't anneal to itself
 		if c > 1 {
-			if selfJ := f.junction(f, min, max); selfJ != "" {
+			if selfJ := f.junction(f, min, max); selfJ != "" && len(selfJ) < len(f.Seq) {
 				return true, f.ID, f.ID, selfJ
 			}
 		}
 
-		for j := 2; j <= c; j++ { // skip next Frag, i+1 is supposed to anneal to i
+		for j := 2; j < c; j++ { // skip next Frag, i+1 is supposed to anneal to i
 			junc := f.junction(frags[(j+i)%c], min, max)
 			if junc != "" {
 				return true, f.ID, frags[(j+i)%c].ID, junc
