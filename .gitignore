@@ -21,6 +21,3 @@ assets/*
 
 # test output files
 test/output/**
-
-# ignore the vendor dependencies
-vendor/*
