@@ -580,7 +580,7 @@ func Test_setPrimers(t *testing.T) {
 			},
 			[]string{
 				"GCGGTAAGCAGGCGCTGGAAACAGTACAGC",
-				"CTTGTTTCCCTCCGTCATGCGACG",
+				"AATGCTTGTTTCCCTCCGTCATGCGACG",
 			},
 			false,
 			500,

@@ -6,6 +6,5 @@ import (
 
 func main() {
 	cmd.Execute() // initialize cobra commands
-
-	// log.Println(http.ListenAndServe("localhost:6060", nil))
+	// log.Println(http.ListenAndServe("localhost:6060", nil)) // for profiling
 }
