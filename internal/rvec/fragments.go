@@ -130,7 +130,7 @@ func annealFragments(min, max int, frags []*Frag) (vec string) {
 func validateJunctions(frags []*Frag, conf *config.Config) error {
 	for i, f := range frags {
 		next := frags[(i+1)%len(frags)]
-		j := f.junction(next, conf.FragmentsMinHomology, conf.FragmentsMaxHomology)
+		j := f.junction(next, conf.FragmentsMinHomology, conf.FragmentsMaxHomology+1)
 		if j == "" {
 			s1 := f.Seq
 			if f.PCRSeq != "" {

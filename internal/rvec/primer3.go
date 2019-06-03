@@ -200,7 +200,7 @@ func (p *primer3) bpToAdd(left, right *Frag) int {
 func (p *primer3) buffer(dist, minHomology, maxEmbedLength, pcrBuffer int) (buffer int) {
 	if dist > maxEmbedLength {
 		// we'll synthesize because the gap is so large, add 100bp of buffer
-		return pcrBuffer // TODO: move "100" to settings
+		return pcrBuffer
 	}
 
 	if dist < -minHomology {
@@ -227,7 +227,7 @@ func (p *primer3) settings(
 		"PRIMER_THERMODYNAMIC_PARAMETERS_PATH": p3conf,
 		"PRIMER_NUM_RETURN":                    "1",
 		"PRIMER_PICK_ANYWAY":                   "1",
-		"SEQUENCE_TEMPLATE":                    seq + seq + seq + seq,   // TODO
+		"SEQUENCE_TEMPLATE":                    seq + seq,               // TODO
 		"PRIMER_MIN_SIZE":                      strconv.Itoa(primerMin), // default 18
 		"PRIMER_OPT_SIZE":                      strconv.Itoa(primerOpt),
 		"PRIMER_MAX_SIZE":                      strconv.Itoa(primerMax),
@@ -238,8 +238,6 @@ func (p *primer3) settings(
 		"PRIMER_MAX_POLY_X":                    "7",                                                 // defaults to 5
 		"PRIMER_PAIR_MAX_COMPL_ANY":            "13.0",                                              // defaults to 8.00
 	}
-
-	start += len(seq) // move to one seq length further in the vector seq (get off left edge)
 
 	// if there is room to optimize, we let primer3 pick the best primers available in the space
 	// http://primer3.sourceforge.net/primer3_manual.htm#SEQUENCE_PRIMER_PAIR_OK_REGION_LIST
@@ -267,8 +265,9 @@ func (p *primer3) settings(
 				settings["SEQUENCE_FORCE_RIGHT_START"] = strconv.Itoa(start + length)
 			}
 
-			// settings["SEQUENCE_PRIMER_PAIR_OK_REGION_LIST"] = fmt.Sprintf("%d,%d,%d,%d ;", start, leftBuffer+primerMax, rightStart, rightBuffer+primerMax)
-			settings["PRIMER_PRODUCT_SIZE_RANGE"] = fmt.Sprintf("%d-%d", excludeLength, length)
+			settings["SEQUENCE_PRIMER_PAIR_OK_REGION_LIST"] = fmt.Sprintf("%d,%d,%d,%d ;", start, leftBuffer+primerMax, rightStart, rightBuffer+primerMax)
+			// settings["SEQUENCE_INCLUDED_REGION"] = fmt.Sprintf("%d,%d", start, length)
+			// settings["PRIMER_PRODUCT_SIZE_RANGE"] = fmt.Sprintf("%d-%d", excludeLength, length)
 		}
 	}
 
@@ -356,7 +355,6 @@ func (p *primer3) parse(target string) (err error) {
 
 		primerRange := results[fmt.Sprintf("PRIMER_%s_0", side)]
 		primerStart, _ := strconv.Atoi(strings.Split(primerRange, ",")[0])
-		primerStart -= len(target)
 		primerEnd := primerStart + len(seq)
 		if side == "RIGHT" {
 			primerStart -= len(seq)
