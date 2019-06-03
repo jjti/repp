@@ -46,7 +46,7 @@ ifeq ($(PLATFORM),Darwin)
 	install -C ./vendor/darwin/blastdbcmd $(LOCAL_BIN)
 endif
 
-windows:
+windows: build
 	cd scripts && makensis windows_installer.nsi
 
 all: build install

@@ -577,7 +577,7 @@ func queryDatabases(entry string, dbs []string) (f *Frag, err error) {
 	for _, db := range dbs {
 		go func(db string) {
 			// if outFile is defined here we managed to query the entry from the db
-			outFile, err := blastdbcmd(entry, db)
+			outFile, _, err := blastdbcmd(entry, db)
 			if err == nil && outFile != nil {
 				outFileCh <- outFile.Name() // "" if not found
 				dbSourceCh <- db
@@ -654,7 +654,7 @@ func seqMismatch(primers []Primer, parentID, parentSeq string, conf *config.Conf
 // any mismatches in the seq before returning
 func parentMismatch(primers []Primer, parent, db string, conf *config.Config) mismatchResult {
 	// try and query for the parent in the source DB and write to a file
-	parentFile, err := blastdbcmd(parent, db)
+	parentFile, parentSeq, err := blastdbcmd(parent, db)
 
 	// ugly check here for whether we just failed to get the parent entry from a db
 	// which isn't a huge deal (shouldn't be flagged as a mismatch)
@@ -673,6 +673,13 @@ func parentMismatch(primers []Primer, parent, db string, conf *config.Config) mi
 		defer os.Remove(parentFile.Name())
 
 		for _, primer := range primers {
+			// confirm that the 3' end of the primer is in the parent seq
+			primerEnd := primer.Seq[len(primer.Seq)-10:]
+			if !strings.Contains(parentSeq, primerEnd) && !strings.Contains(parentSeq, reverseComplement(primerEnd)) {
+				return mismatchResult{false, match{}, fmt.Errorf("%s does not contain end of primer: %s", parent, primerEnd)}
+			}
+
+			// check for a mismatch in the parent sequence
 			wasMismatch, m, err := mismatch(primer.Seq, parentFile, conf)
 			if wasMismatch || err != nil {
 				return mismatchResult{wasMismatch, m, err}
@@ -687,18 +694,18 @@ func parentMismatch(primers []Primer, parent, db string, conf *config.Config) mi
 // results to a temporary file (to be BLAST'ed against)
 //
 // entry here is the ID that's associated with the fragment in its source DB (db)
-func blastdbcmd(entry, db string) (output *os.File, err error) {
+func blastdbcmd(entry, db string) (output *os.File, parentSeq string, err error) {
 	// path to the entry batch file to hold the entry accession
 	entryFile, err := ioutil.TempFile("", "blastcmd-in-*")
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	defer os.Remove(entryFile.Name())
 
 	// path to the output sequence file from querying the entry's sequence from the BLAST db
 	output, err = ioutil.TempFile("", "blastcmd-out-*")
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	// write entry to file
@@ -706,7 +713,7 @@ func blastdbcmd(entry, db string) (output *os.File, err error) {
 	// I was using the "-entry" flag on exec.Command, but have since
 	// switched to the simpler -entry_batch command (on a file) that resolves the issue
 	if _, err := entryFile.WriteString(entry); err != nil {
-		return nil, fmt.Errorf("failed to write blastdbcmd entry file at %s: %v", entryFile.Name(), err)
+		return nil, "", fmt.Errorf("failed to write blastdbcmd entry file at %s: %v", entryFile.Name(), err)
 	}
 
 	// make a blastdbcmd command (for querying a DB, very different from blastn)
@@ -721,7 +728,7 @@ func blastdbcmd(entry, db string) (output *os.File, err error) {
 
 	// execute
 	if _, err := queryCmd.CombinedOutput(); err != nil {
-		return nil, fmt.Errorf("warning: failed to query %s from %s\n\t%s", entry, db, err.Error())
+		return nil, "", fmt.Errorf("warning: failed to query %s from %s\n\t%s", entry, db, err.Error())
 	}
 
 	// read in the results as fragments. set their sequence to the full one returned from blastdbcmd
@@ -729,11 +736,11 @@ func blastdbcmd(entry, db string) (output *os.File, err error) {
 	if err == nil && len(fragments) >= 1 {
 		for _, f := range fragments {
 			f.fullSeq = f.Seq // set fullSeq, faster to check for primer off-targets later
+			return output, f.Seq, nil
 		}
-		return output, nil
 	}
 
-	return nil, fmt.Errorf("warning: failed to query %s from %s", entry, db)
+	return nil, "", fmt.Errorf("warning: failed to query %s from %s", entry, db)
 }
 
 // mismatch finds mismatching sequences between the query sequence and
