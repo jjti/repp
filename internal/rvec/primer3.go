@@ -410,12 +410,14 @@ func hairpin(seq string, conf *config.Config) (melt float64) {
 
 	ntthalOut, err := ntthalCmd.CombinedOutput()
 	if err != nil {
+		stderr.Printf("failed to execute ntthal: -s1 %s -path %s", seq, config.Primer3Config)
 		stderr.Fatal(err)
 	}
 
 	ntthalOutString := string(ntthalOut)
 	temp, err := strconv.ParseFloat(strings.TrimSpace(ntthalOutString), 64)
 	if err != nil {
+		stderr.Printf("failed to parse ntthal: -s1 %s -path %s", seq, config.Primer3Config)
 		stderr.Fatalln(err)
 	}
 

@@ -676,7 +676,7 @@ func parentMismatch(primers []Primer, parent, db string, conf *config.Config) mi
 			// confirm that the 3' end of the primer is in the parent seq
 			primerEnd := primer.Seq[len(primer.Seq)-10:]
 			if !strings.Contains(parentSeq, primerEnd) && !strings.Contains(parentSeq, reverseComplement(primerEnd)) {
-				return mismatchResult{false, match{}, fmt.Errorf("%s does not contain end of primer: %s", parent, primerEnd)}
+				return mismatchResult{false, match{}, fmt.Errorf("does not contain end of primer: %s", primerEnd)}
 			}
 
 			// check for a mismatch in the parent sequence
@@ -851,15 +851,16 @@ func isMismatch(primer string, m match, c *config.Config) bool {
 	ntthalCmd := exec.Command(
 		"ntthal",
 		"-a", "END1", // end of primer sequence
-		"-r", // temperature only
 		"-s1", primer,
 		"-s2", ectopic,
 		"-path", config.Primer3Config,
+		"-r", // temperature only
 	)
 
 	ntthalOut, err := ntthalCmd.CombinedOutput()
 	if err != nil {
-		stderr.Fatal(err)
+		stderr.Printf("failed to execute ntthal: %s", strings.Join(ntthalCmd.Args, ","))
+		return true
 	}
 
 	ntthalOutString := string(ntthalOut)
