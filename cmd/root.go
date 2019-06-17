@@ -17,8 +17,10 @@ var (
 // rootCmd represents the base command when called without any subcommands.
 var rootCmd = &cobra.Command{
 	Use: "plade",
-	Short: `Build plasmids using DNA sequences available in public repositories.
-Specify plasmids using their sequence, features, or fragments`,
+	Short: `PLAsmid DEfragger
+	
+Repository-based plasmid design. Specify and build plasmids using
+their sequence, features, or fragments`,
 	Version: "0.1.0",
 }
 
