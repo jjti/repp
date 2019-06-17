@@ -14,10 +14,13 @@
 *.DS_Store
 
 # ignore output binaries
-bin/*
+bin
 
 # ignore source files, too large
-assets/*
+assets
+
+# ignore dist files for SourceForge
+dist
 
 # test output files
-test/output/**
+test/output

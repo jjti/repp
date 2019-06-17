@@ -1,11 +1,19 @@
 LOCAL_BIN=/usr/local/bin
-APP=$(LOCAL_BIN)/plade
+APP=${LOCAL_BIN}/plade
 APP_DATA=$${HOME}/.plade
 SETTINGS=./config/config.yaml
 
+NAME=plasmid-defragger
+VERSION=0.1.0
+
+DIST=./dist
+DIST_WIN_ZIP=${DIST}/${NAME}_windows_${VERSION}.zip
+DIST_SRC=${DIST}/${NAME}_src_${VERSION}
+DIST_SRC_TAR=${DIST_SRC}.tar.gz
+
 PLATFORM:=$(shell uname)
 
-.PHONY: test
+.PHONY: test dist
 .DEFAULT_GOAL: build
 
 ifeq ($(PLATFORM),Windows_NT)
@@ -60,3 +68,16 @@ uninstall: clean
 
 test:
 	go test -timeout 200s ./internal/plade
+
+
+dist: windows
+	mkdir -p ${DIST}
+	mkdir -p ${DIST_SRC}
+	rsync -r --delete --exclude={'.git','dist','test','scripts','assets/addgene/addgene.json','assets/dnasu/DNASU*','assets/igem/xml*'} . ${DIST_SRC}
+	tar -czf ${DIST_SRC_TAR} ${DIST_SRC}
+	rm -rf ${DIST_SRC}
+
+	zip ${DIST_WIN_ZIP} ./bin/plade_install.exe
+
+	scp ${DIST_SRC_TAR} jjtimmons@frs.sourceforge.net:/home/frs/project/plasmid-defragger/
+	scp ${DIST_WIN_ZIP} jjtimmons@frs.sourceforge.net:/home/frs/project/plasmid-defragger/
