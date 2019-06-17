@@ -15,14 +15,14 @@ in one of the dbs or a file on the local filesystem.`
 'plade ls enzymes' prints a list of recognized enzymes.`
 )
 
-// assembleCmd is for finding building a plasmid from its fragments, features, or sequence
-var assembleCmd = &cobra.Command{
-	Use:                        "assemble",
-	Short:                      "Assemble a plasmid from its fragments, features or sequence",
+// makeCmd is for finding building a plasmid from its fragments, features, or sequence
+var makeCmd = &cobra.Command{
+	Use:                        "make",
+	Short:                      "make a plasmid from its fragments, features or sequence",
 	SuggestionsMinimumDistance: 3,
 	Long: `Find fragments for assembling a plasmid via Gibson Assembly. Build the plasmid
 against a list of consituent fragment, feature, or a target sequence.`,
-	Aliases: []string{"make", "build"},
+	Aliases: []string{"assemble", "build"},
 }
 
 // fragmentsCmd is for piecing together a list of input fragments into a plasmid
@@ -92,15 +92,15 @@ func init() {
 	sequenceCmd.Flags().StringP("exclude", "x", "", "keywords for excluding fragments")
 	sequenceCmd.Flags().IntP("identity", "p", 98, "%-identity threshold (see 'blastn -help')")
 
-	assembleCmd.AddCommand(fragmentsCmd)
-	assembleCmd.AddCommand(featuresCmd)
-	assembleCmd.AddCommand(sequenceCmd)
+	makeCmd.AddCommand(fragmentsCmd)
+	makeCmd.AddCommand(featuresCmd)
+	makeCmd.AddCommand(sequenceCmd)
 
 	// settings is an optional parameter for a settings file (that overrides the fields in BaseSettingsFile)
-	assembleCmd.PersistentFlags().StringP("settings", "s", config.RootSettingsFile, "build settings")
-	assembleCmd.PersistentFlags().BoolP("verbose", "v", false, "whether to log results to stdout")
-	viper.BindPFlag("settings", assembleCmd.PersistentFlags().Lookup("settings"))
-	viper.BindPFlag("verbose", assembleCmd.PersistentFlags().Lookup("verbose"))
+	makeCmd.PersistentFlags().StringP("settings", "s", config.RootSettingsFile, "build settings")
+	makeCmd.PersistentFlags().BoolP("verbose", "v", false, "whether to log results to stdout")
+	viper.BindPFlag("settings", makeCmd.PersistentFlags().Lookup("settings"))
+	viper.BindPFlag("verbose", makeCmd.PersistentFlags().Lookup("verbose"))
 
-	rootCmd.AddCommand(assembleCmd)
+	rootCmd.AddCommand(makeCmd)
 }

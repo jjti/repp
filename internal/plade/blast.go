@@ -483,7 +483,7 @@ func cull(matches []match, targetLength, minSize int) (culled []match) {
 	// remove fragments that are shorter the minimum cut off size
 	// separate the internal and external fragments. the internal
 	// ones should not be removed just if they're self-contained
-	// in another, because they may be cheaper to assemble
+	// in another, because they may be cheaper to make
 	var internal []match
 	var external []match
 	for _, m := range matches {

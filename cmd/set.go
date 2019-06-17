@@ -5,7 +5,7 @@ import (
 )
 
 // setCmd is for piecing together a list of input fragments into a plasmid
-// and preparing the fragments to assemble into that plasmid
+// and preparing the fragments to make into that plasmid
 var setCmd = &cobra.Command{
 	Use:                        "set [feature,enzyme]",
 	Short:                      "Set a feature or enzyme",

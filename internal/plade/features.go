@@ -98,7 +98,7 @@ func queryFeatures(flags *Flags) ([][]string, []string) {
 		}
 
 		if len(featureNames) < 1 {
-			stderr.Fatal("no features chosen. see 'plade assemble features --help'")
+			stderr.Fatal("no features chosen. see 'plade make features --help'")
 		}
 
 		featureDB := NewFeatureDB()
