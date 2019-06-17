@@ -1,8 +1,8 @@
 package cmd
 
 import (
-	"github.com/jjtimmons/rvec/config"
-	"github.com/jjtimmons/rvec/internal/rvec"
+	"github.com/jjtimmons/plade/config"
+	"github.com/jjtimmons/plade/internal/plade"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -12,7 +12,7 @@ var (
 in one of the dbs or a file on the local filesystem.`
 
 	enzymeHelp = `enzyme to linearize the backbone with (backbone must be specified).
-'rvec ls enzymes' prints a list of recognized enzymes.`
+'plade ls enzymes' prints a list of recognized enzymes.`
 )
 
 // assembleCmd is for finding building a plasmid from its fragments, features, or sequence
@@ -29,7 +29,7 @@ against a list of consituent fragment, feature, or a target sequence.`,
 var fragmentsCmd = &cobra.Command{
 	Use:                        "fragments",
 	Short:                      "Build a plasmid from its constituent fragments",
-	Run:                        rvec.FragmentsCmd,
+	Run:                        plade.FragmentsCmd,
 	SuggestionsMinimumDistance: 3,
 	Long: `Prepare a list of fragments for assembly via Gibson Assembly. Fragments are
 checked for existing homology with their neighbors and are prepared for
@@ -40,7 +40,7 @@ assembly with PCR.`,
 var featuresCmd = &cobra.Command{
 	Use:                        "features [feature] ... [featureN]",
 	Short:                      "Find or build a plasmid from its constituent features",
-	Run:                        rvec.FeaturesCmd, // TODO
+	Run:                        plade.FeaturesCmd, // TODO
 	SuggestionsMinimumDistance: 3,
 }
 
@@ -48,7 +48,7 @@ var featuresCmd = &cobra.Command{
 var sequenceCmd = &cobra.Command{
 	Use:                        "sequence",
 	Short:                      "Find or build a plasmid from its target sequence",
-	Run:                        rvec.SequenceCmd,
+	Run:                        plade.SequenceCmd,
 	SuggestionsMinimumDistance: 2,
 	Long: `Build up a plasmid from its target sequence using a combination of existing and
 synthesized fragments.

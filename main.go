@@ -3,7 +3,7 @@ package main
 import (
 	_ "net/http/pprof"
 
-	"github.com/jjtimmons/rvec/cmd"
+	"github.com/jjtimmons/plade/cmd"
 )
 
 func main() {

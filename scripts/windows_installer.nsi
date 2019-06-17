@@ -1,13 +1,13 @@
 !include EnvVarUpdate.nsh
 
 ; installer's name
-Name "rvec Installer"
+Name "plade Installer"
 
 ; name of the install binary
-OutFile "..\bin\rvec_install.exe"
+OutFile "..\bin\plade_install.exe"
 
 ; installation directory
-InstallDir $PROFILE\.rvec
+InstallDir $PROFILE\.plade
 
 ; create an installer exe
 Section "install"
@@ -19,7 +19,7 @@ ${EnvVarUpdate} $0 "PATH"  "A" "HKCU" $INSTDIR
 SetOutPath $INSTDIR
 
 ; the binary
-File "..\bin\rvec.exe"
+File "..\bin\plade.exe"
 
 ; configuration
 File "..\config\config.yaml"

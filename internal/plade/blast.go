@@ -1,4 +1,4 @@
-package rvec
+package plade
 
 import (
 	"fmt"
@@ -11,7 +11,7 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/jjtimmons/rvec/config"
+	"github.com/jjtimmons/plade/config"
 )
 
 // mismatchResults is a map from primer key to mismatch check results

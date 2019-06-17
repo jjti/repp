@@ -1,4 +1,4 @@
-package rvec
+package plade
 
 import (
 	"path"
@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/jjtimmons/rvec/config"
+	"github.com/jjtimmons/plade/config"
 )
 
 func Test_sequence_e2e(test *testing.T) {

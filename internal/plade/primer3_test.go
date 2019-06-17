@@ -1,4 +1,4 @@
-package rvec
+package plade
 
 import (
 	"math"
@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/jjtimmons/rvec/config"
+	"github.com/jjtimmons/plade/config"
 )
 
 func Test_primer3_shrink(t *testing.T) {

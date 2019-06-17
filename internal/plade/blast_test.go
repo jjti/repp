@@ -1,4 +1,4 @@
-package rvec
+package plade
 
 import (
 	"path"
@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/jjtimmons/rvec/config"
+	"github.com/jjtimmons/plade/config"
 )
 
 // test the ability to find test fragments in a mock database

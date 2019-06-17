@@ -1,4 +1,4 @@
-package rvec
+package plade
 
 import (
 	"bufio"
@@ -11,11 +11,11 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/jjtimmons/rvec/config"
+	"github.com/jjtimmons/plade/config"
 	"github.com/spf13/cobra"
 )
 
-// FeatureDB is a struct for accessing rvecs features db
+// FeatureDB is a struct for accessing plades features db
 type FeatureDB struct {
 	features map[string]string // features is a map between a features name and its sequence
 }
@@ -30,8 +30,8 @@ func FeaturesCmd(cmd *cobra.Command, args []string) {
 	Features(parseCmdFlags(cmd, args, true))
 }
 
-// Features assembles a vector with all the Features requested with the 'rvec Features [feature ...]' command
-// rvec assemble Features p10 promoter, mEGFP, T7 terminator
+// Features assembles a vector with all the Features requested with the 'plade Features [feature ...]' command
+// plade assemble Features p10 promoter, mEGFP, T7 terminator
 func Features(flags *Flags, conf *config.Config) [][]*Frag {
 	start := time.Now()
 
@@ -98,7 +98,7 @@ func queryFeatures(flags *Flags) ([][]string, []string) {
 		}
 
 		if len(featureNames) < 1 {
-			stderr.Fatal("no features chosen. see 'rvec assemble features --help'")
+			stderr.Fatal("no features chosen. see 'plade assemble features --help'")
 		}
 
 		featureDB := NewFeatureDB()
@@ -126,7 +126,7 @@ func queryFeatures(flags *Flags) ([][]string, []string) {
 				sep := "\n\t"
 				stderr.Fatalf(
 					"failed to find '%s' in the features database (%s) or any of:"+
-						"%s\ncheck features database with 'rvec features find [feature name]'",
+						"%s\ncheck features database with 'plade features find [feature name]'",
 					f,
 					config.FeatureDB,
 					sep+strings.Join(flags.dbs, sep)+sep,

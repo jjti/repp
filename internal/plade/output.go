@@ -1,4 +1,4 @@
-package rvec
+package plade
 
 import (
 	"encoding/json"
@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jjtimmons/rvec/config"
+	"github.com/jjtimmons/plade/config"
 )
 
 // Solution is a single solution to build up the target vector.

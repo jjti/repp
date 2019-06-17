@@ -1,14 +1,14 @@
 package cmd
 
 import (
-	"github.com/jjtimmons/rvec/internal/rvec"
+	"github.com/jjtimmons/plade/internal/plade"
 	"github.com/spf13/cobra"
 )
 
 // annotateCmd is for finding features or enzymes by their name.
 var annotateCmd = &cobra.Command{
 	Use:                        "annotate [seq]",
-	Run:                        rvec.Annotate,
+	Run:                        plade.Annotate,
 	Short:                      "Annotate a circular sequence using features (comma-separated)",
 	SuggestionsMinimumDistance: 3,
 }

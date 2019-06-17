@@ -1,4 +1,4 @@
-package rvec
+package plade
 
 import (
 	"bufio"
@@ -10,7 +10,7 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/jjtimmons/rvec/config"
+	"github.com/jjtimmons/plade/config"
 	"github.com/spf13/cobra"
 )
 
@@ -164,7 +164,7 @@ func recogRegex(recog string) (decoded string) {
 	return regexDecoder.String()
 }
 
-// EnzymeDB is a struct for accessing rvecs enzymes db.
+// EnzymeDB is a struct for accessing plades enzymes db.
 type EnzymeDB struct {
 	// enzymes is a map between a enzymes name and its sequence
 	enzymes map[string]string
@@ -269,7 +269,7 @@ func (f *EnzymeDB) SetCmd(cmd *cobra.Command, args []string) {
 	seq = invalidChars.ReplaceAllString(seq, "")
 
 	if strings.Count(seq, "^") != 1 || strings.Count(seq, "_") != 1 {
-		stderr.Fatalf("%s is not a valid enzyme recognition sequence. see 'rvec find enzyme --help'\n", seq)
+		stderr.Fatalf("%s is not a valid enzyme recognition sequence. see 'plade find enzyme --help'\n", seq)
 	}
 
 	enzymeFile, err := os.Open(config.EnzymeDB)

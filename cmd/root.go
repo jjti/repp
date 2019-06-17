@@ -1,22 +1,22 @@
-// Package cmd is for command line interactions with the rvec application
+// Package cmd is for command line interactions with the plade application
 package cmd
 
 import (
 	"log"
 
-	"github.com/jjtimmons/rvec/internal/rvec"
+	"github.com/jjtimmons/plade/internal/plade"
 	"github.com/spf13/cobra"
 )
 
 var (
-	featureDB = rvec.NewFeatureDB()
+	featureDB = plade.NewFeatureDB()
 
-	enzymeDB = rvec.NewEnzymeDB()
+	enzymeDB = plade.NewEnzymeDB()
 )
 
 // rootCmd represents the base command when called without any subcommands.
 var rootCmd = &cobra.Command{
-	Use: "rvec",
+	Use: "plade",
 	Short: `Build plasmids using DNA sequences available in public repositories.
 Specify plasmids using their sequence, features, or fragments`,
 	Version: "0.1.0",

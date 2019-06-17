@@ -1,4 +1,4 @@
-package rvec
+package plade
 
 import (
 	"bytes"
@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/jjtimmons/rvec/config"
+	"github.com/jjtimmons/plade/config"
 )
 
 // primer3 is a utility struct for executing primer3 to create primers on a fragment

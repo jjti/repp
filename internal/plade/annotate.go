@@ -1,4 +1,4 @@
-package rvec
+package plade
 
 import (
 	"fmt"
@@ -19,7 +19,7 @@ func Annotate(cmd *cobra.Command, args []string) {
 
 	identity, err := cmd.Flags().GetInt("identity")
 	if err != nil {
-		identity = 96 // might be something other than `rvec plasmid`
+		identity = 96 // might be something other than `plade plasmid`
 	}
 
 	p := inputParser{}

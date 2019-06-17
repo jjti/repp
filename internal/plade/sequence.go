@@ -1,4 +1,4 @@
-package rvec
+package plade
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/jjtimmons/rvec/config"
+	"github.com/jjtimmons/plade/config"
 	"github.com/spf13/cobra"
 )
 

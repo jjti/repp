@@ -1,6 +1,6 @@
 LOCAL_BIN=/usr/local/bin
-APP=$(LOCAL_BIN)/rvec
-APP_DATA=$${HOME}/.rvec
+APP=$(LOCAL_BIN)/plade
+APP_DATA=$${HOME}/.plade
 SETTINGS=./config/config.yaml
 
 PLATFORM:=$(shell uname)
@@ -17,7 +17,7 @@ build:
 	go get -d
 	env GOOS=linux go build -o ./bin/linux -v
 	env GOOS=darwin go build -o ./bin/darwin -v
-	env GOOS=windows go build -o ./bin/rvec.exe -v
+	env GOOS=windows go build -o ./bin/plade.exe -v
 
 install:
 	mkdir -p $(APP_DATA)
@@ -59,4 +59,4 @@ uninstall: clean
 	rm -rf $(APP_DATA)
 
 test:
-	go test -timeout 200s ./internal/rvec
+	go test -timeout 200s ./internal/plade

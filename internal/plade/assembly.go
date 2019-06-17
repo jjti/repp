@@ -1,4 +1,4 @@
-package rvec
+package plade
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/jjtimmons/rvec/config"
+	"github.com/jjtimmons/plade/config"
 )
 
 // assembly is a slice of nodes ordered by the nodes

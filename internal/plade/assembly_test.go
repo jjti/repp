@@ -1,10 +1,10 @@
-package rvec
+package plade
 
 import (
 	"reflect"
 	"testing"
 
-	"github.com/jjtimmons/rvec/config"
+	"github.com/jjtimmons/plade/config"
 )
 
 func Test_assembly_add(t *testing.T) {
