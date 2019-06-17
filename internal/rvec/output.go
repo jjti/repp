@@ -78,10 +78,15 @@ func writeJSON(
 		assemblyCost := 0.0
 		assemblyFragmentIDs := make(map[string]bool)
 		gibson := false // whether it will be assembled via Gibson assembly
+		hasPCR := false // whether there will be a batch PCR
 
 		for _, f := range assembly {
 			if f.fragType != linear && f.fragType != circular {
 				gibson = true
+			}
+
+			if f.fragType == pcr {
+				hasPCR = true
 			}
 
 			f.Type = f.fragType.String() // freeze fragment type
@@ -113,7 +118,11 @@ func writeJSON(
 		}
 
 		if gibson {
-			assemblyCost += conf.CostGibson
+			assemblyCost += conf.CostGibson + conf.CostTimeGibson
+		}
+
+		if hasPCR {
+			assemblyCost += conf.CostTimePCR
 		}
 
 		solutionCost, err := roundCost(assemblyCost)

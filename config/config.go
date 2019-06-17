@@ -76,8 +76,14 @@ type Config struct {
 	// the cost of each PCR reaction
 	CostPCR float64 `mapstructure:"pcr-rxn-cost"`
 
-	// the cost each Gibson Assembly
+	// the cost of time for each PCR reaction
+	CostTimePCR float64 `mapstructure:"pcr-time-cost"`
+
+	// the cost of each Gibson Assembly
 	CostGibson float64 `mapstructure:"gibson-assembly-cost"`
+
+	// the cost of time for each Gibson Assembly
+	CostTimeGibson float64 `mapstructure:"gibson-assembly-time-cost"`
 
 	// the cost per bp of synthesized DNA as a fragment (as a step function)
 	CostSyntheticFragment map[int]SynthCost `mapstructure:"synthetic-fragment-cost"`

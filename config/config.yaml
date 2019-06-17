@@ -16,6 +16,9 @@ fragments-max-junction-hairpin: 47.0
 # from https://www.neb.com/products/e2611-gibson-assembly-master-mix#Product%20Information
 gibson-assembly-cost: 12.98
 
+# Cost per Gibson Assembly in human time
+gibson-assembly-time-cost: 0.0
+
 # Cost per bp of PCR primer. based on IDT prices
 pcr-bp-cost: 0.6
 
@@ -23,6 +26,9 @@ pcr-bp-cost: 0.6
 # $54.75 / 200
 # estimated from manual at https://www.thermofisher.com/order/catalog/product/18067017
 pcr-rxn-cost: 0.27
+
+# Cost per PCR in human time
+pcr-time-cost: 0.0
 
 # Minimum length of a PCR fragment
 pcr-min-length: 60
