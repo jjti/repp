@@ -26,5 +26,5 @@ func init() {
 	annotateCmd.Flags().BoolP("cull", "c", true, "remove features enclosed in others")
 	annotateCmd.Flags().BoolP("names", "n", false, "log feature names to the console")
 
-	rootCmd.AddCommand(annotateCmd)
+	RootCmd.AddCommand(annotateCmd)
 }

@@ -47,5 +47,5 @@ func init() {
 	setCmd.AddCommand(featureCreateCmd)
 	setCmd.AddCommand(enzymeCreateCmd)
 
-	rootCmd.AddCommand(setCmd)
+	RootCmd.AddCommand(setCmd)
 }

@@ -102,5 +102,5 @@ func init() {
 	viper.BindPFlag("settings", makeCmd.PersistentFlags().Lookup("settings"))
 	viper.BindPFlag("verbose", makeCmd.PersistentFlags().Lookup("verbose"))
 
-	rootCmd.AddCommand(makeCmd)
+	RootCmd.AddCommand(makeCmd)
 }

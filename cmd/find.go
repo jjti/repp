@@ -80,5 +80,5 @@ func init() {
 	findCmd.AddCommand(fragmentFindCmd)
 	findCmd.AddCommand(sequenceFindCmd)
 
-	rootCmd.AddCommand(findCmd)
+	RootCmd.AddCommand(findCmd)
 }

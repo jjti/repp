@@ -29,5 +29,5 @@ If no such feature name exists in the database, an error is logged to stderr.`,
 func init() {
 	deleteCmd.AddCommand(featuresDeleteCmd)
 
-	rootCmd.AddCommand(deleteCmd)
+	RootCmd.AddCommand(deleteCmd)
 }

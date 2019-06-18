@@ -73,7 +73,9 @@ test:
 dist: windows
 	mkdir -p ${DIST}
 	mkdir -p ${DIST_SRC}
-	rsync -r --delete --exclude={'.git','dist','test','scripts','assets/addgene/addgene.json','assets/dnasu/DNASU*','assets/igem/xml*'} . ${DIST_SRC}
+	rsync -r --delete\
+	 --exclude={'.git','dist','test','scripts','bin/plade_install.exe','bin/plade.exe','vendor/windows','assets/addgene/addgene.json','assets/dnasu/DNASU*','assets/igem/xml*','assets/neb/*/'}\
+	 . ${DIST_SRC}
 	tar -czf ${DIST_SRC_TAR} ${DIST_SRC}
 	rm -rf ${DIST_SRC}
 
