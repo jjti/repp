@@ -1,6 +1,6 @@
 # Plasmid Defragger
 
-Biologists benefit when they re-use DNA during plasmid design: it enables cheaper designs and faster builds. But parsing through all combinations of re-usable DNA is completely infeasible. For example, there are over 75,000 plasmids in Addgene -- the likelihood of knowing which combination and ordering of sub-sequences from Addgene is best is low.
+Biologists benefit when they can re-use DNA during plasmid design: it enables cheaper designs and faster builds. But parsing through all re-usable DNA is completely infeasible. For example, there are over 75,000 plasmids in Addgene -- the likelihood of knowing which combination and ordering of sub-sequences from Addgene is best is low.
 
 Plasmid Defragger is made to enable such plasmid design. It turns arbitrary plasmid sequences into designs using the least expensive design with both existing DNA fragments (PCR) and newly synthesized DNA fragments. Plasmid Defragger was written to minimize plasmid design costs and simply the design process.
 
@@ -17,9 +17,9 @@ Download links are available at SourceForge: [https://sourceforge.net/projects/p
 ### MacOS/Linux
 
 ```bash
-wget -O plasmid_defragger_src.tar.gz 'https://sourceforge.net/projects/plasmid-defragger/files/plasmid_defragger_src_0.1.0.tar.gz/download'
-tar xzf plasmid_defragger_src.tar.gz
-cd plasmid-defragger-code
+wget -O plasmid-defragger_src_0.1.0.tar.gz 'https://sourceforge.net/projects/plasmid-defragger/files/plasmid-defragger_src_0.1.0.tar.gz/download'
+tar xzf plasmid-defragger_src_0.1.0.tar.gz
+cd plasmid-defragger_src_0.1.0
 make install
 ```
 

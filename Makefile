@@ -83,3 +83,6 @@ dist: windows
 
 	scp ${DIST_SRC_TAR} jjtimmons@frs.sourceforge.net:/home/frs/project/plasmid-defragger/
 	scp ${DIST_WIN_ZIP} jjtimmons@frs.sourceforge.net:/home/frs/project/plasmid-defragger/
+
+	rm ${DIST_SRC_TAR}
+	rm ${DIST_WIN_ZIP}

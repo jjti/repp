@@ -21,6 +21,8 @@ assets
 
 # ignore dist files for SourceForge
 dist
+*.gz
+*.zip
 
 # test output files
 test/output
