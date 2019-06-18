@@ -11,17 +11,15 @@ func main() {
 	// cmd.Execute() // initialize cobra commands
 	// log.Println(http.ListenAndServe("localhost:6060", nil)) // for profiling
 
-	err := doc.GenMarkdownTree(cmd.RootCmd, "./docs")
-	if err != nil {
+	if err := doc.GenMarkdownTree(cmd.RootCmd, "./docs"); err != nil {
 		fmt.Println(err.Error())
 	}
 
-	err = doc.GenManTree(cmd.RootCmd, &doc.GenManHeader{
+	title := &doc.GenManHeader{
 		Title:   "plade",
 		Section: "1",
-	}, "./docs")
-
-	if err != nil {
+	}
+	if err := doc.GenManTree(cmd.RootCmd, title, "./docs"); err != nil {
 		fmt.Println(err.Error())
 	}
 }
