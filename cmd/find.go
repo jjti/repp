@@ -24,6 +24,7 @@ var featureFindCmd = &cobra.Command{
 	Example:                    "  plade features find terminator",
 	Long: `Find features in the features database that are similar to [name].
 Writes each feature to the stdout with their name and sequence.
+
 If multiple features contain the feature name sent, each are logged.
 Otherwise, all features with names similar to the feature name are writen to stdout`,
 	Aliases: []string{"features"},

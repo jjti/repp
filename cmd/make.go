@@ -18,7 +18,7 @@ in one of the dbs or a file on the local filesystem.`
 // makeCmd is for finding building a plasmid from its fragments, features, or sequence
 var makeCmd = &cobra.Command{
 	Use:                        "make",
-	Short:                      "make a plasmid from its fragments, features or sequence",
+	Short:                      "Make a plasmid from its fragments, features or sequence",
 	SuggestionsMinimumDistance: 3,
 	Long: `Find fragments for assembling a plasmid via Gibson Assembly. Build the plasmid
 against a list of consituent fragment, feature, or a target sequence.`,

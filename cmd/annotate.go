@@ -11,6 +11,14 @@ var annotateCmd = &cobra.Command{
 	Run:                        plade.Annotate,
 	Short:                      "Annotate a circular sequence using features (comma-separated)",
 	SuggestionsMinimumDistance: 3,
+	Long: `Accepts a sequence file as input and runs alignment against the
+embedded feature database. Each alignment feature is included as
+a feature in the output: a Genbank file. Individual databases
+can be selected, in which case the entries in the database will
+be used in the alignment _rather_ than the feature database.
+
+The feature database and the default 96% identity are based on
+information from [SnapGene](https://www.snapgene.com/resources/plasmid-files/)`,
 }
 
 // set flags

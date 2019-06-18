@@ -6,9 +6,8 @@ SETTINGS=./config/config.yaml
 NAME=plasmid-defragger
 VERSION=0.1.0
 
-DIST=./dist
-DIST_WIN_ZIP=${DIST}/${NAME}_windows_${VERSION}.zip
-DIST_SRC=${DIST}/${NAME}_src_${VERSION}
+DIST_WIN_ZIP=${NAME}_windows_${VERSION}.zip
+DIST_SRC=${NAME}_src_${VERSION}
 DIST_SRC_TAR=${DIST_SRC}.tar.gz
 
 PLATFORM:=$(shell uname)
@@ -71,7 +70,8 @@ test:
 
 
 dist: windows
-	mkdir -p ${DIST}
+	cp ./README.md ./docs/index.md
+
 	mkdir -p ${DIST_SRC}
 	rsync -r --delete\
 	 --exclude={'.git','dist','test','scripts','bin/plade_install.exe','bin/plade.exe','vendor/windows','assets/addgene/addgene.json','assets/dnasu/DNASU*','assets/igem/xml*','assets/neb/*/'}\
