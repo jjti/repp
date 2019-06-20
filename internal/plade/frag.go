@@ -28,7 +28,7 @@ const (
 	// circular is a circular sequence of DNA, e.g.: many of Addgene's plasmids
 	circular
 
-	// pcr fragments are those prepared by pcr, often a subselection of their parent vector
+	// pcr fragments are those prepared by pcr, often a subselection of their parent plasmid
 	pcr
 
 	// synthetic fragments are those that will be fully synthesized (eg: gBlocks)
@@ -46,10 +46,10 @@ type Frag struct {
 	// Cost to make the fragment
 	Cost float64 `json:"cost"`
 
-	// URL, eg link to a vector's addgene page
+	// URL, eg link to a plasmid's addgene page
 	URL string `json:"url,omitempty"`
 
-	// fragment/vector's sequence
+	// fragment/plasmid's sequence
 	Seq string `json:"seq,omitempty"`
 
 	// sequence of a pcr fragment after PCR's addition of bp
@@ -71,10 +71,10 @@ type Frag struct {
 	// db that the frag came from
 	db string
 
-	// start of this Frag on the target vector
+	// start of this Frag on the target plasmid
 	start int
 
-	// end of this Frag on the target vector
+	// end of this Frag on the target plasmid
 	end int
 
 	// start of the frag's first feature
@@ -83,7 +83,7 @@ type Frag struct {
 	// end of the frag's last covered feature
 	featureEnd int
 
-	// assemblies that span from this Frag to the end of the vector
+	// assemblies that span from this Frag to the end of the plasmid
 	assemblies []assembly
 
 	// build configuration
@@ -395,6 +395,7 @@ func (f *Frag) synthTo(next *Frag, target string) (synths []*Frag) {
 		return nil
 	}
 
+	tL := len(target)               // length of the full target plasmid
 	fL := f.distTo(next) / synCount // each fragment's length
 	fL += jL * 2                    // account for homology on either end of each synthetic fragment
 	if f.conf.SyntheticMinLength > fL {
@@ -403,13 +404,13 @@ func (f *Frag) synthTo(next *Frag, target string) (synths []*Frag) {
 	}
 
 	// add to self to account for sequence across the zero-index (when sequence subselecting)
-	target = strings.ToUpper(target + target + target + target)
+	target = strings.ToUpper(target + target + target + target) // TODO remove this
 
 	// slide along the range of sequence to create synthetic fragments
 	// and create one at each point, each w/ jL for the fragment
 	// before and after it
 	synths = []*Frag{}
-	start := f.end - jL // start w/ homology, move left
+	start := f.end - jL + tL // start w/ homology, move left
 	for len(synths) < synCount {
 		end := start + fL + 1
 		seq := target[start:end]

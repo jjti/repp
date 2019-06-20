@@ -264,7 +264,7 @@ func (a *assembly) duplicates(frags []*Frag, min, max int) (isDup bool, first, s
 //   foreach otherFragment that fragment overlaps with + reachSynthCount more:
 //	   foreach assembly on fragment:
 //       add otherFragment to the assembly to create a new assembly, store on otherFragment
-func createAssemblies(frags []*Frag, vectorLength, targetLength int, features bool, conf *config.Config) (assemblies []assembly) {
+func createAssemblies(frags []*Frag, target string, targetLength int, features bool, conf *config.Config) (assemblies []assembly) {
 	// number of additional frags try synthesizing to, in addition to those that
 	// already have enough homology for overlap without any modifications for each Frag
 	maxNodes := conf.FragmentsMaxCount
@@ -278,7 +278,7 @@ func createAssemblies(frags []*Frag, vectorLength, targetLength int, features bo
 	for i, f := range frags {
 		// edge case where the Frag spans the entire target vector... 100% match
 		// it is the target vector. just return that as the assembly
-		if len(f.Seq) >= vectorLength {
+		if len(f.Seq) >= targetLength {
 			return []assembly{
 				assembly{
 					frags:  []*Frag{f.copy()},
@@ -287,7 +287,7 @@ func createAssemblies(frags []*Frag, vectorLength, targetLength int, features bo
 			}
 		}
 
-		// create a starting assembly for each fragment just containing it
+		// create a starting assembly for each fragment containing just it
 		frags[i].assemblies = []assembly{
 			assembly{
 				frags:  []*Frag{f.copy()}, // just self
@@ -315,6 +315,17 @@ func createAssemblies(frags []*Frag, vectorLength, targetLength int, features bo
 			}
 		}
 	}
+
+	// create a fully synthetic vector from just synthetic fragments
+	// in case all other plasmid designs fail
+	mockStart := &Frag{start: conf.FragmentsMinHomology, end: conf.FragmentsMinHomology, conf: conf}
+	mockEnd := &Frag{start: len(target), end: len(target), conf: conf}
+	synths := mockStart.synthTo(mockEnd, target)
+	assemblies = append(assemblies, assembly{
+		frags:  synths,
+		cost:   mockStart.costTo(mockEnd),
+		synths: len(synths),
+	})
 
 	if conf.Verbose {
 		fmt.Printf("%d assemblies made\n", len(assemblies))
@@ -358,6 +369,8 @@ func fillAssemblies(target string, counts []int, countToAssemblies map[int][]ass
 
 	for _, count := range counts {
 		for _, assemblyToFill := range countToAssemblies[count] {
+			assemblyToFill.log()
+
 			if assemblyToFill.cost > minCostAssembly {
 				// skip this and the rest with this count, there's another
 				// cheaper option with the same number or fewer fragments (estimated)
@@ -367,8 +380,7 @@ func fillAssemblies(target string, counts []int, countToAssemblies map[int][]ass
 
 			filledFragments, err := assemblyToFill.fill(target, conf)
 			if err != nil || filledFragments == nil {
-				// assemblyToFill.log()
-				// fmt.Println("error", err.Error())
+				fmt.Println("error", err.Error())
 				continue
 			}
 

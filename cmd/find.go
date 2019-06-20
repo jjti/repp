@@ -12,7 +12,7 @@ var findCmd = &cobra.Command{
 	SuggestionsMinimumDistance: 2,
 	Long: `Find features or enzymes by name.
 If there is no exact match, similar entries are returned`,
-	Aliases: []string{"ls", "list"},
+	Aliases: []string{"ls", "list", "get"},
 }
 
 // featureFindCmd is for reading features (close to the one requested) from the db.

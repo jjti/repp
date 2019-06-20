@@ -8,12 +8,6 @@ Plasmid Defragger is made to enable such plasmid design. It turns arbitrary plas
 
 Download links are available at SourceForge: [https://sourceforge.net/projects/plasmid-defragger/files/](https://sourceforge.net/projects/plasmid-defragger/files/)
 
-### Windows
-
-1. Download the most recent `plasmid-defragger_windows.*.zip` file
-2. Unzip
-3. Click and run the `plade_install.exe` installer
-
 ### MacOS/Linux
 
 ```bash
@@ -22,6 +16,12 @@ tar xzf plasmid-defragger_src_0.1.0.tar.gz
 cd plasmid-defragger_src_0.1.0
 make install
 ```
+
+### Windows
+
+1. Download the most recent `plasmid-defragger_windows.*.zip` file
+2. Unzip
+3. Run `plade_install.exe`
 
 ## Design
 

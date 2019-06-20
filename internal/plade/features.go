@@ -193,7 +193,7 @@ func featureSolutions(feats [][]string, featureMatches map[string][]featureMatch
 	defer os.Remove(subjectDB)
 
 	// re-BLAST the features against the new subject database
-	featureMatches = reBlastFeatures(flags, feats, conf, subjectDB, frags)
+	featureMatches = reblastFeatures(flags, feats, conf, subjectDB, frags)
 
 	// merge matches into one another if they can combine to cover a range
 	extendedMatches = extendMatches(feats, featureMatches)
@@ -252,7 +252,7 @@ func featureSolutions(feats [][]string, featureMatches map[string][]featureMatch
 	}
 
 	// traverse the fragments, accumulate assemblies that span all the features
-	assemblies := createAssemblies(frags, len(target), len(feats), true, conf)
+	assemblies := createAssemblies(frags, target, len(feats), true, conf)
 
 	// build up a map from fragment count to a sorted list of assemblies with that number
 	assemblyCounts, countToAssemblies := groupAssembliesByCount(assemblies)
@@ -340,8 +340,8 @@ func subjectDatabase(extendedMatches []match, dbs []string) (subjectName string,
 	return in.Name(), frags
 }
 
-// reBlastFeatures returns matches between the target features and entries in the databases with those features
-func reBlastFeatures(flags *Flags, feats [][]string, conf *config.Config, subjectDB string, frags []*Frag) map[string][]featureMatch {
+// reblastFeatures returns matches between the target features and entries in the databases with those features
+func reblastFeatures(flags *Flags, feats [][]string, conf *config.Config, subjectDB string, frags []*Frag) map[string][]featureMatch {
 	featureMatches := make(map[string][]featureMatch) // a map from from each entry (by id) to its list of matched features
 	for i, target := range feats {
 		targetFeature := target[1]

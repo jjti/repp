@@ -125,6 +125,16 @@ func Test_sequence_e2e(test *testing.T) {
 			true,
 			true,
 		},
+		testFlags{
+			path.Join("..", "..", "test", "input", "113490.fa"),
+			path.Join("..", "..", "test", "output", "113490.json"),
+			"",
+			"",
+			"2018,2019",
+			[]string{},
+			true,
+			false,
+		},
 	}
 
 	for _, t := range tests {
