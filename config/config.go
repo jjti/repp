@@ -18,29 +18,29 @@ import (
 var (
 	home, _ = homedir.Dir()
 
-	// pladeDir is the root directory where plade settings and database files live
-	pladeDir = filepath.Join(home, ".plade")
+	// reppDir is the root directory where repp settings and database files live
+	reppDir = filepath.Join(home, ".repp")
 
 	// RootSettingsFile is the default settings file path for the config package
-	RootSettingsFile = filepath.Join(pladeDir, "config.yaml")
+	RootSettingsFile = filepath.Join(reppDir, "config.yaml")
 
 	// Primer3Config is the path to the embedded primer3 config directory
-	Primer3Config = filepath.Join(pladeDir, "primer3_config") + string(os.PathSeparator)
+	Primer3Config = filepath.Join(reppDir, "primer3_config") + string(os.PathSeparator)
 
 	// IGEMDB is the path to the iGEM db
-	IGEMDB = filepath.Join(pladeDir, "igem")
+	IGEMDB = filepath.Join(reppDir, "igem")
 
 	// AddgeneDB is the path to the Addgene db
-	AddgeneDB = filepath.Join(pladeDir, "addgene")
+	AddgeneDB = filepath.Join(reppDir, "addgene")
 
 	// DNASUDB is the path to the DNASU db
-	DNASUDB = filepath.Join(pladeDir, "dnasu")
+	DNASUDB = filepath.Join(reppDir, "dnasu")
 
 	// FeatureDB is the path to the features db
-	FeatureDB = filepath.Join(pladeDir, "features.tsv")
+	FeatureDB = filepath.Join(reppDir, "features.tsv")
 
 	// EnzymeDB is the path to the enzymes db file
-	EnzymeDB = filepath.Join(pladeDir, "enzymes.tsv")
+	EnzymeDB = filepath.Join(reppDir, "enzymes.tsv")
 )
 
 // SynthCost contains data of the cost of synthesizing DNA up to a certain

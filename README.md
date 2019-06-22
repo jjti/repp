@@ -21,22 +21,22 @@ make install
 
 1. Download the most recent `plasmid-defragger_windows.*.zip` file
 2. Unzip
-3. Run `plade_install.exe`
+3. Run `repp_install.exe`
 
 ## Design
 
-See `plade --help` and the [application documentation](https://jjtimmons.github.io/plade/) for more depth and examples.
+See `repp --help` and the [application documentation](https://jjtimmons.github.io/repp/) for more depth and examples.
 
 ### Sequence-based design
 
 To design a plasmid sequence in a local FASTA file called `desired_plasmid.fa` using Addgene and a local parts database `parts_library.fa`:
 
 ```bash
-plade make seq -in ./desired_plasmid.fa --addgene --dbs parts_library.fa
+repp make seq -in ./desired_plasmid.fa --addgene --dbs parts_library.fa
 ```
 
 To construct a plasmid in `desired_plasmid.fa`, with less consideration for sequence exactness and using all sequences in Addgene, DNASU, and iGEM:
 
 ```bash
-plade make seq -in ./desired_plasmid.fa --addgene --dnasu --igem --identity 94
+repp make seq -in ./desired_plasmid.fa --addgene --dnasu --igem --identity 94
 ```

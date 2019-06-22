@@ -1,22 +1,22 @@
-// Package cmd is for command line interactions with the plade application
+// Package cmd is for command line interactions with the repp application
 package cmd
 
 import (
 	"log"
 
-	"github.com/jjtimmons/plade/internal/plade"
+	"github.com/jjtimmons/repp/internal/repp"
 	"github.com/spf13/cobra"
 )
 
 var (
-	featureDB = plade.NewFeatureDB()
+	featureDB = repp.NewFeatureDB()
 
-	enzymeDB = plade.NewEnzymeDB()
+	enzymeDB = repp.NewEnzymeDB()
 )
 
 // RootCmd represents the base command when called without any subcommands.
 var RootCmd = &cobra.Command{
-	Use: "plade",
+	Use: "repp",
 	Short: `PLAsmid DEfragger
 	
 Repository-based plasmid design. Specify and build plasmids using

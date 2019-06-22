@@ -1,13 +1,13 @@
 !include EnvVarUpdate.nsh
 
 ; installer's name
-Name "plade Installer"
+Name "repp Installer"
 
 ; name of the install binary
-OutFile "..\bin\plade_install.exe"
+OutFile "..\bin\repp_install.exe"
 
 ; installation directory
-InstallDir $PROFILE\.plade
+InstallDir $PROFILE\.repp
 
 ; create an installer exe
 Section "install"
@@ -19,7 +19,7 @@ ${EnvVarUpdate} $0 "PATH"  "A" "HKCU" $INSTDIR
 SetOutPath $INSTDIR
 
 ; the binary
-File "..\bin\plade.exe"
+File "..\bin\repp.exe"
 
 ; configuration
 File "..\config\config.yaml"

@@ -1,6 +1,6 @@
 LOCAL_BIN=/usr/local/bin
-APP=${LOCAL_BIN}/plade
-APP_DATA=$${HOME}/.plade
+APP=${LOCAL_BIN}/repp
+APP_DATA=$${HOME}/.repp
 SETTINGS=./config/config.yaml
 
 NAME=plasmid-defragger
@@ -23,7 +23,7 @@ build:
 	go get -d
 	env GOOS=linux go build -o ./bin/linux -v
 	env GOOS=darwin go build -o ./bin/darwin -v
-	env GOOS=windows go build -o ./bin/plade.exe -v
+	env GOOS=windows go build -o ./bin/repp.exe -v
 
 install:
 	mkdir -p $(APP_DATA)
@@ -65,20 +65,20 @@ uninstall: clean
 	rm -rf $(APP_DATA)
 
 test:
-	go test -timeout 200s ./internal/plade
+	go test -timeout 200s ./internal/repp
 
-
-dist: windows
-	cp ./README.md ./docs/index.md
-
+dist-dir:
 	mkdir -p ${DIST_SRC}
 	rsync -r --delete\
-	 --exclude={'.git','dist','test','scripts','bin/plade_install.exe','bin/plade.exe','vendor/windows','assets/addgene/addgene.json','assets/dnasu/DNASU*','assets/igem/xml*','assets/neb/*/'}\
+	 --exclude={'.git','dist','test','scripts','bin/repp_install.exe','bin/repp.exe','vendor/windows','assets/addgene/addgene.json','assets/dnasu/DNASU*','assets/igem/xml*','assets/neb/*/'}\
 	 . ${DIST_SRC}
 	tar -czf ${DIST_SRC_TAR} ${DIST_SRC}
 	rm -rf ${DIST_SRC}
 
-	zip ${DIST_WIN_ZIP} ./bin/plade_install.exe
+dist: windows dist-dir
+	cp ./README.md ./docs/index.md
+
+	zip ${DIST_WIN_ZIP} ./bin/repp_install.exe
 
 	scp ${DIST_SRC_TAR} jjtimmons@frs.sourceforge.net:/home/frs/project/plasmid-defragger/
 	scp ${DIST_WIN_ZIP} jjtimmons@frs.sourceforge.net:/home/frs/project/plasmid-defragger/

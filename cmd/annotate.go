@@ -1,14 +1,14 @@
 package cmd
 
 import (
-	"github.com/jjtimmons/plade/internal/plade"
+	"github.com/jjtimmons/repp/internal/repp"
 	"github.com/spf13/cobra"
 )
 
 // annotateCmd is for finding features or enzymes by their name.
 var annotateCmd = &cobra.Command{
 	Use:                        "annotate [seq]",
-	Run:                        plade.Annotate,
+	Run:                        repp.Annotate,
 	Short:                      "Annotate a circular sequence using features (comma-separated)",
 	SuggestionsMinimumDistance: 3,
 	Long: `Accepts a sequence file as input and runs alignment against the

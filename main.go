@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/jjtimmons/plade/cmd"
+	"github.com/jjtimmons/repp/cmd"
 )
 
 func main() {
@@ -11,7 +11,7 @@ func main() {
 	// if err := doc.GenMarkdownTree(cmd.RootCmd, "./docs"); err != nil {
 	// 	fmt.Println(err.Error())
 	// } else {
-	// 	// need to update the default plade entry to be the doc entry page
-	// 	os.Rename("./docs/plade.md", "./docs/index.md")
+	// 	// need to update the default repp entry to be the doc entry page
+	// 	os.Rename("./docs/repp.md", "./docs/index.md")
 	// }
 }

@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/jjtimmons/plade/internal/plade"
+	"github.com/jjtimmons/repp/internal/repp"
 	"github.com/spf13/cobra"
 )
 
@@ -21,7 +21,7 @@ var featureFindCmd = &cobra.Command{
 	Short:                      "Find features in the features database",
 	Run:                        featureDB.ReadCmd,
 	SuggestionsMinimumDistance: 2,
-	Example:                    "  plade features find terminator",
+	Example:                    "  repp features find terminator",
 	Long: `Find features in the features database that are similar to [name].
 Writes each feature to the stdout with their name and sequence.
 
@@ -39,7 +39,7 @@ var enzymeFindCmd = &cobra.Command{
 	SuggestionsMinimumDistance: 2,
 	Long: `List out all the enzymes with the same or a similar a similar name as the argument.
 
-'plade find enzyme' without any arguments logs all enzymes available.`,
+'repp find enzyme' without any arguments logs all enzymes available.`,
 	Aliases: []string{"enzymes"},
 }
 
@@ -47,7 +47,7 @@ var enzymeFindCmd = &cobra.Command{
 var fragmentFindCmd = &cobra.Command{
 	Use:                        "fragment [name]",
 	Short:                      "Find a fragment in the databases",
-	Run:                        plade.FragmentFindCmd,
+	Run:                        repp.FragmentFindCmd,
 	SuggestionsMinimumDistance: 2,
 	Long:                       `Find a fragment with a given name in the databases requested.`,
 }
@@ -56,7 +56,7 @@ var fragmentFindCmd = &cobra.Command{
 var sequenceFindCmd = &cobra.Command{
 	Use:                        "sequence [name]",
 	Short:                      "Find a sequence in the databases",
-	Run:                        plade.SequenceFindCmd,
+	Run:                        repp.SequenceFindCmd,
 	SuggestionsMinimumDistance: 2,
 	Long:                       `Find a sequence's matches in the databases requested.`,
 	Aliases:                    []string{"seq"},
