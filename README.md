@@ -19,7 +19,7 @@ make install
 
 ### Windows
 
-1. Download the most recent `repp_windows.*.zip` file
+1. Download the most recent `repp_windows.*.zip` from [SourceForge](https://sourceforge.net/projects/repp/files/)
 2. Unzip
 3. Run `repp_install.exe`
 
