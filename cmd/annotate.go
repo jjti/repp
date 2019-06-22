@@ -9,7 +9,7 @@ import (
 var annotateCmd = &cobra.Command{
 	Use:                        "annotate [seq]",
 	Run:                        repp.Annotate,
-	Short:                      "Annotate a circular sequence using features (comma-separated)",
+	Short:                      "Annotate a plasmid using features",
 	SuggestionsMinimumDistance: 3,
 	Long: `Accepts a sequence file as input and runs alignment against the
 embedded feature database. Each alignment feature is included as

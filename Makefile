@@ -80,8 +80,8 @@ dist: windows dist-dir
 
 	zip ${DIST_WIN_ZIP} ./bin/repp_install.exe
 
-	scp ${DIST_SRC_TAR} jjtimmons@frs.sourceforge.net:/home/frs/project/repp/
-	scp ${DIST_WIN_ZIP} jjtimmons@frs.sourceforge.net:/home/frs/project/repp/
+	scp ${DIST_SRC_TAR} jjtimmons@frs.sourceforge.net:/home/frs/project/repplasmid/
+	scp ${DIST_WIN_ZIP} jjtimmons@frs.sourceforge.net:/home/frs/project/repplasmid/
 
 	rm ${DIST_SRC_TAR}
 	rm ${DIST_WIN_ZIP}

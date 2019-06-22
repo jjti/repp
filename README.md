@@ -11,7 +11,7 @@ Download links are available at SourceForge: [https://sourceforge.net/projects/r
 ### MacOS/Linux
 
 ```bash
-wget -O repp_src_0.1.0.tar.gz 'https://sourceforge.net/projects/repp/files/repp_src_0.1.0.tar.gz/download'
+wget -O repp_src_0.1.0.tar.gz 'https://sourceforge.net/projects/repplasmid/files/repp_src_0.1.0.tar.gz/download'
 tar xzf repp_src_0.1.0.tar.gz
 cd repp_src_0.1.0
 make install
