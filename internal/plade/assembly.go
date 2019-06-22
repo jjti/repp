@@ -74,15 +74,15 @@ func (a *assembly) add(f *Frag, maxCount, targetLength int, features bool) (newA
 
 	// check whether the Frag is already contained in the assembly
 	// if so, the cost of procurement is not incurred twice
-	nodeContained := false
+	fragContained := false
 	for _, included := range a.frags {
 		if included.ID == f.ID && included.fragType == f.fragType {
-			nodeContained = true
+			fragContained = true
 			break
 		}
 	}
 
-	if nodeContained {
+	if fragContained {
 		// don't double count the cost of procuring this Frag to the total assembly cost
 		annealCost += f.cost(false)
 	} else {
@@ -380,7 +380,8 @@ func fillAssemblies(target string, counts []int, countToAssemblies map[int][]ass
 
 			filledFragments, err := assemblyToFill.fill(target, conf)
 			if err != nil || filledFragments == nil {
-				fmt.Println("error", err.Error())
+				// assemblyToFill.log()
+				// fmt.Println("error", err.Error())
 				continue
 			}
 

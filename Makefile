@@ -20,7 +20,6 @@ ifeq ($(PLATFORM),Windows_NT)
 endif
 
 build:
-	rm -f ./bin/* 
 	go get -d
 	env GOOS=linux go build -o ./bin/linux -v
 	env GOOS=darwin go build -o ./bin/darwin -v
