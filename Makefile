@@ -3,7 +3,7 @@ APP=${LOCAL_BIN}/repp
 APP_DATA=$${HOME}/.repp
 SETTINGS=./config/config.yaml
 
-NAME=plasmid-defragger
+NAME=repp
 VERSION=0.1.0
 
 DIST_WIN_ZIP=${NAME}_windows_${VERSION}.zip
@@ -80,8 +80,8 @@ dist: windows dist-dir
 
 	zip ${DIST_WIN_ZIP} ./bin/repp_install.exe
 
-	scp ${DIST_SRC_TAR} jjtimmons@frs.sourceforge.net:/home/frs/project/plasmid-defragger/
-	scp ${DIST_WIN_ZIP} jjtimmons@frs.sourceforge.net:/home/frs/project/plasmid-defragger/
+	scp ${DIST_SRC_TAR} jjtimmons@frs.sourceforge.net:/home/frs/project/repp/
+	scp ${DIST_WIN_ZIP} jjtimmons@frs.sourceforge.net:/home/frs/project/repp/
 
 	rm ${DIST_SRC_TAR}
 	rm ${DIST_WIN_ZIP}

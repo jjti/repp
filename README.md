@@ -1,25 +1,25 @@
-# Plasmid Defragger
+# Repp
 
-Biologists benefit when they can re-use DNA during plasmid design: it enables cheaper designs and faster builds. But parsing through all re-usable DNA is completely infeasible. For example, there are over 75,000 plasmids in Addgene -- the likelihood of knowing which combination and ordering of sub-sequences from Addgene is best is low.
+Biologists profit when they can re-use DNA during plasmid design: it enables cheaper designs and faster builds. But parsing through all re-usable DNA is completely infeasible. For example, there are over 75,000 plasmids in Addgene -- the likelihood of knowing the best combination and ordering of sub-sequences from Addgene for a given plasmid design is low.
 
-Plasmid Defragger is made to enable such plasmid design. It turns arbitrary plasmid sequences into designs using the least expensive design with both existing DNA fragments (PCR) and newly synthesized DNA fragments. Plasmid Defragger was written to minimize plasmid design costs and simply the design process.
+Repp is made to enable such plasmid design. It turns arbitrary plasmid sequences into designs using the least expensive design with both existing DNA fragments (PCR) and newly synthesized DNA fragments. Repp was written to minimize plasmid design costs and simply the design process.
 
 ## Installation
 
-Download links are available at SourceForge: [https://sourceforge.net/projects/plasmid-defragger/files/](https://sourceforge.net/projects/plasmid-defragger/files/)
+Download links are available at SourceForge: [https://sourceforge.net/projects/repp/files/](https://sourceforge.net/projects/repp/files/)
 
 ### MacOS/Linux
 
 ```bash
-wget -O plasmid-defragger_src_0.1.0.tar.gz 'https://sourceforge.net/projects/plasmid-defragger/files/plasmid-defragger_src_0.1.0.tar.gz/download'
-tar xzf plasmid-defragger_src_0.1.0.tar.gz
-cd plasmid-defragger_src_0.1.0
+wget -O repp_src_0.1.0.tar.gz 'https://sourceforge.net/projects/repp/files/repp_src_0.1.0.tar.gz/download'
+tar xzf repp_src_0.1.0.tar.gz
+cd repp_src_0.1.0
 make install
 ```
 
 ### Windows
 
-1. Download the most recent `plasmid-defragger_windows.*.zip` file
+1. Download the most recent `repp_windows.*.zip` file
 2. Unzip
 3. Run `repp_install.exe`
 
