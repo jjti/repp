@@ -15,7 +15,7 @@ If there is no exact match, similar entries are returned
 
 ### SEE ALSO
 
-- [repp](repp.md) - Repp
+- [repp](index.md) - Repp
 
 Repository-based plasmid design. Specify and build plasmids using
 their sequence, features, or fragments

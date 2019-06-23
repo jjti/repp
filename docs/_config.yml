@@ -1,3 +1,5 @@
-theme: jekyll-theme-minimal
+theme: just-the-docs
+search_enabled: true
 plugins:
   - jekyll-sitemap
+github: [metadata]

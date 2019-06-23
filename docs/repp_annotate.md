@@ -35,7 +35,7 @@ repp annotate [seq] [flags]
 
 ### SEE ALSO
 
-- [repp](repp.md) - Repp
+- [repp](index.md) - Repp
 
 Repository-based plasmid design. Specify and build plasmids using
 their sequence, features, or fragments

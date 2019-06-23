@@ -17,7 +17,7 @@ against a list of consituent fragment, feature, or a target sequence.
 
 ### SEE ALSO
 
-- [repp](repp.md) - Repp
+- [repp](index.md) - Repp
 
 Repository-based plasmid design. Specify and build plasmids using
 their sequence, features, or fragments

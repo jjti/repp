@@ -26,3 +26,6 @@ dist
 
 # test output files
 test/output
+
+# doc site output
+docs/_site
