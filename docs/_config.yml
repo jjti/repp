@@ -1,4 +1,4 @@
-theme: pmarsceill/just-the-docs
+remote_theme: pmarsceill/just-the-docs
 search_enabled: true
 plugins:
   - jekyll-sitemap
