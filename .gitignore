@@ -28,4 +28,4 @@ dist
 test/output
 
 # doc site output
-docs/_site
+# docs/_site
