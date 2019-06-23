@@ -1,8 +1,8 @@
-# Repp
+<img src="https://user-images.githubusercontent.com/13923102/59981196-28186600-95ce-11e9-81c8-1ebd8e239499.png" width="650" />
 
-Biologists profit when they can re-use DNA during plasmid design: it enables cheaper designs and faster builds. But parsing through all re-usable DNA is completely infeasible. For example, there are over 75,000 plasmids in Addgene -- the likelihood of knowing the best combination and ordering of sub-sequences from Addgene for a given plasmid design is low.
+Repp is a software application for automating plasmid design. It accepts a target plasmid sequence and finds the least expensive combination of fragments from user and public repositories for creation via Gibson Assembly.
 
-Repp is made to enable such plasmid design. It turns arbitrary plasmid sequences into designs using the least expensive design with both existing DNA fragments (PCR) and newly synthesized DNA fragments. Repp was written to minimize plasmid design costs and simply the design process.
+Biologists profit when they can re-use DNA during plasmid design: it enables cheaper designs and faster builds. But parsing through all re-usable DNA is completely infeasible. For example, there are over 75,000 plasmids in Addgene -- the likelihood of knowing the best combination and ordering of sub-sequences from Addgene for a given plasmid design is low. But Repp enables such plasmid design. It turns arbitrary plasmid sequences into designs using the least expensive design with both existing DNA fragments (PCR) and newly synthesized DNA fragments. Repp minimizes plasmid construction costs and simplifies the design process.
 
 ## Installation
 
