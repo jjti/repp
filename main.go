@@ -1,17 +1,22 @@
 package main
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/jjtimmons/repp/cmd"
+	"github.com/spf13/cobra/doc"
 )
 
 func main() {
-	cmd.Execute() // initialize cobra commands
-	// log.Println(http.ListenAndServe("localhost:6060", nil)) // for profiling
-
-	// if err := doc.GenMarkdownTree(cmd.RootCmd, "./docs"); err != nil {
-	// 	fmt.Println(err.Error())
-	// } else {
-	// 	// need to update the default repp entry to be the doc entry page
-	// 	os.Rename("./docs/repp.md", "./docs/index.md")
-	// }
+	if len(os.Args) > 1 && os.Args[1] == "docs" {
+		if err := doc.GenMarkdownTree(cmd.RootCmd, "./docs"); err != nil {
+			fmt.Println(err.Error())
+		} else {
+			// need to update the default repp entry to be the doc entry page
+			os.Rename("./docs/repp.md", "./docs/index.md")
+		}
+	} else {
+		cmd.Execute() // initialize cobra commands
+	}
 }

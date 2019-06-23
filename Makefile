@@ -12,7 +12,7 @@ DIST_SRC_TAR=${DIST_SRC}.tar.gz
 
 PLATFORM:=$(shell uname)
 
-.PHONY: test dist
+.PHONY: test dist docs
 .DEFAULT_GOAL: build
 
 ifeq ($(PLATFORM),Windows_NT)
@@ -85,3 +85,6 @@ dist: windows dist-dir
 
 	rm ${DIST_SRC_TAR}
 	rm ${DIST_WIN_ZIP}
+
+docs:
+	go run main.go docs
