@@ -8,7 +8,7 @@ Repp enables such plasmid design. It turns arbitrary plasmid sequences into desi
 
 ## Installation
 
-Download links are available at SourceForge: [https://sourceforge.net/projects/repp/files/](https://sourceforge.net/projects/repp/files/)
+Download links are available at SourceForge: [https://sourceforge.net/projects/repplasmid/files/](https://sourceforge.net/projects/repplasmid/files/)
 
 ### MacOS/Linux
 
@@ -21,7 +21,7 @@ make install
 
 ### Windows
 
-1. Download the most recent `repp_windows.*.zip` from [SourceForge](https://sourceforge.net/projects/repp/files/)
+1. Download the most recent `repp_windows.*.zip` from [SourceForge](https://sourceforge.net/projects/repplasmid/files/)
 2. Unzip
 3. Run `repp_install.exe`
 
