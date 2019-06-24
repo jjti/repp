@@ -60,8 +60,8 @@ Solutions have either a minimum fragment count or assembly cost (or both).`,
 // set flags
 func init() {
 	// Flags for specifying the paths to the input file, input fragment files, and output file
-	fragmentsCmd.Flags().StringP("in", "i", "", "input file name")
-	fragmentsCmd.Flags().StringP("out", "o", "", "output file name")
+	fragmentsCmd.Flags().StringP("in", "i", "", "input file name (FASTA or Genbank)")
+	fragmentsCmd.Flags().StringP("out", "o", "", "output file name (FASTA)")
 	fragmentsCmd.Flags().StringP("dbs", "d", "", "comma separated list of local fragment databases")
 	fragmentsCmd.Flags().BoolP("addgene", "a", false, "use the Addgene repository")
 	fragmentsCmd.Flags().BoolP("igem", "g", false, "use the iGEM repository")
@@ -81,7 +81,7 @@ func init() {
 	featuresCmd.Flags().IntP("identity", "p", 98, "%-identity threshold (see 'blastn -help')")
 
 	// Flags for specifying the paths to the input file, input fragment files, and output file
-	sequenceCmd.Flags().StringP("in", "i", "", "input FASTA with target sequence")
+	sequenceCmd.Flags().StringP("in", "i", "", "input file name (FASTA or Genbank)")
 	sequenceCmd.Flags().StringP("out", "o", "", "output file name")
 	sequenceCmd.Flags().StringP("dbs", "d", "", "list of local fragment databases")
 	sequenceCmd.Flags().BoolP("addgene", "a", false, "use the Addgene repository")

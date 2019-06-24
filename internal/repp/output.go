@@ -39,10 +39,10 @@ type Output struct {
 	Execution float64 `json:"execution"`
 
 	// VectorSynthesisCost is the cost of a full gene synthesis within a vector
-	VectorSynthesisCost float64 `json:"vectorSynthesisCost"`
+	// VectorSynthesisCost float64 `json:"vectorSynthesisCost"`
 
 	// InsertSynthesisCost is the cost of just synthesizing the insert with homology for a linearized backbone
-	InsertSynthesisCost float64 `json:"insertSynthesisCost"`
+	// InsertSynthesisCost float64 `json:"insertSynthesisCost"`
 
 	// Solutions builds
 	Solutions []Solution `json:"solutions"`
@@ -143,10 +143,10 @@ func writeJSON(
 	})
 
 	// get the cost of full synthesis (comes in vector)
-	fullSynthCost, err := roundCost(conf.SynthPlasmidCost(insertSeqLength))
-	if err != nil {
-		return nil, err
-	}
+	// fullSynthCost, err := roundCost(conf.SynthPlasmidCost(insertSeqLength))
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	// estimate the cost of making the insert, with overhang for the backbone,
 	// from the synthesis provider and then the Gibson assembly cost
@@ -161,14 +161,14 @@ func writeJSON(
 	}
 
 	out := Output{
-		Time:                time,
-		Target:              targetName,
-		TargetSeq:           strings.ToUpper(targetSeq),
-		Execution:           seconds,
-		Solutions:           solutions,
-		Backbone:            backbone,
-		VectorSynthesisCost: fullSynthCost,
-		InsertSynthesisCost: insertSynthCost,
+		Time:      time,
+		Target:    targetName,
+		TargetSeq: strings.ToUpper(targetSeq),
+		Execution: seconds,
+		Solutions: solutions,
+		Backbone:  backbone,
+		// VectorSynthesisCost: fullSynthCost,
+		// InsertSynthesisCost: insertSynthCost,
 	}
 
 	output, err = json.MarshalIndent(out, "", "  ")

@@ -67,7 +67,6 @@ type meta struct {
 	hasChildren bool
 	parent      string
 	grandParent string
-	link        string
 }
 
 // map from the base Markdown file name to its build meta
@@ -79,7 +78,6 @@ var metaMap = map[string]meta{
 		true,
 		"",
 		"",
-		"/",
 	},
 	"repp_make": meta{
 		childParent,
@@ -88,7 +86,6 @@ var metaMap = map[string]meta{
 		true,
 		"repp",
 		"",
-		"/repp/make",
 	},
 	"repp_make_sequence": meta{
 		grandchild,
@@ -97,7 +94,6 @@ var metaMap = map[string]meta{
 		false,
 		"make",
 		"repp",
-		"/repp/make/sequence",
 	},
 	"repp_make_features": meta{
 		grandchild,
@@ -106,7 +102,6 @@ var metaMap = map[string]meta{
 		false,
 		"make",
 		"repp",
-		"/repp/make/features",
 	},
 	"repp_make_fragments": meta{
 		grandchild,
@@ -115,7 +110,6 @@ var metaMap = map[string]meta{
 		false,
 		"make",
 		"repp",
-		"/repp/make/fragments",
 	},
 	"repp_find": meta{
 		childParent,
@@ -124,7 +118,6 @@ var metaMap = map[string]meta{
 		true,
 		"repp",
 		"",
-		"/repp/find",
 	},
 	"repp_find_sequence": meta{
 		grandchild,
@@ -133,7 +126,6 @@ var metaMap = map[string]meta{
 		false,
 		"find",
 		"repp",
-		"/repp/find/sequence",
 	},
 	"repp_find_fragment": meta{
 		grandchild,
@@ -142,7 +134,6 @@ var metaMap = map[string]meta{
 		false,
 		"find",
 		"repp",
-		"/repp/find/fragment",
 	},
 	"repp_find_feature": meta{
 		grandchild,
@@ -151,7 +142,6 @@ var metaMap = map[string]meta{
 		false,
 		"find",
 		"repp",
-		"/repp/find/feature",
 	},
 	"repp_find_enzyme": meta{
 		grandchild,
@@ -160,7 +150,6 @@ var metaMap = map[string]meta{
 		false,
 		"find",
 		"repp",
-		"/repp/find/enzyme",
 	},
 	"repp_set": meta{
 		childParent,
@@ -169,7 +158,6 @@ var metaMap = map[string]meta{
 		true,
 		"repp",
 		"",
-		"/repp/set",
 	},
 	"repp_set_feature": meta{
 		grandchild,
@@ -178,7 +166,6 @@ var metaMap = map[string]meta{
 		false,
 		"set",
 		"repp",
-		"/repp/set/feature",
 	},
 	"repp_set_enzyme": meta{
 		grandchild,
@@ -187,7 +174,6 @@ var metaMap = map[string]meta{
 		false,
 		"set",
 		"repp",
-		"/repp/set/enzyme",
 	},
 	"repp_delete": meta{
 		childParent,
@@ -196,7 +182,6 @@ var metaMap = map[string]meta{
 		true,
 		"repp",
 		"",
-		"/repp/set",
 	},
 	"repp_delete_feature": meta{
 		grandchild,
@@ -205,7 +190,6 @@ var metaMap = map[string]meta{
 		false,
 		"delete",
 		"repp",
-		"/repp/delete/feature",
 	},
 	"repp_annotate": meta{
 		child,
@@ -214,7 +198,6 @@ var metaMap = map[string]meta{
 		false,
 		"repp",
 		"",
-		"/repp/annotate",
 	},
 }
 
