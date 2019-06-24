@@ -87,4 +87,7 @@ dist: windows dist-dir
 	rm ${DIST_WIN_ZIP}
 
 docs:
-	go run main.go docs
+	go run . docs
+	cp README.md ./docs/index.md
+	cd docs && bundle exec just-the-docs rake search:init
+	cd docs && bundle exec jekyll serve

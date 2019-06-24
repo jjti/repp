@@ -17,7 +17,7 @@
 bin
 
 # ignore source files, too large
-assets
+/assets/
 
 # ignore dist files for SourceForge
 dist

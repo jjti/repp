@@ -3,3 +3,8 @@ search_enabled: true
 plugins:
   - jekyll-sitemap
 github: [metadata]
+aux_links:
+  "Repp on GitHub":
+    - "//github.com/JJTimmons/repp"
+  "Repp on SourceForge":
+    - "//sourceforge.net/projects/repplasmid/"
