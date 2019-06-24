@@ -2,8 +2,10 @@
 layout: default
 title: configuration
 nav_order: 1
-permalink: /
+permalink: /configuration
 ---
+
+## Configuration
 
 The default settings file used by `Repp` is in `~/.repp/config.yaml`. The maximum number of fragments in an assembly, the minimum overlap between adjacent fragments, and cost curves for synthesis are all defined there. Editing this file directly will change the default values used during plasmid designs.
 
@@ -67,3 +69,7 @@ synthetic-fragment-cost:
     fixed: false
     cost: 0.07
 ```
+
+### SEE ALSO
+
+- [repp](/) - Repp

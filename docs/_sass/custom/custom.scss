@@ -1,3 +1,8 @@
 a {
   color: #1e86df !important;
 }
+
+::selection {
+  color: #fff;
+  background: #1e85df7e !important;
+}
