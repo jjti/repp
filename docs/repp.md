@@ -3,7 +3,7 @@ layout: default
 title: repp
 nav_order: 0
 has_children: true
-permalink: /
+permalink: /repp
 ---
 ## repp
 

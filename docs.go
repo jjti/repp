@@ -16,7 +16,7 @@ layout: default
 title: %s
 nav_order: %d
 has_children: true
-permalink: /
+permalink: /repp
 ---
 `
 
@@ -234,9 +234,5 @@ func filePrepender(filename string) string {
 func linkHandler(filename string) string {
 	name := filepath.Base(filename)
 	base := strings.TrimSuffix(name, path.Ext(name))
-
-	if base == "repp" {
-		return "/"
-	}
 	return base
 }

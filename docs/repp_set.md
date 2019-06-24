@@ -23,7 +23,7 @@ be passed to the --enzyme flag
 
 ### SEE ALSO
 
-* [repp](/)	 - Repp
+* [repp](repp)	 - Repp
 	
 Repository-based plasmid design. Specify and build plasmids using
 their sequence, features, or fragments

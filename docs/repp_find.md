@@ -22,7 +22,7 @@ If there is no exact match, similar entries are returned
 
 ### SEE ALSO
 
-* [repp](/)	 - Repp
+* [repp](repp)	 - Repp
 	
 Repository-based plasmid design. Specify and build plasmids using
 their sequence, features, or fragments

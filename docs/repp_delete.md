@@ -21,7 +21,7 @@ Delete a feature or enzyme by name.
 
 ### SEE ALSO
 
-* [repp](/)	 - Repp
+* [repp](repp)	 - Repp
 	
 Repository-based plasmid design. Specify and build plasmids using
 their sequence, features, or fragments
