@@ -1,10 +1,14 @@
-remote_theme: pmarsceill/just-the-docs
-search_enabled: true
+title: "REPP"
+
 plugins:
   - jekyll-sitemap
-github: [metadata]
+
+remote_theme: pmarsceill/just-the-docs
 aux_links:
   "Repp on GitHub":
     - "//github.com/JJTimmons/repp"
   "Repp on SourceForge":
     - "//sourceforge.net/projects/repplasmid/"
+search_enabled: true
+ga_tracking: UA-108371876-4
+github: [metadata]

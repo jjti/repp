@@ -33,9 +33,9 @@ See [the docs](https://jjtimmons.github.io/repp/) or use `--help` on any command
 
 ### Sequence
 
-To design a plasmid based on its expected sequence save it to a FASTA or Genbank file. For example `2ndVal_mScarlet-I.fa`:
+To design a plasmid based on its expected sequence save it to a FASTA or Genbank file. For example:
 
-```txt
+```
 >2ndVal_mScarlet-I
 CAACCTTACCAGAGGGCGCCCCAGCTGGCAATTCCGACGTCTAAGAAACCATTATTATCA...
 ```
