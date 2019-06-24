@@ -31,8 +31,8 @@ repp make fragments [flags]
                           'repp ls enzymes' prints a list of recognized enzymes.
   -h, --help              help for fragments
   -g, --igem              use the iGEM repository
-  -i, --in string         input file name
-  -o, --out string        output file name
+  -i, --in string         input file name (FASTA or Genbank)
+  -o, --out string        output file name (FASTA)
 ```
 
 ### Options inherited from parent commands

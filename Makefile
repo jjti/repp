@@ -90,4 +90,6 @@ docs:
 	go run . docs
 	cp README.md ./docs/index.md
 	cd docs && bundle exec just-the-docs rake search:init
+
+docs-serve: docs 
 	cd docs && bundle exec jekyll serve

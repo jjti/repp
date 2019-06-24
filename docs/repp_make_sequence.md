@@ -34,7 +34,7 @@ repp make sequence [flags]
   -h, --help              help for sequence
   -p, --identity int      %-identity threshold (see 'blastn -help') (default 98)
   -g, --igem              use the iGEM repository
-  -i, --in string         input FASTA with target sequence
+  -i, --in string         input file name (FASTA or Genbank)
   -o, --out string        output file name
 ```
 
