@@ -48,7 +48,7 @@ repp make sequence --in "./2ndVal_mScarlet-I.fa" --addgene --dbs "parts_library.
 
 ### Databases
 
-`Repp` includes three embedded databases from large public repositories: [Addgene](https://www.addgene.org/), (iGEM)[http://parts.igem.org/Main_Page], and [DNASU](https://dnasu.org/DNASU/Home.do). Each embedded database and its file path after installation are as follows:
+`Repp` includes three embedded databases from large public repositories: [Addgene](https://www.addgene.org/), [iGEM](http://parts.igem.org/Main_Page), and [DNASU](https://dnasu.org/DNASU/Home.do). Each embedded database and its file path after installation are as follows:
 
 - Addgene, `--addgene`, `~/.repp/addgene`
 - DNASU, `--dnasu`, `~/.repp/dnasu`
