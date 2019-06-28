@@ -167,7 +167,7 @@ func annotate(name, seq, output string, identity int, dbs, filters []string, toC
 
 	sortMatches(features)
 	if toCull {
-		features = cull(features, len(seq), 5)
+		features = cull(features, len(seq), 5, 1)
 		// for _, f := range features {
 		// 	f.log()
 		// }

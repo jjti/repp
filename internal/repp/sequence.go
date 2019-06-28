@@ -60,12 +60,12 @@ func SequenceFindCmd(cmd *cobra.Command, args []string) {
 	writer.Flush()
 }
 
-// SequenceCmd takes a cobra command (with its flags) and runs Vector.
+// SequenceCmd takes a cobra command (with its flags) and runs plasmid.
 func SequenceCmd(cmd *cobra.Command, args []string) {
 	Sequence(parseCmdFlags(cmd, args, true))
 }
 
-// Sequence is for running an end to end vector design using a target sequence.
+// Sequence is for running an end to end plasmid design using a target sequence.
 func Sequence(flags *Flags, conf *config.Config) [][]*Frag {
 	start := time.Now()
 
@@ -97,7 +97,7 @@ func Sequence(flags *Flags, conf *config.Config) [][]*Frag {
 	return solutions
 }
 
-// sequence builds a vector using a simple cost optimization scheme.
+// sequence builds a plasmid cost optimization
 //
 // The goal is to find an "optimal" assembly sequence with:
 // 	1. the fewest fragments
@@ -105,7 +105,7 @@ func Sequence(flags *Flags, conf *config.Config) [][]*Frag {
 // and, secondarily:
 //	3. no duplicate end regions between Gibson fragments
 // 	4. no hairpins in the junctions
-// 	5. no off-target binding sites in the parent vectors
+// 	5. no off-target binding sites in the parent plasmids
 //	6. low primer3 penalty scores
 //
 // First build up assemblies, creating all possible assemblies that are
@@ -147,7 +147,7 @@ func sequence(input *Flags, conf *config.Config) (insert, target *Frag, solution
 		target.Seq += input.backbone.Seq
 	}
 
-	// get all the matches against the target vector
+	// get all the matches against the target plasmid
 	tw := blastWriter()
 	matches, err := blast(target.ID, target.Seq, true, input.dbs, input.filters, input.identity, tw)
 	if conf.Verbose {
@@ -159,7 +159,7 @@ func sequence(input *Flags, conf *config.Config) (insert, target *Frag, solution
 	}
 
 	// keep only "proper" arcs (non-self-contained)
-	matches = cull(matches, len(target.Seq), conf.PCRMinLength)
+	matches = cull(matches, len(target.Seq), conf.PCRMinLength, 1)
 	if conf.Verbose {
 		fmt.Printf("%d matches after culling\n", len(matches)/2)
 	}
@@ -168,7 +168,7 @@ func sequence(input *Flags, conf *config.Config) (insert, target *Frag, solution
 	frags := newFrags(matches, conf)
 
 	if input.backbone.ID != "" {
-		// add the backbone in as fragments (copy twice)
+		// add the backbone in as fragment (copy twice across zero index)
 		input.backbone.conf = conf
 		input.backbone.start = len(insert.Seq)
 		input.backbone.end = input.backbone.start + len(input.backbone.Seq) - 1
@@ -187,7 +187,7 @@ func sequence(input *Flags, conf *config.Config) (insert, target *Frag, solution
 	}
 
 	// build up a slice of assemblies that could, within the upper-limit on
-	// fragment count, be assembled to make the target vector
+	// fragment count, be assembled to make the target plasmid
 	assemblies := createAssemblies(frags, target.Seq, len(target.Seq), false, conf)
 
 	// build up a map from fragment count to a sorted list of assemblies with that number

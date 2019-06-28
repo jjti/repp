@@ -16,7 +16,7 @@ Set an enzyme in the enzymes database so it can be used to linearize backbones.
 Enzymes are passed to the build command, by name, with the --enzyme flag.
 
 Valid recognition sequences have both a cut site in the template sequence: "^" and
-a cut site in the complement sequence: "_". Use 'repp ls enzyme' for an example
+a cut site in the complement sequence: "_". Use 'repp ls enzyme' for examples
 
 ```
 repp set enzyme [name] [sequence] [flags]

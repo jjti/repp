@@ -19,6 +19,12 @@ List out all the enzymes with the same or a similar a similar name as the argume
 repp find enzyme [name] [flags]
 ```
 
+### Examples
+
+```
+  repp ls enzyme EcoRI
+```
+
 ### Options
 
 ```

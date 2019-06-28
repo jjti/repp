@@ -348,7 +348,7 @@ func Test_Frag_reach(t *testing.T) {
 				assemblies: tt.fields.assemblies,
 				conf:       c,
 			}
-			if gotReachable := n.reach(tt.args.nodes, tt.args.i); !reflect.DeepEqual(gotReachable, tt.wantReachable) {
+			if gotReachable := n.reach(tt.args.nodes, tt.args.i, false); !reflect.DeepEqual(gotReachable, tt.wantReachable) {
 				t.Errorf("Frag.reach() = %v, want %v", gotReachable, tt.wantReachable)
 			}
 		})
@@ -735,7 +735,7 @@ func Test_fragType_String(t *testing.T) {
 		{
 			"circular fragType",
 			1,
-			"vector",
+			"plasmid",
 		},
 		{
 			"pcr frag",

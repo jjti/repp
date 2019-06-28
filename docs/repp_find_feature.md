@@ -24,7 +24,7 @@ repp find feature [name] [flags]
 ### Examples
 
 ```
-  repp features find terminator
+  repp find feature terminator
 ```
 
 ### Options

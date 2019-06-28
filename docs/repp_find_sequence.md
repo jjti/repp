@@ -11,10 +11,16 @@ Find a sequence in the databases
 
 ### Synopsis
 
-Find a sequence's matches in the databases requested.
+Find a sequence's BLAST matches among databases.
 
 ```
 repp find sequence [name] [flags]
+```
+
+### Examples
+
+```
+  repp ls seq GTTGACAATTAATCATCGGCATAGTATATCGGCATAGTATAATACGAC --igem
 ```
 
 ### Options

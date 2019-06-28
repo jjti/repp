@@ -84,7 +84,7 @@ func Test_cull(t *testing.T) {
 		},
 	}
 
-	newMatches := cull(matches, 72, 3)
+	newMatches := cull(matches, 72, 3, 1)
 
 	// make sure m2 has been removed
 	for _, m := range newMatches {

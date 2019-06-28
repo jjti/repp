@@ -10,9 +10,9 @@ import (
 )
 
 // assembly is a slice of nodes ordered by the nodes
-// distance from the end of the target vector.
+// distance from the end of the target plasmid.
 type assembly struct {
-	// frags, ordered by distance from the "end" of the vector
+	// frags, ordered by distance from the "end" of the plasmid
 	frags []*Frag
 
 	// estimated cost of making this assembly
@@ -65,9 +65,6 @@ func (a *assembly) add(f *Frag, maxCount, targetLength int, features bool) (newA
 
 	// calc the estimated dollar cost of getting to the next Frag
 	annealCost := last.costTo(f)
-	if features {
-		annealCost = 10.0
-	}
 	if selfAnnealing && synths == 0 {
 		annealCost = 0 // does not cost extra to anneal to the first fragment
 	}
@@ -123,7 +120,7 @@ func (a *assembly) log() {
 }
 
 // fill traverses frags in an assembly and adds primers or makes syntheic fragments where necessary.
-// It can fail. For example, a PCR Frag may have off-targets in the parent vector.
+// It can fail. For example, a PCR Frag may have off-targets in the parent plasmid.
 func (a *assembly) fill(target string, conf *config.Config) (frags []*Frag, err error) {
 	min := conf.FragmentsMinHomology
 	max := conf.FragmentsMaxHomology
@@ -134,7 +131,7 @@ func (a *assembly) fill(target string, conf *config.Config) (frags []*Frag, err 
 		return nil, fmt.Errorf("duplicate junction between %s and %s: %s", left, right, dupSeq)
 	}
 
-	// edge case where a single Frag fills the whole target vector. Return just a single
+	// edge case where a single Frag fills the whole target plasmid. Return just a single
 	// "fragment" (of circular type... it is misnomer) that matches the target sequence 100%
 	if a.len() == 1 && len(a.frags[0].Seq) >= len(target) {
 		f := a.frags[0]
@@ -276,9 +273,9 @@ func createAssemblies(frags []*Frag, target string, targetLength int, features b
 
 	// create a starting assembly on each Frag including just itself
 	for i, f := range frags {
-		// edge case where the Frag spans the entire target vector... 100% match
-		// it is the target vector. just return that as the assembly
-		if len(f.Seq) >= targetLength {
+		// edge case where the Frag spans the entire target plasmid... 100% match
+		// it is the target plasmid. just return that as the assembly
+		if len(f.Seq) >= targetLength && !features {
 			return []assembly{
 				assembly{
 					frags:  []*Frag{f.copy()},
@@ -298,7 +295,7 @@ func createAssemblies(frags []*Frag, target string, targetLength int, features b
 	}
 
 	for i, f := range frags { // for every Frag in the list of increasing start index frags
-		for _, j := range f.reach(frags, i) { // for every overlapping fragment + reach more
+		for _, j := range f.reach(frags, i, features) { // for every overlapping fragment + reach more
 			for _, a := range f.assemblies { // for every assembly on the reaching fragment
 				newAssembly, created, circularized := a.add(frags[j], maxNodes, targetLength, features)
 
@@ -306,7 +303,7 @@ func createAssemblies(frags []*Frag, target string, targetLength int, features b
 					continue
 				}
 
-				if circularized { // we've circularized a vector, it's ready for filling
+				if circularized { // we've circularized a plasmid, it's ready for filling
 					assemblies = append(assemblies, newAssembly)
 				} else {
 					// add to the other fragment's list of assemblies
@@ -316,7 +313,7 @@ func createAssemblies(frags []*Frag, target string, targetLength int, features b
 		}
 	}
 
-	// create a fully synthetic vector from just synthetic fragments
+	// create a fully synthetic plasmid from just synthetic fragments
 	// in case all other plasmid designs fail
 	mockStart := &Frag{start: conf.FragmentsMinHomology, end: conf.FragmentsMinHomology, conf: conf}
 	mockEnd := &Frag{start: len(target), end: len(target), conf: conf}
@@ -363,7 +360,7 @@ func groupAssembliesByCount(assemblies []assembly) ([]int, map[int][]assembly) {
 
 // fillAssemblies fills in assemblies and returns the pareto optimal solutions.
 func fillAssemblies(target string, counts []int, countToAssemblies map[int][]assembly, conf *config.Config) (solutions [][]*Frag) {
-	// append a fully synthetic solution at first, nothing added should cost more than this (single vector)
+	// append a fully synthetic solution at first, nothing added should cost more than this (single plasmid)
 	filled := make(map[int][]*Frag)
 	minCostAssembly := math.MaxFloat64
 
@@ -380,8 +377,8 @@ func fillAssemblies(target string, counts []int, countToAssemblies map[int][]ass
 
 			filledFragments, err := assemblyToFill.fill(target, conf)
 			if err != nil || filledFragments == nil {
-				assemblyToFill.log()
-				fmt.Println("error", err.Error())
+				// assemblyToFill.log()
+				// fmt.Println("error", err.Error())
 				continue
 			}
 

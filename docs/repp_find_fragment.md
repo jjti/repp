@@ -17,6 +17,12 @@ Find a fragment with a given name in the databases requested.
 repp find fragment [name] [flags]
 ```
 
+### Examples
+
+```
+  repp find fragment pSB1C3 --igem
+```
+
 ### Options
 
 ```

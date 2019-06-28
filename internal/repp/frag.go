@@ -308,7 +308,7 @@ func (f *Frag) costTo(other *Frag) (cost float64) {
 
 // reach returns a slice of Frag indexes that overlap with, or are the first synth_count nodes
 // away from this one within a slice of ordered nodes
-func (f *Frag) reach(nodes []*Frag, i int) (reachable []int) {
+func (f *Frag) reach(nodes []*Frag, i int, features bool) (reachable []int) {
 	reachable = []int{}
 
 	// accumulate the nodes that overlap with this one
@@ -318,6 +318,12 @@ func (f *Frag) reach(nodes []*Frag, i int) (reachable []int) {
 		// we've run out of nodes
 		if i >= len(nodes) {
 			return reachable
+		}
+
+		if features && nodes[i].featureEnd <= f.featureEnd {
+			continue
+		} else if nodes[i].end < f.end {
+			continue // fully engulfed
 		}
 
 		reachable = append(reachable, i)
@@ -383,8 +389,8 @@ func (f *Frag) junction(other *Frag, minHomology, maxHomology int) (junction str
 // synthTo returns synthetic fragments to get this Frag to the next.
 // It creates a slice of building fragments that have homology against
 // one another and are within the upper and lower synthesis bounds.
-// target is the vector's full sequence. We need it to build up the target
-// vector's sequence
+// target is the plasmid's full sequence. We need it to build up the target
+// plasmid's sequence
 func (f *Frag) synthTo(next *Frag, target string) (synths []*Frag) {
 	jL := f.conf.FragmentsMinHomology // junction length
 
@@ -439,7 +445,7 @@ func (f *Frag) synthTo(next *Frag, target string) (synths []*Frag) {
 
 // setPrimers creates primers against a Frag and returns an error if:
 //	1. the primers have an unacceptably high primer3 penalty score
-//	2. the primers have off-targets in their source vector/fragment
+//	2. the primers have off-targets in their source plasmid/fragment
 func (f *Frag) setPrimers(last, next *Frag, seq string, conf *config.Config) (err error) {
 	pHash := primerHash(last, f, next)
 	if oldPrimers, contained := madePrimers[pHash]; contained {
@@ -595,7 +601,7 @@ func mutatePrimers(f *Frag, seq string, addLeft, addRight int) *Frag {
 
 // String returns a string representation of a fragment's type
 func (t fragType) String() string {
-	return []string{"linear", "vector", "pcr", "synthetic"}[t]
+	return []string{"linear", "plasmid", "pcr", "synthetic"}[t]
 }
 
 // fragsCost returns the total cost of a slice of frags. Just the summation of their costs

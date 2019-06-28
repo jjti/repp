@@ -64,7 +64,7 @@ uninstall: clean
 	rm $(APP)
 	rm -rf $(APP_DATA)
 
-test:
+test: all
 	go test -timeout 200s ./internal/repp
 
 dist-dir:

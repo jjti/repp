@@ -155,24 +155,24 @@ func Test_sequence_e2e(test *testing.T) {
 }
 
 func Test_features(t *testing.T) {
-	test1, conf := NewFlags(
-		"p10 promoter, mEGFP, T7 terminator",
-		filepath.Join("..", "..", "test", "output", "features.json"),
-		"pSB1A3",
-		"EcoRI",
-		[]string{},
-		[]string{},
-		true,
-		true,
-		false,
-	)
+	// test1, conf := NewFlags(
+	// 	"p10 promoter, mEGFP, T7 terminator",
+	// 	filepath.Join("..", "..", "test", "output", "features.json"),
+	// 	"pSB1A3",
+	// 	"",
+	// 	[]string{"EcoRI"},
+	// 	[]string{},
+	// 	true,
+	// 	true,
+	// 	false,
+	// )
 
-	test2, _ := NewFlags(
+	test2, conf := NewFlags(
 		"BBa_R0062,BBa_B0034,BBa_C0040,BBa_B0010,BBa_B0012",
 		filepath.Join("..", "..", "test", "output", "igem.features.json"),
 		"pSB1C3",
-		"PstI",
-		[]string{},
+		"",
+		[]string{"PstI"},
 		[]string{},
 		false,
 		true,
@@ -187,13 +187,13 @@ func Test_features(t *testing.T) {
 		name string
 		args args
 	}{
-		{
-			"test end to end features creation",
-			args{
-				flags: test1,
-				conf:  conf,
-			},
-		},
+		// {
+		// 	"test end to end features creation",
+		// 	args{
+		// 		flags: test1,
+		// 		conf:  conf,
+		// 	},
+		// },
 		{
 			"test end to end features creation using iGEM parts",
 			args{
@@ -233,7 +233,7 @@ func Test_fragments(t *testing.T) {
 	tests := []struct {
 		name             string
 		args             args
-		wantTargetVector *Frag
+		wantTargetPlasmid *Frag
 		wantFragments    []*Frag
 	}{
 		{
@@ -276,10 +276,10 @@ func Test_fragments(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotTargetVector, gotFragments := fragments(tt.args.inputFragments, tt.args.conf)
+			gotTargetPlasmid, gotFragments := fragments(tt.args.inputFragments, tt.args.conf)
 
-			if !reflect.DeepEqual(gotTargetVector.Seq, tt.wantTargetVector.Seq) {
-				t.Errorf("fragments() gotTargetVector = %v, want %v", gotTargetVector, tt.wantTargetVector)
+			if !reflect.DeepEqual(gotTargetPlasmid.Seq, tt.wantTargetPlasmid.Seq) {
+				t.Errorf("fragments() gotTargetPlasmid = %v, want %v", gotTargetPlasmid, tt.wantTargetPlasmid)
 			}
 
 			if len(gotFragments) != len(tt.wantFragments) {
@@ -302,7 +302,7 @@ func Test_fragments(t *testing.T) {
 
 // if an input fragment being built is exactly the same as one in a DB, it should be used
 // as is and without PCR or any preparation
-func Test_vector_single_vector(t *testing.T) {
+func Test_plasmid_single_plasmid(t *testing.T) {
 	fs, c := NewFlags(
 		path.Join("..", "..", "test", "input", "109049.addgene.fa"),
 		path.Join("..", "..", "test", "output", "109049.output.json"),
@@ -318,6 +318,6 @@ func Test_vector_single_vector(t *testing.T) {
 	assemblies := Sequence(fs, c) // use addgene database
 
 	if !strings.Contains(assemblies[0][0].URL, "109049") {
-		t.Fatal("failed to use 109049 to build the vector")
+		t.Fatal("failed to use 109049 to build the plasmid")
 	}
 }

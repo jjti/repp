@@ -21,13 +21,12 @@ var featureFindCmd = &cobra.Command{
 	Short:                      "Find features in the features database",
 	Run:                        featureDB.ReadCmd,
 	SuggestionsMinimumDistance: 2,
-	Example:                    "  repp features find terminator",
+	Example:                    "  repp find feature terminator",
 	Long: `Find features in the features database that are similar to [name].
 Writes each feature to the stdout with their name and sequence.
 
 If multiple features contain the feature name sent, each are logged.
 Otherwise, all features with names similar to the feature name are writen to stdout`,
-	Aliases: []string{"features"},
 }
 
 // enzymeFindCmd is for listing out all the available enzymes usable for digesting
@@ -36,6 +35,7 @@ var enzymeFindCmd = &cobra.Command{
 	Use:                        "enzyme [name]",
 	Short:                      "Find enzymes available for linearizing backbones",
 	Run:                        enzymeDB.ReadCmd,
+	Example:                    "  repp ls enzyme EcoRI",
 	SuggestionsMinimumDistance: 2,
 	Long: `List out all the enzymes with the same or a similar a similar name as the argument.
 
@@ -47,6 +47,7 @@ var enzymeFindCmd = &cobra.Command{
 var fragmentFindCmd = &cobra.Command{
 	Use:                        "fragment [name]",
 	Short:                      "Find a fragment in the databases",
+	Example:                    "  repp find fragment pSB1C3 --igem",
 	Run:                        repp.FragmentFindCmd,
 	SuggestionsMinimumDistance: 2,
 	Long:                       `Find a fragment with a given name in the databases requested.`,
@@ -57,8 +58,9 @@ var sequenceFindCmd = &cobra.Command{
 	Use:                        "sequence [name]",
 	Short:                      "Find a sequence in the databases",
 	Run:                        repp.SequenceFindCmd,
+	Example:                    "  repp ls seq GTTGACAATTAATCATCGGCATAGTATATCGGCATAGTATAATACGAC --igem",
 	SuggestionsMinimumDistance: 2,
-	Long:                       `Find a sequence's matches in the databases requested.`,
+	Long:                       `Find a sequence's BLAST matches among databases.`,
 	Aliases:                    []string{"seq"},
 }
 

@@ -86,7 +86,7 @@ func NewFlags(
 }
 
 // parseCmdFlags gathers the in path, out path, etc from a cobra cmd object
-// returns Flags and a Config struct for repp.Vector or repp.Fragments.
+// returns Flags and a Config struct for repp.Plasmid or repp.Fragments.
 func parseCmdFlags(cmd *cobra.Command, args []string, strict bool) (*Flags, *config.Config) {
 	var err error
 	fs := &Flags{} // parsed flags
@@ -152,7 +152,7 @@ func parseCmdFlags(cmd *cobra.Command, args []string, strict bool) (*Flags, *con
 
 	identity, err := cmd.Flags().GetInt("identity")
 	if err != nil {
-		identity = 100 // might be something other than `repp vector`
+		identity = 100 // might be something other than `repp plasmid`
 	}
 	// set identity for blastn searching
 	fs.identity = identity

@@ -12,7 +12,7 @@ import (
 	"github.com/jjtimmons/repp/config"
 )
 
-// Solution is a single solution to build up the target vector.
+// Solution is a single solution to build up the target plasmid.
 type Solution struct {
 	// Count is the number of fragments in this solution
 	Count int `json:"count"`
@@ -38,8 +38,8 @@ type Output struct {
 	// Execution is the number of seconds it took to execute the command
 	Execution float64 `json:"execution"`
 
-	// VectorSynthesisCost is the cost of a full gene synthesis within a vector
-	// VectorSynthesisCost float64 `json:"vectorSynthesisCost"`
+	// PlasmidSynthesisCost is the cost of a full gene synthesis within a plasmid
+	// PlasmidSynthesisCost float64 `json:"plasmidSynthesisCost"`
 
 	// InsertSynthesisCost is the cost of just synthesizing the insert with homology for a linearized backbone
 	// InsertSynthesisCost float64 `json:"insertSynthesisCost"`
@@ -142,7 +142,7 @@ func writeJSON(
 		return solutions[i].Count < solutions[j].Count
 	})
 
-	// get the cost of full synthesis (comes in vector)
+	// get the cost of full synthesis (comes in plasmid)
 	// fullSynthCost, err := roundCost(conf.SynthPlasmidCost(insertSeqLength))
 	// if err != nil {
 	// 	return nil, err
@@ -167,7 +167,7 @@ func writeJSON(
 		Execution: seconds,
 		Solutions: solutions,
 		Backbone:  backbone,
-		// VectorSynthesisCost: fullSynthCost,
+		// PlasmidSynthesisCost: fullSynthCost,
 		// InsertSynthesisCost: insertSynthCost,
 	}
 

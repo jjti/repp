@@ -59,7 +59,7 @@ func FragmentsCmd(cmd *cobra.Command, args []string) {
 	)
 }
 
-// fragments pieces together a list of fragments into a single vector
+// fragments pieces together a list of fragments into a single plasmid
 // with the fragments in the order and orientation specified
 func fragments(frags []*Frag, conf *config.Config) (target *Frag, solution []*Frag) {
 	// piece together the adjacent fragments
@@ -67,10 +67,10 @@ func fragments(frags []*Frag, conf *config.Config) (target *Frag, solution []*Fr
 		stderr.Fatalln("failed: no fragments to assemble")
 	}
 
-	// anneal the fragments together, shift their junctions and create the vector sequence
+	// anneal the fragments together, shift their junctions and create the plasmid sequence
 	vecSeq := annealFragments(conf.FragmentsMinHomology, conf.FragmentsMaxHomology, frags)
 
-	// create the assumed target vector object
+	// create the assumed target plasmid object
 	target = &Frag{
 		Seq:      vecSeq,
 		fragType: circular,
@@ -88,12 +88,12 @@ func fragments(frags []*Frag, conf *config.Config) (target *Frag, solution []*Fr
 
 // annealFragments shifts the start and end of junctions that overlap one another
 func annealFragments(min, max int, frags []*Frag) (vec string) {
-	// set the start, end, and vector sequence
-	// add all of each frags seq to the vector sequence, minus the region overlapping the next
+	// set the start, end, and plasmid sequence
+	// add all of each frags seq to the plasmid sequence, minus the region overlapping the next
 	var vecSeq strings.Builder
 	for i, f := range frags {
 		next := frags[(i+1)%len(frags)]
-		// if we're on the last fragment, mock the first one further along the vector
+		// if we're on the last fragment, mock the first one further along the plasmid
 		if i == len(frags)-1 {
 			nextSeq := next.Seq
 			if next.PCRSeq != "" {
@@ -112,13 +112,13 @@ func annealFragments(min, max int, frags []*Frag) (vec string) {
 		if f.PCRSeq != "" {
 			fragSeq = f.PCRSeq
 		}
-		contrib := fragSeq[0 : len(fragSeq)-j] // frag's contribution to vector
+		contrib := fragSeq[0 : len(fragSeq)-j] // frag's contribution to plasmid
 
 		// correct for this Frag's overlap with the next Frag
 		f.start = vecSeq.Len()
 		f.end = f.start + len(fragSeq) - 1
 
-		// add this Frag's sequence onto the accumulated vector sequence
+		// add this Frag's sequence onto the accumulated plasmid sequence
 		vecSeq.WriteString(contrib)
 	}
 

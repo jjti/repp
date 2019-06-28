@@ -49,7 +49,7 @@ type match struct {
 	// titles from the db. eg: year it was created
 	title string
 
-	// circular if it's a circular fragment in the db (vector, plasmid, etc)
+	// circular if it's a circular fragment in the db (plasmid, plasmid, etc)
 	circular bool
 
 	// mismatching number of bps in the match (for primer off-targets)
@@ -457,7 +457,7 @@ func (b *blastExec) parse(filters []string) (matches []match, err error) {
 			seq:          seq,
 			subjectStart: subjectStart,
 			subjectEnd:   subjectEnd,
-			circular:     strings.Contains(entry+titles, "circular"),
+			circular:     strings.Contains(entry+titles, "CIRCULAR"),
 			mismatching:  mismatching + gaps,
 			internal:     b.internal,
 			db:           b.db,
@@ -472,12 +472,11 @@ func (b *blastExec) parse(filters []string) (matches []match, err error) {
 // culling removes matches that are engulfed in others
 //
 // culling fragment matches means removing those that are completely
-// self-contained in other fragments: the larger of the available fragments
+// self-contained in other fragments if limit == 1:
+// the larger of the available fragments
 // will be the better one, since it covers a greater region and will almost
 // always be preferable to the smaller one
-//
-// also remove small fragments here that are too small to be useful during assembly
-func cull(matches []match, targetLength, minSize int) (culled []match) {
+func cull(matches []match, targetLength, minSize, limit int) (culled []match) {
 	culled = []match{}
 
 	// remove fragments that are shorter the minimum cut off size
@@ -499,10 +498,10 @@ func cull(matches []match, targetLength, minSize int) (culled []match) {
 	}
 
 	// create culled matches (non-self contained)
-	culled = append(properize(internal), properize(external)...)
+	culled = append(properize(internal, limit), properize(external, limit)...)
 
 	// because we culled the matches, we may have removed a match from the
-	// start or the end. right now, a match showing up twice in the vector
+	// start or the end. right now, a match showing up twice in the plasmid
 	// is how we circularize, so have to add back matches to the start or end
 	matchCount := make(map[string]int)
 	for _, m := range culled {
@@ -534,14 +533,14 @@ func cull(matches []match, targetLength, minSize int) (culled []match) {
 }
 
 // properize remove matches that are entirely contained within others
-func properize(matches []match) []match {
+func properize(matches []match, limit int) []match {
 	sortMatches(matches)
 
 	// only include those that aren't encompassed by the one before it
 	culled := []match{}
-	for i, m := range matches {
-		last := len(culled) - 1
-		if i == 0 || m.queryEnd > culled[last].queryEnd {
+	for _, m := range matches {
+		last := len(culled) - limit
+		if last < 0 || m.queryEnd > culled[last].queryEnd {
 			culled = append(culled, m)
 		}
 	}
@@ -556,13 +555,17 @@ func sortMatches(matches []match) {
 		if matches[i].queryStart != matches[j].queryStart {
 			return matches[i].queryStart < matches[j].queryStart
 		} else if matches[i].length() != matches[j].length() {
-			return matches[i].length() > matches[j].length()
+			return matches[i].length() < matches[j].length()
+		} else if matches[i].circular && !matches[j].circular {
+			return true
+		} else if !matches[i].circular && matches[j].circular {
+			return false
 		}
 		return matches[i].entry > matches[j].entry
 	})
 }
 
-// queryDatabases is for finding a fragment/vector with the entry name in one of the dbs
+// queryDatabases is for finding a fragment/plasmid with the entry name in one of the dbs
 func queryDatabases(entry string, dbs []string) (f *Frag, err error) {
 	// first try to get the entry out of a local file
 	if frags, err := read(entry, false); err == nil && len(frags) > 0 {
@@ -672,11 +675,15 @@ func parentMismatch(primers []Primer, parent, db string, conf *config.Config) mi
 	if parentFile.Name() != "" {
 		defer os.Remove(parentFile.Name())
 
-		for _, primer := range primers {
+		for i, primer := range primers {
 			// confirm that the 3' end of the primer is in the parent seq
 			primerEnd := primer.Seq[len(primer.Seq)-10:]
 			if !strings.Contains(parentSeq, primerEnd) && !strings.Contains(parentSeq, reverseComplement(primerEnd)) {
-				return mismatchResult{false, match{}, fmt.Errorf("does not contain end of primer: %s", primerEnd)}
+				dir := "FWD"
+				if i > 0 {
+					dir = "REV"
+				}
+				return mismatchResult{false, match{}, fmt.Errorf("does not contain end of %s primer: %s", dir, primerEnd)}
 			}
 
 			// check for a mismatch in the parent sequence
@@ -690,7 +697,7 @@ func parentMismatch(primers []Primer, parent, db string, conf *config.Config) mi
 	return mismatchResult{false, match{}, err}
 }
 
-// blastdbcmd queries a fragment/vector by its FASTA entry name (entry) and writes the
+// blastdbcmd queries a fragment/plasmid by its FASTA entry name (entry) and writes the
 // results to a temporary file (to be BLAST'ed against)
 //
 // entry here is the ID that's associated with the fragment in its source DB (db)

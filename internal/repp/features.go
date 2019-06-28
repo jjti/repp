@@ -25,12 +25,12 @@ type featureMatch struct {
 	match        match
 }
 
-// FeaturesCmd accepts a cobra commands and assembles a vector containing all the features
+// FeaturesCmd accepts a cobra commands and assembles a plasmid containing all the features
 func FeaturesCmd(cmd *cobra.Command, args []string) {
 	Features(parseCmdFlags(cmd, args, true))
 }
 
-// Features assembles a vector with all the Features requested with the 'repp Features [feature ...]' command
+// Features assembles a plasmid with all the Features requested with the 'repp Features [feature ...]' command
 // repp assemble Features p10 promoter, mEGFP, T7 terminator
 func Features(flags *Flags, conf *config.Config) [][]*Frag {
 	start := time.Now()
@@ -44,7 +44,6 @@ func Features(flags *Flags, conf *config.Config) [][]*Frag {
 
 	// find matches in the databases
 	featureMatches := blastFeatures(flags, feats, conf)
-
 	if len(featureMatches) == 0 {
 		featNames := []string{}
 		for _, feat := range insertFeats {
@@ -61,6 +60,7 @@ func Features(flags *Flags, conf *config.Config) [][]*Frag {
 	for _, f := range insertFeats {
 		insertLength += len(f[1])
 	}
+
 	writeJSON(
 		flags.out,
 		flags.in,
@@ -156,8 +156,10 @@ func blastFeatures(flags *Flags, feats [][]string, conf *config.Config) map[stri
 
 		for _, m := range matches {
 			// needs to be at least identity % as long as the queried feature
-			mLen := float64(m.subjectEnd - m.subjectStart)
-			if mLen/float64(len(targetFeature)) < float64(flags.identity)/100.0 {
+			mLen := float64(m.subjectEnd - m.subjectStart + 1)
+			pIdent := mLen / float64(len(targetFeature))
+			pIdentTarget := float64(flags.identity) / 100.0
+			if pIdent < pIdentTarget {
 				continue
 			}
 
@@ -188,7 +190,7 @@ func featureSolutions(feats [][]string, featureMatches map[string][]featureMatch
 	}
 
 	// remove extended matches fully enclosed by others
-	extendedMatches = cull(extendedMatches, len(feats), 1)
+	extendedMatches = cull(extendedMatches, len(feats), 1, 3)
 
 	// create a subject file from the matches' source fragments
 	subjectDB, frags := subjectDatabase(extendedMatches, flags.dbs)
@@ -201,13 +203,13 @@ func featureSolutions(feats [][]string, featureMatches map[string][]featureMatch
 	extendedMatches = extendMatches(feats, featureMatches)
 
 	// remove extended matches fully enclosed by others
-	extendedMatches = cull(extendedMatches, len(feats), 1)
+	extendedMatches = cull(extendedMatches, len(feats), 1, 3)
 
 	if conf.Verbose {
 		fmt.Printf("%d matches after culling\n", len(extendedMatches))
 	}
 
-	// get the full vector length as if just synthesizing each feature next to one another
+	// get the full plasmid length as if just synthesizing each feature next to one another
 	var targetBuilder strings.Builder
 	featureToStart := make(map[int]int) // map from feature index to start index on fullSynthSeq
 	for i, feat := range feats {
@@ -218,7 +220,13 @@ func featureSolutions(feats [][]string, featureMatches map[string][]featureMatch
 
 	// get the matches back out of the databases (the full parts)
 	frags = []*Frag{}
+	seenMatches := make(map[string]bool)
 	for _, m := range extendedMatches {
+		if _, seen := seenMatches[m.uniqueID]; seen {
+			continue
+		}
+		seenMatches[m.uniqueID] = true
+
 		frag, err := queryDatabases(m.entry, flags.dbs)
 		if err != nil {
 			stderr.Fatalln(err)
@@ -226,6 +234,10 @@ func featureSolutions(feats [][]string, featureMatches map[string][]featureMatch
 
 		frag.ID = m.entry
 		frag.uniqueID = m.uniqueID
+		if m.subjectEnd < m.subjectStart {
+			continue
+		}
+
 		frag.Seq = (frag.Seq + frag.Seq + frag.Seq)[m.subjectStart : m.subjectEnd+1]
 		if !m.forward {
 			frag.Seq = reverseComplement(frag.Seq)
@@ -318,7 +330,7 @@ func extendMatches(feats [][]string, featureMatches map[string][]featureMatch) (
 // create a subject database to query specifically for all
 // features. Needed because the first BLAST may not return
 // all feature matches on each fragment
-func subjectDatabase(extendedMatches []match, dbs []string) (subjectName string, frags []*Frag) {
+func subjectDatabase(extendedMatches []match, dbs []string) (filename string, frags []*Frag) {
 	subject := ""
 	for _, m := range extendedMatches {
 		frag, err := queryDatabases(m.entry, dbs)
