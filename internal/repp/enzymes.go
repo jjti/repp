@@ -23,6 +23,13 @@ type enzyme struct {
 	compCutIndex int
 }
 
+// cut is a binding index and the length of the overhang after digestion
+type cut struct {
+	index  int
+	strand bool
+	enzyme enzyme
+}
+
 // Backbone is for information on a linearized backbone in the output payload
 type Backbone struct {
 	// URL of the backbone fragment's source
@@ -31,18 +38,18 @@ type Backbone struct {
 	// Seq is the sequence of the backbone (unlinearized)
 	Seq string `json:"seq"`
 
-	// Enzyme is the name of the enzyme used to linearize the backbone
-	Enzyme string `json:"enzyme"`
+	// Enzymes is the list of enzymes names used to linearize the backbone
+	Enzymes []string `json:"enzymes"`
 
-	// RecognitionIndex is the index of the first bp of the recognition sequence
-	RecognitionIndex int `json:"recognitionIndex"`
+	// cutsites are the indexes where the backbone was cleaved
+	Cutsites []int `json:"recognitionIndex"`
 
-	// Forward if on the top strand, false if on the reverse complement strand
-	Forward bool `json:"strand"`
+	// Strands of each cut direction. True if fwd, False if rev direction
+	Strands []bool `json:"strands"`
 }
 
 // parses a recognition sequence into a hangInd, cutInd for overhang calculation.
-func newEnzyme(recogSeq string) enzyme {
+func newEnzyme(name, recogSeq string) enzyme {
 	cutIndex := strings.Index(recogSeq, "^")
 	hangIndex := strings.Index(recogSeq, "_")
 
@@ -56,6 +63,7 @@ func newEnzyme(recogSeq string) enzyme {
 	recogSeq = strings.Replace(recogSeq, "_", "", -1)
 
 	return enzyme{
+		name:         name,
 		recog:        recogSeq,
 		seqCutIndex:  cutIndex,
 		compCutIndex: hangIndex,
@@ -67,12 +75,13 @@ func newEnzyme(recogSeq string) enzyme {
 // remove the 5' end of the fragment post-cleaving. it will be degraded.
 // keep exposed 3' ends. good visual explanation:
 // https://warwick.ac.uk/study/csde/gsp/eportfolio/directory/pg/lsujcw/gibsonguide/
-func digest(frag *Frag, enz enzyme) (digested *Frag, backbone *Backbone, err error) {
+func digest(frag *Frag, enzymes []enzyme) (digested *Frag, backbone *Backbone, err error) {
 	wrappedBp := 38 // largest current recognition site in the list of enzymes
 	if len(frag.Seq) < wrappedBp {
 		return &Frag{}, &Backbone{}, fmt.Errorf("%s is too short for digestion", frag.ID)
 	}
 
+	frag.Seq = strings.ToUpper(frag.Seq)
 	firstHalf := frag.Seq[:len(frag.Seq)/2]
 	secondHalf := frag.Seq[len(frag.Seq)/2:]
 	if firstHalf == secondHalf {
@@ -80,42 +89,79 @@ func digest(frag *Frag, enz enzyme) (digested *Frag, backbone *Backbone, err err
 		frag.Seq = frag.Seq[:len(frag.Seq)/2] // undo the doubling of sequence for circular parts
 	}
 
-	// turn recognition site (with ambigous bps) into a recognition seq
-	reg := regexp.MustCompile(recogRegex(enz.recog))
-	seq := frag.Seq + frag.Seq[0:wrappedBp]
-	revCompSeq := reverseComplement(frag.Seq) + reverseComplement(frag.Seq[0:wrappedBp])
+	// find all the cutsites
+	cuts, lengths := cutsites(frag.Seq, enzymes)
 
-	// positive if seq strand has overhang
-	// negative if rev comp strand has overhang
-	overhangLength := enz.seqCutIndex - enz.compCutIndex
-	recogIndex := -1
-	digestedSeq := ""
-	fwd := true
-	if reg.MatchString(seq) {
-		recogIndex = reg.FindStringIndex(seq)[0] // first int is the start of match
-	} else if reg.MatchString(revCompSeq) {
-		// reverse complement
-		revCutIndex := reg.FindStringIndex(revCompSeq)[0]
-		revCutIndex = len(frag.Seq) - revCutIndex - len(enz.recog) // flip it to account for being on rev comp
-		revCutIndex = (revCutIndex + len(frag.Seq)) % len(frag.Seq)
-		if revCutIndex >= 0 && (revCutIndex < recogIndex || recogIndex < 0) {
-			recogIndex = revCutIndex // take whichever occurs sooner in the sequence
-			fwd = false
+	// none found
+	if len(cuts) == 0 {
+		enzymeNames := []string{}
+		for _, enzyme := range enzymes {
+			enzymeNames = append(enzymeNames, enzyme.name)
+		}
+		return &Frag{}, &Backbone{}, fmt.Errorf("no %s cutsites found in %s", strings.Join(enzymeNames, ","), frag.ID)
+	}
+
+	// only one cutsite
+	if len(cuts) == 1 {
+		cut := cuts[0]
+
+		overhangLength := cut.enzyme.seqCutIndex - cut.enzyme.compCutIndex
+		digestedSeq := ""
+
+		if overhangLength >= 0 {
+			cutIndex := (cut.index + cut.enzyme.seqCutIndex) % len(frag.Seq)
+			digestedSeq = frag.Seq[cutIndex:] + frag.Seq[:cutIndex]
+		} else {
+			bottomIndex := (cut.index + cut.enzyme.seqCutIndex) % len(frag.Seq)
+			topIndex := (cut.index + cut.enzyme.compCutIndex) % len(frag.Seq)
+			digestedSeq = frag.Seq[topIndex:] + frag.Seq[:bottomIndex]
+		}
+
+		return &Frag{
+				ID:       frag.ID,
+				uniqueID: "backbone",
+				Seq:      digestedSeq,
+				fragType: linear,
+				db:       frag.db,
+			},
+			&Backbone{
+				URL:      parseURL(frag.ID, frag.db),
+				Seq:      frag.Seq,
+				Enzymes:  []string{cut.enzyme.name},
+				Cutsites: []int{cut.index},
+				Strands:  []bool{cut.strand},
+			},
+			nil
+	}
+
+	// find the largest band
+	largestBand := 0
+	for i, bandLength := range lengths {
+		if bandLength > lengths[largestBand] {
+			largestBand = i
 		}
 	}
-	if recogIndex == -1 {
-		// no valid cutsites in the sequence
-		return &Frag{}, &Backbone{}, fmt.Errorf("no %s cutsites found in %s", enz.recog, frag.ID)
+
+	// find the enzyme from the start and end of the largest band
+	cut1 := cuts[largestBand]
+	cut2 := cuts[(largestBand+1)%len(lengths)]
+	doubled := frag.Seq + frag.Seq
+
+	cut1Index := cut1.index + cut1.enzyme.compCutIndex
+	if cut1.enzyme.seqCutIndex-cut1.enzyme.compCutIndex < 0 {
+		cut1Index = cut1.index + cut1.enzyme.seqCutIndex
 	}
 
-	if overhangLength >= 0 {
-		cutIndex := (recogIndex + enz.seqCutIndex) % len(frag.Seq)
-		digestedSeq = frag.Seq[cutIndex:] + frag.Seq[:cutIndex]
-	} else {
-		bottomIndex := (recogIndex + enz.seqCutIndex) % len(frag.Seq)
-		topIndex := (recogIndex + enz.compCutIndex) % len(frag.Seq)
-		digestedSeq = frag.Seq[topIndex:] + frag.Seq[:bottomIndex]
+	cut2Index := cut2.index + cut2.enzyme.compCutIndex
+	if cut2.enzyme.seqCutIndex-cut2.enzyme.compCutIndex < 0 {
+		cut2Index = cut2.index + cut2.enzyme.seqCutIndex
 	}
+
+	if cut2Index < cut1Index {
+		cut2Index += len(frag.Seq)
+	}
+
+	digestedSeq := doubled[cut1Index:cut2Index]
 
 	return &Frag{
 			ID:       frag.ID,
@@ -125,13 +171,54 @@ func digest(frag *Frag, enz enzyme) (digested *Frag, backbone *Backbone, err err
 			db:       frag.db,
 		},
 		&Backbone{
-			URL:              parseURL(frag.ID, frag.db),
-			Seq:              frag.Seq,
-			Enzyme:           enz.name,
-			RecognitionIndex: recogIndex,
-			Forward:          fwd,
+			URL:      parseURL(frag.ID, frag.db),
+			Seq:      frag.Seq,
+			Enzymes:  []string{cut1.enzyme.name, cut2.enzyme.name},
+			Cutsites: []int{cut1Index, cut2Index},
+			Strands:  []bool{cut1.strand, cut2.strand},
 		},
 		nil
+}
+
+// cutsites finds all the cutsites of a list of enzymes against a target sequence
+// also returns the lengths of each "band" of DNA after digestion. Each band length
+// corresponds to the band formed with the start of the enzyme at the same index in cuts
+func cutsites(seq string, enzymes []enzyme) (cuts []cut, lengths []int) {
+	s := seq
+	rcs := reverseComplement(seq)
+
+	for _, enzyme := range enzymes {
+		regexRecognition := recogRegex(enzyme.recog)
+		reg := regexp.MustCompile(regexRecognition)
+
+		for _, submatch := range reg.FindAllStringSubmatchIndex(s, -1) {
+			index := submatch[0]
+			cuts = append(cuts, cut{index: index, enzyme: enzyme, strand: true})
+		}
+
+		// if it's a palindrome enzyme, don't scan over it again
+		if reverseComplement(regexRecognition) == regexRecognition {
+			continue
+		}
+
+		for _, submatch := range reg.FindAllStringSubmatchIndex(rcs, -1) {
+			index := submatch[0]
+			index = len(seq) - index - len(enzyme.recog)
+			cuts = append(cuts, cut{index: index, enzyme: enzyme, strand: false})
+		}
+	}
+
+	sort.Slice(cuts, func(i, j int) bool {
+		return cuts[i].index < cuts[j].index
+	})
+
+	for i, c := range cuts {
+		next := (i + 1) % len(cuts)
+		bandLength := (cuts[next].index - c.index + len(seq)) % len(seq)
+		lengths = append(lengths, bandLength)
+	}
+
+	return
 }
 
 // recogRegex turns a recognition sequence into a regex sequence for searching

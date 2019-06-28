@@ -318,6 +318,13 @@ func Test_reverseComplement(t *testing.T) {
 			},
 			"TGCACAT",
 		},
+		{
+			"correct reverse complement of enzyme recog seqs",
+			args{
+				seq: "ATG^_CAT",
+			},
+			"ATG^_CAT",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

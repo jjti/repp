@@ -17,7 +17,7 @@ var (
 // RootCmd represents the base command when called without any subcommands.
 var RootCmd = &cobra.Command{
 	Use: "repp",
-	Short: `Repp
+	Short: `REPP
 	
 Repository-based plasmid design. Specify and build plasmids using
 their sequence, features, or fragments`,

@@ -17,7 +17,7 @@ func Test_sequence_e2e(test *testing.T) {
 		in       string
 		out      string
 		backbone string
-		enzyme   string
+		enzymes  []string
 		filters  string
 		dbs      []string
 		addgene  bool
@@ -29,7 +29,7 @@ func Test_sequence_e2e(test *testing.T) {
 			path.Join("..", "..", "test", "input", "backbone.fa"),
 			path.Join("..", "..", "test", "output", "backbone.json"),
 			"pSB1A3",
-			"PstI",
+			[]string{"PstI"},
 			"2018,2019",
 			[]string{},
 			false,
@@ -39,7 +39,7 @@ func Test_sequence_e2e(test *testing.T) {
 			path.Join("..", "..", "test", "input", "BBa_K2224001.fa"),
 			path.Join("..", "..", "test", "output", "BBa_K2224001.json"),
 			"pSB1A3",
-			"PstI",
+			[]string{"PstI"},
 			"2017,2018,2019",
 			[]string{},
 			false,
@@ -49,7 +49,7 @@ func Test_sequence_e2e(test *testing.T) {
 			path.Join("..", "..", "test", "input", "110056.fa"),
 			path.Join("..", "..", "test", "output", "110056.json"),
 			"",
-			"",
+			[]string{},
 			"2019,2018",
 			[]string{},
 			true,
@@ -59,7 +59,7 @@ func Test_sequence_e2e(test *testing.T) {
 			path.Join("..", "..", "test", "input", "BBa_K2602025.fa"),
 			path.Join("..", "..", "test", "output", "BBa_K2602025.json"),
 			"pSB1A3",
-			"PstI",
+			[]string{"PstI"},
 			"",
 			[]string{},
 			false,
@@ -69,7 +69,7 @@ func Test_sequence_e2e(test *testing.T) {
 			path.Join("..", "..", "test", "input", "BBa_K2779020.fa"),
 			path.Join("..", "..", "test", "output", "BBa_K2779020.json"),
 			"pSB1A3",
-			"PstI",
+			[]string{"PstI"},
 			"BBa_K277",
 			[]string{},
 			false,
@@ -79,7 +79,7 @@ func Test_sequence_e2e(test *testing.T) {
 			path.Join("..", "..", "test", "input", "BBa_E0610.fa"),
 			path.Join("..", "..", "test", "output", "BBa_E0610.json"),
 			"pSB1C3",
-			"EcoRI",
+			[]string{"EcoRI"},
 			"2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,BBa_E061",
 			[]string{},
 			false,
@@ -89,7 +89,7 @@ func Test_sequence_e2e(test *testing.T) {
 			path.Join("..", "..", "test", "input", "BBa_I5310.fa"),
 			path.Join("..", "..", "test", "output", "BBa_I5310.json"),
 			"pSB1C3",
-			"EcoRI",
+			[]string{"EcoRI"},
 			"",
 			[]string{},
 			true,
@@ -99,7 +99,7 @@ func Test_sequence_e2e(test *testing.T) {
 			path.Join("..", "..", "test", "input", "BBa_K2651001.fa"),
 			path.Join("..", "..", "test", "output", "BBa_K2651001.json"),
 			"pSB1C3",
-			"EcoRI",
+			[]string{"EcoRI"},
 			"BBa_K265",
 			[]string{},
 			true,
@@ -109,7 +109,7 @@ func Test_sequence_e2e(test *testing.T) {
 			path.Join("..", "..", "test", "input", "BBa_K2779020.fa"),
 			path.Join("..", "..", "test", "output", "BBa_K2779020.json"),
 			"pSB1A3",
-			"PstI",
+			[]string{"PstI"},
 			"BBa_K277", // no year filters needed
 			[]string{},
 			true,
@@ -119,7 +119,7 @@ func Test_sequence_e2e(test *testing.T) {
 			path.Join("..", "..", "test", "input", "BBa_K1085023.fa"),
 			path.Join("..", "..", "test", "output", "BBa_K1085023.json"),
 			"pSB1C3",
-			"EcoRI",
+			[]string{"EcoRI"},
 			"2009,2010,2011,2012,BBa_K108",
 			[]string{},
 			true,
@@ -129,7 +129,7 @@ func Test_sequence_e2e(test *testing.T) {
 			path.Join("..", "..", "test", "input", "113490.fa"),
 			path.Join("..", "..", "test", "output", "113490.json"),
 			"",
-			"",
+			[]string{},
 			"2018,2019",
 			[]string{},
 			true,
@@ -138,7 +138,7 @@ func Test_sequence_e2e(test *testing.T) {
 	}
 
 	for _, t := range tests {
-		sols := Sequence(NewFlags(t.in, t.out, t.backbone, t.enzyme, t.filters, t.dbs, t.addgene, t.igem, false))
+		sols := Sequence(NewFlags(t.in, t.out, t.backbone, t.filters, t.enzymes, t.dbs, t.addgene, t.igem, false))
 
 		if len(sols) < 1 {
 			test.Errorf("no solutions for %s", t.in)
@@ -160,9 +160,21 @@ func Test_features(t *testing.T) {
 		filepath.Join("..", "..", "test", "output", "features.json"),
 		"pSB1A3",
 		"EcoRI",
-		"",
+		[]string{},
 		[]string{},
 		true,
+		true,
+		false,
+	)
+
+	test2, _ := NewFlags(
+		"BBa_R0062,BBa_B0034,BBa_C0040,BBa_B0010,BBa_B0012",
+		filepath.Join("..", "..", "test", "output", "igem.features.json"),
+		"pSB1C3",
+		"PstI",
+		[]string{},
+		[]string{},
+		false,
 		true,
 		false,
 	)
@@ -182,10 +194,21 @@ func Test_features(t *testing.T) {
 				conf:  conf,
 			},
 		},
+		{
+			"test end to end features creation using iGEM parts",
+			args{
+				flags: test2,
+				conf:  conf,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sols := Features(tt.args.flags, tt.args.conf)
+
+			if len(sols) < 1 {
+				t.Failed()
+			}
 
 			for _, s := range sols {
 				e := validateJunctions(s, conf)
@@ -285,7 +308,7 @@ func Test_vector_single_vector(t *testing.T) {
 		path.Join("..", "..", "test", "output", "109049.output.json"),
 		"",
 		"",
-		"",
+		[]string{},
 		[]string{},
 		true,
 		false,

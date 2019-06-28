@@ -48,8 +48,10 @@ type inputParser struct{}
 
 // NewFlags makes a new flags object manually. for testing.
 func NewFlags(
-	in, out, backbone, enzymeName, filter string,
-	dbs []string, addgene, igem, dnasu bool) (*Flags, *config.Config) {
+	in, out, backbone, filter string,
+	enzymes, dbs []string,
+	addgene, igem, dnasu bool,
+) (*Flags, *config.Config) {
 	c := config.New()
 
 	if addgene {
@@ -63,7 +65,7 @@ func NewFlags(
 	}
 
 	p := inputParser{}
-	parsedBB, bbMeta, err := p.parseBackbone(backbone, enzymeName, dbs, c)
+	parsedBB, bbMeta, err := p.parseBackbone(backbone, enzymes, dbs, c)
 	if err != nil {
 		stderr.Fatal(err)
 	}
@@ -170,10 +172,11 @@ func parseCmdFlags(cmd *cobra.Command, args []string, strict bool) (*Flags, *con
 	backbone, _ := cmd.Flags().GetString("backbone")
 
 	// check if they also specified an enzyme
-	enzymeName, _ := cmd.Flags().GetString("enzyme")
+	enzymeList, _ := cmd.Flags().GetString("enzymeList")
+	enzymes := p.parseCommaList(enzymeList)
 
 	// try to digest the backbone with the enzyme
-	fs.backbone, fs.backboneMeta, err = p.parseBackbone(backbone, enzymeName, fs.dbs, c)
+	fs.backbone, fs.backboneMeta, err = p.parseBackbone(backbone, enzymes, fs.dbs, c)
 	if strict && err != nil {
 		stderr.Fatal(err)
 	}
@@ -266,14 +269,10 @@ func (p *inputParser) parseDBs(dbs string, addgene, igem, dnasu bool) (paths []s
 // dbPaths turns a single string of comma separated BLAST dbs into a
 // slice of absolute paths to the BLAST dbs on the local fs.
 func (p *inputParser) dbPaths(dbList string) (paths []string, err error) {
-	dbRegex := regexp.MustCompile(",")
-	for _, db := range dbRegex.Split(dbList, -1) {
-		dbTrimmed := strings.Trim(db, " ,")
-		if dbTrimmed == "" {
-			continue
-		}
+	dbPaths := p.parseCommaList(dbList)
 
-		absPath, err := filepath.Abs(dbTrimmed)
+	for _, db := range dbPaths {
+		absPath, err := filepath.Abs(db)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create absolute path: %v", err)
 		}
@@ -283,11 +282,26 @@ func (p *inputParser) dbPaths(dbList string) (paths []string, err error) {
 	return
 }
 
+// parseCommaList converts a comma separated list of strings into a list
+// of strings for use elsewhere
+func (p *inputParser) parseCommaList(commaList string) (newList []string) {
+	comma := regexp.MustCompile(",")
+	for _, item := range comma.Split(commaList, -1) {
+		item = strings.Trim(item, " ,")
+		if item == "" {
+			continue
+		}
+		newList = append(newList, item)
+	}
+
+	return newList
+}
+
 // parseBackbone takes a backbone, referenced by its id, and an enzyme to cleave the
 // backbone, and returns the linearized backbone as a Frag.
 func (p *inputParser) parseBackbone(
-	bbName, enzyme string,
-	dbs []string,
+	bbName string,
+	enzymeNames, dbs []string,
 	c *config.Config,
 ) (f *Frag, backbone *Backbone, err error) {
 	// if no backbone was specified, return an empty Frag
@@ -301,40 +315,20 @@ func (p *inputParser) parseBackbone(
 		return &Frag{}, &Backbone{}, err
 	}
 
-	// check if it's an iGEM backbone (don't digest)
-	if igemBackbone(bbFrag.ID) {
-		return &Frag{
-				ID:       bbFrag.ID,
-				uniqueID: "backbone",
-				Seq:      bbFrag.Seq[:len(bbFrag.Seq)/2],
-				fragType: linear,
-				db:       bbFrag.db,
-			},
-			&Backbone{
-				URL:              parseURL(bbFrag.ID, bbFrag.db),
-				Seq:              bbFrag.Seq,
-				Enzyme:           "",
-				RecognitionIndex: 0,
-				Forward:          true,
-			},
-			nil
-	}
-
 	// try to digest the backbone with the enzyme
-	if enzyme == "" {
+	if len(enzymeNames) == 0 {
 		return &Frag{},
 			&Backbone{},
 			fmt.Errorf("backbone passed, %s, without an enzyme to digest it", bbName)
 	}
 
 	// gather the enzyme by name, err if it's unknown
-	enz, err := p.getEnzyme(enzyme)
-	enz.name = enzyme
+	enzymes, err := p.getEnzymes(enzymeNames)
 	if err != nil {
 		return &Frag{}, &Backbone{}, err
 	}
 
-	if f, backbone, err = digest(bbFrag, enz); err != nil {
+	if f, backbone, err = digest(bbFrag, enzymes); err != nil {
 		return &Frag{}, &Backbone{}, err
 	}
 
@@ -342,16 +336,20 @@ func (p *inputParser) parseBackbone(
 }
 
 // getEnzymes return the enzyme with the name passed. errors out if there is none.
-func (p *inputParser) getEnzyme(enzymeName string) (enzyme, error) {
+func (p *inputParser) getEnzymes(enzymeNames []string) (enzymes []enzyme, err error) {
 	enzymeDB := NewEnzymeDB()
-	if e, exists := enzymeDB.enzymes[enzymeName]; exists {
-		return newEnzyme(e), nil
+	for _, enzymeName := range enzymeNames {
+		if cutseq, exists := enzymeDB.enzymes[enzymeName]; exists {
+			enzymes = append(enzymes, newEnzyme(enzymeName, cutseq))
+		} else {
+			return enzymes, fmt.Errorf(
+				`failed to find enzyme with name %s use "repp enzymes" for a list of recognized enzymes`,
+				enzymeName,
+			)
+		}
 	}
 
-	return enzyme{}, fmt.Errorf(
-		`failed to find enzyme with name %s use "repp enzymes" for a list of recognized enzymes`,
-		enzymeName,
-	)
+	return
 }
 
 // getFilters takes an input string and returns a list of strings to run against matches

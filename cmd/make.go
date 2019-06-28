@@ -11,8 +11,9 @@ var (
 	backboneHelp = `backbone to insert the fragments into. Can either be an entry 
 in one of the dbs or a file on the local filesystem.`
 
-	enzymeHelp = `enzyme to linearize the backbone with (backbone must be specified).
-'repp ls enzymes' prints a list of recognized enzymes.`
+	enzymeHelp = `comma separated list of enzymes to linearize the backbone with.
+The backbone must be specified. 'repp ls enzymes' prints a list of
+recognized enzymes.`
 )
 
 // makeCmd is for finding building a plasmid from its fragments, features, or sequence
@@ -40,8 +41,9 @@ assembly with PCR.`,
 var featuresCmd = &cobra.Command{
 	Use:                        "features [feature] ... [featureN]",
 	Short:                      "Find or build a plasmid from its constituent features",
-	Run:                        repp.FeaturesCmd, // TODO
+	Run:                        repp.FeaturesCmd,
 	SuggestionsMinimumDistance: 3,
+	Example:                    `repp make features "BBa_R0062,BBa_B0034,BBa_C0040,BBa_B0010,BBa_B0012" --backbone pSB1C3 --enzymes PstI --igem`,
 }
 
 // sequenceCmd is for assembling a plasmid (single circular sequence) from its target sequence
@@ -55,6 +57,7 @@ synthesized fragments.
 
 Solutions have either a minimum fragment count or assembly cost (or both).`,
 	Aliases: []string{"seq", "plasmid"},
+	Example: `repp make sequence -i "./target_plasmid.fa --addgene --dbs "part_library.fa"`,
 }
 
 // set flags
@@ -67,7 +70,7 @@ func init() {
 	fragmentsCmd.Flags().BoolP("igem", "g", false, "use the iGEM repository")
 	fragmentsCmd.Flags().BoolP("dnasu", "u", false, "use the DNASU repository")
 	fragmentsCmd.Flags().StringP("backbone", "b", "", backboneHelp)
-	fragmentsCmd.Flags().StringP("enzyme", "e", "", enzymeHelp)
+	fragmentsCmd.Flags().StringP("enzymes", "e", "", enzymeHelp)
 
 	// Flags for specifying the paths to the input file, input fragment files, and output file
 	featuresCmd.Flags().StringP("out", "o", "", "output file name")
@@ -76,7 +79,7 @@ func init() {
 	featuresCmd.Flags().BoolP("igem", "g", false, "use the iGEM repository")
 	featuresCmd.Flags().BoolP("dnasu", "u", false, "use the DNASU repository")
 	featuresCmd.Flags().StringP("backbone", "b", "", backboneHelp)
-	featuresCmd.Flags().StringP("enzyme", "e", "", enzymeHelp)
+	featuresCmd.Flags().StringP("enzymes", "e", "", enzymeHelp)
 	featuresCmd.Flags().StringP("exclude", "x", "", "keywords for excluding fragments")
 	featuresCmd.Flags().IntP("identity", "p", 98, "%-identity threshold (see 'blastn -help')")
 
@@ -88,7 +91,7 @@ func init() {
 	sequenceCmd.Flags().BoolP("igem", "g", false, "use the iGEM repository")
 	sequenceCmd.Flags().BoolP("dnasu", "u", false, "use the DNASU repository")
 	sequenceCmd.Flags().StringP("backbone", "b", "", backboneHelp)
-	sequenceCmd.Flags().StringP("enzyme", "e", "", enzymeHelp)
+	sequenceCmd.Flags().StringP("enzymes", "e", "", enzymeHelp)
 	sequenceCmd.Flags().StringP("exclude", "x", "", "keywords for excluding fragments")
 	sequenceCmd.Flags().IntP("identity", "p", 98, "%-identity threshold (see 'blastn -help')")
 

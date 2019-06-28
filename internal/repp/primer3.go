@@ -433,6 +433,8 @@ func reverseComplement(seq string) string {
 		'T': 'A',
 		'G': 'C',
 		'C': 'G',
+		'^': '_',
+		'_': '^',
 	}
 
 	var revCompBuffer bytes.Buffer

@@ -182,8 +182,10 @@ func featureSolutions(feats [][]string, featureMatches map[string][]featureMatch
 	extendedMatches := extendMatches(feats, featureMatches)
 
 	// filter out matches that are completely contained in others or too short
-	fmt.Printf("%d matched fragments\n", len(featureMatches))
-	fmt.Printf("%d matches before culling\n", len(extendedMatches))
+	if conf.Verbose {
+		fmt.Printf("%d matched fragments\n", len(featureMatches))
+		fmt.Printf("%d matches before culling\n", len(extendedMatches))
+	}
 
 	// remove extended matches fully enclosed by others
 	extendedMatches = cull(extendedMatches, len(feats), 1)
@@ -203,9 +205,6 @@ func featureSolutions(feats [][]string, featureMatches map[string][]featureMatch
 
 	if conf.Verbose {
 		fmt.Printf("%d matches after culling\n", len(extendedMatches))
-		// for _, m := range extendedMatches {
-		// 	m.log()
-		// }
 	}
 
 	// get the full vector length as if just synthesizing each feature next to one another

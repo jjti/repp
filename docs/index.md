@@ -1,10 +1,10 @@
 <img src="https://user-images.githubusercontent.com/13923102/59981196-28186600-95ce-11e9-81c8-1ebd8e239499.png" width="650" margin-bottom="10px" />
 
-`Repp` is a software application for automating plasmid design. It takes a target plasmid and finds the least expensive combination of fragments from user and public repositories to create it via Gibson Assembly.
+`REPP` is a software application for automating plasmid design. It takes a target plasmid and finds the least expensive combination of fragments from user and public repositories to create it via Gibson Assembly.
 
 Biologists profit when they can re-use DNA during plasmid design: it enables cheaper designs and faster builds. But parsing through all re-usable DNA is completely infeasible. For example, there are over 75,000 plasmids in Addgene -- the likelihood of knowing the best combination and ordering of sub-sequences from Addgene for a given plasmid design is low.
 
-`Repp` enables such plasmid design. It turns plasmid specifications into designs using the least expensive design with both existing DNA fragments (PCR) and newly synthesized DNA fragments. Plasmids are specifiable using their target sequence, features, or sub-fragments.
+`REPP` enables such plasmid design. It turns plasmid specifications into designs using the least expensive design with both existing DNA fragments (PCR) and newly synthesized DNA fragments. Plasmids are specifiable using their target sequence, features, or sub-fragments.
 
 ## Installation
 
@@ -48,7 +48,7 @@ repp make sequence --in "./2ndVal_mScarlet-I.fa" --addgene --dbs "parts_library.
 
 ### Databases
 
-`Repp` includes three embedded databases from large public repositories: [Addgene](https://www.addgene.org/), [iGEM](http://parts.igem.org/Main_Page), and [DNASU](https://dnasu.org/DNASU/Home.do). Each embedded database and its file path after installation are as follows:
+`REPP` includes three embedded databases from large public repositories: [Addgene](https://www.addgene.org/), [iGEM](http://parts.igem.org/Main_Page), and [DNASU](https://dnasu.org/DNASU/Home.do). Each embedded database and its file path after installation are as follows:
 
 - Addgene, `--addgene`, `~/.repp/addgene`
 - DNASU, `--dnasu`, `~/.repp/dnasu`
@@ -62,9 +62,9 @@ repp make sequence --in "./2ndVal_mScarlet-I.fa" --addgene --dnasu --dbs "protei
 
 ### Configuration
 
-The default settings file used by `Repp` is in `~/.repp/config.yaml`. The maximum number of fragments in an assembly, the minimum overlap between adjacent fragments, and cost curves for synthesis are all defined there. Editing this file directly will change the default values used during plasmid designs. For more details, see [configuration](https://jjtimmons.github.io/repp/configuration).
+The default settings file used by `REPP` is in `~/.repp/config.yaml`. The maximum number of fragments in an assembly, the minimum overlap between adjacent fragments, and cost curves for synthesis are all defined there. Editing this file directly will change the default values used during plasmid designs. For more details, see [configuration](https://jjtimmons.github.io/repp/configuration).
 
-To overwrite some `Repp` settings on a per-design basis, create another YAML file:
+To overwrite some `REPP` settings on a per-design basis, create another YAML file:
 
 ```yaml
 # custom_settings.yaml
@@ -83,7 +83,7 @@ repp make sequence --in "./2ndVal_mScarlet-I.fa" --addgene --settings "./custom_
 
 ### Backbones and Enzymes
 
-The plasmid sequence in the input file is designed as a circular plasmid by default. In other words, Repp assumes that the sequence includes an insert sequence as well as a backbone. To use the sequence in the input file as an insert sequence but another fragment as a backbone, use the `--backbone` and `--enzyme` command in combination. This will lookup `--backbone` in the fragment databases and digest it with the enzyme selected through the `--enzyme` flag. The linearized backbone will be concatenated to the insert sequence. For example, to insert a `GFP_CDS` sequence into iGEM's `pSB1A3` backbone after linearizing it with `PstI`:
+The plasmid sequence in the input file is designed as a circular plasmid by default. In other words, REPP assumes that the sequence includes an insert sequence as well as a backbone. To use the sequence in the input file as an insert sequence but another fragment as a backbone, use the `--backbone` and `--enzyme` command in combination. This will lookup `--backbone` in the fragment databases and digest it with the enzyme selected through the `--enzyme` flag. The linearized backbone will be concatenated to the insert sequence. For example, to insert a `GFP_CDS` sequence into iGEM's `pSB1A3` backbone after linearizing it with `PstI`:
 
 ```bash
 repp make sequence --in "./GFP_CDS.fa" --addgene --igem --backbone pSB1A3 --enzyme PstI
@@ -91,7 +91,7 @@ repp make sequence --in "./GFP_CDS.fa" --addgene --igem --backbone pSB1A3 --enzy
 
 ### Output
 
-`Repp` saves plasmid designs to JSON files at the path specified through the `--out` flag. Below is an abbreviated example of plasmid design output:
+`REPP` saves plasmid designs to JSON files at the path specified through the `--out` flag. Below is an abbreviated example of plasmid design output:
 
 ```json
 {

@@ -7,11 +7,11 @@ permalink: /configuration
 
 # Configuration
 
-The default settings file used by `Repp` is in `~/.repp/config.yaml`. The maximum number of fragments in an assembly, the minimum overlap between adjacent fragments, and cost curves for synthesis are all defined there. Editing this file directly will change the default values used during plasmid designs.
+The default settings file used by `REPP` is in `~/.repp/config.yaml`. The maximum number of fragments in an assembly, the minimum overlap between adjacent fragments, and cost curves for synthesis are all defined there. Editing this file directly will change the default values used during plasmid designs.
 
 ## Per-Design Configuration
 
-To overwrite some `Repp` settings on a per-design basis, create another YAML file:
+To overwrite some `REPP` settings on a per-design basis, create another YAML file:
 
 ```yaml
 # custom_settings.yaml
@@ -56,7 +56,7 @@ repp make sequence --in "./2ndVal_mScarlet-I.fa" --addgene --settings "./custom_
 
 ### Synthesis Cost Maps
 
-`Repp` supports cost maps for synthetic fragments (`synthetic-fragment-cost`) and synthetic pre-cloned plasmids (`synthetic-plasmid-cost`). The default costs in `Repp` are 1:1 with IDT synthesis prices for synthetic fragments and synthetic genes. To customize the cost curve of synthesis, define a new cost curve as a YAML map. Each key is an integer which is the maximum length fragment/gene to be synthesized at that cost, and the value contains two keys: `fixed` and `cost`. If `fixed` is true, the `cost` of a fragment of that length is used as is. If `fixed` is false, the `cost` of a fragment of that length is per basepair.
+`REPP` supports cost maps for synthetic fragments (`synthetic-fragment-cost`) and synthetic pre-cloned plasmids (`synthetic-plasmid-cost`). The default costs in `REPP` are 1:1 with IDT synthesis prices for synthetic fragments and synthetic genes. To customize the cost curve of synthesis, define a new cost curve as a YAML map. Each key is an integer which is the maximum length fragment/gene to be synthesized at that cost, and the value contains two keys: `fixed` and `cost`. If `fixed` is true, the `cost` of a fragment of that length is used as is. If `fixed` is false, the `cost` of a fragment of that length is per basepair.
 
 For example, in the cost curve below, the cost of the fragment's synthesis is 55.0 up to an including fragments that are 500 bp. For fragments greater than 500 bp and no more than 1800 bp, the cost of synthesis is 0.07 \* _fragment bp length_. No fragments can be produced that are greater than 1800 bp.
 
@@ -72,4 +72,4 @@ synthetic-fragment-cost:
 
 ### SEE ALSO
 
-- [repp](/) - Repp
+- [repp](/) - REPP

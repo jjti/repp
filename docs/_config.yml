@@ -6,9 +6,9 @@ plugins:
 
 remote_theme: pmarsceill/just-the-docs
 aux_links:
-  "Repp on GitHub":
+  "REPP on GitHub":
     - "//github.com/JJTimmons/repp"
-  "Repp on SourceForge":
+  "REPP on SourceForge":
     - "//sourceforge.net/projects/repplasmid/"
 search_enabled: true
 ga_tracking: UA-108371876-4

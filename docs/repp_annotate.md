@@ -4,6 +4,7 @@ title: annotate
 parent: repp
 nav_order: 4
 ---
+
 ## repp annotate
 
 Annotate a plasmid using features
@@ -41,8 +42,8 @@ repp annotate [seq] [flags]
 
 ### SEE ALSO
 
-* [repp](repp)	 - Repp
-	
+- [repp](repp) - REPP
+
 Repository-based plasmid design. Specify and build plasmids using
 their sequence, features, or fragments
 
