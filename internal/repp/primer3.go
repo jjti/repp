@@ -117,6 +117,11 @@ func (p *primer3) input(minHomology, maxHomology, maxEmbedLength, minLength, pcr
 	leftBuffer := p.buffer(p.last.distTo(p.f), minHomology, maxEmbedLength, pcrBuffer)
 	rightBuffer := p.buffer(p.f.distTo(p.next), minHomology, maxEmbedLength, pcrBuffer)
 
+	if length-leftBuffer-rightBuffer < p.f.conf.PCRMinLength {
+		leftBuffer = 0
+		rightBuffer = 0
+	}
+
 	// create the settings map from all instructions
 	file, err := p.settings(
 		p.seq,
@@ -239,7 +244,8 @@ func (p *primer3) settings(
 		"PRIMER_PAIR_MAX_COMPL_ANY":            "13.0",                                              // defaults to 8.00
 	}
 
-	// if there is room to optimize, we let primer3 pick the best primers available in the space
+	// if there is room to optimize, we let primer3 pick the best primers available
+	// with a range on either side of the fragment's start
 	// http://primer3.sourceforge.net/primer3_manual.htm#SEQUENCE_PRIMER_PAIR_OK_REGION_LIST
 	if leftBuffer > 0 || rightBuffer > 0 {
 		// V-ls  v-le               v-rs   v-re
@@ -248,31 +254,31 @@ func (p *primer3) settings(
 		rightStart := start + length - rightBuffer - primerMax
 		excludeLength := rightStart - leftEnd
 
-		settings["PRIMER_TASK"] = "generic"
-		settings["PRIMER_PICK_LEFT_PRIMER"] = "1"
-		settings["PRIMER_PICK_INTERNAL_OLIGO"] = "0"
-		settings["PRIMER_PICK_RIGHT_PRIMER"] = "1"
-
-		if excludeLength >= 0 {
-			if excludeLength < primerMax {
-				return nil, fmt.Errorf("pcr minimum size, %d, smaller than max primer size, %d", excludeLength, primerMax)
-			}
+		if excludeLength >= 0 && excludeLength > primerMax {
+			settings["PRIMER_TASK"] = "generic"
+			settings["PRIMER_PICK_LEFT_PRIMER"] = "1"
+			settings["PRIMER_PICK_INTERNAL_OLIGO"] = "0"
+			settings["PRIMER_PICK_RIGHT_PRIMER"] = "1"
 
 			// ugly undoing of the above in case only one side has buffer
 			if leftBuffer == 0 {
 				settings["SEQUENCE_FORCE_LEFT_START"] = strconv.Itoa(start)
-			} else if rightBuffer == 0 {
+				settings["SEQUENCE_PRIMER_PAIR_OK_REGION_LIST"] = fmt.Sprintf(",,%d,%d ;", rightStart, rightBuffer+primerMax)
+			}
+			if rightBuffer == 0 {
 				settings["SEQUENCE_FORCE_RIGHT_START"] = strconv.Itoa(start + length)
+				settings["SEQUENCE_PRIMER_PAIR_OK_REGION_LIST"] = fmt.Sprintf("%d,%d,, ;", start, leftBuffer+primerMax)
 			}
 
-			settings["SEQUENCE_PRIMER_PAIR_OK_REGION_LIST"] = fmt.Sprintf("%d,%d,%d,%d ;", start, leftBuffer+primerMax, rightStart, rightBuffer+primerMax)
-			// settings["SEQUENCE_INCLUDED_REGION"] = fmt.Sprintf("%d,%d", start, length)
-			// settings["PRIMER_PRODUCT_SIZE_RANGE"] = fmt.Sprintf("%d-%d", excludeLength, length)
+			if settings["SEQUENCE_PRIMER_PAIR_OK_REGION_LIST"] == "" {
+				settings["SEQUENCE_PRIMER_PAIR_OK_REGION_LIST"] = fmt.Sprintf("%d,%d,%d,%d ;", start, leftBuffer+primerMax, rightStart, rightBuffer+primerMax)
+			}
+			settings["PRIMER_PRODUCT_SIZE_RANGE"] = fmt.Sprintf("%d-%d", excludeLength, length)
 		}
 	}
 
 	// otherwise force the start and end of the PCR range
-	if settings["PRIMER_PRODUCT_SIZE_RANGE"] == "" {
+	if settings["SEQUENCE_PRIMER_PAIR_OK_REGION_LIST"] == "" {
 		settings["PRIMER_TASK"] = "pick_cloning_primers"
 		settings["SEQUENCE_INCLUDED_REGION"] = fmt.Sprintf("%d,%d", start, length)
 		settings["PRIMER_PRODUCT_SIZE_RANGE"] = fmt.Sprintf("%d-%d", length, length)
@@ -336,7 +342,7 @@ func (p *primer3) parse(target string) (err error) {
 	}
 
 	if numPairs := results["PRIMER_PAIR_NUM_RETURNED"]; numPairs == "0" {
-		return fmt.Errorf("failed to create primers using %s", file)
+		return fmt.Errorf("failed to create primers using: \n%s", file)
 	}
 
 	// read in a single primer from the output string file

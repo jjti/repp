@@ -377,8 +377,9 @@ func fillAssemblies(target string, counts []int, countToAssemblies map[int][]ass
 
 			filledFragments, err := assemblyToFill.fill(target, conf)
 			if err != nil || filledFragments == nil {
-				// assemblyToFill.log()
-				// fmt.Println("error", err.Error())
+				assemblyToFill.log()
+				fmt.Println("error", err.Error())
+				stderr.Fatal(err)
 				continue
 			}
 
