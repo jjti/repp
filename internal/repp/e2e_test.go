@@ -155,24 +155,24 @@ func Test_sequence_e2e(test *testing.T) {
 }
 
 func Test_features(t *testing.T) {
-	// test1, conf := NewFlags(
-	// 	"p10 promoter, mEGFP, T7 terminator",
-	// 	filepath.Join("..", "..", "test", "output", "features.json"),
-	// 	"pSB1A3",
-	// 	"",
-	// 	[]string{"EcoRI"},
-	// 	[]string{},
-	// 	true,
-	// 	true,
-	// 	false,
-	// )
+	test1, conf := NewFlags(
+		"p10 promoter, mEGFP, T7 terminator",
+		filepath.Join("..", "..", "test", "output", "features.json"),
+		"pSB1A3",
+		"",
+		[]string{"EcoRI"},
+		[]string{},
+		true,
+		true,
+		false,
+	)
 
-	test2, conf := NewFlags(
+	test2, _ := NewFlags(
 		"BBa_R0062,BBa_B0034,BBa_C0040,BBa_B0010,BBa_B0012",
 		filepath.Join("..", "..", "test", "output", "igem.features.json"),
 		"pSB1C3",
 		"",
-		[]string{"PstI"},
+		[]string{"PstI", "EcoRI"},
 		[]string{},
 		false,
 		true,
@@ -187,13 +187,13 @@ func Test_features(t *testing.T) {
 		name string
 		args args
 	}{
-		// {
-		// 	"test end to end features creation",
-		// 	args{
-		// 		flags: test1,
-		// 		conf:  conf,
-		// 	},
-		// },
+		{
+			"test end to end features creation",
+			args{
+				flags: test1,
+				conf:  conf,
+			},
+		},
 		{
 			"test end to end features creation using iGEM parts",
 			args{
@@ -231,10 +231,10 @@ func Test_fragments(t *testing.T) {
 		conf           *config.Config
 	}
 	tests := []struct {
-		name             string
-		args             args
+		name              string
+		args              args
 		wantTargetPlasmid *Frag
-		wantFragments    []*Frag
+		wantFragments     []*Frag
 	}{
 		{
 			"fragments with linear overlap",

@@ -303,7 +303,6 @@ func (b *blastExec) run() (err error) {
 		"-out", b.out.Name(),
 		"-outfmt", "7 sseqid qstart qend sstart send sseq mismatch gaps stitle",
 		"-perc_identity", fmt.Sprintf("%d", b.identity),
-		"-culling_limit", "50", // "If the query range of a hit is enveloped by that of at least this many higher-scoring hits, delete the hit"
 		// "-max_target_seqs", "5000",
 		"-num_threads", strconv.Itoa(threads),
 	}

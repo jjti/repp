@@ -64,50 +64,22 @@ func newPrimer3(last, this, next *Frag, seq string, conf *config.Config) primer3
 // existing homology to begin with (the two nodes should share ~50/50)
 //
 // returning the number of bp that have to be artifically added to the left and right primers
-func (p *primer3) input(minHomology, maxHomology, maxEmbedLength, minLength, pcrBuffer int) (bpAddLeft, bpAddRight int, err error) {
+func (p *primer3) input(minHomology, maxHomology, maxEmbedLength, minLength, pcrBuffer int) (addLeft, addRight int, err error) {
 	// adjust the Frag's start and end index in the event that there's too much homology
 	// with the neighboring fragment
 	p.shrink(p.last, p.f, p.next, maxHomology, minLength) // could skip passing as a param, but this is a bit easier to test
 
 	// calc the bps to add on the left and right side of this Frag
-	addLeft := p.bpToAdd(p.last, p.f)
-	addRight := p.bpToAdd(p.f, p.next)
-	growPrimers := addLeft
-	if addRight > growPrimers {
-		growPrimers = addRight
-	}
+	addLeft = p.bpToAdd(p.last, p.f)
+	addRight = p.bpToAdd(p.f, p.next)
 
 	start := p.f.start
 	length := p.f.end - start + 1
 
-	// determine whether we need to add additional bp to the primers. if there's too much to
-	// add, or if we're adding largely different amounts to the FWD and REV primer, we set
-	// the number of bp to add as bpAddLeft and bpAddRight and do so after creating primers
-	// that anneal to the seq
-	primerDiff := math.Abs(float64(addLeft - addRight))
-	if primerDiff > 5 {
-		// if one sides has a lot to add but the other doesn't, don't increase
-		// the primer generation size in primer3. will instead concat the sequence on later
-		// because we do not want to throw off the annealing temp for the primers
-		bpAddLeft = addLeft
-		bpAddRight = addRight
-		growPrimers = 0
-	} else if growPrimers > 36-30 {
-		// we can't exceed 36 bp here (primer3 upper-limit), just create primers for the portion that
-		// anneals to the seq and add the other portion/seqs on later (in mutatePrimers)
-		bpAddLeft = addLeft
-		bpAddRight = addRight
-		growPrimers = 0
-	} else {
-		start -= addLeft
-		length = p.f.end - start + 1
-		length += addRight
-	}
-
 	// sizes to make the primers and target size (min, opt, and max)
-	primerMin := 18 + growPrimers // defaults to 18
-	primerOpt := 20 + growPrimers
-	primerMax := 30 + growPrimers // defaults to 23
+	primerMin := 18 // defaults to 18
+	primerOpt := 20
+	primerMax := 30 // defaults to 23
 
 	// check whether we have wiggle room on the left or right hand sides to move the
 	// primers inward (let primer3 pick better primers)
@@ -224,8 +196,8 @@ func (p *primer3) buffer(dist, minHomology, maxEmbedLength, pcrBuffer int) (buff
 // primer3 to pick the best ones. One side may be free to move and the other not
 func (p *primer3) settings(
 	seq, p3conf string,
-	start, length, primerMin, primerOpt, primerMax int,
-	leftBuffer, rightBuffer int) (file []byte, err error) {
+	start, length, primerMin, primerOpt, primerMax, leftBuffer, rightBuffer int,
+) (file []byte, err error) {
 	// see primer3 manual or /vendor/primer3-2.4.0/settings_files/p3_th_settings.txt
 	settings := map[string]string{
 		"SEQUENCE_ID":                          p.f.ID,
