@@ -19,7 +19,7 @@ recognized enzymes.`
 // makeCmd is for finding building a plasmid from its fragments, features, or sequence
 var makeCmd = &cobra.Command{
 	Use:                        "make",
-	Short:                      "Make a plasmid from its fragments, features or sequence",
+	Short:                      "Make a plasmid from its expected sequence, features or fragments",
 	SuggestionsMinimumDistance: 3,
 	Long: `Find fragments for assembling a plasmid via Gibson Assembly. Build the plasmid
 against a list of consituent fragment, feature, or a target sequence.`,

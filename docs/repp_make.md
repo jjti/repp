@@ -7,7 +7,7 @@ has_children: true
 ---
 ## repp make
 
-Make a plasmid from its fragments, features or sequence
+Make a plasmid from its expected sequence, features or fragments
 
 ### Synopsis
 

@@ -72,4 +72,4 @@ synthetic-fragment-cost:
 
 ### SEE ALSO
 
-- [repp](/) - REPP
+- [repp](repp) - REPP
