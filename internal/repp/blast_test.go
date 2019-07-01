@@ -84,17 +84,21 @@ func Test_cull(t *testing.T) {
 		},
 	}
 
-	newMatches := cull(matches, 72, 3, 1)
+	culledMatches := cull(matches, 72, 3, 1)
 
 	// make sure m2 has been removed
-	for _, m := range newMatches {
+	for _, m := range culledMatches {
 		if m.entry == "m2" {
 			t.Error("m2 found in resulting matches, should have been removed")
 		}
 	}
 
-	if len(newMatches) != 3 {
-		t.Errorf("%d filtered matches found on test fragment, 3 expected: %v", len(newMatches), newMatches)
+	if len(culledMatches) != 3 {
+		t.Errorf("%d filtered matches found on test fragment, 3 expected: %v", len(culledMatches), culledMatches)
+	}
+
+	if len(cull(matches, 72, 3, 2)) != 4 {
+		t.Errorf("%d filtered matches found on test fragment, 4 expected: %v", len(cull(matches, 72, 3, 2)), cull(matches, 72, 3, 2))
 	}
 }
 

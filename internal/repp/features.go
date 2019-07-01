@@ -190,7 +190,7 @@ func featureSolutions(feats [][]string, featureMatches map[string][]featureMatch
 	}
 
 	// remove extended matches fully enclosed by others
-	extendedMatches = cull(extendedMatches, len(feats), 1, 3)
+	extendedMatches = cull(extendedMatches, len(feats), 1, 4)
 
 	// create a subject file from the matches' source fragments
 	subjectDB, frags := subjectDatabase(extendedMatches, flags.dbs)
@@ -203,7 +203,7 @@ func featureSolutions(feats [][]string, featureMatches map[string][]featureMatch
 	extendedMatches = extendMatches(feats, featureMatches)
 
 	// remove extended matches fully enclosed by others
-	extendedMatches = cull(extendedMatches, len(feats), 1, 3)
+	extendedMatches = cull(extendedMatches, len(feats), 1, 4)
 
 	if conf.Verbose {
 		fmt.Printf("%d matches after culling\n", len(extendedMatches))

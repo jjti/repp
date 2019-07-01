@@ -303,6 +303,7 @@ func (b *blastExec) run() (err error) {
 		"-out", b.out.Name(),
 		"-outfmt", "7 sseqid qstart qend sstart send sseq mismatch gaps stitle",
 		"-perc_identity", fmt.Sprintf("%d", b.identity),
+		// "-culling_limit", "50",
 		// "-max_target_seqs", "5000",
 		"-num_threads", strconv.Itoa(threads),
 	}
@@ -538,8 +539,8 @@ func properize(matches []match, limit int) []match {
 	// only include those that aren't encompassed by the one before it
 	culled := []match{}
 	for _, m := range matches {
-		last := len(culled) - limit
-		if last < 0 || m.queryEnd > culled[last].queryEnd {
+		check := len(culled) - limit
+		if check < 0 || m.queryEnd > culled[check].queryEnd {
 			culled = append(culled, m)
 		}
 	}
@@ -554,7 +555,7 @@ func sortMatches(matches []match) {
 		if matches[i].queryStart != matches[j].queryStart {
 			return matches[i].queryStart < matches[j].queryStart
 		} else if matches[i].length() != matches[j].length() {
-			return matches[i].length() < matches[j].length()
+			return matches[i].length() > matches[j].length()
 		} else if matches[i].circular && !matches[j].circular {
 			return true
 		} else if !matches[i].circular && matches[j].circular {
