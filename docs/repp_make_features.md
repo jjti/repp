@@ -14,7 +14,7 @@ Find or build a plasmid from its constituent features
 Find or build a plasmid from its constituent features
 
 ```
-repp make features [feature] ... [featureN] [flags]
+repp make features "[feature],...[featureN]" [flags]
 ```
 
 ### Examples
@@ -44,7 +44,7 @@ repp make features "BBa_R0062,BBa_B0034,BBa_C0040,BBa_B0010,BBa_B0012" --backbon
 ### Options inherited from parent commands
 
 ```
-  -s, --settings string   build settings (default "/Users/josh/.repp/config.yaml")
+  -s, --settings string   build settings (default "~/.repp/config.yaml")
   -v, --verbose           whether to log results to stdout
 ```
 

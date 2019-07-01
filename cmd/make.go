@@ -39,7 +39,7 @@ assembly with PCR.`,
 
 // featuresCmd is for building a plasmid from its list of contained features
 var featuresCmd = &cobra.Command{
-	Use:                        "features [feature] ... [featureN]",
+	Use:                        "features \"[feature],...[featureN]\"",
 	Short:                      "Find or build a plasmid from its constituent features",
 	Run:                        repp.FeaturesCmd,
 	SuggestionsMinimumDistance: 3,

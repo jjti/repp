@@ -26,20 +26,20 @@ File "..\config\config.yaml"
 
 ; primer3 configuration directory
 SetOutPath "$INSTDIR\primer3_config"
-File /nonfatal /a /r "..\vendor\primer3_config\"
+File /nonfatal /r "..\vendor\primer3_config\"
 SetOutPath $INSTDIR
 
 ; BLAST dbs
-File /nonfatal /a /r "..\assets\addgene\db\"
-File /nonfatal /a /r "..\assets\igem\db\"
-File /nonfatal /a /r "..\assets\dnasu\db\"
+File /nonfatal /r "..\assets\addgene\db\"
+File /nonfatal /r "..\assets\igem\db\"
+File /nonfatal /r "..\assets\dnasu\db\"
 
 ; feature and enzyme dbs
 File "..\assets\snapgene\features.tsv"
 File "..\assets\neb\enzymes.tsv"
 
 ; blastn, primer3_core, ntthal, other dlls
-File /nonfatal /a /r "..\vendor\windows\"
+File /nonfatal /r "..\vendor\windows\"
 
 SectionEnd
 

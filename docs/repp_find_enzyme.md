@@ -22,7 +22,7 @@ repp find enzyme [name] [flags]
 ### Examples
 
 ```
-  repp ls enzyme EcoRI
+  repp find enzyme EcoRI
 ```
 
 ### Options

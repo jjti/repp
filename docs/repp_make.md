@@ -18,7 +18,7 @@ against a list of consituent fragment, feature, or a target sequence.
 
 ```
   -h, --help              help for make
-  -s, --settings string   build settings (default "/Users/josh/.repp/config.yaml")
+  -s, --settings string   build settings (default "~/.repp/config.yaml")
   -v, --verbose           whether to log results to stdout
 ```
 

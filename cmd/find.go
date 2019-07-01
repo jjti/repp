@@ -35,7 +35,7 @@ var enzymeFindCmd = &cobra.Command{
 	Use:                        "enzyme [name]",
 	Short:                      "Find enzymes available for linearizing backbones",
 	Run:                        enzymeDB.ReadCmd,
-	Example:                    "  repp ls enzyme EcoRI",
+	Example:                    "  repp find enzyme EcoRI",
 	SuggestionsMinimumDistance: 2,
 	Long: `List out all the enzymes with the same or a similar a similar name as the argument.
 
@@ -55,10 +55,10 @@ var fragmentFindCmd = &cobra.Command{
 
 // sequenceFindCmd is for finding a sequence in the dbs
 var sequenceFindCmd = &cobra.Command{
-	Use:                        "sequence [name]",
+	Use:                        "sequence [seq]",
 	Short:                      "Find a sequence in the databases",
 	Run:                        repp.SequenceFindCmd,
-	Example:                    "  repp ls seq GTTGACAATTAATCATCGGCATAGTATATCGGCATAGTATAATACGAC --igem",
+	Example:                    "  repp find sequence GTTGACAATTAATCATCGGCATAGTATATCGGCATAGTATAATACGAC --igem",
 	SuggestionsMinimumDistance: 2,
 	Long:                       `Find a sequence's BLAST matches among databases.`,
 	Aliases:                    []string{"seq"},

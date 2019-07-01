@@ -48,7 +48,7 @@ repp make sequence -i "./target_plasmid.fa --addgene --dbs "part_library.fa"
 ### Options inherited from parent commands
 
 ```
-  -s, --settings string   build settings (default "/Users/josh/.repp/config.yaml")
+  -s, --settings string   build settings (default "~/.repp/config.yaml")
   -v, --verbose           whether to log results to stdout
 ```
 

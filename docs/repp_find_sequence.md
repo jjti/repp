@@ -14,13 +14,13 @@ Find a sequence in the databases
 Find a sequence's BLAST matches among databases.
 
 ```
-repp find sequence [name] [flags]
+repp find sequence [seq] [flags]
 ```
 
 ### Examples
 
 ```
-  repp ls seq GTTGACAATTAATCATCGGCATAGTATATCGGCATAGTATAATACGAC --igem
+  repp find sequence GTTGACAATTAATCATCGGCATAGTATATCGGCATAGTATAATACGAC --igem
 ```
 
 ### Options
