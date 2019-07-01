@@ -43,7 +43,7 @@ var featuresCmd = &cobra.Command{
 	Short:                      "Find or build a plasmid from its constituent features",
 	Run:                        repp.FeaturesCmd,
 	SuggestionsMinimumDistance: 3,
-	Example:                    `repp make features "BBa_R0062,BBa_B0034,BBa_C0040,BBa_B0010,BBa_B0012" --backbone pSB1C3 --enzymes PstI --igem`,
+	Example:                    `repp make features "BBa_R0062,BBa_B0034,BBa_C0040,BBa_B0010,BBa_B0012" --backbone pSB1C3 --enzymes "EcoRI,PstI" --igem`,
 }
 
 // sequenceCmd is for assembling a plasmid (single circular sequence) from its target sequence
