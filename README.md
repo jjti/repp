@@ -35,7 +35,7 @@ See [the docs](https://jjtimmons.github.io/repp/) or use `--help` on any command
 
 To design a plasmid based on its expected sequence save it to a FASTA or Genbank file. For example:
 
-```
+```txt
 >2ndVal_mScarlet-I
 CAACCTTACCAGAGGGCGCCCCAGCTGGCAATTCCGACGTCTAAGAAACCATTATTATCA...
 ```
@@ -44,6 +44,31 @@ Then call `repp make sequence` to design it. The following example uses Addgene 
 
 ```bash
 repp make sequence --in "./2ndVal_mScarlet-I.fa" --addgene --dbs "parts_library.fa"
+```
+
+### Features
+
+To design a plasmid based on the features it should contain, specify the features by name. By default, these should refer to features that are in REPP's feature database (`~/.repp/features.tsv`). Features can also refer to fragments, as in the following example where a plasmid is specified by its constituent list of iGEM parts:
+
+```bash
+repp make features "BBa_R0062,BBa_B0034,BBa_C0040,BBa_B0010,BBa_B0012" --backbone pSB1C3 --enzymes "EcoRI,PstI" --igem
+```
+
+### Fragments
+
+To design a plasmid from its constiuent fragments, save them to a multi-FASTA.
+
+```txt
+>GFP
+ATGAGTAAAGGAGAAGAACTTTTCACTGGAGTTGTCCCAATTCTTGTTGAATTAGATGG...
+>backbone
+TACTAGTAGCGGCCGCTGCAGTCCGGCAAAAAAGGGCAAGGTGTCACCACCCTGCCCTT...
+```
+
+And call the file from `repp make fragments`:
+
+```bash
+repp make fragments --in "./fragments.fa" --out "plasmid.json"
 ```
 
 ### Databases

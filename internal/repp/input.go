@@ -88,13 +88,14 @@ func NewFlags(
 // parseCmdFlags gathers the in path, out path, etc from a cobra cmd object
 // returns Flags and a Config struct for repp.Plasmid or repp.Fragments.
 func parseCmdFlags(cmd *cobra.Command, args []string, strict bool) (*Flags, *config.Config) {
+	cmdName := strings.ToLower(cmd.Name())
+
 	var err error
 	fs := &Flags{} // parsed flags
 	p := inputParser{}
 	c := config.New()
 
 	if fs.in, err = cmd.Flags().GetString("in"); fs.in == "" || err != nil {
-		cmdName := strings.ToLower(cmd.Name())
 		if cmdName == "features" {
 			fs.in = p.parseFeatureInput(args)
 		} else if cmdName == "sequence" && len(args) > 0 {
@@ -143,7 +144,7 @@ func parseCmdFlags(cmd *cobra.Command, args []string, strict bool) (*Flags, *con
 	}
 
 	filters, err := cmd.Flags().GetString("exclude")
-	if strict && err != nil {
+	if strict && err != nil && cmdName != "fragments" {
 		cmd.Help()
 		stderr.Fatalf("failed to parse filters: %v", err)
 	}

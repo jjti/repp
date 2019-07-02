@@ -33,7 +33,6 @@ func FragmentsCmd(cmd *cobra.Command, args []string) {
 	flags, conf := parseCmdFlags(cmd, args, true)
 
 	// read in the constituent fragments
-	var frags []*Frag
 	frags, err := read(flags.in, false)
 	if err != nil {
 		stderr.Fatalln(err)
@@ -44,12 +43,17 @@ func FragmentsCmd(cmd *cobra.Command, args []string) {
 		frags = append([]*Frag{flags.backbone}, frags...)
 	}
 
+	// set the conf property on each frag
+	for _, f := range frags {
+		f.conf = conf
+	}
+
 	target, solution := fragments(frags, conf)
 
 	// write the single list of fragments as a possible solution to the output file
 	writeJSON(
 		flags.out,
-		target.ID,
+		flags.in,
 		target.Seq,
 		[][]*Frag{solution},
 		len(target.Seq),
